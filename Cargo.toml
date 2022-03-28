@@ -4,6 +4,7 @@ version = "0.0.0"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 description = "Placeholder (publish in Q2 2022)"
 repository = "https://github.com/fujiapple852/trippy"
+license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
