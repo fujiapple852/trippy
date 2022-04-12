@@ -1,3 +1,5 @@
+[![Continuous integration](https://github.com/fujiapple852/trippy/actions/workflows/ci.yaml/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yaml)
+
 # Trippy
 
 A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
