@@ -2,6 +2,10 @@
 
 A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
 
+## Status
+
+Development
+
 ## License
 
 This library is distributed under the terms of the Apache License (Version 2.0).
