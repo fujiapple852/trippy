@@ -59,7 +59,7 @@ pub struct IcmpTracer<F> {
 }
 
 impl<F: Fn(&Probe)> IcmpTracer<F> {
-    pub fn new(config: &IcmpTracerConfig, publish: F) -> Self {
+    pub const fn new(config: &IcmpTracerConfig, publish: F) -> Self {
         Self {
             target_addr: config.target_addr,
             trace_identifier: config.trace_identifier,
