@@ -1,0 +1,16 @@
+[licenses]
+unlicensed = "deny"
+allow = [ "Apache-2.0", "MIT" ]
+copyleft = "deny"
+allow-osi-fsf-free = "neither"
+default = "deny"
+confidence-threshold = 0.8
+exceptions = []
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+vulnerability = "deny"
+unmaintained = "deny"
+yanked = "warn"
+notice = "warn"
