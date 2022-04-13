@@ -18,6 +18,17 @@ pub struct Trace {
     pub hops: Vec<Hop>,
 }
 
+impl Trace {
+    /// Return the target `Hop`.
+    pub fn target_hop(&self) -> &Hop {
+        if self.highest_ttl > 0 {
+            &self.hops[usize::from(self.highest_ttl) - 1]
+        } else {
+            &self.hops[0]
+        }
+    }
+}
+
 impl Default for Trace {
     fn default() -> Self {
         Self {
