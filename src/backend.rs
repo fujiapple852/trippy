@@ -1,10 +1,10 @@
-use crate::MAX_HOPS;
+use crate::icmp::{IcmpTracer, Probe, ProbeStatus};
+use crate::{IcmpTracerConfig, MAX_HOPS};
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
-use trippy::{IcmpTracer, IcmpTracerConfig, Probe, ProbeStatus};
 
 /// The maximum number of historic samples to keep per hop.
 const MAX_SAMPLES: usize = 256;
