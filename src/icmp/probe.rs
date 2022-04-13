@@ -1,7 +1,7 @@
 use crate::icmp::tracer::{Index, Round, TimeToLive};
 use crate::icmp::util::RemModU16Max;
 use std::net::IpAddr;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 /// The state of an ICMP echo request/response
 #[derive(Debug, Clone, Copy, Default)]
@@ -45,6 +45,16 @@ impl Probe {
     #[must_use]
     pub fn sequence(&self) -> u16 {
         self.index.0.rem_u16max()
+    }
+
+    /// The duration of this probe.
+    #[must_use]
+    pub fn duration(&self) -> Duration {
+        match (self.sent, self.received) {
+            (Some(sent), Some(recv)) => recv.duration_since(sent).unwrap_or_default(),
+            (Some(sent), None) => sent.elapsed().unwrap_or_default(),
+            _ => Duration::default(),
+        }
     }
 
     #[must_use]
