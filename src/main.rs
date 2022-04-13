@@ -10,13 +10,14 @@ use crate::backend::Trace;
 use crate::icmp::IcmpTracerConfig;
 use clap::Parser;
 use config::Args;
-use dns_lookup::lookup_host;
 use parking_lot::RwLock;
 use std::net::IpAddr;
 use std::process::exit;
 use std::sync::Arc;
 use std::thread;
+use crate::dns::DnsResolver;
 
+mod dns;
 mod backend;
 mod config;
 mod frontend;
@@ -44,8 +45,9 @@ fn main() -> anyhow::Result<()> {
         exit(-1);
     }
 
+    let mut resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
-    let target_addr: IpAddr = lookup_host(&hostname)?[0];
+    let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = u16::try_from(std::process::id())?;
     let tracer_config = IcmpTracerConfig::new(
         target_addr,
