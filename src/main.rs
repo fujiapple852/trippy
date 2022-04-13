@@ -2,7 +2,8 @@
 #![allow(
     clippy::module_name_repetitions,
     clippy::option_if_let_else,
-    clippy::missing_const_for_fn
+    clippy::missing_const_for_fn,
+    clippy::cast_precision_loss
 )]
 #![forbid(unsafe_code)]
 

@@ -97,7 +97,6 @@ pub fn run_backend(
     Ok(tracer.trace()?)
 }
 
-#[allow(clippy::cast_precision_loss)]
 fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
     let index = usize::from(probe.ttl.0) - 1;
     trace_data.highest_ttl = trace_data.highest_ttl.max(probe.ttl.0);
