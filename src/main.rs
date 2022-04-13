@@ -10,6 +10,7 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
+use crate::dns::DnsResolver;
 use crate::icmp::IcmpTracerConfig;
 use clap::Parser;
 use config::Args;
@@ -18,11 +19,10 @@ use std::net::IpAddr;
 use std::process::exit;
 use std::sync::Arc;
 use std::thread;
-use crate::dns::DnsResolver;
 
-mod dns;
 mod backend;
 mod config;
+mod dns;
 mod frontend;
 mod icmp;
 
@@ -39,6 +39,7 @@ fn main() -> anyhow::Result<()> {
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
+    let preserve_screen = args.preserve_screen;
 
     if min_round_duration > max_round_duration {
         eprintln!(
@@ -71,6 +72,6 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Run the TUI on the main thread
-    frontend::run_frontend(target_addr, &trace_data)?;
+    frontend::run_frontend(target_addr, &trace_data, &mut resolver, preserve_screen)?;
     Ok(())
 }
