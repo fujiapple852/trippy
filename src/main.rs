@@ -3,7 +3,9 @@
     clippy::module_name_repetitions,
     clippy::option_if_let_else,
     clippy::missing_const_for_fn,
-    clippy::cast_precision_loss
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation
 )]
 #![forbid(unsafe_code)]
 
