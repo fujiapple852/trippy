@@ -1,7 +1,7 @@
 use crate::icmp::error::TraceResult;
 use crate::icmp::tracer::TraceId;
 use crate::icmp::util::Required;
-use crate::Probe;
+use crate::icmp::Probe;
 use pnet::packet::icmp::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
 use pnet::packet::icmp::{echo_request, IcmpPacket, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;

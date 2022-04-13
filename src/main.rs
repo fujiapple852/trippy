@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
+use crate::icmp::IcmpTracerConfig;
 use clap::Parser;
 use config::Args;
 use dns_lookup::lookup_host;
@@ -15,11 +16,11 @@ use std::net::IpAddr;
 use std::process::exit;
 use std::sync::Arc;
 use std::thread;
-use trippy::IcmpTracerConfig;
 
 mod backend;
 mod config;
 mod frontend;
+mod icmp;
 
 /// The maximum number of hops we allow.
 pub const MAX_HOPS: usize = 256;

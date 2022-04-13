@@ -1,12 +1,11 @@
 use self::state::TracerState;
 use crate::icmp::config::IcmpTracerConfig;
 use crate::icmp::error::TraceResult;
-use crate::icmp::net;
 use crate::icmp::net::EchoReceiver;
 use crate::icmp::net::EchoSender;
 use crate::icmp::probe::{IcmpPacketType, ProbeStatus};
 use crate::icmp::util::Required;
-use crate::Probe;
+use crate::icmp::{net, Probe};
 use derive_more::{Add, AddAssign, From, Mul, Sub};
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
@@ -291,7 +290,7 @@ mod state {
     use crate::icmp::error::{TraceResult, TracerError};
     use crate::icmp::tracer::{Index, Round, Sequence, TimeToLive};
     use crate::icmp::util::RemModU16Max;
-    use crate::Probe;
+    use crate::icmp::Probe;
     use std::time::SystemTime;
 
     /// The maximum number of `EchoState` entries in the circular buffer.
