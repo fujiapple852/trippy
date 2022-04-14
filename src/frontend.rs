@@ -1,6 +1,6 @@
 use crate::backend::Hop;
 use crate::dns::DnsResolver;
-use crate::Trace;
+use crate::{IcmpTracerConfig, Trace};
 use chrono::SecondsFormat;
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, Paragraph, Sparkline, TableState, Wrap};
+use tui::widgets::{BarChart, BorderType, Paragraph, Sparkline, TableState};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -47,16 +47,20 @@ struct TuiApp {
     table_state: TableState,
     trace: Trace,
     resolver: DnsResolver,
+    target_hostname: String,
     target_addr: IpAddr,
+    tracer_config: IcmpTracerConfig,
 }
 
 impl TuiApp {
-    fn new(target_addr: IpAddr) -> Self {
+    fn new(target_hostname: String, target_addr: IpAddr, tracer_config: IcmpTracerConfig) -> Self {
         Self {
             table_state: TableState::default(),
             trace: Trace::default(),
             resolver: DnsResolver::default(),
+            target_hostname,
             target_addr,
+            tracer_config,
         }
     }
     pub fn next(&mut self) {
@@ -95,8 +99,10 @@ impl TuiApp {
 
 /// Run the frontend TUI.
 pub fn run_frontend(
+    target_hostname: String,
     target_addr: IpAddr,
     data: &Arc<RwLock<Trace>>,
+    config: IcmpTracerConfig,
     preserve_screen: bool,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -104,7 +110,7 @@ pub fn run_frontend(
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let res = run_app(&mut terminal, data, target_addr);
+    let res = run_app(&mut terminal, data, target_hostname, target_addr, config);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -120,9 +126,11 @@ pub fn run_frontend(
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     trace: &Arc<RwLock<Trace>>,
+    target_hostname: String,
     target_addr: IpAddr,
+    config: IcmpTracerConfig,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(target_addr);
+    let mut app = TuiApp::new(target_hostname, target_addr, config);
     loop {
         app.trace = trace.read().clone();
         terminal.draw(|f| render_all(f, &mut app))?;
@@ -170,8 +178,8 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Percentage(10),
-                Constraint::Percentage(70),
+                Constraint::Percentage(15),
+                Constraint::Percentage(65),
                 Constraint::Percentage(20),
             ]
             .as_ref(),
@@ -192,39 +200,49 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
 }
 
 /// Render the title, config, target, clock and keyboard controls.
-///
-/// TODO add remaining info here
 fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header_block = Block::default()
-        .title("Config")
+        .title(format!(" Trippy v{} ", clap::crate_version!()))
+        .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
         .style(Style::default());
-    let title_span = Spans::from(Span::styled(
-        "Trippy",
-        Style::default().add_modifier(Modifier::BOLD),
-    ));
-    let title = Paragraph::new(title_span)
-        .style(Style::default())
-        .block(header_block.clone())
-        .alignment(Alignment::Center);
-    f.render_widget(title, rect);
-
     let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-    let clock_span = Spans::from(Span::styled(now, Style::default()));
-    let clock = Paragraph::new(clock_span)
+    let clock_span = Spans::from(Span::raw(now));
+    let help_span = Spans::from(vec![
+        Span::styled("h", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw("elp "),
+        Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw("uit"),
+    ]);
+    let right_spans = vec![clock_span, help_span];
+    let right = Paragraph::new(right_spans)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
+    f.render_widget(right, rect);
+    let left_spans = vec![
+        Spans::from(vec![
+            Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(format!("{} ({})", app.target_hostname, app.target_addr)),
+        ]),
+        Spans::from(vec![
+            Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(format!(
+                "mode=icmp interval={} grace={} start-ttl={} max-ttl={}",
+                humantime::format_duration(app.tracer_config.min_round_duration),
+                humantime::format_duration(app.tracer_config.grace_duration),
+                app.tracer_config.first_ttl.0,
+                app.tracer_config.max_ttl.0
+            )),
+        ]),
+    ];
 
-    f.render_widget(clock, rect);
-    let hostname = app.resolver.reverse_lookup(app.target_addr);
-    let target_host = format!("{} ({})", hostname, app.target_addr);
-    let info_span = Spans::from(Span::styled(target_host, Style::default()));
-    let info = Paragraph::new(info_span)
+    let left = Paragraph::new(left_spans)
         .style(Style::default())
         .block(header_block)
         .alignment(Alignment::Left);
-    f.render_widget(info, rect);
+    f.render_widget(left, rect);
 }
 
 /// Render the splash screen.
@@ -284,7 +302,12 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
         .map(|(i, hop)| render_table_row(hop, &mut app.resolver, i, app.trace.highest_ttl));
     let table = Table::new(rows)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title("Hops"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title("Hops"),
+        )
         .highlight_style(selected_style)
         .widths(&TABLE_WIDTH);
     f.render_stateful_widget(table, rect, &mut app.table_state);
@@ -426,7 +449,12 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
         .map(|s| s.as_millis() as u64)
         .collect::<Vec<_>>();
     let history = Sparkline::default()
-        .block(Block::default().title(format!("Samples #{}", target_hop.ttl)).borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(format!("Samples #{}", target_hop.ttl))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
         .data(data)
         .style(Style::default().fg(Color::Yellow));
     f.render_widget(history, rect);
@@ -441,7 +469,12 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
     let freq_data = sample_frequency(&target_hop.samples);
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
-        .block(Block::default().title(format!("Frequency #{}", target_hop.ttl)).borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(format!("Frequency #{}", target_hop.ttl))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
         .data(freq_data_ref.as_slice())
         .bar_width(4)
         .bar_gap(1)

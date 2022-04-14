@@ -72,6 +72,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Run the TUI on the main thread
-    frontend::run_frontend(target_addr, &trace_data, preserve_screen)?;
+    frontend::run_frontend(
+        hostname,
+        target_addr,
+        &trace_data,
+        tracer_config,
+        preserve_screen,
+    )?;
     Ok(())
 }

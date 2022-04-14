@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::time::Duration;
 
 /// TODO
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct IcmpTracerConfig {
     pub target_addr: IpAddr,
     pub trace_identifier: TraceId,
