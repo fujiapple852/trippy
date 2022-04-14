@@ -1,4 +1,4 @@
-[![Continuous integration](https://github.com/fujiapple852/trippy/actions/workflows/ci.yaml/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yaml)
+[![Continuous integration](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
 
 # Trippy
 
