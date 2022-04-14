@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, Paragraph, Sparkline, Wrap};
+use tui::widgets::{BarChart, Paragraph, Sparkline, TableState, Wrap};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -43,11 +43,60 @@ const TABLE_WIDTH: [Constraint; 11] = [
     Constraint::Percentage(5),
 ];
 
+struct TuiApp {
+    table_state: TableState,
+    trace: Trace,
+    resolver: DnsResolver,
+    target_addr: IpAddr,
+}
+
+impl TuiApp {
+    fn new(target_addr: IpAddr) -> Self {
+        Self {
+            table_state: TableState::default(),
+            trace: Trace::default(),
+            resolver: DnsResolver::default(),
+            target_addr,
+        }
+    }
+    pub fn next(&mut self) {
+        let max_index = 0.max(usize::from(self.trace.highest_ttl) - 1);
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i < max_index {
+                    i + 1
+                } else {
+                    i
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i > 0 {
+                    i - 1
+                } else {
+                    i
+                }
+            }
+            None => 0.max(usize::from(self.trace.highest_ttl) - 1),
+        };
+        self.table_state.select(Some(i));
+    }
+
+    pub fn clear(&mut self) {
+        self.table_state.select(None);
+    }
+}
+
 /// Run the frontend TUI.
 pub fn run_frontend(
     target_addr: IpAddr,
     data: &Arc<RwLock<Trace>>,
-    dns: &mut DnsResolver,
     preserve_screen: bool,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -55,7 +104,7 @@ pub fn run_frontend(
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let res = run_app(&mut terminal, data, target_addr, dns);
+    let res = run_app(&mut terminal, data, target_addr);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -72,15 +121,19 @@ fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     trace: &Arc<RwLock<Trace>>,
     target_addr: IpAddr,
-    resolver: &mut DnsResolver,
 ) -> io::Result<()> {
+    let mut app = TuiApp::new(target_addr);
     loop {
-        let trace = trace.read().clone();
-        terminal.draw(|f| render_all(f, &trace, target_addr, resolver))?;
+        app.trace = trace.read().clone();
+        terminal.draw(|f| render_all(f, &mut app))?;
         if crossterm::event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    return Ok(());
+                match key.code {
+                    KeyCode::Char('q') => return Ok(()),
+                    KeyCode::Down => app.next(),
+                    KeyCode::Up => app.previous(),
+                    KeyCode::Esc => app.clear(),
+                    _ => {}
                 }
             }
         }
@@ -112,12 +165,7 @@ fn run_app<B: Backend>(
 /// Frequency - a histogram of sample frequencies by round-trip time for the target host
 ///
 /// On startup a splash screen is shown in place of the hops table, until the completion of the first round.
-fn render_all<B: Backend>(
-    f: &mut Frame<'_, B>,
-    data: &Trace,
-    target_addr: IpAddr,
-    dns: &mut DnsResolver,
-) {
+fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -133,25 +181,20 @@ fn render_all<B: Backend>(
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(chunks[2]);
-    render_header(f, target_addr, dns, chunks[0]);
-    if data.highest_ttl > 0 {
-        render_table(f, data, dns, chunks[1]);
+    render_header(f, app, chunks[0]);
+    if app.trace.highest_ttl > 0 {
+        render_table(f, app, chunks[1]);
     } else {
         render_splash(f, chunks[1]);
     }
-    render_history(f, data, bottom_chunks[0]);
-    render_ping_frequency(f, data, bottom_chunks[1]);
+    render_history(f, app, bottom_chunks[0]);
+    render_ping_frequency(f, app, bottom_chunks[1]);
 }
 
 /// Render the title, config, target, clock and keyboard controls.
 ///
 /// TODO add remaining info here
-fn render_header<B: Backend>(
-    f: &mut Frame<'_, B>,
-    target_addr: IpAddr,
-    dns: &mut DnsResolver,
-    rect: Rect,
-) {
+fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title("Config")
         .borders(Borders::ALL)
@@ -174,8 +217,8 @@ fn render_header<B: Backend>(
         .alignment(Alignment::Right);
 
     f.render_widget(clock, rect);
-    let hostname = dns.reverse_lookup(target_addr);
-    let target_host = format!("{} ({})", hostname, target_addr);
+    let hostname = app.resolver.reverse_lookup(app.target_addr);
+    let target_host = format!("{} ({})", hostname, app.target_addr);
     let info_span = Spans::from(Span::styled(target_host, Style::default()));
     let info = Paragraph::new(info_span)
         .style(Style::default())
@@ -220,19 +263,22 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
 /// - The worst round-trip time for all probes at this hop (`Wrst`)
 /// - The standard deviation round-trip time for all probes at this hop (`StDev`)
 /// - The status of this hop (`Sts`)
-fn render_table<B: Backend>(f: &mut Frame<'_, B>, data: &Trace, dns: &mut DnsResolver, rect: Rect) {
+fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header();
-    let rows = data
+    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
+    let rows = app
+        .trace
         .hops
         .iter()
-        .take(data.highest_ttl as usize)
+        .take(app.trace.highest_ttl as usize)
         .enumerate()
-        .map(|(i, hop)| render_table_row(hop, i, data.highest_ttl, dns));
+        .map(|(i, hop)| render_table_row(hop, &mut app.resolver, i, app.trace.highest_ttl));
     let table = Table::new(rows)
         .header(header)
         .block(Block::default().borders(Borders::ALL).title("Hops"))
+        .highlight_style(selected_style)
         .widths(&TABLE_WIDTH);
-    f.render_widget(table, rect);
+    f.render_stateful_widget(table, rect, &mut app.table_state);
 }
 
 /// Render the table header.
@@ -247,7 +293,7 @@ fn render_table_header() -> Row<'static> {
 }
 
 /// Render a single row in the table of hops.
-fn render_table_row(hop: &Hop, i: usize, highest_ttl: u8, dns: &mut DnsResolver) -> Row<'static> {
+fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8) -> Row<'static> {
     let ttl_cell = render_ttl_cell(i);
     let hostname_cell = render_hostname_cell(hop, dns);
     let loss_pct_cell = render_loss_pct_cell(hop);
@@ -360,8 +406,11 @@ fn render_status_cell(hop: &Hop, i: usize, highest_ttl: u8) -> Cell<'static> {
 }
 
 /// Render the ping history for the final hop which is typically the target.
-fn render_history<B: Backend>(f: &mut Frame<'_, B>, data: &Trace, rect: Rect) {
-    let target_hop = data.target_hop();
+fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let target_hop = app
+        .table_state
+        .selected()
+        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops[s]);
     let max_samples = target_hop.samples.len().min(rect.width as usize);
     let data = &target_hop.samples[0..max_samples]
         .iter()
@@ -375,8 +424,11 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, data: &Trace, rect: Rect) {
 }
 
 /// Render a histogram of ping frequencies.
-fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, data: &Trace, rect: Rect) {
-    let target_hop = data.target_hop();
+fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let target_hop = app
+        .table_state
+        .selected()
+        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops[s]);
     let freq_data = sample_frequency(&target_hop.samples);
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
