@@ -232,18 +232,27 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
 /// This is shown on startup whilst we await the first round of data to be available.
 fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
     let chunks = Layout::default()
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);
     let block = Block::default()
         .title("Hops")
         .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
         .style(Style::default());
-    let paragraph = Paragraph::new(Span::styled(
+    let splash = vec![
+        r#" _____    _                "#,
+        r#"|_   _| _(_)_ __ _ __ _  _ "#,
+        r#"  | || '_| | '_ \ '_ \ || |"#,
+        r#"  |_||_| |_| .__/ .__/\_, |"#,
+        r#"           |_|  |_|   |__/ "#,
+        "",
         "Starting...",
-        Style::default().add_modifier(Modifier::SLOW_BLINK),
-    ))
-    .alignment(Alignment::Center)
-    .wrap(Wrap { trim: true });
+    ];
+    let spans: Vec<_> = splash
+        .into_iter()
+        .map(|line| Spans::from(Span::styled(line, Style::default())))
+        .collect();
+    let paragraph = Paragraph::new(spans).alignment(Alignment::Center);
     f.render_widget(block, rect);
     f.render_widget(paragraph, chunks[1]);
 }
