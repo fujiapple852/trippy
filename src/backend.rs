@@ -126,6 +126,10 @@ fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
         ProbeStatus::Awaited => {
             trace_data.hops[index].total_sent += 1;
             trace_data.hops[index].ttl = probe.ttl.0;
+            trace_data.hops[index].samples.insert(0, Duration::default());
+            if trace_data.hops[index].samples.len() > MAX_SAMPLES {
+                trace_data.hops[index].samples.pop();
+            }
         }
         ProbeStatus::NotSent => {}
     }
