@@ -41,6 +41,8 @@ impl Default for Trace {
 /// Information about a single `Hop` within a `Trace`.
 #[derive(Debug, Clone)]
 pub struct Hop {
+    /// The time-to-live of this hop.
+    pub ttl: u8,
     /// The set of addresses that have responded for a given time-to-live.
     pub addrs: HashSet<IpAddr>,
     /// The total number of probes sent.
@@ -66,6 +68,7 @@ pub struct Hop {
 impl Default for Hop {
     fn default() -> Self {
         Self {
+            ttl: 0,
             addrs: HashSet::default(),
             total_sent: 0,
             total_recv: 0,
@@ -103,6 +106,7 @@ fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
     match probe.status {
         ProbeStatus::Complete => {
             let hop = &mut trace_data.hops[index];
+            hop.ttl = probe.ttl.0;
             hop.total_sent += 1;
             hop.total_recv += 1;
             let dur = probe.duration();
@@ -121,6 +125,7 @@ fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
         }
         ProbeStatus::Awaited => {
             trace_data.hops[index].total_sent += 1;
+            trace_data.hops[index].ttl = probe.ttl.0;
         }
         ProbeStatus::NotSent => {}
     }
