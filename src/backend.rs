@@ -59,7 +59,7 @@ pub struct Hop {
     pub worst: Option<Duration>,
     /// The mean duration of the all probes.
     pub mean: f64,
-    ///
+    /// The aggregated squared distance from the mean of all probes.
     pub m2: f64,
     /// The last N `Hop::last` samples.
     pub samples: Vec<Duration>,
