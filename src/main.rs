@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
         exit(-1);
     }
 
-    let mut resolver = DnsResolver::new();
+    let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = u16::try_from(std::process::id())?;
@@ -72,6 +72,6 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Run the TUI on the main thread
-    frontend::run_frontend(target_addr, &trace_data, &mut resolver, preserve_screen)?;
+    frontend::run_frontend(target_addr, &trace_data, preserve_screen)?;
     Ok(())
 }
