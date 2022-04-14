@@ -417,7 +417,7 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
         .map(|s| s.as_millis() as u64)
         .collect::<Vec<_>>();
     let history = Sparkline::default()
-        .block(Block::default().title("History").borders(Borders::ALL))
+        .block(Block::default().title(format!("Samples #{}", target_hop.ttl)).borders(Borders::ALL))
         .data(data)
         .style(Style::default().fg(Color::Yellow));
     f.render_widget(history, rect);
@@ -432,7 +432,7 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
     let freq_data = sample_frequency(&target_hop.samples);
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
-        .block(Block::default().title("Frequency %").borders(Borders::ALL))
+        .block(Block::default().title(format!("Frequency #{}", target_hop.ttl)).borders(Borders::ALL))
         .data(freq_data_ref.as_slice())
         .bar_width(4)
         .bar_gap(1)
