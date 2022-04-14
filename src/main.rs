@@ -52,7 +52,7 @@ fn main() -> anyhow::Result<()> {
     let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
-    let trace_identifier = u16::try_from(std::process::id())?;
+    let trace_identifier = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let tracer_config = IcmpTracerConfig::new(
         target_addr,
         trace_identifier,
