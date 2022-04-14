@@ -294,7 +294,7 @@ fn render_table_header() -> Row<'static> {
 
 /// Render a single row in the table of hops.
 fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8) -> Row<'static> {
-    let ttl_cell = render_ttl_cell(i);
+    let ttl_cell = render_ttl_cell(hop);
     let hostname_cell = render_hostname_cell(hop, dns);
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
@@ -322,8 +322,8 @@ fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8)
     Row::new(cells).height(row_height).bottom_margin(0)
 }
 
-fn render_ttl_cell(i: usize) -> Cell<'static> {
-    Cell::from(format!("{}", i + 1))
+fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
+    Cell::from(format!("{}", hop.ttl))
 }
 
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
