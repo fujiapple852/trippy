@@ -8,6 +8,10 @@ A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
 
 Development
 
+## Screenshot
+
+<img src="assets/trippy-14-04-2022.png" alt="trippy"/>
+
 ## License
 
 This library is distributed under the terms of the Apache License (Version 2.0).
