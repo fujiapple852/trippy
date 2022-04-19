@@ -3,8 +3,15 @@ use clap::{ArgEnum, Parser};
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ArgEnum)]
 pub enum Mode {
+    /// Display interactive TUI.
     Tui,
-    Text,
+    /// Display a continuous stream of tracing data
+    Stream,
+    /// Generate a text table report for N cycles.
+    Table,
+    /// Generate a SCV report for N cycles.
+    Csv,
+    /// Generate a JSON report for N cycles.
     Json,
 }
 
