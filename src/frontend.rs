@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, BorderType, Paragraph, Sparkline, TableState};
+use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -50,6 +50,7 @@ struct TuiApp {
     target_hostname: String,
     target_addr: IpAddr,
     tracer_config: IcmpTracerConfig,
+    show_help: bool,
 }
 
 impl TuiApp {
@@ -61,6 +62,7 @@ impl TuiApp {
             target_hostname,
             target_addr,
             tracer_config,
+            show_help: false,
         }
     }
     pub fn next(&mut self) {
@@ -94,6 +96,10 @@ impl TuiApp {
 
     pub fn clear(&mut self) {
         self.table_state.select(None);
+    }
+
+    pub fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
     }
 }
 
@@ -138,9 +144,11 @@ fn run_app<B: Backend>(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Down => app.next(),
-                    KeyCode::Up => app.previous(),
-                    KeyCode::Esc => app.clear(),
+                    KeyCode::Char('h') => app.toggle_help(),
+                    KeyCode::Down if !app.show_help => app.next(),
+                    KeyCode::Up if !app.show_help => app.previous(),
+                    KeyCode::Esc if !app.show_help => app.clear(),
+                    KeyCode::Esc if app.show_help => app.toggle_help(),
                     _ => {}
                 }
             }
@@ -148,7 +156,7 @@ fn run_app<B: Backend>(
     }
 }
 
-/// Render the TUI.
+/// Render the application main screen.
 ///
 /// The layout of the TUI is as follows:
 ///
@@ -197,6 +205,32 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     }
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
+    if app.show_help {
+        render_help(f);
+    }
+}
+
+/// Render help
+fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
+    let block = Block::default()
+        .title(" Controls ")
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .style(Style::default().bg(Color::Blue))
+        .border_type(BorderType::Double);
+    let up_down_span = Spans::from(vec![Span::raw("[up]/[down] - select hop")]);
+    let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
+    let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
+    let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
+    let control_spans = vec![up_down_span, esc_span, help_span, quit_span];
+    let control = Paragraph::new(control_spans)
+        .style(Style::default())
+        .block(block.clone())
+        .alignment(Alignment::Left);
+    let area = centered_rect(50, 30, f.size());
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+    f.render_widget(control, area);
 }
 
 /// Render the title, config, target, clock and keyboard controls.
@@ -480,6 +514,32 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
                 .add_modifier(Modifier::BOLD),
         );
     f.render_widget(barchart, rect);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_y) / 2),
+                Constraint::Percentage(percent_y),
+                Constraint::Percentage((100 - percent_y) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Percentage(percent_x),
+                Constraint::Percentage((100 - percent_x) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
 }
 
 /// Return the frequency % grouped by sample duration.
