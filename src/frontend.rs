@@ -64,7 +64,7 @@ impl TuiApp {
         }
     }
     pub fn next(&mut self) {
-        let max_index = 0.max(usize::from(self.trace.highest_ttl) - 1);
+        let max_index = 0.max(usize::from(self.trace.highest_ttl()) - 1);
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i < max_index {
@@ -87,7 +87,7 @@ impl TuiApp {
                     i
                 }
             }
-            None => 0.max(usize::from(self.trace.highest_ttl) - 1),
+            None => 0.max(usize::from(self.trace.highest_ttl()) - 1),
         };
         self.table_state.select(Some(i));
     }
@@ -190,7 +190,7 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(chunks[2]);
     render_header(f, app, chunks[0]);
-    if app.trace.highest_ttl > 0 {
+    if app.trace.highest_ttl() > 0 {
         render_table(f, app, chunks[1]);
     } else {
         render_splash(f, chunks[1]);
@@ -295,11 +295,11 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app
         .trace
-        .hops
+        .hops()
         .iter()
-        .take(app.trace.highest_ttl as usize)
+        .take(app.trace.highest_ttl() as usize)
         .enumerate()
-        .map(|(i, hop)| render_table_row(hop, &mut app.resolver, i, app.trace.highest_ttl));
+        .map(|(i, hop)| render_table_row(hop, &mut app.resolver, i, app.trace.highest_ttl()));
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -350,43 +350,39 @@ fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8)
         stddev_cell,
         status_cell,
     ];
-    let row_height = hop.addrs.len().max(1) as u16;
+    let row_height = hop.addr_count().max(1) as u16;
     Row::new(cells).height(row_height).bottom_margin(0)
 }
 
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.ttl))
+    Cell::from(format!("{}", hop.ttl()))
 }
 
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
-    let lost = hop.total_sent - hop.total_recv;
-    let loss_pct = lost as f64 / hop.total_sent as f64 * 100f64;
+    let lost = hop.total_sent() - hop.total_recv();
+    let loss_pct = lost as f64 / hop.total_sent() as f64 * 100f64;
     Cell::from(format!("{:.1}%", loss_pct))
 }
 
 fn render_total_sent_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_sent))
+    Cell::from(format!("{}", hop.total_sent()))
 }
 
 fn render_total_recv_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_recv))
+    Cell::from(format!("{}", hop.total_recv()))
 }
 
 fn render_avg_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv > 0 {
-        format!(
-            "{:.1}",
-            hop.total_time.as_secs_f64() / hop.total_recv as f64
-        )
+    Cell::from(if hop.total_recv() > 0 {
+        format!("{:.1}", hop.avg_ms())
     } else {
         String::default()
     })
 }
 
 fn render_hostname_cell(hop: &Hop, dns: &mut DnsResolver) -> Cell<'static> {
-    Cell::from(if hop.total_recv > 0 {
-        hop.addrs
-            .iter()
+    Cell::from(if hop.total_recv() > 0 {
+        hop.addrs()
             .map(|addr| format!("{} ({})", dns.reverse_lookup(*addr), addr))
             .join("\n")
     } else {
@@ -396,42 +392,42 @@ fn render_hostname_cell(hop: &Hop, dns: &mut DnsResolver) -> Cell<'static> {
 
 fn render_last_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
-        hop.last
-            .map(|dur| dur.as_millis().to_string())
+        hop.last_ms()
+            .map(|last| format!("{:.1}", last))
             .unwrap_or_default(),
     )
 }
 
 fn render_best_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
-        hop.best
-            .map(|dur| dur.as_millis().to_string())
+        hop.best_ms()
+            .map(|best| format!("{:.1}", best))
             .unwrap_or_default(),
     )
 }
 
 fn render_worst_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
-        hop.worst
-            .map(|dur| dur.as_millis().to_string())
+        hop.worst_ms()
+            .map(|worst| format!("{:.1}", worst))
             .unwrap_or_default(),
     )
 }
 
 fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv > 1 {
-        format!("{:.1}", (hop.m2 / (hop.total_recv - 1) as f64).sqrt())
+    Cell::from(if hop.total_recv() > 1 {
+        format!("{:.1}", hop.stddev_ms())
     } else {
         String::default()
     })
 }
 
 fn render_status_cell(hop: &Hop, i: usize, highest_ttl: u8) -> Cell<'static> {
-    let lost = hop.total_sent - hop.total_recv;
+    let lost = hop.total_sent() - hop.total_recv();
     Cell::from(match (lost, usize::from(highest_ttl) == i + 1) {
-        (lost, target) if target && lost == hop.total_sent => "🔴",
+        (lost, target) if target && lost == hop.total_sent() => "🔴",
         (lost, target) if target && lost > 0 => "🟡",
-        (lost, target) if !target && lost == hop.total_sent => "🟤",
+        (lost, target) if !target && lost == hop.total_sent() => "🟤",
         (lost, target) if !target && lost > 0 => "🔵",
         _ => "🟢",
     })
@@ -442,20 +438,21 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
     let target_hop = app
         .table_state
         .selected()
-        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops[s]);
-    let max_samples = target_hop.samples.len().min(rect.width as usize);
-    let data = &target_hop.samples[0..max_samples]
+        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops()[s]);
+    let data = target_hop
+        .samples()
         .iter()
-        .map(|s| s.as_millis() as u64)
+        .take(rect.width as usize)
+        .map(|s| (s.as_secs_f64() * 1000_f64) as u64)
         .collect::<Vec<_>>();
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("Samples #{}", target_hop.ttl))
+                .title(format!("Samples #{}", target_hop.ttl()))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded),
         )
-        .data(data)
+        .data(&data)
         .style(Style::default().fg(Color::Yellow));
     f.render_widget(history, rect);
 }
@@ -465,13 +462,13 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
     let target_hop = app
         .table_state
         .selected()
-        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops[s]);
-    let freq_data = sample_frequency(&target_hop.samples);
+        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops()[s]);
+    let freq_data = sample_frequency(target_hop.samples());
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
         .block(
             Block::default()
-                .title(format!("Frequency #{}", target_hop.ttl))
+                .title(format!("Frequency #{}", target_hop.ttl()))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded),
         )
