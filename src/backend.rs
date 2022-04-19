@@ -13,12 +13,21 @@ const MAX_SAMPLES: usize = 256;
 #[derive(Debug, Clone)]
 pub struct Trace {
     /// The TTL of the target host or the last host when responded if the target did not respond.
-    pub highest_ttl: u8,
+    highest_ttl: u8,
     /// Information about each hop.
-    pub hops: Vec<Hop>,
+    hops: Vec<Hop>,
 }
 
 impl Trace {
+    pub fn highest_ttl(&self) -> u8 {
+        self.highest_ttl
+    }
+
+    /// Information about each hop.
+    pub fn hops(&self) -> &[Hop] {
+        &self.hops
+    }
+
     /// Return the target `Hop`.
     pub fn target_hop(&self) -> &Hop {
         if self.highest_ttl > 0 {
@@ -41,28 +50,78 @@ impl Default for Trace {
 /// Information about a single `Hop` within a `Trace`.
 #[derive(Debug, Clone)]
 pub struct Hop {
+    ttl: u8,
+    addrs: HashSet<IpAddr>,
+    total_sent: usize,
+    total_recv: usize,
+    total_time: Duration,
+    last: Option<Duration>,
+    best: Option<Duration>,
+    worst: Option<Duration>,
+    mean: f64,
+    m2: f64,
+    samples: Vec<Duration>,
+}
+
+impl Hop {
     /// The time-to-live of this hop.
-    pub ttl: u8,
-    /// The set of addresses that have responded for a given time-to-live.
-    pub addrs: HashSet<IpAddr>,
+    pub fn ttl(&self) -> u8 {
+        self.ttl
+    }
+
+    /// The set of addresses that have responded for this time-to-live.
+    pub fn addrs(&self) -> impl Iterator<Item = &IpAddr> {
+        self.addrs.iter()
+    }
+
+    /// The number of unique address observed for this time-to-live.
+    pub fn addr_count(&self) -> usize {
+        self.addrs.len()
+    }
+
     /// The total number of probes sent.
-    pub total_sent: usize,
+    pub fn total_sent(&self) -> usize {
+        self.total_sent
+    }
+
     /// The total number of probes responses received.
-    pub total_recv: usize,
-    /// The total duration of all all probes.
-    pub total_time: Duration,
+    pub fn total_recv(&self) -> usize {
+        self.total_recv
+    }
+
     /// The duration of the last probe.
-    pub last: Option<Duration>,
+    pub fn last_ms(&self) -> Option<f64> {
+        self.last.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
     /// The duration of the best probe observed.
-    pub best: Option<Duration>,
+    pub fn best_ms(&self) -> Option<f64> {
+        self.best.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
     /// The duration of the worst probe observed.
-    pub worst: Option<Duration>,
-    /// The mean duration of the all probes.
-    pub mean: f64,
-    /// The aggregated squared distance from the mean of all probes.
-    pub m2: f64,
-    /// The last N `Hop::last` samples.
-    pub samples: Vec<Duration>,
+    pub fn worst_ms(&self) -> Option<f64> {
+        self.worst.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The average duration of all probes.
+    pub fn avg_ms(&self) -> f64 {
+        (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
+    }
+
+    /// The standard deviation of all probes.
+    pub fn stddev_ms(&self) -> f64 {
+        if self.total_recv > 1 {
+            (self.m2 / (self.total_recv - 1) as f64).sqrt()
+        } else {
+            0_f64
+        }
+    }
+
+    /// The last N samples.
+    pub fn samples(&self) -> &[Duration] {
+        &self.samples
+    }
 }
 
 impl Default for Hop {
