@@ -1,4 +1,12 @@
-use clap::Parser;
+use clap::{ArgEnum, Parser};
+
+/// The tool mode.
+#[derive(Debug, Copy, Clone, ArgEnum)]
+pub enum Mode {
+    Tui,
+    Text,
+    Json,
+}
 
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
@@ -38,4 +46,8 @@ pub struct Args {
     /// Preserve the screen on exit
     #[clap(long)]
     pub preserve_screen: bool,
+
+    /// Output mode
+    #[clap(arg_enum, short = 'm', long, default_value = "tui")]
+    pub mode: Mode,
 }
