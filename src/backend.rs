@@ -89,6 +89,16 @@ impl Hop {
         self.total_recv
     }
 
+    /// The % of packets that are lost.
+    pub fn loss_pct(&self) -> f64 {
+        if self.total_sent > 0 {
+            let lost = self.total_sent - self.total_recv;
+            lost as f64 / self.total_sent as f64 * 100f64
+        } else {
+            0_f64
+        }
+    }
+
     /// The duration of the last probe.
     pub fn last_ms(&self) -> Option<f64> {
         self.last.map(|last| last.as_secs_f64() * 1000_f64)

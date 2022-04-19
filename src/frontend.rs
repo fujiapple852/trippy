@@ -359,9 +359,7 @@ fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
 }
 
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
-    let lost = hop.total_sent() - hop.total_recv();
-    let loss_pct = lost as f64 / hop.total_sent() as f64 * 100f64;
-    Cell::from(format!("{:.1}%", loss_pct))
+    Cell::from(format!("{:.1}%", hop.loss_pct()))
 }
 
 fn render_total_sent_cell(hop: &Hop) -> Cell<'static> {
