@@ -110,13 +110,14 @@ fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
             hop.total_sent += 1;
             hop.total_recv += 1;
             let dur = probe.duration();
+            let dur_ms = dur.as_secs_f64() * 1000_f64;
             hop.total_time += dur;
             hop.last = Some(dur);
             hop.samples.insert(0, dur);
             hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
             hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
-            hop.mean += (dur.as_secs_f64() - hop.mean) / hop.total_recv as f64;
-            hop.m2 += (dur.as_secs_f64() - hop.mean) * (dur.as_secs_f64() - hop.mean);
+            hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
+            hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
             if hop.samples.len() > MAX_SAMPLES {
                 hop.samples.pop();
             }
