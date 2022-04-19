@@ -14,6 +14,7 @@ const MAX_SAMPLES: usize = 256;
 pub struct Trace {
     /// The TTL of the target host or the last host when responded if the target did not respond.
     highest_ttl: u8,
+    round: usize,
     /// Information about each hop.
     hops: Vec<Hop>,
 }
@@ -21,6 +22,10 @@ pub struct Trace {
 impl Trace {
     pub fn highest_ttl(&self) -> u8 {
         self.highest_ttl
+    }
+
+    pub fn round(&self) -> usize {
+        self.round
     }
 
     /// Information about each hop.
@@ -42,6 +47,7 @@ impl Default for Trace {
     fn default() -> Self {
         Self {
             highest_ttl: 0,
+            round: 0,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
         }
     }
@@ -176,6 +182,7 @@ pub fn run_backend(
 fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
     let index = usize::from(probe.ttl.0) - 1;
     trace_data.highest_ttl = trace_data.highest_ttl.max(probe.ttl.0);
+    trace_data.round = trace_data.round.max(probe.round.0);
     match probe.status {
         ProbeStatus::Complete => {
             let hop = &mut trace_data.hops[index];
