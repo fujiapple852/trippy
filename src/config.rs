@@ -57,4 +57,8 @@ pub struct Args {
     /// Output mode
     #[clap(arg_enum, short = 'm', long, default_value = "tui")]
     pub mode: Mode,
+
+    /// The number of report cycles to run
+    #[clap(short = 'c', long, default_value_t = 10)]
+    pub report_cycles: usize,
 }
