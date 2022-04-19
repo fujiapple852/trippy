@@ -2,6 +2,7 @@ use crate::backend::Hop;
 use crate::dns::DnsResolver;
 use crate::{IcmpTracerConfig, Trace};
 use chrono::SecondsFormat;
+use crossterm::event::KeyModifiers;
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
@@ -13,7 +14,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::net::IpAddr;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
 use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState};
@@ -51,6 +52,7 @@ struct TuiApp {
     target_addr: IpAddr,
     tracer_config: IcmpTracerConfig,
     show_help: bool,
+    frozen_start: Option<SystemTime>,
 }
 
 impl TuiApp {
@@ -63,6 +65,7 @@ impl TuiApp {
             target_addr,
             tracer_config,
             show_help: false,
+            frozen_start: None,
         }
     }
     pub fn next(&mut self) {
@@ -101,6 +104,13 @@ impl TuiApp {
     pub fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
     }
+
+    pub fn toggle_freeze(&mut self) {
+        self.frozen_start = match self.frozen_start {
+            None => Some(SystemTime::now()),
+            Some(_) => None,
+        };
+    }
 }
 
 /// Run the frontend TUI.
@@ -138,17 +148,24 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut app = TuiApp::new(target_hostname, target_addr, config);
     loop {
-        app.trace = trace.read().clone();
+        if app.frozen_start == None {
+            app.trace = trace.read().clone();
+        };
         terminal.draw(|f| render_all(f, &mut app))?;
         if crossterm::event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Char('h') => app.toggle_help(),
-                    KeyCode::Down if !app.show_help => app.next(),
-                    KeyCode::Up if !app.show_help => app.previous(),
-                    KeyCode::Esc if !app.show_help => app.clear(),
-                    KeyCode::Esc if app.show_help => app.toggle_help(),
+                match (key.code, key.modifiers) {
+                    (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
+                    (KeyCode::Char('q'), _) if app.show_help => app.toggle_help(),
+                    (KeyCode::Char('h'), _) => app.toggle_help(),
+                    (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
+                    (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
+                        *trace.write() = Trace::default();
+                    }
+                    (KeyCode::Down, _) if !app.show_help => app.next(),
+                    (KeyCode::Up, _) if !app.show_help => app.previous(),
+                    (KeyCode::Esc, _) if !app.show_help => app.clear(),
+                    (KeyCode::Esc, _) if app.show_help => app.toggle_help(),
                     _ => {}
                 }
             }
@@ -205,6 +222,7 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     }
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
+    // render_status_bar(f, app, chunks[3]);
     if app.show_help {
         render_help(f);
     }
@@ -220,9 +238,18 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .border_type(BorderType::Double);
     let up_down_span = Spans::from(vec![Span::raw("[up]/[down] - select hop")]);
     let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
+    let pause_span = Spans::from(vec![Span::raw("[f]         - toggle freeze display")]);
+    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]    - reset statistics")]);
     let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
     let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
-    let control_spans = vec![up_down_span, esc_span, help_span, quit_span];
+    let control_spans = vec![
+        up_down_span,
+        esc_span,
+        pause_span,
+        reset_span,
+        help_span,
+        quit_span,
+    ];
     let control = Paragraph::new(control_spans)
         .style(Style::default())
         .block(block.clone())
@@ -254,7 +281,6 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    f.render_widget(right, rect);
     let left_spans = vec![
         Spans::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -270,12 +296,26 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
                 app.tracer_config.max_ttl.0
             )),
         ]),
+        Spans::from(vec![
+            Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(if let Some(start) = app.frozen_start {
+                format!(
+                    "Frozen ({})",
+                    humantime::format_duration(Duration::from_secs(
+                        start.elapsed().unwrap_or_default().as_secs()
+                    ))
+                )
+            } else {
+                String::from("Running")
+            }),
+        ]),
     ];
 
     let left = Paragraph::new(left_spans)
         .style(Style::default())
         .block(header_block)
         .alignment(Alignment::Left);
+    f.render_widget(right, rect);
     f.render_widget(left, rect);
 }
 
@@ -298,7 +338,7 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
         r#"  |_||_| |_| .__/ .__/\_, |"#,
         r#"           |_|  |_|   |__/ "#,
         "",
-        "Starting...",
+        "Awaiting data...",
     ];
     let spans: Vec<_> = splash
         .into_iter()
