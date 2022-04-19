@@ -106,7 +106,11 @@ impl Hop {
 
     /// The average duration of all probes.
     pub fn avg_ms(&self) -> f64 {
-        (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
+        if self.total_recv() > 0 {
+            (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
+        } else {
+            0_f64
+        }
     }
 
     /// The standard deviation of all probes.
