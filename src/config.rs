@@ -32,7 +32,7 @@ pub struct Args {
     pub max_round_duration: String,
 
     /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short, long, default_value = "500ms")]
+    #[clap(short = 'g', long, default_value = "100ms")]
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
