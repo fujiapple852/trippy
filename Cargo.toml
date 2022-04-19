@@ -20,3 +20,5 @@ tui = "0.17.0"
 crossterm = "0.22.1"
 chrono = "0.4.19"
 itertools = "0.10.3"
+serde = { version = "1.0.136", features = [ "derive" ] }
+serde_json = "1.0.79"
