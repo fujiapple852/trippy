@@ -17,7 +17,7 @@ clap = { version = "3.1.9", features = [ "derive", "wrap_help", "cargo" ] }
 humantime = "2.1.0"
 parking_lot = "0.11.2"
 tui = "0.17.0"
-crossterm = "0.22.1"
+crossterm = "0.23.2"
 chrono = "0.4.19"
 itertools = "0.10.3"
 serde = { version = "1.0.136", features = [ "derive" ] }
