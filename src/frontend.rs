@@ -229,7 +229,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
-                "mode=icmp interval={} grace={} start-ttl={} max-ttl={}",
+                "protocol=icmp interval={} grace={} start-ttl={} max-ttl={}",
                 humantime::format_duration(app.tracer_config.min_round_duration),
                 humantime::format_duration(app.tracer_config.grace_duration),
                 app.tracer_config.first_ttl.0,
