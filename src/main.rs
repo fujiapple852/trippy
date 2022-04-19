@@ -10,8 +10,10 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
+use crate::config::Mode;
 use crate::dns::DnsResolver;
 use crate::icmp::IcmpTracerConfig;
+use crate::report::{run_report_csv, run_report_json, run_report_stream};
 use clap::Parser;
 use config::Args;
 use parking_lot::RwLock;
@@ -25,6 +27,7 @@ mod config;
 mod dns;
 mod frontend;
 mod icmp;
+mod report;
 
 /// The maximum number of hops we allow.
 pub const MAX_HOPS: usize = 256;
@@ -40,6 +43,7 @@ fn main() -> anyhow::Result<()> {
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
     let preserve_screen = args.preserve_screen;
+    let report_cycles = args.report_cycles;
 
     if min_round_duration > max_round_duration {
         eprintln!(
@@ -71,13 +75,21 @@ fn main() -> anyhow::Result<()> {
         thread::spawn(move || backend::run_backend(&tracer_config, trace_data));
     }
 
-    // Run the TUI on the main thread
-    frontend::run_frontend(
-        hostname,
-        target_addr,
-        &trace_data,
-        tracer_config,
-        preserve_screen,
-    )?;
+    match args.mode {
+        Mode::Tui => {
+            frontend::run_frontend(
+                hostname,
+                target_addr,
+                &trace_data,
+                tracer_config,
+                preserve_screen,
+            )?;
+        }
+        Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
+        Mode::Csv => run_report_csv(&hostname, target_addr, report_cycles, &trace_data),
+        Mode::Json => run_report_json(&hostname, target_addr, report_cycles, &trace_data),
+        Mode::Table => todo!(),
+    }
+
     Ok(())
 }
