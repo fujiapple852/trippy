@@ -1,17 +1,11 @@
 use self::state::TracerState;
 use crate::icmp::config::IcmpTracerConfig;
 use crate::icmp::error::TraceResult;
-use crate::icmp::net::EchoReceiver;
 use crate::icmp::net::EchoSender;
+use crate::icmp::net::{EchoReceiver, IcmpResponse};
 use crate::icmp::probe::{IcmpPacketType, ProbeStatus};
-use crate::icmp::util::Required;
 use crate::icmp::{net, Probe};
 use derive_more::{Add, AddAssign, From, Mul, Sub};
-use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
-use pnet::packet::icmp::echo_reply::EchoReplyPacket;
-use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
-use pnet::packet::icmp::IcmpTypes;
-use pnet::packet::Packet;
 use pnet::transport::icmp_packet_iter;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -133,36 +127,53 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         echo_receiver: &mut EchoReceiver<'_>,
         st: &mut TracerState,
     ) -> TraceResult<()> {
-        let next = echo_receiver.receive()?;
-        if let Some((icmp, ip, recv)) = next {
-            match icmp.get_icmp_type() {
-                IcmpTypes::TimeExceeded => {
-                    let time_exceeded = TimeExceededPacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, probe)) =
-                        self.process_time_exceeded(st, &time_exceeded, ip, recv)?
-                    {
-                        st.update_probe(sequence, probe, recv, false);
-                    }
+        match echo_receiver.receive()? {
+            Some(IcmpResponse::TimeExceeded(data)) => {
+                let sequence = Sequence::from(data.sequence);
+                let received = data.recv;
+                let ip = data.addr;
+                let trace_id = TraceId::from(data.identifier);
+                if self.trace_identifier == trace_id && st.in_round(sequence) {
+                    let probe = st
+                        .probe_at(sequence)
+                        .with_status(ProbeStatus::Complete)
+                        .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
+                        .with_host(ip)
+                        .with_received(received);
+                    st.update_probe(sequence, probe, received, false);
                 }
-                IcmpTypes::DestinationUnreachable => {
-                    let dest_unreachable =
-                        DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, probe)) =
-                        self.process_dest_unreachable(st, &dest_unreachable, ip, recv)?
-                    {
-                        st.update_probe(sequence, probe, recv, false);
-                    }
-                }
-                IcmpTypes::EchoReply => {
-                    let echo_reply = EchoReplyPacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, probe)) =
-                        self.process_echo_reply(st, &echo_reply, ip, recv)
-                    {
-                        st.update_probe(sequence, probe, recv, true);
-                    }
-                }
-                _ => {}
             }
+            Some(IcmpResponse::DestinationUnreachable(data)) => {
+                let sequence = Sequence::from(data.sequence);
+                let received = data.recv;
+                let ip = data.addr;
+                let trace_id = TraceId::from(data.identifier);
+                if self.trace_identifier == trace_id && st.in_round(sequence) {
+                    let probe = st
+                        .probe_at(sequence)
+                        .with_status(ProbeStatus::Complete)
+                        .with_icmp_packet_type(IcmpPacketType::Unreachable)
+                        .with_host(ip)
+                        .with_received(received);
+                    st.update_probe(sequence, probe, received, false);
+                }
+            }
+            Some(IcmpResponse::EchoReply(data)) => {
+                let sequence = Sequence::from(data.sequence);
+                let received = data.recv;
+                let ip = data.addr;
+                let trace_id = TraceId::from(data.identifier);
+                if self.trace_identifier == trace_id && st.in_round(sequence) {
+                    let probe = st
+                        .probe_at(sequence)
+                        .with_status(ProbeStatus::Complete)
+                        .with_icmp_packet_type(IcmpPacketType::EchoReply)
+                        .with_host(ip)
+                        .with_received(received);
+                    st.update_probe(sequence, probe, received, true);
+                }
+            }
+            None => {}
         }
         Ok(())
     }
@@ -186,77 +197,6 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         {
             self.publish_trace(st);
             st.advance_round(self.first_ttl);
-        }
-    }
-
-    /// Process an incoming ICMP `TimeExceeded` packet.
-    fn process_time_exceeded(
-        &self,
-        st: &TracerState,
-        time_exceeded: &TimeExceededPacket<'_>,
-        ip: IpAddr,
-        received: SystemTime,
-    ) -> TraceResult<Option<(Sequence, Probe)>> {
-        let echo_request = net::extract_echo_request(time_exceeded.payload())?;
-        let trace_id = TraceId::from(echo_request.get_identifier());
-        let sequence = Sequence::from(echo_request.get_sequence_number());
-        if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let probe = st
-                .probe_at(sequence)
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
-                .with_host(ip)
-                .with_received(received);
-            Ok(Some((sequence, probe)))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Process an incoming ICMP `DestinationUnreachable` packet.
-    fn process_dest_unreachable(
-        &self,
-        st: &TracerState,
-        dest_unreachable: &DestinationUnreachablePacket<'_>,
-        ip: IpAddr,
-        received: SystemTime,
-    ) -> TraceResult<Option<(Sequence, Probe)>> {
-        let echo_request = net::extract_echo_request(dest_unreachable.payload())?;
-        let trace_id = TraceId::from(echo_request.get_identifier());
-        let sequence = Sequence::from(echo_request.get_sequence_number());
-        if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let probe = st
-                .probe_at(sequence)
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::Unreachable)
-                .with_host(ip)
-                .with_received(received);
-            Ok(Some((sequence, probe)))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Process an incoming ICMP `EchoReply` packet.
-    fn process_echo_reply(
-        &self,
-        st: &TracerState,
-        echo_reply: &EchoReplyPacket<'_>,
-        ip: IpAddr,
-        received: SystemTime,
-    ) -> Option<(Sequence, Probe)> {
-        let trace_id = TraceId::from(echo_reply.get_identifier());
-        let sequence = Sequence::from(echo_reply.get_sequence_number());
-        if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let probe = st
-                .probe_at(sequence)
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::EchoReply)
-                .with_host(ip)
-                .with_received(received);
-            Some((sequence, probe))
-        } else {
-            None
         }
     }
 
