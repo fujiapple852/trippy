@@ -110,7 +110,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
                 < TimeToLive::from(self.max_inflight.0)
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
-            echo_sender.send(st.next_echo()?)?;
+            echo_sender.send(st.next_probe()?)?;
         }
         Ok(())
     }
@@ -118,7 +118,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     /// Read and process the next incoming ICMP packet.
     ///
     /// We allow multiple `EchoRequest` to be in-flight at any time and we cannot guaranteed that responses will be
-    /// received in-order.  We therefore maintain a circular buffer which holds details of each `Echo` which is
+    /// received in-order.  We therefore maintain a circular buffer which holds details of each `Probe` which is
     /// indexed by a sequence number (modulo the buffer size).  The sequence number is set in the `EchoRequest` and
     /// returned in both the `TimeExceeded` and `EchoReply` responses.
     ///
@@ -138,27 +138,27 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
             match icmp.get_icmp_type() {
                 IcmpTypes::TimeExceeded => {
                     let time_exceeded = TimeExceededPacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, echo)) =
+                    if let Some((sequence, probe)) =
                         self.process_time_exceeded(st, &time_exceeded, ip, recv)?
                     {
-                        st.update_echo(sequence, echo, recv, false);
+                        st.update_probe(sequence, probe, recv, false);
                     }
                 }
                 IcmpTypes::DestinationUnreachable => {
                     let dest_unreachable =
                         DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, echo)) =
+                    if let Some((sequence, probe)) =
                         self.process_dest_unreachable(st, &dest_unreachable, ip, recv)?
                     {
-                        st.update_echo(sequence, echo, recv, false);
+                        st.update_probe(sequence, probe, recv, false);
                     }
                 }
                 IcmpTypes::EchoReply => {
                     let echo_reply = EchoReplyPacket::new(icmp.packet()).req()?;
-                    if let Some((sequence, echo)) =
+                    if let Some((sequence, probe)) =
                         self.process_echo_reply(st, &echo_reply, ip, recv)
                     {
-                        st.update_echo(sequence, echo, recv, true);
+                        st.update_probe(sequence, probe, recv, true);
                     }
                 }
                 _ => {}
@@ -201,13 +201,13 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         let trace_id = TraceId::from(echo_request.get_identifier());
         let sequence = Sequence::from(echo_request.get_sequence_number());
         if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let echo = st
-                .echo(sequence)
+            let probe = st
+                .probe_at(sequence)
                 .with_status(ProbeStatus::Complete)
                 .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
                 .with_host(ip)
                 .with_received(received);
-            Ok(Some((sequence, echo)))
+            Ok(Some((sequence, probe)))
         } else {
             Ok(None)
         }
@@ -225,13 +225,13 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         let trace_id = TraceId::from(echo_request.get_identifier());
         let sequence = Sequence::from(echo_request.get_sequence_number());
         if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let echo = st
-                .echo(sequence)
+            let probe = st
+                .probe_at(sequence)
                 .with_status(ProbeStatus::Complete)
                 .with_icmp_packet_type(IcmpPacketType::Unreachable)
                 .with_host(ip)
                 .with_received(received);
-            Ok(Some((sequence, echo)))
+            Ok(Some((sequence, probe)))
         } else {
             Ok(None)
         }
@@ -248,22 +248,22 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         let trace_id = TraceId::from(echo_reply.get_identifier());
         let sequence = Sequence::from(echo_reply.get_sequence_number());
         if self.trace_identifier == trace_id && st.in_round(sequence) {
-            let echo = st
-                .echo(sequence)
+            let probe = st
+                .probe_at(sequence)
                 .with_status(ProbeStatus::Complete)
                 .with_icmp_packet_type(IcmpPacketType::EchoReply)
                 .with_host(ip)
                 .with_received(received);
-            Some((sequence, echo))
+            Some((sequence, probe))
         } else {
             None
         }
     }
 
-    /// Publish details of all `Echo` in the completed round to a channel.
+    /// Publish details of all `Probe` in the completed round to a channel.
     ///
     /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
-    /// `Echo` which is assumed to represent the TTL of the target host.
+    /// `Probe` which is assumed to represent the TTL of the target host.
     fn publish_trace(&self, state: &TracerState) {
         let round_size = if let Some(target_ttl) = state.target_ttl() {
             // If we started at ttl N and found the target at ttl M then the round contains M - N + 1 entries
@@ -280,12 +280,12 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
             })
         };
         state
-            .echos()
+            .probes()
             .take(usize::from(round_size))
-            .for_each(|echo| {
-                debug_assert_eq!(echo.round, state.round());
-                debug_assert_ne!(echo.ttl.0, 0);
-                (self.publish)(echo);
+            .for_each(|probe| {
+                debug_assert_eq!(probe.round, state.round());
+                debug_assert_ne!(probe.ttl.0, 0);
+                (self.publish)(probe);
             });
     }
 }
@@ -301,7 +301,7 @@ mod state {
     use crate::icmp::Probe;
     use std::time::SystemTime;
 
-    /// The maximum number of `EchoState` entries in the circular buffer.
+    /// The maximum number of `Probe` entries in the circular buffer.
     ///
     /// This is effectively also the maximum time-to-live (TTL) we can support.
     const BUFFER_SIZE: u16 = 256;
@@ -309,13 +309,13 @@ mod state {
     /// Mutable state needed for the tracing algorithm.
     #[derive(Debug)]
     pub struct TracerState {
-        /// The state of all `Echo` requests and responses.
+        /// The state of all `Probe` requests and responses.
         buffer: [Probe; BUFFER_SIZE as usize],
-        /// a monotonically increasing index for every echo request.
+        /// a monotonically increasing index for every `EchoRequest`.
         index: Index,
         /// The starting index of the current round.
         round_index: Index,
-        /// The time-to-live for the _next_ echo request packet to be sent.
+        /// The time-to-live for the _next_ `EchoRequest` packet to be sent.
         ttl: TimeToLive,
         /// The current round.
         round: Round,
@@ -351,16 +351,15 @@ mod state {
         }
 
         /// Get an iterator over the `Probe` in the current round.
-        pub fn echos(&self) -> impl Iterator<Item=&Probe> + '_ {
-            self
-                .buffer
+        pub fn probes(&self) -> impl Iterator<Item = &Probe> + '_ {
+            self.buffer
                 .iter()
                 .cycle()
                 .skip(self.round_index.0 % usize::from(BUFFER_SIZE))
         }
 
-        /// Get the `Echo` for `sequence`
-        pub fn echo(&self, sequence: Sequence) -> Probe {
+        /// Get the `Probe` for `sequence`
+        pub fn probe_at(&self, sequence: Sequence) -> Probe {
             self.buffer[usize::from(sequence.0 % BUFFER_SIZE)]
         }
 
@@ -399,52 +398,52 @@ mod state {
             sequence.0 >= self.round_index.0.rem_u16max()
         }
 
-        /// Create and return the next `Echo` at the current `seq` and `ttl`.
-        pub fn next_echo(&mut self) -> TraceResult<Probe> {
-            let echo = Probe::new(self.index, self.ttl, self.round, SystemTime::now());
-            self.buffer[self.index.0 % usize::from(BUFFER_SIZE)] = echo;
+        /// Create and return the next `Probe` at the current `seq` and `ttl`.
+        pub fn next_probe(&mut self) -> TraceResult<Probe> {
+            let probe = Probe::new(self.index, self.ttl, self.round, SystemTime::now());
+            self.buffer[self.index.0 % usize::from(BUFFER_SIZE)] = probe;
             self.ttl += TimeToLive::from(1);
             if self.index < Index::from(usize::MAX) {
                 self.index += Index::from(1);
-                Ok(echo)
+                Ok(probe)
             } else {
                 Err(TracerError::Generic)
             }
         }
 
-        /// Update the state of an `Echo`.
+        /// Update the state of an `Probe`.
         ///
         /// We want to update:
         ///
-        /// - the target ttl to be the time-to-live of the `Echo` request from the target
+        /// - the target ttl to be the time-to-live of the `Probe` request from the target
         /// - the maximum ttl we have observed this round
         /// - the latest packet received time
         ///
         /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid overwriting the state with
         /// stale values.  We may also receive multiple replies from the target host with differing time-to-live values and
         /// so must ensure we use the time-to-live with the lowest sequence number.
-        pub fn update_echo(
+        pub fn update_probe(
             &mut self,
             sequence: Sequence,
-            echo: Probe,
+            probe: Probe,
             received_time: SystemTime,
             found: bool,
         ) {
             match (self.target_ttl, self.target_seq) {
                 (None, _) if found => {
-                    self.target_ttl = Some(echo.ttl);
+                    self.target_ttl = Some(probe.ttl);
                     self.target_seq = Some(sequence);
                 }
                 (Some(_), Some(target_seq)) if found && sequence < target_seq => {
-                    self.target_ttl = Some(echo.ttl);
+                    self.target_ttl = Some(probe.ttl);
                     self.target_seq = Some(sequence);
                 }
                 _ => {}
             }
-            self.buffer[usize::from(sequence.0) % usize::from(BUFFER_SIZE)] = echo;
+            self.buffer[usize::from(sequence.0) % usize::from(BUFFER_SIZE)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
-                Some(max_received_ttl) => Some(max_received_ttl.max(echo.ttl)),
-                None => Some(echo.ttl),
+                Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
+                None => Some(probe.ttl),
             };
             self.received_time = Some(received_time);
             self.target_found |= found;
