@@ -223,10 +223,10 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(chunks[2]);
     render_header(f, app, chunks[0]);
-    if !app.trace.hops().is_empty() {
-        render_table(f, app, chunks[1]);
-    } else {
+    if app.trace.hops().is_empty() {
         render_splash(f, chunks[1]);
+    } else {
+        render_table(f, app, chunks[1]);
     }
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
