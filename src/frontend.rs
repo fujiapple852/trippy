@@ -127,6 +127,7 @@ pub fn run_frontend(
     target_addr: IpAddr,
     data: &Arc<RwLock<Trace>>,
     config: IcmpTracerConfig,
+    refresh_rate: Duration,
     preserve_screen: bool,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -134,7 +135,14 @@ pub fn run_frontend(
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let res = run_app(&mut terminal, data, target_hostname, target_addr, config);
+    let res = run_app(
+        &mut terminal,
+        data,
+        target_hostname,
+        target_addr,
+        config,
+        refresh_rate,
+    );
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -153,6 +161,7 @@ fn run_app<B: Backend>(
     target_hostname: String,
     target_addr: IpAddr,
     config: IcmpTracerConfig,
+    refresh_rate: Duration,
 ) -> io::Result<()> {
     let mut app = TuiApp::new(target_hostname, target_addr, config);
     loop {
@@ -160,7 +169,7 @@ fn run_app<B: Backend>(
             app.trace = trace.read().clone();
         };
         terminal.draw(|f| render_all(f, &mut app))?;
-        if crossterm::event::poll(Duration::from_millis(100))? {
+        if crossterm::event::poll(refresh_rate)? {
             if let Event::Key(key) = event::read()? {
                 match (key.code, key.modifiers) {
                     (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
