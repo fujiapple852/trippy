@@ -43,7 +43,7 @@ pub struct Args {
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 10)]
+    #[clap(short = 'U', long, default_value_t = 24)]
     pub max_inflight: u8,
 
     /// The socket read timeout.
