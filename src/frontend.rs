@@ -177,6 +177,7 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('h'), _) => app.toggle_help(),
                     (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
                     (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
+                        app.clear();
                         *trace.write() = Trace::default();
                     }
                     (KeyCode::Down, _) if !app.show_help => app.next(),
