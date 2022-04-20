@@ -232,7 +232,7 @@ pub fn run_backend(
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
     let tracer = IcmpTracer::new(config, move |probe| {
-        trace_data.write().update_from_probe(probe)
+        trace_data.write().update_from_probe(probe);
     });
     Ok(tracer.trace()?)
 }
