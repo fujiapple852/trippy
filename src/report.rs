@@ -17,8 +17,7 @@ pub fn run_report_csv(
     let mut resolver = DnsResolver::default();
     let trace = wait_for_round(trace_data, report_cycles);
     println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
-    let hops = trace.highest_ttl();
-    for hop in trace.hops().iter().take(hops as usize) {
+    for hop in trace.hops().iter() {
         let ttl = hop.ttl();
         let hosts = hop
             .addrs()
@@ -104,12 +103,9 @@ pub fn run_report_json(
 ) {
     let mut resolver = DnsResolver::default();
     let trace = wait_for_round(trace_data, report_cycles);
-
-    let highest_ttl = trace.highest_ttl();
     let hops: Vec<ReportHop> = trace
         .hops()
         .iter()
-        .take(highest_ttl as usize)
         .map(|hop| {
             let hosts: Vec<_> = hop
                 .addrs()
@@ -155,8 +151,7 @@ pub fn run_report_stream(
     println!("Tracing to {} ({})", hostname, target_addr);
     loop {
         let trace_data = trace_data.read().clone();
-        let hops = trace_data.highest_ttl();
-        for hop in trace_data.hops().iter().take(hops as usize) {
+        for hop in trace_data.hops() {
             let ttl = hop.ttl();
             let addrs = hop.addrs().collect::<Vec<_>>();
             let sent = hop.total_sent();

@@ -12,28 +12,42 @@ const MAX_SAMPLES: usize = 256;
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
 pub struct Trace {
-    /// The TTL of the target host or the last host when responded if the target did not respond.
+    lowest_ttl: u8,
     highest_ttl: u8,
     round: usize,
-    /// Information about each hop.
     hops: Vec<Hop>,
 }
 
 impl Trace {
-    pub fn highest_ttl(&self) -> u8 {
-        self.highest_ttl
-    }
-
+    /// The current round of tracing.
     pub fn round(&self) -> usize {
         self.round
     }
 
-    /// Information about each hop.
+    /// Information about each hop in the trace.
     pub fn hops(&self) -> &[Hop] {
-        &self.hops
+        if self.lowest_ttl == 0 || self.highest_ttl == 0 {
+            &[]
+        } else {
+            let start = (self.lowest_ttl as usize) - 1;
+            let end = self.highest_ttl as usize;
+            &self.hops[start..end]
+        }
+    }
+
+    /// Is a given `Hop` the target hop?
+    ///
+    /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
+    ///
+    /// Note that if the target host does not respond to probes then the the highest `ttl` observed will be one greater
+    /// than the `ttl` of the last host which did respond.
+    pub fn is_target(&self, hop: &Hop) -> bool {
+        self.highest_ttl == hop.ttl
     }
 
     /// Return the target `Hop`.
+    ///
+    /// TODO Do we guarantee there is always a target hop?
     pub fn target_hop(&self) -> &Hop {
         if self.highest_ttl > 0 {
             &self.hops[usize::from(self.highest_ttl) - 1]
@@ -41,11 +55,55 @@ impl Trace {
             &self.hops[0]
         }
     }
+
+    /// Update the trace state from a `Probe`.
+    pub fn update_from_probe(&mut self, probe: &Probe) {
+        let index = usize::from(probe.ttl.0) - 1;
+        if self.lowest_ttl == 0 {
+            self.lowest_ttl = probe.ttl.0;
+        } else {
+            self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
+        }
+        self.highest_ttl = self.highest_ttl.max(probe.ttl.0);
+        self.round = self.round.max(probe.round.0);
+        match probe.status {
+            ProbeStatus::Complete => {
+                let hop = &mut self.hops[index];
+                hop.ttl = probe.ttl.0;
+                hop.total_sent += 1;
+                hop.total_recv += 1;
+                let dur = probe.duration();
+                let dur_ms = dur.as_secs_f64() * 1000_f64;
+                hop.total_time += dur;
+                hop.last = Some(dur);
+                hop.samples.insert(0, dur);
+                hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
+                hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
+                hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
+                hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
+                if hop.samples.len() > MAX_SAMPLES {
+                    hop.samples.pop();
+                }
+                let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+                hop.addrs.insert(host);
+            }
+            ProbeStatus::Awaited => {
+                self.hops[index].total_sent += 1;
+                self.hops[index].ttl = probe.ttl.0;
+                self.hops[index].samples.insert(0, Duration::default());
+                if self.hops[index].samples.len() > MAX_SAMPLES {
+                    self.hops[index].samples.pop();
+                }
+            }
+            ProbeStatus::NotSent => {}
+        }
+    }
 }
 
 impl Default for Trace {
     fn default() -> Self {
         Self {
+            lowest_ttl: 0,
             highest_ttl: 0,
             round: 0,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
@@ -174,46 +232,7 @@ pub fn run_backend(
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
     let tracer = IcmpTracer::new(config, move |probe| {
-        update_trace_data(*probe, &mut trace_data.write());
+        trace_data.write().update_from_probe(probe)
     });
     Ok(tracer.trace()?)
-}
-
-fn update_trace_data(probe: Probe, trace_data: &mut Trace) {
-    let index = usize::from(probe.ttl.0) - 1;
-    trace_data.highest_ttl = trace_data.highest_ttl.max(probe.ttl.0);
-    trace_data.round = trace_data.round.max(probe.round.0);
-    match probe.status {
-        ProbeStatus::Complete => {
-            let hop = &mut trace_data.hops[index];
-            hop.ttl = probe.ttl.0;
-            hop.total_sent += 1;
-            hop.total_recv += 1;
-            let dur = probe.duration();
-            let dur_ms = dur.as_secs_f64() * 1000_f64;
-            hop.total_time += dur;
-            hop.last = Some(dur);
-            hop.samples.insert(0, dur);
-            hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
-            hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
-            hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
-            hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
-            if hop.samples.len() > MAX_SAMPLES {
-                hop.samples.pop();
-            }
-            let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
-            hop.addrs.insert(host);
-        }
-        ProbeStatus::Awaited => {
-            trace_data.hops[index].total_sent += 1;
-            trace_data.hops[index].ttl = probe.ttl.0;
-            trace_data.hops[index]
-                .samples
-                .insert(0, Duration::default());
-            if trace_data.hops[index].samples.len() > MAX_SAMPLES {
-                trace_data.hops[index].samples.pop();
-            }
-        }
-        ProbeStatus::NotSent => {}
-    }
 }
