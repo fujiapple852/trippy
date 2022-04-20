@@ -263,22 +263,33 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     /// Publish details of all `Echo` in the completed round to a channel.
     ///
     /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
-    /// `Echo` which represents the TTL of the target host.
-    ///
-    /// TODO Note that publication errors, such as if the channel is closed or full, are deliberately ignored.
+    /// `Echo` which is assumed to represent the TTL of the target host.
     fn publish_trace(&self, state: &TracerState) {
         let round_size = if let Some(target_ttl) = state.target_ttl() {
-            target_ttl - self.first_ttl + TimeToLive::from(1)
+            // If we started at ttl N and found the target at ttl M then the round contains M - N + 1 entries
+            target_ttl.0 - self.first_ttl.0 + 1
         } else {
-            state.max_received_ttl().unwrap_or_default() - self.first_ttl + TimeToLive::from(2)
+            // If we did not receive any responses then the round is size 0
+            // If we started at ttl N and received a max ttl response M then the round contains M - N + 2 entries,
+            // where the 'extra' entry represents the next ttl which did not receive a response.  This is capped by the
+            // maximum allowed round size and so the largest ttl may not be the 'extra' one.
+            state.max_received_ttl().map_or(0, |max_received_ttl| {
+                let size = max_received_ttl.0.saturating_sub(self.first_ttl.0) + 1;
+                let max_allowed = self.max_ttl.0 - self.first_ttl.0;
+                size.min(max_allowed) + 1
+            })
         };
         state
             .echos()
             .iter()
             .cycle()
             .skip(state.round_index().0)
-            .take(usize::from(round_size.0))
-            .for_each(|echo| (self.publish)(echo));
+            .take(usize::from(round_size))
+            .for_each(|echo| {
+                debug_assert_eq!(echo.round, state.round());
+                debug_assert_ne!(echo.ttl.0, 0);
+                (self.publish)(echo);
+            });
     }
 }
 
@@ -357,6 +368,10 @@ mod state {
 
         pub const fn ttl(&self) -> TimeToLive {
             self.ttl
+        }
+
+        pub const fn round(&self) -> Round {
+            self.round
         }
 
         pub const fn round_start(&self) -> SystemTime {
