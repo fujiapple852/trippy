@@ -1,12 +1,11 @@
 use self::state::TracerState;
 use crate::icmp::config::IcmpTracerConfig;
 use crate::icmp::error::TraceResult;
-use crate::icmp::net::EchoSender;
-use crate::icmp::net::{EchoReceiver, IcmpResponse};
+use crate::icmp::net::IcmpChannel;
+use crate::icmp::net::IcmpResponse;
 use crate::icmp::probe::{IcmpPacketType, ProbeStatus};
-use crate::icmp::{net, Probe};
+use crate::icmp::Probe;
 use derive_more::{Add, AddAssign, From, Mul, Sub};
-use pnet::transport::icmp_packet_iter;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
@@ -69,19 +68,13 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
 
     /// Run a continuous trace and publish results to a channel.
     ///
-    /// # Errors
-    ///
-    /// Returns errors!  TODO
-    ///
     /// TODO describe algorithm
     pub fn trace(self) -> TraceResult<()> {
-        let (tx, mut rx) = net::make_icmp_channel()?;
-        let mut echo_sender = EchoSender::new(tx, self.target_addr, self.trace_identifier);
-        let mut echo_receiver = EchoReceiver::new(icmp_packet_iter(&mut rx), self.read_timeout);
+        let mut channel = IcmpChannel::new()?;
         let mut state = TracerState::new(self.first_ttl);
         loop {
-            self.send_request(&mut echo_sender, &mut state)?;
-            self.recv_response(&mut echo_receiver, &mut state)?;
+            self.send_request(&mut channel, &mut state)?;
+            self.recv_response(&mut channel, &mut state)?;
             self.update_round(&mut state);
         }
     }
@@ -96,7 +89,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     ///       - the next ttl is not greater than the ttl of the target host observed from the prior round
     ///     otherwise:
     ///       - the number of unknown-in-flight echo requests is lower than the maximum allowed
-    fn send_request(&self, echo_sender: &mut EchoSender, st: &mut TracerState) -> TraceResult<()> {
+    fn send_request(&self, channel: &mut IcmpChannel, st: &mut TracerState) -> TraceResult<()> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
@@ -104,7 +97,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
                 < TimeToLive::from(self.max_inflight.0)
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
-            echo_sender.send(st.next_probe()?)?;
+            channel.send(st.next_probe()?, self.target_addr, self.trace_identifier.0)?;
         }
         Ok(())
     }
@@ -122,12 +115,8 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
-    fn recv_response(
-        &self,
-        echo_receiver: &mut EchoReceiver<'_>,
-        st: &mut TracerState,
-    ) -> TraceResult<()> {
-        match echo_receiver.receive()? {
+    fn recv_response(&self, channel: &mut IcmpChannel, st: &mut TracerState) -> TraceResult<()> {
+        match channel.receive(self.read_timeout)? {
             Some(IcmpResponse::TimeExceeded(data)) => {
                 let sequence = Sequence::from(data.sequence);
                 let received = data.recv;
