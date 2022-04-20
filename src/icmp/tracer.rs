@@ -281,9 +281,6 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         };
         state
             .echos()
-            .iter()
-            .cycle()
-            .skip(state.round_index().0)
             .take(usize::from(round_size))
             .for_each(|echo| {
                 debug_assert_eq!(echo.round, state.round());
@@ -353,17 +350,18 @@ mod state {
             }
         }
 
-        pub const fn echos(&self) -> &[Probe] {
-            &self.buffer
+        /// Get an iterator over the `Probe` in the current round.
+        pub fn echos(&self) -> impl Iterator<Item=&Probe> + '_ {
+            self
+                .buffer
+                .iter()
+                .cycle()
+                .skip(self.round_index.0 % usize::from(BUFFER_SIZE))
         }
 
         /// Get the `Echo` for `sequence`
         pub fn echo(&self, sequence: Sequence) -> Probe {
             self.buffer[usize::from(sequence.0 % BUFFER_SIZE)]
-        }
-
-        pub const fn round_index(&self) -> Index {
-            self.round_index
         }
 
         pub const fn ttl(&self) -> TimeToLive {
