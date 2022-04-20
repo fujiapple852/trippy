@@ -1,4 +1,14 @@
 use clap::{ArgEnum, Parser};
+use std::time::Duration;
+
+/// The maximum number of hops we allow.
+pub const MAX_HOPS: usize = 256;
+
+/// The minimum TUI refresh rate.
+pub const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
+
+/// The maximum TUI refresh rate.
+pub const TUI_MAX_REFRESH_RATE_MS: Duration = Duration::from_millis(1000);
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ArgEnum)]
@@ -52,7 +62,11 @@ pub struct Args {
 
     /// Preserve the screen on exit
     #[clap(long)]
-    pub preserve_screen: bool,
+    pub tui_preserve_screen: bool,
+
+    /// The TUI refresh rate
+    #[clap(long, default_value = "100ms")]
+    pub tui_refresh_rate: String,
 
     /// Output mode
     #[clap(arg_enum, short = 'm', long, default_value = "tui")]

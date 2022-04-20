@@ -10,7 +10,7 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
-use crate::config::Mode;
+use crate::config::{Mode, MAX_HOPS, TUI_MAX_REFRESH_RATE_MS, TUI_MIN_REFRESH_RATE_MS};
 use crate::dns::DnsResolver;
 use crate::icmp::IcmpTracerConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
@@ -29,9 +29,6 @@ mod frontend;
 mod icmp;
 mod report;
 
-/// The maximum number of hops we allow.
-pub const MAX_HOPS: usize = 256;
-
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let hostname = args.hostname;
@@ -42,8 +39,18 @@ fn main() -> anyhow::Result<()> {
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
-    let preserve_screen = args.preserve_screen;
+    let preserve_screen = args.tui_preserve_screen;
+    let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let report_cycles = args.report_cycles;
+
+    // Validate tui_refresh_rate
+    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
+        eprintln!(
+            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
+            tui_refresh_rate, TUI_MIN_REFRESH_RATE_MS, TUI_MAX_REFRESH_RATE_MS
+        );
+        exit(-1);
+    }
 
     // Validate first_ttl and max_ttl
     if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
@@ -99,6 +106,7 @@ fn main() -> anyhow::Result<()> {
                 target_addr,
                 &trace_data,
                 tracer_config,
+                tui_refresh_rate,
                 preserve_screen,
             )?;
         }
