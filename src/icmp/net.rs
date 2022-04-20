@@ -1,5 +1,4 @@
 use crate::icmp::error::TraceResult;
-use crate::icmp::tracer::TraceId;
 use crate::icmp::util::Required;
 use crate::icmp::Probe;
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
@@ -11,42 +10,83 @@ use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::Packet;
 use pnet::transport::{
-    transport_channel, IcmpTransportChannelIterator, TransportChannelType, TransportProtocol,
+    icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
     TransportReceiver, TransportSender,
 };
 use pnet::util;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
-/// Sends `EchoRequest` packets to a target.
-pub struct EchoSender {
+/// A channel for sending and receiving `ICMP` packets.
+pub struct IcmpChannel {
     tx: TransportSender,
-    target: IpAddr,
-    identifier: TraceId,
+    rx: TransportReceiver,
 }
 
-impl EchoSender {
-    /// Create an `EchoSender`.
-    pub const fn new(tx: TransportSender, target_addr: IpAddr, trace_identifier: TraceId) -> Self {
-        Self {
-            tx,
-            target: target_addr,
-            identifier: trace_identifier,
-        }
+impl IcmpChannel {
+    /// Create an `IcmpChannel`.
+    ///
+    /// This operation requires the `CAP_NET_RAW` capability.
+    pub fn new() -> TraceResult<Self> {
+        let (tx, rx) = make_icmp_channel()?;
+        Ok(Self { tx, rx })
     }
 
     /// Send an ICMP `EchoRequest`
-    pub fn send(&mut self, echo: Probe) -> TraceResult<()> {
+    pub fn send(&mut self, echo: Probe, ip: IpAddr, id: u16) -> TraceResult<()> {
         let mut buf = [0u8; 64];
         let mut req = MutableEchoRequestPacket::new(&mut buf).req()?;
         req.set_icmp_type(IcmpTypes::EchoRequest);
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
-        req.set_identifier(self.identifier.0);
+        req.set_identifier(id);
         req.set_sequence_number(echo.sequence());
         req.set_checksum(util::checksum(req.packet(), 1));
         self.tx.set_ttl(echo.ttl.0)?;
-        self.tx.send_to(req.to_immutable(), self.target)?;
+        self.tx.send_to(req.to_immutable(), ip)?;
         Ok(())
+    }
+
+    /// Receive the next Icmp packet and return an `IcmpResponse`.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    pub fn receive(&mut self, timeout: Duration) -> TraceResult<Option<IcmpResponse>> {
+        Ok(
+            match icmp_packet_iter(&mut self.rx).next_with_timeout(timeout)? {
+                Some((icmp, ip)) => {
+                    let recv = SystemTime::now();
+                    match icmp.get_icmp_type() {
+                        IcmpTypes::TimeExceeded => {
+                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
+                            let echo_request = extract_echo_request(packet.payload())?;
+                            let identifier = echo_request.get_identifier();
+                            let sequence = echo_request.get_sequence_number();
+                            Some(IcmpResponse::TimeExceeded(IcmpResponseData::new(
+                                recv, ip, identifier, sequence,
+                            )))
+                        }
+                        IcmpTypes::DestinationUnreachable => {
+                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
+                            let echo_request = extract_echo_request(packet.payload())?;
+                            let identifier = echo_request.get_identifier();
+                            let sequence = echo_request.get_sequence_number();
+                            Some(IcmpResponse::DestinationUnreachable(IcmpResponseData::new(
+                                recv, ip, identifier, sequence,
+                            )))
+                        }
+                        IcmpTypes::EchoReply => {
+                            let packet = EchoReplyPacket::new(icmp.packet()).req()?;
+                            let identifier = packet.get_identifier();
+                            let sequence = packet.get_sequence_number();
+                            Some(IcmpResponse::EchoReply(IcmpResponseData::new(
+                                recv, ip, identifier, sequence,
+                            )))
+                        }
+                        _ => None,
+                    }
+                }
+                None => None,
+            },
+        )
     }
 }
 
@@ -75,60 +115,6 @@ impl IcmpResponseData {
             identifier,
             sequence,
         }
-    }
-}
-
-/// Iterate ICMP packets.
-pub struct EchoReceiver<'a> {
-    it: IcmpTransportChannelIterator<'a>,
-    read_timeout: Duration,
-}
-
-impl<'a> EchoReceiver<'a> {
-    /// Create an ICMP packet receiver.
-    pub const fn new(it: IcmpTransportChannelIterator<'a>, read_timeout: Duration) -> Self {
-        Self { it, read_timeout }
-    }
-
-    /// Receive the next Icmp packet and return an `IcmpResponse`.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    pub fn receive(&mut self) -> TraceResult<Option<IcmpResponse>> {
-        Ok(match self.it.next_with_timeout(self.read_timeout)? {
-            Some((icmp, ip)) => {
-                let recv = SystemTime::now();
-                match icmp.get_icmp_type() {
-                    IcmpTypes::TimeExceeded => {
-                        let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                        let echo_request = extract_echo_request(packet.payload())?;
-                        let identifier = echo_request.get_identifier();
-                        let sequence = echo_request.get_sequence_number();
-                        Some(IcmpResponse::TimeExceeded(IcmpResponseData::new(
-                            recv, ip, identifier, sequence,
-                        )))
-                    }
-                    IcmpTypes::DestinationUnreachable => {
-                        let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                        let echo_request = extract_echo_request(packet.payload())?;
-                        let identifier = echo_request.get_identifier();
-                        let sequence = echo_request.get_sequence_number();
-                        Some(IcmpResponse::DestinationUnreachable(IcmpResponseData::new(
-                            recv, ip, identifier, sequence,
-                        )))
-                    }
-                    IcmpTypes::EchoReply => {
-                        let packet = EchoReplyPacket::new(icmp.packet()).req()?;
-                        let identifier = packet.get_identifier();
-                        let sequence = packet.get_sequence_number();
-                        Some(IcmpResponse::EchoReply(IcmpResponseData::new(
-                            recv, ip, identifier, sequence,
-                        )))
-                    }
-                    _ => None,
-                }
-            }
-            None => None,
-        })
     }
 }
 
