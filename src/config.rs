@@ -27,7 +27,7 @@ pub struct Args {
     pub first_ttl: u8,
 
     /// The maximum number of hops
-    #[clap(short = 't', long, default_value_t = 64, max_values(256))]
+    #[clap(short = 't', long, default_value_t = 64)]
     pub max_ttl: u8,
 
     /// The minimum duration of every round

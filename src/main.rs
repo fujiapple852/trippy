@@ -45,6 +45,21 @@ fn main() -> anyhow::Result<()> {
     let preserve_screen = args.preserve_screen;
     let report_cycles = args.report_cycles;
 
+    // Validate first_ttl and max_ttl
+    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
+        eprintln!("first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}");
+        exit(-1);
+    }
+    if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
+        eprintln!("max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}");
+        exit(-1);
+    }
+    if first_ttl > max_ttl {
+        eprintln!("first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})");
+        exit(-1);
+    }
+
+    // Validate min_round_duration and max_round_duration
     if min_round_duration > max_round_duration {
         eprintln!(
             "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
