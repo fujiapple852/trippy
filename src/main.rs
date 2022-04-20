@@ -72,7 +72,9 @@ fn main() -> anyhow::Result<()> {
     // Run the backend on a separate thread
     {
         let trace_data = trace_data.clone();
-        thread::spawn(move || backend::run_backend(&tracer_config, trace_data));
+        thread::Builder::new()
+            .name("backend".into())
+            .spawn(move || backend::run_backend(&tracer_config, trace_data))?;
     }
 
     match args.mode {
