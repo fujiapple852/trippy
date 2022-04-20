@@ -10,7 +10,10 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
-use crate::config::{Mode, MAX_HOPS, TUI_MAX_REFRESH_RATE_MS, TUI_MIN_REFRESH_RATE_MS};
+use crate::config::{
+    validate_grace_duration, validate_max_inflight, validate_read_timeout, validate_report_cycles,
+    validate_round_duration, validate_ttl, validate_tui_refresh_rate, Mode,
+};
 use crate::dns::DnsResolver;
 use crate::icmp::IcmpTracerConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
@@ -18,7 +21,6 @@ use clap::Parser;
 use config::Args;
 use parking_lot::RwLock;
 use std::net::IpAddr;
-use std::process::exit;
 use std::sync::Arc;
 use std::thread;
 
@@ -42,39 +44,13 @@ fn main() -> anyhow::Result<()> {
     let preserve_screen = args.tui_preserve_screen;
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let report_cycles = args.report_cycles;
-
-    // Validate tui_refresh_rate
-    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
-        eprintln!(
-            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
-            tui_refresh_rate, TUI_MIN_REFRESH_RATE_MS, TUI_MAX_REFRESH_RATE_MS
-        );
-        exit(-1);
-    }
-
-    // Validate first_ttl and max_ttl
-    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
-        eprintln!("first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}");
-        exit(-1);
-    }
-    if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
-        eprintln!("max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}");
-        exit(-1);
-    }
-    if first_ttl > max_ttl {
-        eprintln!("first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})");
-        exit(-1);
-    }
-
-    // Validate min_round_duration and max_round_duration
-    if min_round_duration > max_round_duration {
-        eprintln!(
-            "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
-            max_round_duration, min_round_duration
-        );
-        exit(-1);
-    }
-
+    validate_ttl(first_ttl, max_ttl);
+    validate_max_inflight(max_inflight);
+    validate_read_timeout(read_timeout);
+    validate_round_duration(min_round_duration, max_round_duration);
+    validate_grace_duration(read_timeout, grace_duration);
+    validate_tui_refresh_rate(tui_refresh_rate);
+    validate_report_cycles(report_cycles);
     let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];

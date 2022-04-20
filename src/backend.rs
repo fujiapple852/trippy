@@ -1,5 +1,6 @@
+use crate::config::MAX_HOPS;
 use crate::icmp::{IcmpTracer, Probe, ProbeStatus};
-use crate::{IcmpTracerConfig, MAX_HOPS};
+use crate::IcmpTracerConfig;
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
