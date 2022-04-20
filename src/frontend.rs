@@ -69,7 +69,11 @@ impl TuiApp {
         }
     }
     pub fn next(&mut self) {
-        let max_index = 0.max(self.trace.hops().len() - 1);
+        let hop_count = self.trace.hops().len();
+        if hop_count == 0 {
+            return;
+        }
+        let max_index = 0.max(hop_count.saturating_sub(1));
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i < max_index {
@@ -84,6 +88,10 @@ impl TuiApp {
     }
 
     pub fn previous(&mut self) {
+        let hop_count = self.trace.hops().len();
+        if hop_count == 0 {
+            return;
+        }
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i > 0 {
@@ -92,7 +100,7 @@ impl TuiApp {
                     i
                 }
             }
-            None => 0.max(self.trace.hops().len() - 1),
+            None => 0.max(hop_count.saturating_sub(1)),
         };
         self.table_state.select(Some(i));
     }
