@@ -1,14 +1,27 @@
 use clap::{ArgEnum, Parser};
+use std::process::exit;
 use std::time::Duration;
 
 /// The maximum number of hops we allow.
 pub const MAX_HOPS: usize = 256;
 
 /// The minimum TUI refresh rate.
-pub const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
+const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
 
 /// The maximum TUI refresh rate.
-pub const TUI_MAX_REFRESH_RATE_MS: Duration = Duration::from_millis(1000);
+const TUI_MAX_REFRESH_RATE_MS: Duration = Duration::from_millis(1000);
+
+/// The minimum socket read timeout.
+const MIN_READ_TIMEOUT_MS: Duration = Duration::from_millis(10);
+
+/// The maximum socket read timeout.
+const MAX_READ_TIMEOUT_MS: Duration = Duration::from_millis(100);
+
+/// The minimum grace duration.
+const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
+
+/// The maximum grace duration.
+const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ArgEnum)]
@@ -75,4 +88,83 @@ pub struct Args {
     /// The number of report cycles to run
     #[clap(short = 'c', long, default_value_t = 10)]
     pub report_cycles: usize,
+}
+
+/// Validate `report_cycles`
+pub fn validate_report_cycles(report_cycles: usize) {
+    if report_cycles == 0 {
+        eprintln!(
+            "report_cycles ({}) must be greater than zero",
+            report_cycles
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `tui_refresh_rate`
+pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) {
+    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
+        eprintln!(
+            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
+            tui_refresh_rate, TUI_MIN_REFRESH_RATE_MS, TUI_MAX_REFRESH_RATE_MS
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `grace_duration`
+pub fn validate_grace_duration(read_timeout: Duration, grace_duration: Duration) {
+    if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
+        eprintln!(
+            "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
+            read_timeout, MIN_GRACE_DURATION_MS, MAX_GRACE_DURATION_MS
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `min_round_duration` and `max_round_duration`
+pub fn validate_round_duration(min_round_duration: Duration, max_round_duration: Duration) {
+    if min_round_duration > max_round_duration {
+        eprintln!(
+            "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
+            max_round_duration, min_round_duration
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `read_timeout`
+pub fn validate_read_timeout(read_timeout: Duration) {
+    if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
+        eprintln!(
+            "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
+            read_timeout, MIN_READ_TIMEOUT_MS, MAX_READ_TIMEOUT_MS
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `max_inflight`
+pub fn validate_max_inflight(max_inflight: u8) {
+    if max_inflight == 0 {
+        eprintln!("max_inflight ({}) must be greater than zero", max_inflight);
+        exit(-1);
+    }
+}
+
+/// Validate `first_ttl` and `max_ttl`
+pub fn validate_ttl(first_ttl: u8, max_ttl: u8) {
+    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
+        eprintln!("first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}");
+        exit(-1);
+    }
+    if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
+        eprintln!("max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}");
+        exit(-1);
+    }
+    if first_ttl > max_ttl {
+        eprintln!("first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})");
+        exit(-1);
+    }
 }
