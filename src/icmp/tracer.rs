@@ -35,7 +35,7 @@ pub struct TraceId(pub u16);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct MaxInflight(pub u8);
 
-/// TODO
+/// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct IcmpTracer<F> {
     target_addr: IpAddr,
@@ -69,8 +69,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     /// Run a continuous trace and publish results to a channel.
     ///
     /// TODO describe algorithm
-    pub fn trace(self) -> TraceResult<()> {
-        let mut channel = IcmpChannel::new()?;
+    pub fn trace(self, mut channel: IcmpChannel) -> TraceResult<()> {
         let mut state = TracerState::new(self.first_ttl);
         loop {
             self.send_request(&mut channel, &mut state)?;

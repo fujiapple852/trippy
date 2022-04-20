@@ -1,5 +1,5 @@
 use crate::config::MAX_HOPS;
-use crate::icmp::{IcmpTracer, Probe, ProbeStatus};
+use crate::icmp::{IcmpChannel, IcmpTracer, Probe, ProbeStatus};
 use crate::IcmpTracerConfig;
 use parking_lot::RwLock;
 use std::collections::HashSet;
@@ -232,8 +232,9 @@ pub fn run_backend(
     config: &IcmpTracerConfig,
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
+    let channel = IcmpChannel::new()?;
     let tracer = IcmpTracer::new(config, move |probe| {
         trace_data.write().update_from_probe(probe);
     });
-    Ok(tracer.trace()?)
+    Ok(tracer.trace(channel)?)
 }
