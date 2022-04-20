@@ -69,7 +69,7 @@ impl TuiApp {
         }
     }
     pub fn next(&mut self) {
-        let max_index = 0.max(usize::from(self.trace.highest_ttl()) - 1);
+        let max_index = 0.max(self.trace.hops().len() - 1);
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i < max_index {
@@ -92,7 +92,7 @@ impl TuiApp {
                     i
                 }
             }
-            None => 0.max(usize::from(self.trace.highest_ttl()) - 1),
+            None => 0.max(self.trace.hops().len() - 1),
         };
         self.table_state.select(Some(i));
     }
@@ -215,7 +215,7 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(chunks[2]);
     render_header(f, app, chunks[0]);
-    if app.trace.highest_ttl() > 0 {
+    if !app.trace.hops().is_empty() {
         render_table(f, app, chunks[1]);
     } else {
         render_splash(f, chunks[1]);
@@ -371,9 +371,7 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
         .trace
         .hops()
         .iter()
-        .take(app.trace.highest_ttl() as usize)
-        .enumerate()
-        .map(|(i, hop)| render_table_row(hop, &mut app.resolver, i, app.trace.highest_ttl()));
+        .map(|hop| render_table_row(hop, &mut app.resolver, app.trace.is_target(hop)));
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -399,7 +397,7 @@ fn render_table_header() -> Row<'static> {
 }
 
 /// Render a single row in the table of hops.
-fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8) -> Row<'static> {
+fn render_table_row(hop: &Hop, dns: &mut DnsResolver, is_target: bool) -> Row<'static> {
     let ttl_cell = render_ttl_cell(hop);
     let hostname_cell = render_hostname_cell(hop, dns);
     let loss_pct_cell = render_loss_pct_cell(hop);
@@ -410,7 +408,7 @@ fn render_table_row(hop: &Hop, dns: &mut DnsResolver, i: usize, highest_ttl: u8)
     let best_cell = render_best_cell(hop);
     let worst_cell = render_worst_cell(hop);
     let stddev_cell = render_stddev_cell(hop);
-    let status_cell = render_status_cell(hop, i, highest_ttl);
+    let status_cell = render_status_cell(hop, is_target);
     let cells = [
         ttl_cell,
         hostname_cell,
@@ -494,9 +492,9 @@ fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
     })
 }
 
-fn render_status_cell(hop: &Hop, i: usize, highest_ttl: u8) -> Cell<'static> {
+fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
     let lost = hop.total_sent() - hop.total_recv();
-    Cell::from(match (lost, usize::from(highest_ttl) == i + 1) {
+    Cell::from(match (lost, is_target) {
         (lost, target) if target && lost == hop.total_sent() => "🔴",
         (lost, target) if target && lost > 0 => "🟡",
         (lost, target) if !target && lost == hop.total_sent() => "🟤",
