@@ -72,7 +72,9 @@ fn main() -> anyhow::Result<()> {
         let trace_data = trace_data.clone();
         thread::Builder::new()
             .name("backend".into())
-            .spawn(move || backend::run_backend(&tracer_config, trace_data))?;
+            .spawn(move || {
+                backend::run_backend(&tracer_config, trace_data).expect("backend failed")
+            })?;
     }
 
     match args.mode {
