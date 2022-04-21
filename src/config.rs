@@ -23,6 +23,12 @@ const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
 /// The maximum grace duration.
 const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 
+/// The minimum packet size we allow.
+pub const MIN_PACKET_SIZE: u16 = 28;
+
+/// The maximum packet size we allow.
+pub const MAX_PACKET_SIZE: u16 = 1024;
+
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ArgEnum)]
 pub enum Mode {
@@ -69,9 +75,17 @@ pub struct Args {
     #[clap(short = 'U', long, default_value_t = 24)]
     pub max_inflight: u8,
 
-    /// The socket read timeout.
+    /// The socket read timeout
     #[clap(long, default_value = "10ms")]
     pub read_timeout: String,
+
+    /// The size of IP packet to send (IP header + ICMP header + payload)
+    #[clap(long, default_value_t = 84)]
+    pub packet_size: u16,
+
+    /// The repeating pattern in the payload of the ICMP packet
+    #[clap(long, default_value_t = 0)]
+    pub payload_pattern: u8,
 
     /// Preserve the screen on exit
     #[clap(long)]
@@ -113,11 +127,22 @@ pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) {
 }
 
 /// Validate `grace_duration`
-pub fn validate_grace_duration(read_timeout: Duration, grace_duration: Duration) {
+pub fn validate_grace_duration(grace_duration: Duration) {
     if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
         eprintln!(
             "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
-            read_timeout, MIN_GRACE_DURATION_MS, MAX_GRACE_DURATION_MS
+            grace_duration, MIN_GRACE_DURATION_MS, MAX_GRACE_DURATION_MS
+        );
+        exit(-1);
+    }
+}
+
+/// Validate `packet_size`
+pub fn validate_packet_size(packet_size: u16) {
+    if !(MIN_PACKET_SIZE..=MAX_PACKET_SIZE).contains(&packet_size) {
+        eprintln!(
+            "packet_size ({}) must be between {} and {} inclusive",
+            packet_size, MIN_PACKET_SIZE, MAX_PACKET_SIZE
         );
         exit(-1);
     }
