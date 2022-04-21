@@ -1,4 +1,4 @@
-use crate::icmp::tracer::{MaxInflight, TimeToLive, TraceId};
+use crate::icmp::tracer::{MaxInflight, PacketSize, PayloadPattern, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::Duration;
 
@@ -14,6 +14,8 @@ pub struct IcmpTracerConfig {
     pub read_timeout: Duration,
     pub min_round_duration: Duration,
     pub max_round_duration: Duration,
+    pub packet_size: PacketSize,
+    pub payload_pattern: PayloadPattern,
 }
 
 impl IcmpTracerConfig {
@@ -29,6 +31,8 @@ impl IcmpTracerConfig {
         read_timeout: Duration,
         min_round_duration: Duration,
         max_round_duration: Duration,
+        packet_size: u16,
+        payload_pattern: u8,
     ) -> Self {
         Self {
             target_addr,
@@ -40,6 +44,8 @@ impl IcmpTracerConfig {
             read_timeout,
             min_round_duration,
             max_round_duration,
+            packet_size: PacketSize::from(packet_size),
+            payload_pattern: PayloadPattern::from(payload_pattern),
         }
     }
 }

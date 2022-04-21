@@ -1,4 +1,4 @@
-use crate::icmp::error::TraceResult;
+use crate::icmp::error::{TraceResult, TracerError};
 use crate::icmp::util::Required;
 use crate::icmp::Probe;
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
@@ -17,6 +17,15 @@ use pnet::util;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
+/// The maximum size of the IP packet we allow.
+const MAX_PACKET_SIZE: usize = 1024;
+
+/// The maximum size of ICMP packet we allow.
+const MAX_ICMP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
+
+/// The maximum ICMP payload size we allow.
+const MAX_PAYLOAD_BUF: usize = MAX_ICMP_BUF - EchoRequestPacket::minimum_packet_size();
+
 /// A channel for sending and receiving `ICMP` packets.
 pub struct IcmpChannel {
     tx: TransportSender,
@@ -33,12 +42,30 @@ impl IcmpChannel {
     }
 
     /// Send an ICMP `EchoRequest`
-    pub fn send(&mut self, echo: Probe, ip: IpAddr, id: u16) -> TraceResult<()> {
-        let mut buf = [0u8; 64];
-        let mut req = MutableEchoRequestPacket::new(&mut buf).req()?;
+    pub fn send(
+        &mut self,
+        echo: Probe,
+        ip: IpAddr,
+        id: u16,
+        packet_size: u16,
+        payload_value: u8,
+    ) -> TraceResult<()> {
+        let packet_size = usize::from(packet_size);
+        if packet_size > MAX_PACKET_SIZE {
+            return Err(TracerError::InvalidPacketSize(packet_size));
+        }
+        let ip_header_size = Ipv4Packet::minimum_packet_size();
+        let icmp_header_size = EchoRequestPacket::minimum_packet_size();
+        let mut icmp_buf = [0_u8; MAX_ICMP_BUF];
+        let mut payload_buf = [0_u8; MAX_PAYLOAD_BUF];
+        let icmp_buf_size = packet_size - ip_header_size;
+        let payload_size = packet_size - icmp_header_size - ip_header_size;
+        payload_buf.iter_mut().for_each(|x| *x = payload_value);
+        let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[0..icmp_buf_size]).req()?;
         req.set_icmp_type(IcmpTypes::EchoRequest);
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
         req.set_identifier(id);
+        req.set_payload(&payload_buf[0..payload_size]);
         req.set_sequence_number(echo.sequence());
         req.set_checksum(util::checksum(req.packet(), 1));
         self.tx.set_ttl(echo.ttl.0)?;

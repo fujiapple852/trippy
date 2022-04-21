@@ -11,8 +11,8 @@
 
 use crate::backend::Trace;
 use crate::config::{
-    validate_grace_duration, validate_max_inflight, validate_read_timeout, validate_report_cycles,
-    validate_round_duration, validate_ttl, validate_tui_refresh_rate, Mode,
+    validate_grace_duration, validate_max_inflight, validate_packet_size, validate_read_timeout,
+    validate_report_cycles, validate_round_duration, validate_ttl, validate_tui_refresh_rate, Mode,
 };
 use crate::dns::DnsResolver;
 use crate::icmp::IcmpTracerConfig;
@@ -40,6 +40,8 @@ fn main() -> anyhow::Result<()> {
     let read_timeout = humantime::parse_duration(&args.read_timeout)?;
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
+    let packet_size = args.packet_size;
+    let payload_pattern = args.payload_pattern;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
     let preserve_screen = args.tui_preserve_screen;
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
@@ -48,7 +50,8 @@ fn main() -> anyhow::Result<()> {
     validate_max_inflight(max_inflight);
     validate_read_timeout(read_timeout);
     validate_round_duration(min_round_duration, max_round_duration);
-    validate_grace_duration(read_timeout, grace_duration);
+    validate_grace_duration(grace_duration);
+    validate_packet_size(packet_size);
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(report_cycles);
     let resolver = DnsResolver::new();
@@ -65,6 +68,8 @@ fn main() -> anyhow::Result<()> {
         read_timeout,
         min_round_duration,
         max_round_duration,
+        packet_size,
+        payload_pattern,
     );
 
     // Run the backend on a separate thread
@@ -73,7 +78,7 @@ fn main() -> anyhow::Result<()> {
         thread::Builder::new()
             .name("backend".into())
             .spawn(move || {
-                backend::run_backend(&tracer_config, trace_data).expect("backend failed")
+                backend::run_backend(&tracer_config, trace_data).expect("backend failed");
             })?;
     }
 

@@ -35,6 +35,14 @@ pub struct TraceId(pub u16);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct MaxInflight(pub u8);
 
+/// Trace Identifier newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct PacketSize(pub u16);
+
+/// Max Inflight newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct PayloadPattern(pub u8);
+
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct IcmpTracer<F> {
@@ -47,6 +55,8 @@ pub struct IcmpTracer<F> {
     read_timeout: Duration,
     min_round_duration: Duration,
     max_round_duration: Duration,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
     publish: F,
 }
 
@@ -62,6 +72,8 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
             read_timeout: config.read_timeout,
             min_round_duration: config.min_round_duration,
             max_round_duration: config.max_round_duration,
+            packet_size: config.packet_size,
+            payload_pattern: config.payload_pattern,
             publish,
         }
     }
@@ -96,7 +108,13 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
                 < TimeToLive::from(self.max_inflight.0)
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
-            channel.send(st.next_probe()?, self.target_addr, self.trace_identifier.0)?;
+            channel.send(
+                st.next_probe()?,
+                self.target_addr,
+                self.trace_identifier.0,
+                self.packet_size.0,
+                self.payload_pattern.0,
+            )?;
         }
         Ok(())
     }
