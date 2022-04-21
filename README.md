@@ -12,6 +12,30 @@ Development
 
 <img src="assets/trippy-14-04-2022.png" alt="trippy"/>
 
+## Distributions
+
+### Cargo
+
+Install:
+
+```shell
+cargo install trippy
+```
+
+Run:
+
+```shell
+trippy www.bitwizard.nl
+```
+
+### Docker
+
+Run:
+
+```shell
+docker run -it fujiapple/trippy www.bitwizard.nl
+```
+
 ## License
 
 This library is distributed under the terms of the Apache License (Version 2.0).
