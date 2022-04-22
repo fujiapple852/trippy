@@ -220,6 +220,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f84f1612606f3753f205a4e9a2efd6fe5b4c573a6269b2cc6c3003d44a0d127"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "itertools"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -354,10 +363,8 @@ dependencies = [
 [[package]]
 name = "pnet"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8750e073f82219c01e771133c64718d7685aef922da8a0d430a46aed05b6341a"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.19.0",
  "pnet_base",
  "pnet_datalink",
  "pnet_packet",
@@ -368,16 +375,12 @@ dependencies = [
 [[package]]
 name = "pnet_base"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8205fe084bd43a3af79b3155c19feddd62e733640498842e631a2ffe107d1538"
 
 [[package]]
 name = "pnet_datalink"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f85aef5e52e22ff06b1b11f2eb6d52959a9e0ecad3cb3f5cc2d78cadc077f0e"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.18.0",
  "libc",
  "pnet_base",
  "pnet_sys",
@@ -387,8 +390,6 @@ dependencies = [
 [[package]]
 name = "pnet_macros"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98cc3af95fed6dc318dfede3e81320f96ad5e237c6f7c4688108b19c8e67432d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -399,8 +400,6 @@ dependencies = [
 [[package]]
 name = "pnet_macros_support"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "feaba58ba96abb218ec584d6caf0d3ff48922df05dbbeb1560553c197091b29e"
 dependencies = [
  "pnet_base",
 ]
@@ -408,8 +407,6 @@ dependencies = [
 [[package]]
 name = "pnet_packet"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f246edaaf1aaf82072d4cd38ee18bcc5dfc0464093f9ca39e4ac5962d68cf9d4"
 dependencies = [
  "glob",
  "pnet_base",
@@ -420,8 +417,6 @@ dependencies = [
 [[package]]
 name = "pnet_sys"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "028c87a5e3a48fc07df099a2025f2ef16add5993712e1494ba69a6707ee7ed06"
 dependencies = [
  "libc",
  "winapi",
@@ -430,8 +425,6 @@ dependencies = [
 [[package]]
 name = "pnet_transport"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "950f2a7961e19d22e19e84ff0a6e0955013185fe149673499662633d02b41b7a"
 dependencies = [
  "libc",
  "pnet_base",

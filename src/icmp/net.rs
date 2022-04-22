@@ -5,13 +5,12 @@ use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::packet::icmp::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
 use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
-use pnet::packet::icmp::{echo_request, IcmpTypes};
+use pnet::packet::icmp::{echo_request, IcmpPacket, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;
-use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::ipv4::{Ipv4Packet, MutableIpv4Packet};
 use pnet::packet::Packet;
 use pnet::transport::{
-    icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
-    TransportReceiver, TransportSender,
+    ipv4_packet_iter, transport_channel, TransportChannelType, TransportReceiver, TransportSender,
 };
 use pnet::util;
 use std::net::IpAddr;
@@ -56,8 +55,17 @@ impl IcmpChannel {
         }
         let ip_header_size = Ipv4Packet::minimum_packet_size();
         let icmp_header_size = EchoRequestPacket::minimum_packet_size();
+
+        let addr = match ip {
+            IpAddr::V4(ip) => ip,
+            IpAddr::V6(_) => todo!(),
+        };
+
         let mut icmp_buf = [0_u8; MAX_ICMP_BUF];
         let mut payload_buf = [0_u8; MAX_PAYLOAD_BUF];
+        let mut ip_buf = [0_u8; 1024]; // TODO
+
+        // The EchoRequest ICMP packet
         let icmp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - icmp_header_size - ip_header_size;
         payload_buf.iter_mut().for_each(|x| *x = payload_value);
@@ -68,8 +76,18 @@ impl IcmpChannel {
         req.set_payload(&payload_buf[0..payload_size]);
         req.set_sequence_number(echo.sequence());
         req.set_checksum(util::checksum(req.packet(), 1));
-        self.tx.set_ttl(echo.ttl.0)?;
-        self.tx.send_to(req.to_immutable(), ip)?;
+
+        // The Ipv4 Packet
+        let total_length = ip_header_size + icmp_header_size + req.packet().len();
+        let mut ip_packet = MutableIpv4Packet::new(&mut ip_buf).req()?;
+        ip_packet.set_version(4);
+        ip_packet.set_header_length(5);
+        ip_packet.set_next_level_protocol(IpNextHeaderProtocols::Icmp);
+        ip_packet.set_total_length(total_length as u16); // TODO
+        ip_packet.set_payload(req.packet());
+        ip_packet.set_ttl(echo.ttl.0);
+        ip_packet.set_destination(addr);
+        self.tx.send_to(ip_packet.to_immutable(), ip)?;
         Ok(())
     }
 
@@ -78,9 +96,10 @@ impl IcmpChannel {
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
     pub fn receive(&mut self, timeout: Duration) -> TraceResult<Option<IcmpResponse>> {
         Ok(
-            match icmp_packet_iter(&mut self.rx).next_with_timeout(timeout)? {
-                Some((icmp, ip)) => {
+            match ipv4_packet_iter(&mut self.rx).next_with_timeout(timeout)? {
+                Some((ipv4, ip)) => {
                     let recv = SystemTime::now();
+                    let icmp = IcmpPacket::new(ipv4.payload()).unwrap();
                     match icmp.get_icmp_type() {
                         IcmpTypes::TimeExceeded => {
                             let packet = TimeExceededPacket::new(icmp.packet()).req()?;
@@ -146,9 +165,9 @@ impl IcmpResponseData {
 }
 
 /// Create the communication channel needed for sending and receiving ICMP packets.
+/// TODO buffer size as const
 pub fn make_icmp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
-    let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Icmp);
-    let channel_type = TransportChannelType::Layer4(protocol);
+    let channel_type = TransportChannelType::Layer3(IpNextHeaderProtocols::Icmp);
     Ok(transport_channel(1600, channel_type)?)
 }
 
