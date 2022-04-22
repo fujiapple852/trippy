@@ -10,7 +10,7 @@ edition = "2021"
 [dependencies]
 pnet = "0.29.0"
 thiserror = "1.0.30"
-anyhow = "1.0.56"
+anyhow = "1.0.57"
 derive_more = "0.99.17"
 dns-lookup = "1.0.8"
 clap = { version = "3.1.10", features = [ "derive", "wrap_help", "cargo" ] }
