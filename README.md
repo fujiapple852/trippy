@@ -20,21 +20,21 @@ Feature status and high level roadmap:
 - Trace: ICMP protocol (✅)
 - Trace: Adjustable packet size (✅)
 - Trace: Adjustable payload pattern (✅)
-- Trace: Adjustable starting and ended TTL values (✅)
-- Trace: Adjustable minimum and maximum round time (✅)
-- Trace: Adjustable grace period (✅)
-- Trace: Adjustable maximum unknown hops (✅)
-- Trace: Adjustable source port for UDP (✅)
-- Trace: Display core hop statistics (✅)
-- Trace: UDP protocol [#31](https://github.com/fujiapple852/trippy/issues/31)
-- Trace: TCP protocol [#32](https://github.com/fujiapple852/trippy/issues/32)
-- Trace: SCTP protocol [#41](https://github.com/fujiapple852/trippy/issues/41)
-- Trace: IPv6 [#35](https://github.com/fujiapple852/trippy/issues/35)
-- Trace: MPLS [#33](https://github.com/fujiapple852/trippy/issues/33)
-- Trace: Adjustable `DSCP` IP header [#38](https://github.com/fujiapple852/trippy/issues/38))
-- Trace: Adjustable network interface binding [#42](https://github.com/fujiapple852/trippy/issues/42)
-- Trace: Adjustable UDP/TCP target port [#43](https://github.com/fujiapple852/trippy/issues/43)
-- Trace: Capabilities awareness [#36](https://github.com/fujiapple852/trippy/issues/36)
+- Trace: Adjustable starting and ended time-to-live values (✅)
+- Trace: Adjustable minimum and maximum round trip time (✅)
+- Trace: Adjustable round end grace period (✅)
+- Trace: Adjustable maximum number of unknown hops (✅)
+- Trace: Adjustable source port for `UDP` (✅)
+- Trace: UDP protocol ([#31](https://github.com/fujiapple852/trippy/issues/31))
+- Trace: TCP protocol ([#32](https://github.com/fujiapple852/trippy/issues/32))
+- Trace: SCTP protocol ([#41](https://github.com/fujiapple852/trippy/issues/41))
+- Trace: IPv6 ([#35](https://github.com/fujiapple852/trippy/issues/35))
+- Trace: MPLS ([#33](https://github.com/fujiapple852/trippy/issues/33))
+- Trace: Adjustable `DSCP` IP header ([#38](https://github.com/fujiapple852/trippy/issues/38))
+- Trace: Adjustable network interface binding ([#42](https://github.com/fujiapple852/trippy/issues/42))
+- Trace: Adjustable target port for `UDP`/`TCP` ([#43](https://github.com/fujiapple852/trippy/issues/43))
+- Trace: Capabilities awareness ([#36](https://github.com/fujiapple852/trippy/issues/36))
+- Tui: Display core hop statistics (✅)
 - Tui: hop navigation (✅)
 - Tui: Pause display (✅)
 - Tui: Help dialog (✅)
@@ -44,14 +44,14 @@ Feature status and high level roadmap:
 - Tui: RTT frequency histogram per hop (✅)
 - Tui: Display multiple hosts per hop (✅)
 - Tui: Reset statistics (✅)
-- Tui: show Jitter [#39](https://github.com/fujiapple852/trippy/issues/39)
-- Tui: show top-N hosts per hop [#40](https://github.com/fujiapple852/trippy/issues/40)
-- Tui: AS lookup [#34](https://github.com/fujiapple852/trippy/issues/34)
-- DNS: Basic reverse DNS lookup (✅)
-- DNS: Non-blocking DNS resolver [#37](https://github.com/fujiapple852/trippy/issues/37)
-- Report: JSON report mode (✅)
-- Report: CSV report mode (✅
-- Report: Tabular report mode [#44](https://github.com/fujiapple852/trippy/issues/44)
+- Tui: show Jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
+- Tui: show top-N hosts per hop ([#40](https://github.com/fujiapple852/trippy/issues/40))
+- Tui: `AS` lookup ([#34](https://github.com/fujiapple852/trippy/issues/34))
+- DNS: Basic reverse `DNS` lookup (✅)
+- DNS: Non-blocking `DNS` resolver ([#37](https://github.com/fujiapple852/trippy/issues/37))
+- Report: `JSON` report mode (✅)
+- Report: `CSV` report mode (✅)
+- Report: Tabular report mode ([#44](https://github.com/fujiapple852/trippy/issues/44))
 - Report: Streaming text mode (✅)
 
 ## Distributions
@@ -61,6 +61,8 @@ Feature status and high level roadmap:
 ```shell
 $ cargo install trippy
 ```
+
+Note: Not yet published to `crates.io`.
 
 ### Docker (Linux only)
 
@@ -176,9 +178,7 @@ $ trippy www.bitwizard.nl -m json -c 5
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
 , [crossterm](https://github.com/crossterm-rs/crossterm) & [pnet](https://github.com/libpnet/libpnet) as well as several
-common foundational Rust libraries.
-
-It aso draws heavily from [mtr](https://github.com/traviscross/mtr).
+common foundational Rust libraries.  It also draws heavily from [mtr](https://github.com/traviscross/mtr).
 
 ## Keyboard Controls
 
@@ -193,4 +193,4 @@ in the Apache-2.0 license, shall be licensed as above, without any additional te
 
 See [LICENSE](LICENSE) for details.
 
-Copyright 2022
+Copyright 2022 [Trippy Contributors](https://github.com/fujiapple852/trippy/graphs/contributors)
