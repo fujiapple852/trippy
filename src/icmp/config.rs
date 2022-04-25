@@ -1,6 +1,7 @@
 use crate::icmp::tracer::{
     MaxInflight, PacketSize, PayloadPattern, Sequence, SourcePort, TimeToLive, TraceId,
 };
+use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::time::Duration;
 
@@ -11,6 +12,15 @@ pub enum Protocol {
     Icmp,
     /// User Datagram Protocol
     Udp,
+}
+
+impl Display for Protocol {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Icmp => write!(f, "icmp"),
+            Self::Udp => write!(f, "udp"),
+        }
+    }
 }
 
 /// TODO
