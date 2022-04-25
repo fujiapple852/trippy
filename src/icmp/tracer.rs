@@ -47,20 +47,27 @@ impl From<Sequence> for usize {
     }
 }
 
+/// Source port newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct SourcePort(pub u16);
+
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
     target_addr: IpAddr,
+    protocol: Protocol,
     trace_identifier: TraceId,
     first_ttl: TimeToLive,
     max_ttl: TimeToLive,
     grace_duration: Duration,
     max_inflight: MaxInflight,
+    min_sequence: Sequence,
     read_timeout: Duration,
     min_round_duration: Duration,
     max_round_duration: Duration,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    source_port: SourcePort,
     publish: F,
 }
 
@@ -68,16 +75,19 @@ impl<F: Fn(&Probe)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
             target_addr: config.target_addr,
+            protocol: config.protocol,
             trace_identifier: config.trace_identifier,
             first_ttl: config.first_ttl,
             max_ttl: config.max_ttl,
             grace_duration: config.grace_duration,
             max_inflight: config.max_inflight,
+            min_sequence: config.min_sequence,
             read_timeout: config.read_timeout,
             min_round_duration: config.min_round_duration,
             max_round_duration: config.max_round_duration,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
+            source_port: config.source_port,
             publish,
         }
     }

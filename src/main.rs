@@ -13,9 +13,11 @@
 use crate::backend::Trace;
 use crate::config::{
     validate_grace_duration, validate_max_inflight, validate_packet_size, validate_read_timeout,
-    validate_report_cycles, validate_round_duration, validate_ttl, validate_tui_refresh_rate, Mode,
+    validate_report_cycles, validate_round_duration, validate_source_port, validate_ttl,
+    validate_tui_refresh_rate, Mode, TraceProtocol,
 };
 use crate::dns::DnsResolver;
+use crate::icmp::Protocol;
 use crate::icmp::TracerConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
 use clap::Parser;
@@ -33,11 +35,17 @@ mod icmp;
 mod report;
 
 fn main() -> anyhow::Result<()> {
+    let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let args = Args::parse();
     let hostname = args.hostname;
+    let protocol = match args.protocol {
+        TraceProtocol::Icmp => Protocol::Icmp,
+        TraceProtocol::Udp => Protocol::Udp,
+    };
     let first_ttl = args.first_ttl;
     let max_ttl = args.max_ttl;
     let max_inflight = args.max_inflight;
+    let min_sequence = args.min_sequence;
     let read_timeout = humantime::parse_duration(&args.read_timeout)?;
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
@@ -45,6 +53,7 @@ fn main() -> anyhow::Result<()> {
     let payload_pattern = args.payload_pattern;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
     let preserve_screen = args.tui_preserve_screen;
+    let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let report_cycles = args.report_cycles;
     validate_ttl(first_ttl, max_ttl);
@@ -53,24 +62,28 @@ fn main() -> anyhow::Result<()> {
     validate_round_duration(min_round_duration, max_round_duration);
     validate_grace_duration(grace_duration);
     validate_packet_size(packet_size);
+    validate_source_port(source_port);
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(report_cycles);
     let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
-    let trace_identifier = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
-    let tracer_config = IcmpTracerConfig::new(
+    let trace_identifier = pid;
+    let tracer_config = TracerConfig::new(
         target_addr,
+        protocol,
         trace_identifier,
         first_ttl,
         max_ttl,
         grace_duration,
         max_inflight,
+        min_sequence,
         read_timeout,
         min_round_duration,
         max_round_duration,
         packet_size,
         payload_pattern,
+        source_port,
     );
 
     // Run the backend on a separate thread
