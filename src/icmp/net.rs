@@ -27,12 +27,12 @@ const MAX_ICMP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 const MAX_PAYLOAD_BUF: usize = MAX_ICMP_BUF - EchoRequestPacket::minimum_packet_size();
 
 /// A channel for sending and receiving `ICMP` packets.
-pub struct IcmpChannel {
+pub struct Channel {
     tx: TransportSender,
     rx: TransportReceiver,
 }
 
-impl IcmpChannel {
+impl Channel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability.

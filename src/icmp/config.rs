@@ -4,7 +4,7 @@ use std::time::Duration;
 
 /// TODO
 #[derive(Debug, Copy, Clone)]
-pub struct IcmpTracerConfig {
+pub struct TracerConfig {
     pub target_addr: IpAddr,
     pub trace_identifier: TraceId,
     pub first_ttl: TimeToLive,
@@ -18,7 +18,7 @@ pub struct IcmpTracerConfig {
     pub payload_pattern: PayloadPattern,
 }
 
-impl IcmpTracerConfig {
+impl TracerConfig {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn new(

@@ -16,7 +16,7 @@ use crate::config::{
     validate_report_cycles, validate_round_duration, validate_ttl, validate_tui_refresh_rate, Mode,
 };
 use crate::dns::DnsResolver;
-use crate::icmp::IcmpTracerConfig;
+use crate::icmp::TracerConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
 use clap::Parser;
 use config::Args;
