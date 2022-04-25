@@ -1,6 +1,6 @@
 use crate::backend::Hop;
 use crate::dns::DnsResolver;
-use crate::{IcmpTracerConfig, Trace};
+use crate::{Trace, TracerConfig};
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
 use crossterm::{
@@ -50,13 +50,13 @@ struct TuiApp {
     resolver: DnsResolver,
     target_hostname: String,
     target_addr: IpAddr,
-    tracer_config: IcmpTracerConfig,
+    tracer_config: TracerConfig,
     show_help: bool,
     frozen_start: Option<SystemTime>,
 }
 
 impl TuiApp {
-    fn new(target_hostname: String, target_addr: IpAddr, tracer_config: IcmpTracerConfig) -> Self {
+    fn new(target_hostname: String, target_addr: IpAddr, tracer_config: TracerConfig) -> Self {
         Self {
             table_state: TableState::default(),
             trace: Trace::default(),
@@ -126,7 +126,7 @@ pub fn run_frontend(
     target_hostname: String,
     target_addr: IpAddr,
     data: &Arc<RwLock<Trace>>,
-    config: IcmpTracerConfig,
+    config: TracerConfig,
     refresh_rate: Duration,
     preserve_screen: bool,
 ) -> anyhow::Result<()> {
@@ -160,7 +160,7 @@ fn run_app<B: Backend>(
     trace: &Arc<RwLock<Trace>>,
     target_hostname: String,
     target_addr: IpAddr,
-    config: IcmpTracerConfig,
+    config: TracerConfig,
     refresh_rate: Duration,
 ) -> io::Result<()> {
     let mut app = TuiApp::new(target_hostname, target_addr, config);

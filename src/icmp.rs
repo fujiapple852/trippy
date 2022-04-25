@@ -5,7 +5,7 @@ mod probe;
 mod tracer;
 mod util;
 
-pub use config::IcmpTracerConfig;
-pub use net::IcmpChannel;
+pub use config::{Protocol, TracerConfig};
+pub use net::Channel;
 pub use probe::{Probe, ProbeStatus};
-pub use tracer::IcmpTracer;
+pub use tracer::Tracer;
