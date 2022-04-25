@@ -44,12 +44,25 @@ pub enum Mode {
     Json,
 }
 
+/// The tracing protocol.
+#[derive(Debug, Copy, Clone, ArgEnum)]
+pub enum TraceProtocol {
+    /// Internet Control Message Protocol
+    Icmp,
+    /// User Datagram Protocol
+    Udp,
+}
+
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
     /// The hostname or IP to scan
     pub hostname: String,
+
+    /// Tracing protocol.
+    #[clap(arg_enum, short = 'p', long, default_value = "icmp")]
+    pub protocol: TraceProtocol,
 
     /// The TTL to start from
     #[clap(long, default_value_t = 1)]
@@ -75,6 +88,10 @@ pub struct Args {
     #[clap(short = 'U', long, default_value_t = 24)]
     pub max_inflight: u8,
 
+    /// The minimum sequence number
+    #[clap(long, default_value_t = 33000)]
+    pub min_sequence: u16,
+
     /// The socket read timeout
     #[clap(long, default_value = "10ms")]
     pub read_timeout: String,
@@ -86,6 +103,10 @@ pub struct Args {
     /// The repeating pattern in the payload of the ICMP packet
     #[clap(long, default_value_t = 0)]
     pub payload_pattern: u8,
+
+    /// The source port (UDP only)
+    #[clap(long)]
+    pub source_port: Option<u16>,
 
     /// Preserve the screen on exit
     #[clap(long)]
@@ -144,6 +165,14 @@ pub fn validate_packet_size(packet_size: u16) {
             "packet_size ({}) must be between {} and {} inclusive",
             packet_size, MIN_PACKET_SIZE, MAX_PACKET_SIZE
         );
+        exit(-1);
+    }
+}
+
+/// Validate `source_port`
+pub fn validate_source_port(source_port: u16) {
+    if source_port < 1024 {
+        eprintln!("source_port ({}) must be >= 1024", source_port);
         exit(-1);
     }
 }
