@@ -1,4 +1,4 @@
-use crate::tracing::tracer::{Round, Sequence, TimeToLive};
+use crate::tracing::types::{Round, Sequence, TimeToLive};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
