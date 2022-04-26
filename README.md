@@ -25,7 +25,7 @@ Feature status and high level roadmap:
 - Trace: Adjustable round end grace period (✅)
 - Trace: Adjustable maximum number of unknown hops (✅)
 - Trace: Adjustable source port for `UDP` (✅)
-- Trace: UDP protocol ([#31](https://github.com/fujiapple852/trippy/issues/31))
+- Trace: UDP protocol (✅)
 - Trace: TCP protocol ([#32](https://github.com/fujiapple852/trippy/issues/32))
 - Trace: SCTP protocol ([#41](https://github.com/fujiapple852/trippy/issues/41))
 - Trace: IPv6 ([#35](https://github.com/fujiapple852/trippy/issues/35))
