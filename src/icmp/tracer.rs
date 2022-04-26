@@ -413,6 +413,207 @@ mod state {
             self.target_seq = None;
         }
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::icmp::probe::IcmpPacketType;
+        use crate::icmp::ProbeStatus;
+        use std::net::{IpAddr, Ipv4Addr};
+
+        #[allow(
+            clippy::cognitive_complexity,
+            clippy::too_many_lines,
+            clippy::bool_assert_comparison
+        )]
+        #[test]
+        fn test_state() {
+            let mut state = TracerState::new(TimeToLive::from(1));
+
+            // Validate the initial TracerState
+            assert_eq!(state.round, Round(0));
+            assert_eq!(state.sequence, Sequence(33000));
+            assert_eq!(state.round_sequence, Sequence(33000));
+            assert_eq!(state.ttl, TimeToLive(1));
+            assert_eq!(state.target_seq, None);
+            assert_eq!(state.max_received_ttl, None);
+            assert_eq!(state.received_time, None);
+            assert_eq!(state.target_ttl, None);
+            assert_eq!(state.target_found, false);
+
+            // The initial state of the probe before sending
+            let prob_init = state.probe_at(Sequence(33000));
+            assert_eq!(prob_init.sequence, Sequence(0));
+            assert_eq!(prob_init.ttl, TimeToLive(0));
+            assert_eq!(prob_init.round, Round(0));
+            assert_eq!(prob_init.received, None);
+            assert_eq!(prob_init.host, None);
+            assert_eq!(prob_init.sent.is_some(), false);
+            assert_eq!(prob_init.status, ProbeStatus::NotSent);
+            assert_eq!(prob_init.icmp_packet_type, None);
+
+            // Prepare probe 1 (round 0, sequence 33000, ttl 1) for sending
+            let probe_1 = state.next_probe();
+            assert_eq!(probe_1.sequence, Sequence(33000));
+            assert_eq!(probe_1.ttl, TimeToLive(1));
+            assert_eq!(probe_1.round, Round(0));
+            assert_eq!(probe_1.received, None);
+            assert_eq!(probe_1.host, None);
+            assert_eq!(probe_1.sent.is_some(), true);
+            assert_eq!(probe_1.status, ProbeStatus::Awaited);
+            assert_eq!(probe_1.icmp_packet_type, None);
+
+            // Update the state of the probe 1 after receiving a TimeExceeded
+            let received_1 = SystemTime::now();
+            let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
+            let probe_1_recv = state
+                .probe_at(Sequence(33000))
+                .with_status(ProbeStatus::Complete)
+                .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
+                .with_host(host)
+                .with_received(received_1);
+            state.update_probe(Sequence(33000), probe_1_recv, received_1, false);
+
+            // Validate the state of the probe 1 after the update
+            let probe_1_fetch = state.probe_at(Sequence(33000));
+            assert_eq!(probe_1_fetch.sequence, Sequence(33000));
+            assert_eq!(probe_1_fetch.ttl, TimeToLive(1));
+            assert_eq!(probe_1_fetch.round, Round(0));
+            assert_eq!(probe_1_fetch.received, Some(received_1));
+            assert_eq!(probe_1_fetch.host, Some(host));
+            assert_eq!(probe_1_fetch.sent.is_some(), true);
+            assert_eq!(probe_1_fetch.status, ProbeStatus::Complete);
+            assert_eq!(
+                probe_1_fetch.icmp_packet_type,
+                Some(IcmpPacketType::TimeExceeded)
+            );
+
+            // Validate the TracerState after the update
+            assert_eq!(state.round, Round(0));
+            assert_eq!(state.sequence, Sequence(33001));
+            assert_eq!(state.round_sequence, Sequence(33000));
+            assert_eq!(state.ttl, TimeToLive(2));
+            assert_eq!(state.target_seq, None);
+            assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
+            assert_eq!(state.received_time, Some(received_1));
+            assert_eq!(state.target_ttl, None);
+            assert_eq!(state.target_found, false);
+
+            // Validate the probes() iterator returns returns only a single probe
+            {
+                let mut probe_iter = state.probes();
+                let probe_next1 = *probe_iter.next().unwrap();
+                assert_eq!(probe_1_fetch, probe_next1);
+                let probe_next2 = *probe_iter.next().unwrap();
+                assert_eq!(probe_next2.sequence, Sequence(0));
+                assert_eq!(probe_next2.ttl, TimeToLive(0));
+                assert_eq!(probe_next2.round, Round(0));
+                assert_eq!(probe_next2.received, None);
+                assert_eq!(probe_next2.host, None);
+                assert_eq!(probe_next2.sent.is_some(), false);
+                assert_eq!(probe_next2.status, ProbeStatus::NotSent);
+                assert_eq!(probe_next2.icmp_packet_type, None);
+            }
+
+            // Advance to the next round
+            state.advance_round(TimeToLive(1));
+
+            // Validate the TracerState after the round update
+            assert_eq!(state.round, Round(1));
+            assert_eq!(state.sequence, Sequence(33001));
+            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.ttl, TimeToLive(1));
+            assert_eq!(state.target_seq, None);
+            assert_eq!(state.max_received_ttl, None);
+            assert_eq!(state.received_time, None);
+            assert_eq!(state.target_ttl, None);
+            assert_eq!(state.target_found, false);
+
+            // Prepare probe 2 (round 1, sequence 33001, ttl 1) for sending
+            let probe_2 = state.next_probe();
+            assert_eq!(probe_2.sequence, Sequence(33001));
+            assert_eq!(probe_2.ttl, TimeToLive(1));
+            assert_eq!(probe_2.round, Round(1));
+            assert_eq!(probe_2.received, None);
+            assert_eq!(probe_2.host, None);
+            assert_eq!(probe_2.sent.is_some(), true);
+            assert_eq!(probe_2.status, ProbeStatus::Awaited);
+            assert_eq!(probe_2.icmp_packet_type, None);
+
+            // Prepare probe 3 (round 1, sequence 33002, ttl 2) for sending
+            let probe_3 = state.next_probe();
+            assert_eq!(probe_3.sequence, Sequence(33002));
+            assert_eq!(probe_3.ttl, TimeToLive(2));
+            assert_eq!(probe_3.round, Round(1));
+            assert_eq!(probe_3.received, None);
+            assert_eq!(probe_3.host, None);
+            assert_eq!(probe_3.sent.is_some(), true);
+            assert_eq!(probe_3.status, ProbeStatus::Awaited);
+            assert_eq!(probe_3.icmp_packet_type, None);
+
+            // Update the state of probe 2 after receiving a TimeExceeded
+            let received_2 = SystemTime::now();
+            let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
+            let probe_2_recv = state
+                .probe_at(Sequence(33001))
+                .with_status(ProbeStatus::Complete)
+                .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
+                .with_host(host)
+                .with_received(received_2);
+            state.update_probe(Sequence(33001), probe_2_recv, received_2, false);
+
+            // Validate the TracerState after the update to probe 2
+            assert_eq!(state.round, Round(1));
+            assert_eq!(state.sequence, Sequence(33003));
+            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.ttl, TimeToLive(3));
+            assert_eq!(state.target_seq, None);
+            assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
+            assert_eq!(state.received_time, Some(received_2));
+            assert_eq!(state.target_ttl, None);
+            assert_eq!(state.target_found, false);
+
+            // Validate the probes() iterator returns the two probes in the states we expect
+            {
+                let mut probe_iter = state.probes();
+                let probe_next1 = *probe_iter.next().unwrap();
+                assert_eq!(probe_2_recv, probe_next1);
+                let probe_next2 = *probe_iter.next().unwrap();
+                assert_eq!(probe_3, probe_next2);
+            }
+
+            // Update the state of probe 3 after receiving a EchoReply
+            let received_3 = SystemTime::now();
+            let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
+            let probe_3_recv = state
+                .probe_at(Sequence(33002))
+                .with_status(ProbeStatus::Complete)
+                .with_icmp_packet_type(IcmpPacketType::EchoReply)
+                .with_host(host)
+                .with_received(received_3);
+            state.update_probe(Sequence(33002), probe_3_recv, received_3, true);
+
+            // Validate the TracerState after the update to probe 3
+            assert_eq!(state.round, Round(1));
+            assert_eq!(state.sequence, Sequence(33003));
+            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.ttl, TimeToLive(3));
+            assert_eq!(state.target_seq, Some(Sequence(33002)));
+            assert_eq!(state.max_received_ttl, Some(TimeToLive(2)));
+            assert_eq!(state.received_time, Some(received_3));
+            assert_eq!(state.target_ttl, Some(TimeToLive(2)));
+            assert_eq!(state.target_found, true);
+
+            // Validate the probes() iterator returns the two probes in the states we expect
+            {
+                let mut probe_iter = state.probes();
+                let probe_next1 = *probe_iter.next().unwrap();
+                assert_eq!(probe_2_recv, probe_next1);
+                let probe_next2 = *probe_iter.next().unwrap();
+                assert_eq!(probe_3_recv, probe_next2);
+            }
+        }
+    }
 }
 
 /// Returns true if the duration between start and end is grater than a duration, false otherwise.
