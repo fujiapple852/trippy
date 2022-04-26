@@ -1,11 +1,10 @@
 use self::state::TracerState;
-use crate::icmp::config::TracerConfig;
-use crate::icmp::error::TraceResult;
-use crate::icmp::net::Channel;
-use crate::icmp::net::ProbeResponse;
-use crate::icmp::probe::{IcmpPacketType, ProbeStatus};
-use crate::icmp::Probe;
-use crate::Protocol;
+use crate::tracing::error::TraceResult;
+use crate::tracing::net::ProbeResponse;
+use crate::tracing::TracerChannel;
+use crate::tracing::TracerConfig;
+use crate::tracing::{IcmpPacketType, ProbeStatus};
+use crate::tracing::{Probe, TracerProtocol};
 use derive_more::{Add, AddAssign, From, Rem, Sub};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -56,7 +55,7 @@ pub struct SourcePort(pub u16);
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
     target_addr: IpAddr,
-    protocol: Protocol,
+    protocol: TracerProtocol,
     trace_identifier: TraceId,
     first_ttl: TimeToLive,
     max_ttl: TimeToLive,
@@ -96,7 +95,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// Run a continuous trace and publish results to a channel.
     ///
     /// TODO describe algorithm
-    pub fn trace(self, mut channel: Channel) -> TraceResult<()> {
+    pub fn trace(self, mut channel: TracerChannel) -> TraceResult<()> {
         let mut state = TracerState::new(self.first_ttl, self.min_sequence);
         loop {
             self.send_request(&mut channel, &mut state)?;
@@ -115,7 +114,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
     ///       - the next ttl is not greater than the ttl of the target host observed from the prior round
     ///     otherwise:
     ///       - the number of unknown-in-flight probes is lower than the maximum allowed
-    fn send_request(&self, channel: &mut Channel, st: &mut TracerState) -> TraceResult<()> {
+    fn send_request(&self, channel: &mut TracerChannel, st: &mut TracerState) -> TraceResult<()> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
@@ -124,7 +123,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             match self.protocol {
-                Protocol::Icmp => {
+                TracerProtocol::Icmp => {
                     channel.send_icmp_probe(
                         st.next_probe(),
                         self.target_addr,
@@ -133,7 +132,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
                         self.payload_pattern.0,
                     )?;
                 }
-                Protocol::Udp => {
+                TracerProtocol::Udp => {
                     channel.send_udp_probe(
                         st.next_probe(),
                         self.target_addr,
@@ -162,10 +161,10 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
-    fn recv_response(&self, channel: &mut Channel, st: &mut TracerState) -> TraceResult<()> {
+    fn recv_response(&self, channel: &mut TracerChannel, st: &mut TracerState) -> TraceResult<()> {
         let next = match self.protocol {
-            Protocol::Icmp => channel.receive_probe_response_icmp(self.read_timeout)?,
-            Protocol::Udp => channel.receive_probe_response_udp(self.read_timeout)?,
+            TracerProtocol::Icmp => channel.receive_probe_response_icmp(self.read_timeout)?,
+            TracerProtocol::Udp => channel.receive_probe_response_udp(self.read_timeout)?,
         };
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {
@@ -277,8 +276,8 @@ impl<F: Fn(&Probe)> Tracer<F> {
 /// This is contained within a sub-module to ensure that mutations are only performed via methods on the
 /// `TracerState` struct.
 mod state {
-    use crate::icmp::tracer::{Round, Sequence, TimeToLive};
-    use crate::icmp::Probe;
+    use crate::tracing::tracer::{Round, Sequence, TimeToLive};
+    use crate::tracing::Probe;
     use std::time::SystemTime;
 
     /// The maximum number of `Probe` entries in the circular buffer.
@@ -449,8 +448,8 @@ mod state {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::icmp::probe::IcmpPacketType;
-        use crate::icmp::ProbeStatus;
+        use crate::tracing::probe::IcmpPacketType;
+        use crate::tracing::ProbeStatus;
         use std::net::{IpAddr, Ipv4Addr};
 
         #[allow(

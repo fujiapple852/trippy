@@ -141,7 +141,7 @@ pub fn run_report_json(
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
 }
 
-/// Display a continuous stream of tracing data.
+/// Display a continuous stream of trace data.
 pub fn run_report_stream(
     hostname: &str,
     target_addr: IpAddr,

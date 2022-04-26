@@ -1,6 +1,7 @@
 use crate::backend::Hop;
 use crate::dns::DnsResolver;
-use crate::{Trace, TracerConfig};
+use crate::tracing::TracerConfig;
+use crate::Trace;
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
 use crossterm::{

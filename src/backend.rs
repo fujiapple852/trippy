@@ -1,6 +1,5 @@
 use crate::config::MAX_HOPS;
-use crate::icmp::{Channel, Probe, ProbeStatus, Tracer};
-use crate::TracerConfig;
+use crate::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig};
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
@@ -57,7 +56,7 @@ impl Trace {
         }
     }
 
-    /// Update the trace state from a `Probe`.
+    /// Update the tracing state from a `Probe`.
     pub fn update_from_probe(&mut self, probe: &Probe) {
         let index = usize::from(probe.ttl.0) - 1;
         if self.lowest_ttl == 0 {
@@ -229,7 +228,7 @@ impl Default for Hop {
 /// Note that currently each `Probe` is published individually at the end of a round and so the lock is taken multiple
 /// times per round.
 pub fn run_backend(config: &TracerConfig, trace_data: Arc<RwLock<Trace>>) -> anyhow::Result<()> {
-    let channel = Channel::new()?;
+    let channel = TracerChannel::new()?;
     let tracer = Tracer::new(config, move |probe| {
         trace_data.write().update_from_probe(probe);
     });

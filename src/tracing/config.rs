@@ -1,4 +1,4 @@
-use crate::icmp::tracer::{
+use crate::tracing::tracer::{
     MaxInflight, PacketSize, PayloadPattern, Sequence, SourcePort, TimeToLive, TraceId,
 };
 use std::fmt::{Display, Formatter};
@@ -7,17 +7,17 @@ use std::time::Duration;
 
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone)]
-pub enum Protocol {
+pub enum TracerProtocol {
     /// Internet Control Message Protocol
     Icmp,
     /// User Datagram Protocol
     Udp,
 }
 
-impl Display for Protocol {
+impl Display for TracerProtocol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Icmp => write!(f, "icmp"),
+            Self::Icmp => write!(f, "tracing"),
             Self::Udp => write!(f, "udp"),
         }
     }
@@ -27,7 +27,7 @@ impl Display for Protocol {
 #[derive(Debug, Copy, Clone)]
 pub struct TracerConfig {
     pub target_addr: IpAddr,
-    pub protocol: Protocol,
+    pub protocol: TracerProtocol,
     pub trace_identifier: TraceId,
     pub first_ttl: TimeToLive,
     pub max_ttl: TimeToLive,
@@ -47,7 +47,7 @@ impl TracerConfig {
     #[must_use]
     pub fn new(
         target_addr: IpAddr,
-        protocol: Protocol,
+        protocol: TracerProtocol,
         trace_identifier: u16,
         first_ttl: u8,
         max_ttl: u8,
