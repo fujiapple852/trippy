@@ -40,6 +40,63 @@ const MAX_TCP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 /// The maximum TCP payload size we allow.
 const MAX_TCP_PAYLOAD_BUF: usize = MAX_UDP_BUF - TcpPacket::minimum_packet_size();
 
+/// An abstraction over a network interface for tracing.
+pub trait Network {
+    /// Send an `ICMP` `Probe`
+    fn send_icmp_probe(
+        &mut self,
+        probe: Probe,
+        ip: IpAddr,
+        id: u16,
+        packet_size: u16,
+        payload_value: u8,
+    ) -> TraceResult<()>;
+
+    /// Send a `UDP` `Probe`.
+    fn send_udp_probe(
+        &mut self,
+        probe: Probe,
+        ip: IpAddr,
+        source_port: u16,
+        packet_size: u16,
+        payload_value: u8,
+    ) -> TraceResult<()>;
+
+    /// Send a `TCP` `Probe`.
+    fn send_tcp_probe(
+        &mut self,
+        probe: Probe,
+        ip: IpAddr,
+        source_port: u16,
+        packet_size: u16,
+        payload_value: u8,
+    ) -> TraceResult<()>;
+
+    /// Receive the next Icmp packet and return an `IcmpResponse` for a ICMP probe.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    fn receive_probe_response_icmp(
+        &mut self,
+        timeout: Duration,
+    ) -> TraceResult<Option<ProbeResponse>>;
+
+    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Udp` probe.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    fn receive_probe_response_udp(
+        &mut self,
+        timeout: Duration,
+    ) -> TraceResult<Option<ProbeResponse>>;
+
+    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    fn receive_probe_response_tcp(
+        &mut self,
+        timeout: Duration,
+    ) -> TraceResult<Option<ProbeResponse>>;
+}
+
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
     icmp_tx: TransportSender,
@@ -63,9 +120,10 @@ impl TracerChannel {
             tcp_tx,
         })
     }
+}
 
-    /// Send an `ICMP` `Probe`
-    pub fn send_icmp_probe(
+impl Network for TracerChannel {
+    fn send_icmp_probe(
         &mut self,
         probe: Probe,
         ip: IpAddr,
@@ -96,8 +154,7 @@ impl TracerChannel {
         Ok(())
     }
 
-    /// Send a `UDP` `Probe`.
-    pub fn send_udp_probe(
+    fn send_udp_probe(
         &mut self,
         probe: Probe,
         ip: IpAddr,
@@ -126,8 +183,7 @@ impl TracerChannel {
         Ok(())
     }
 
-    /// Send a `TCP` `Probe`.
-    pub fn send_tcp_probe(
+    fn send_tcp_probe(
         &mut self,
         probe: Probe,
         ip: IpAddr,
@@ -157,10 +213,7 @@ impl TracerChannel {
         Ok(())
     }
 
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a ICMP probe.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    pub fn receive_probe_response_icmp(
+    fn receive_probe_response_icmp(
         &mut self,
         timeout: Duration,
     ) -> TraceResult<Option<ProbeResponse>> {
@@ -203,10 +256,7 @@ impl TracerChannel {
         )
     }
 
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Udp` probe.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    pub fn receive_probe_response_udp(
+    fn receive_probe_response_udp(
         &mut self,
         timeout: Duration,
     ) -> TraceResult<Option<ProbeResponse>> {
@@ -237,10 +287,7 @@ impl TracerChannel {
         )
     }
 
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    pub fn receive_probe_response_tcp(
+    fn receive_probe_response_tcp(
         &mut self,
         timeout: Duration,
     ) -> TraceResult<Option<ProbeResponse>> {

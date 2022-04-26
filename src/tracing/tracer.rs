@@ -1,7 +1,6 @@
 use self::state::TracerState;
 use crate::tracing::error::TraceResult;
-use crate::tracing::net::ProbeResponse;
-use crate::tracing::TracerChannel;
+use crate::tracing::net::{Network, ProbeResponse};
 use crate::tracing::TracerConfig;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerProtocol};
@@ -92,19 +91,19 @@ impl<F: Fn(&Probe)> Tracer<F> {
         }
     }
 
-    /// Run a continuous trace and publish results to a channel.
+    /// Run a continuous trace and publish results.
     ///
     /// TODO describe algorithm
-    pub fn trace(self, mut channel: TracerChannel) -> TraceResult<()> {
+    pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
         let mut state = TracerState::new(self.first_ttl, self.min_sequence);
         loop {
-            self.send_request(&mut channel, &mut state)?;
-            self.recv_response(&mut channel, &mut state)?;
+            self.send_request(&mut network, &mut state)?;
+            self.recv_response(&mut network, &mut state)?;
             self.update_round(&mut state);
         }
     }
 
-    /// Send the next `ICMP` or `UDP` probe if required.
+    /// Send the next probe if required.
     ///
     /// Send a `Probe` for the next time-to-live (ttl) if all of the following are true:
     ///
@@ -114,7 +113,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
     ///       - the next ttl is not greater than the ttl of the target host observed from the prior round
     ///     otherwise:
     ///       - the number of unknown-in-flight probes is lower than the maximum allowed
-    fn send_request(&self, channel: &mut TracerChannel, st: &mut TracerState) -> TraceResult<()> {
+    fn send_request<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
@@ -124,7 +123,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             match self.protocol {
                 TracerProtocol::Icmp => {
-                    channel.send_icmp_probe(
+                    network.send_icmp_probe(
                         st.next_probe(),
                         self.target_addr,
                         self.trace_identifier.0,
@@ -133,7 +132,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
                     )?;
                 }
                 TracerProtocol::Udp => {
-                    channel.send_udp_probe(
+                    network.send_udp_probe(
                         st.next_probe(),
                         self.target_addr,
                         self.source_port.0,
@@ -142,7 +141,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
                     )?;
                 }
                 TracerProtocol::Tcp => {
-                    channel.send_tcp_probe(
+                    network.send_tcp_probe(
                         st.next_probe(),
                         self.target_addr,
                         self.source_port.0,
@@ -160,21 +159,21 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// We allow multiple probes to be in-flight at any time and we cannot guaranteed that responses will be
     /// received in-order.  We therefore maintain a circular buffer which holds details of each `Probe` which is
     /// indexed by a sequence number (modulo the buffer size).  The sequence number is set in the outgoing `ICMP`
-    /// `EchoRequest` (or 'UDP') packet and returned in both the `TimeExceeded` and `EchoReply` responses.
+    /// `EchoRequest` (or `UDP` / `TCP`) packet and returned in both the `TimeExceeded` and `EchoReply` responses.
     ///
     /// Each incoming `ICMP` packet contains the original `ICMP` `EchoRequest` packet from which we can read the
     /// `identifier` that we set which we can now validate to ensure we only process responses which correspond to
-    /// packets sent from this process.  For The `UDP` protocol, only packets destined for our src port will be
-    /// delivered to us by the OS and so no other `identifier` is needed and so we alow the special case value of 0.
+    /// packets sent from this process.  For The `UDP` and `TCP` protocols, only packets destined for our src port will
+    /// be delivered to us by the OS and so no other `identifier` is needed and so we allow the special case value of 0.
     ///
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
-    fn recv_response(&self, channel: &mut TracerChannel, st: &mut TracerState) -> TraceResult<()> {
+    fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = match self.protocol {
-            TracerProtocol::Icmp => channel.receive_probe_response_icmp(self.read_timeout)?,
-            TracerProtocol::Udp => channel.receive_probe_response_udp(self.read_timeout)?,
-            TracerProtocol::Tcp => channel.receive_probe_response_tcp(self.read_timeout)?,
+            TracerProtocol::Icmp => network.receive_probe_response_icmp(self.read_timeout)?,
+            TracerProtocol::Udp => network.receive_probe_response_udp(self.read_timeout)?,
+            TracerProtocol::Tcp => network.receive_probe_response_tcp(self.read_timeout)?,
         };
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {
@@ -251,7 +250,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
         }
     }
 
-    /// Publish details of all `Probe` in the completed round to a channel.
+    /// Publish details of all `Probe` in the completed round.
     ///
     /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
     /// `Probe` which is assumed to represent the TTL of the target host.
