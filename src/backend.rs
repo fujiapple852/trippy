@@ -1,10 +1,10 @@
 use crate::config::MAX_HOPS;
-use crate::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig};
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
+use trippy::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig};
 
 /// The maximum number of historic samples to keep per hop.
 const MAX_SAMPLES: usize = 256;

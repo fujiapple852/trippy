@@ -8,10 +8,14 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
+
+# Library dependancies
 pnet = "0.29.0"
 thiserror = "1.0.30"
-anyhow = "1.0.57"
 derive_more = "0.99.17"
+
+# TUI dependancies
+anyhow = "1.0.57"
 dns-lookup = "1.0.8"
 clap = { version = "3.1.11", features = [ "derive", "wrap_help", "cargo" ] }
 humantime = "2.1.0"

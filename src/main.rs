@@ -30,15 +30,14 @@ mod config;
 mod dns;
 mod frontend;
 mod report;
-mod tracing;
 
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let args = Args::parse();
     let hostname = args.hostname;
     let protocol = match args.protocol {
-        TraceProtocol::Icmp => tracing::TracerProtocol::Icmp,
-        TraceProtocol::Udp => tracing::TracerProtocol::Udp,
+        TraceProtocol::Icmp => trippy::tracing::TracerProtocol::Icmp,
+        TraceProtocol::Udp => trippy::tracing::TracerProtocol::Udp,
     };
     let first_ttl = args.first_ttl;
     let max_ttl = args.max_ttl;
@@ -67,7 +66,7 @@ fn main() -> anyhow::Result<()> {
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
-    let tracer_config = tracing::TracerConfig::new(
+    let tracer_config = trippy::tracing::TracerConfig::new(
         target_addr,
         protocol,
         trace_identifier,
