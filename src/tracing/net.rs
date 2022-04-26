@@ -1,4 +1,5 @@
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::types::{PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::Probe;
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
@@ -70,10 +71,10 @@ pub trait Network {
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
     ip: IpAddr,
-    identifier: u16,
-    packet_size: u16,
-    payload_value: u8,
-    source_port: u16,
+    identifier: TraceId,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
+    source_port: SourcePort,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
     udp_tx: TransportSender,
@@ -86,10 +87,10 @@ impl TracerChannel {
     /// This operation requires the `CAP_NET_RAW` capability.
     pub fn new(
         ip: IpAddr,
-        identifier: u16,
-        packet_size: u16,
-        payload_value: u8,
-        source_port: u16,
+        identifier: TraceId,
+        packet_size: PacketSize,
+        payload_pattern: PayloadPattern,
+        source_port: SourcePort,
     ) -> TraceResult<Self> {
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
@@ -98,7 +99,7 @@ impl TracerChannel {
             ip,
             identifier,
             packet_size,
-            payload_value,
+            payload_pattern,
             source_port,
             icmp_tx,
             icmp_rx,
@@ -110,7 +111,7 @@ impl TracerChannel {
 
 impl Network for TracerChannel {
     fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let packet_size = usize::from(self.packet_size);
+        let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -120,11 +121,13 @@ impl Network for TracerChannel {
         let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
         let icmp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - icmp_header_size - ip_header_size;
-        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
+        payload_buf
+            .iter_mut()
+            .for_each(|x| *x = self.payload_pattern.0);
         let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
         req.set_icmp_type(IcmpTypes::EchoRequest);
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
-        req.set_identifier(self.identifier);
+        req.set_identifier(self.identifier.0);
         req.set_payload(&payload_buf[..payload_size]);
         req.set_sequence_number(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
@@ -134,7 +137,7 @@ impl Network for TracerChannel {
     }
 
     fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let packet_size = usize::from(self.packet_size);
+        let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -144,11 +147,13 @@ impl Network for TracerChannel {
         let mut payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
         let udp_buf_size = packet_size - ip_header_size;
         let mut udp = MutableUdpPacket::new(&mut udp_buf[..udp_buf_size]).req()?;
-        udp.set_source(self.source_port);
+        udp.set_source(self.source_port.0);
         udp.set_destination(probe.sequence.0);
         let payload_size = packet_size - udp_header_size - ip_header_size;
         udp.set_length((UdpPacket::minimum_packet_size() + payload_size) as u16);
-        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
+        payload_buf
+            .iter_mut()
+            .for_each(|x| *x = self.payload_pattern.0);
         udp.set_payload(&payload_buf[..payload_size]);
         self.udp_tx.set_ttl(probe.ttl.0)?;
         self.udp_tx.send_to(udp.to_immutable(), self.ip)?;
@@ -156,7 +161,7 @@ impl Network for TracerChannel {
     }
 
     fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let packet_size = usize::from(self.packet_size);
+        let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -167,11 +172,13 @@ impl Network for TracerChannel {
         let tcp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - tcp_header_size - ip_header_size;
         let mut tcp = MutableTcpPacket::new(&mut tcp_buf[..tcp_buf_size]).req()?;
-        tcp.set_source(self.source_port);
+        tcp.set_source(self.source_port.0);
         tcp.set_destination(probe.sequence.0);
         tcp.set_flags(TcpFlags::SYN);
         tcp.set_data_offset(5);
-        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
+        payload_buf
+            .iter_mut()
+            .for_each(|x| *x = self.payload_pattern.0);
         tcp.set_payload(&payload_buf[..payload_size]);
         self.tcp_tx.set_ttl(probe.ttl.0)?;
         self.tcp_tx.send_to(tcp.to_immutable(), self.ip)?;
