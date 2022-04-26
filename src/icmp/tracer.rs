@@ -5,13 +5,9 @@ use crate::icmp::net::IcmpChannel;
 use crate::icmp::net::IcmpResponse;
 use crate::icmp::probe::{IcmpPacketType, ProbeStatus};
 use crate::icmp::Probe;
-use derive_more::{Add, AddAssign, From, Mul, Sub};
+use derive_more::{Add, AddAssign, From, Rem, Sub};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
-
-/// Index newtype.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From, Mul, AddAssign)]
-pub struct Index(pub usize);
 
 /// Round newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From, AddAssign)]
@@ -24,7 +20,9 @@ pub struct Round(pub usize);
 pub struct TimeToLive(pub u8);
 
 /// Sequence number newtype.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From, Add, AddAssign, Rem,
+)]
 pub struct Sequence(pub u16);
 
 /// Trace Identifier newtype.
@@ -42,6 +40,12 @@ pub struct PacketSize(pub u16);
 /// Max Inflight newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct PayloadPattern(pub u8);
+
+impl From<Sequence> for usize {
+    fn from(sequence: Sequence) -> Self {
+        sequence.0 as Self
+    }
+}
 
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
@@ -109,7 +113,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             channel.send(
-                st.next_probe()?,
+                st.next_probe(),
                 self.target_addr,
                 self.trace_identifier.0,
                 self.packet_size.0,
@@ -135,7 +139,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
     fn recv_response(&self, channel: &mut IcmpChannel, st: &mut TracerState) -> TraceResult<()> {
         match channel.receive(self.read_timeout)? {
             Some(IcmpResponse::TimeExceeded(data)) => {
-                let sequence = Sequence::from(data.sequence);
+                let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
@@ -150,7 +154,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
                 }
             }
             Some(IcmpResponse::DestinationUnreachable(data)) => {
-                let sequence = Sequence::from(data.sequence);
+                let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
@@ -165,7 +169,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
                 }
             }
             Some(IcmpResponse::EchoReply(data)) => {
-                let sequence = Sequence::from(data.sequence);
+                let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
@@ -241,9 +245,7 @@ impl<F: Fn(&Probe)> IcmpTracer<F> {
 /// This is contained within a sub-module to ensure that mutations are only performed via methods on the
 /// `TracerState` struct.
 mod state {
-    use crate::icmp::error::{TraceResult, TracerError};
-    use crate::icmp::tracer::{Index, Round, Sequence, TimeToLive};
-    use crate::icmp::util::RemModU16Max;
+    use crate::icmp::tracer::{Round, Sequence, TimeToLive};
     use crate::icmp::Probe;
     use std::time::SystemTime;
 
@@ -252,15 +254,21 @@ mod state {
     /// This is effectively also the maximum time-to-live (TTL) we can support.
     const BUFFER_SIZE: u16 = 256;
 
+    /// The minimum sequence number.
+    const MIN_SEQUENCE: Sequence = Sequence(33000);
+
+    /// The maximum sequence number.
+    const MAX_SEQUENCE: Sequence = Sequence(u16::MAX);
+
     /// Mutable state needed for the tracing algorithm.
     #[derive(Debug)]
     pub struct TracerState {
         /// The state of all `Probe` requests and responses.
         buffer: [Probe; BUFFER_SIZE as usize],
-        /// a monotonically increasing index for every `EchoRequest`.
-        index: Index,
-        /// The starting index of the current round.
-        round_index: Index,
+        /// An increasing sequence number for every `EchoRequest`.
+        sequence: Sequence,
+        /// The starting sequence number of the current round.
+        round_sequence: Sequence,
         /// The time-to-live for the _next_ `EchoRequest` packet to be sent.
         ttl: TimeToLive,
         /// The current round.
@@ -283,8 +291,8 @@ mod state {
         pub fn new(first_ttl: TimeToLive) -> Self {
             Self {
                 buffer: [Probe::default(); BUFFER_SIZE as usize],
-                index: Index(0),
-                round_index: Index::from(0),
+                sequence: MIN_SEQUENCE,
+                round_sequence: MIN_SEQUENCE,
                 ttl: first_ttl,
                 round: Round::from(0),
                 round_start: SystemTime::now(),
@@ -301,12 +309,12 @@ mod state {
             self.buffer
                 .iter()
                 .cycle()
-                .skip(self.round_index.0 % usize::from(BUFFER_SIZE))
+                .skip(usize::from(self.round_sequence % BUFFER_SIZE))
         }
 
         /// Get the `Probe` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> Probe {
-            self.buffer[usize::from(sequence.0 % BUFFER_SIZE)]
+            self.buffer[usize::from(sequence % BUFFER_SIZE)]
         }
 
         pub const fn ttl(&self) -> TimeToLive {
@@ -338,23 +346,21 @@ mod state {
         }
 
         /// Is `sequence` in the current round?
-        ///
-        /// TODO this is likely broken when sequence wraps.
         pub fn in_round(&self, sequence: Sequence) -> bool {
-            sequence.0 >= self.round_index.0.rem_u16max()
+            sequence >= self.round_sequence
         }
 
-        /// Create and return the next `Probe` at the current `seq` and `ttl`.
-        pub fn next_probe(&mut self) -> TraceResult<Probe> {
-            let probe = Probe::new(self.index, self.ttl, self.round, SystemTime::now());
-            self.buffer[self.index.0 % usize::from(BUFFER_SIZE)] = probe;
+        /// Create and return the next `Probe` at the current `sequence` and `ttl`.
+        pub fn next_probe(&mut self) -> Probe {
+            let probe = Probe::new(self.sequence, self.ttl, self.round, SystemTime::now());
+            self.buffer[usize::from(self.sequence % BUFFER_SIZE)] = probe;
             self.ttl += TimeToLive::from(1);
-            if self.index < Index::from(usize::MAX) {
-                self.index += Index::from(1);
-                Ok(probe)
+            if self.sequence == MAX_SEQUENCE {
+                self.sequence = MIN_SEQUENCE;
             } else {
-                Err(TracerError::Generic)
+                self.sequence += Sequence(1);
             }
+            probe
         }
 
         /// Update the state of an `Probe`.
@@ -386,7 +392,7 @@ mod state {
                 }
                 _ => {}
             }
-            self.buffer[usize::from(sequence.0) % usize::from(BUFFER_SIZE)] = probe;
+            self.buffer[usize::from(sequence % BUFFER_SIZE)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
                 Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
                 None => Some(probe.ttl),
@@ -398,7 +404,7 @@ mod state {
         /// Advance to the next round.
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
             self.target_found = false;
-            self.round_index = self.index;
+            self.round_sequence = self.sequence;
             self.received_time = None;
             self.round_start = SystemTime::now();
             self.max_received_ttl = None;

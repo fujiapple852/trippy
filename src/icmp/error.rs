@@ -7,7 +7,6 @@ pub type TraceResult<T> = Result<T, TracerError>;
 #[derive(Error, Debug)]
 #[error("required value was not supplied")]
 pub enum TracerError {
-    Generic,
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
     #[error("missing required field: {0}")]

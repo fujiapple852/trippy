@@ -1,13 +1,12 @@
-use crate::icmp::tracer::{Index, Round, TimeToLive};
-use crate::icmp::util::RemModU16Max;
+use crate::icmp::tracer::{Round, Sequence, TimeToLive};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The state of an ICMP echo request/response
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Probe {
-    /// The unique index of the probe.
-    pub index: Index,
+    /// The sequence of the probe.
+    pub sequence: Sequence,
     /// The TTL of the probe.
     pub ttl: TimeToLive,
     /// Which round the probe belongs to.
@@ -26,9 +25,9 @@ pub struct Probe {
 
 impl Probe {
     #[must_use]
-    pub const fn new(index: Index, ttl: TimeToLive, round: Round, sent: SystemTime) -> Self {
+    pub const fn new(sequence: Sequence, ttl: TimeToLive, round: Round, sent: SystemTime) -> Self {
         Self {
-            index,
+            sequence,
             ttl,
             round,
             sent: Some(sent),
@@ -37,14 +36,6 @@ impl Probe {
             received: None,
             icmp_packet_type: None,
         }
-    }
-
-    /// The sequence number for the probe.
-    ///
-    /// The sequence number is always the `index` modulo `u16::MAX`.
-    #[must_use]
-    pub fn sequence(&self) -> u16 {
-        self.index.0.rem_u16max()
     }
 
     /// The duration of this probe.
