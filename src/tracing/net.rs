@@ -74,11 +74,11 @@ impl TracerChannel {
         let icmp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - icmp_header_size - ip_header_size;
         payload_buf.iter_mut().for_each(|x| *x = payload_value);
-        let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[0..icmp_buf_size]).req()?;
+        let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
         req.set_icmp_type(IcmpTypes::EchoRequest);
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
         req.set_identifier(id);
-        req.set_payload(&payload_buf[0..payload_size]);
+        req.set_payload(&payload_buf[..payload_size]);
         req.set_sequence_number(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
         self.icmp_tx.set_ttl(probe.ttl.0)?;
@@ -104,13 +104,13 @@ impl TracerChannel {
         let mut udp_buf = [0_u8; MAX_UDP_BUF];
         let mut payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
         let udp_buf_size = packet_size - ip_header_size;
-        let mut udp = MutableUdpPacket::new(&mut udp_buf[0..udp_buf_size]).req()?;
+        let mut udp = MutableUdpPacket::new(&mut udp_buf[..udp_buf_size]).req()?;
         udp.set_source(source_port);
         udp.set_destination(probe.sequence.0);
         let payload_size = packet_size - udp_header_size - ip_header_size;
         udp.set_length((UdpPacket::minimum_packet_size() + payload_size) as u16);
         payload_buf.iter_mut().for_each(|x| *x = payload_value);
-        udp.set_payload(&payload_buf[0..payload_size]);
+        udp.set_payload(&payload_buf[..payload_size]);
         self.udp_tx.set_ttl(probe.ttl.0)?;
         self.udp_tx.send_to(udp.to_immutable(), ip)?;
         Ok(())
