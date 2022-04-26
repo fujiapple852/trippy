@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The state of an ICMP echo request/response
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
@@ -97,7 +97,7 @@ impl Default for ProbeStatus {
 }
 
 /// The type of ICMP packet received.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IcmpPacketType {
     TimeExceeded,
     EchoReply,
