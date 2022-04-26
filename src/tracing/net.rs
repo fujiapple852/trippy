@@ -176,16 +176,14 @@ impl TracerChannel {
                     match icmp.get_icmp_type() {
                         IcmpTypes::TimeExceeded => {
                             let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                            let udp_probe = extract_udp_probe(packet.payload())?;
-                            let sequence = udp_probe.get_destination();
+                            let sequence = extract_udp_probe(packet.payload())?;
                             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                                 recv, ip, 0, sequence,
                             )))
                         }
                         IcmpTypes::DestinationUnreachable => {
                             let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                            let udp_probe = extract_udp_probe(packet.payload())?;
-                            let sequence = udp_probe.get_destination();
+                            let sequence = extract_udp_probe(packet.payload())?;
                             Some(ProbeResponse::DestinationUnreachable(
                                 ProbeResponseData::new(recv, ip, 0, sequence),
                             ))
@@ -251,10 +249,10 @@ pub fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>
 }
 
 /// Get the original `UdpPacket` packet embedded in the payload.
-pub fn extract_udp_probe(payload: &[u8]) -> TraceResult<UdpPacket<'_>> {
+pub fn extract_udp_probe(payload: &[u8]) -> TraceResult<u16> {
     let ip4 = Ipv4Packet::new(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_udp = &payload[header_len..];
     let nested = UdpPacket::new(nested_udp).req()?;
-    Ok(nested)
+    Ok(nested.get_destination())
 }
