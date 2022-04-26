@@ -55,6 +55,17 @@ pub enum TraceProtocol {
     Tcp,
 }
 
+/// How to render the addresses.
+#[derive(Debug, Copy, Clone, ArgEnum)]
+pub enum AddressMode {
+    /// Show IP address only.
+    IP,
+    /// Show reverse-lookup DNS hostname only.
+    Host,
+    /// Show both IP address and reverse-lookup DNS hostname.
+    Both,
+}
+
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -117,6 +128,10 @@ pub struct Args {
     /// The TUI refresh rate
     #[clap(long, default_value = "100ms")]
     pub tui_refresh_rate: String,
+
+    /// How to render addresses.
+    #[clap(arg_enum, short = 'a', long, default_value = "host")]
+    pub tui_address_mode: AddressMode,
 
     /// Output mode
     #[clap(arg_enum, short = 'm', long, default_value = "tui")]

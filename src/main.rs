@@ -53,6 +53,7 @@ fn main() -> anyhow::Result<()> {
     let preserve_screen = args.tui_preserve_screen;
     let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
+    let tui_address_mode = args.tui_address_mode;
     let report_cycles = args.report_cycles;
     validate_ttl(first_ttl, max_ttl);
     validate_max_inflight(max_inflight);
@@ -108,6 +109,7 @@ fn main() -> anyhow::Result<()> {
                 tracer_config,
                 tui_refresh_rate,
                 preserve_screen,
+                tui_address_mode,
             )?;
         }
         Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
