@@ -1,4 +1,4 @@
-use crate::icmp::util::RequiredError;
+use crate::tracing::util::RequiredError;
 use std::io;
 use thiserror::Error;
 

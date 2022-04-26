@@ -1,6 +1,6 @@
-use crate::icmp::error::{TraceResult, TracerError};
-use crate::icmp::util::Required;
-use crate::icmp::Probe;
+use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::util::Required;
+use crate::tracing::Probe;
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::packet::icmp::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
@@ -34,13 +34,13 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
 
 /// A channel for sending and receiving `ICMP` packets.
-pub struct Channel {
+pub struct TracerChannel {
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
     udp_tx: TransportSender,
 }
 
-impl Channel {
+impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability.
@@ -54,7 +54,7 @@ impl Channel {
         })
     }
 
-    /// Send an icmp `Probe`
+    /// Send an `ICMP` `Probe`
     pub fn send_icmp_probe(
         &mut self,
         probe: Probe,
@@ -86,7 +86,7 @@ impl Channel {
         Ok(())
     }
 
-    /// Send a udp `Probe`.
+    /// Send a `UDP` `Probe`.
     pub fn send_udp_probe(
         &mut self,
         probe: Probe,

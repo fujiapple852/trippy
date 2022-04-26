@@ -17,8 +17,6 @@ use crate::config::{
     validate_tui_refresh_rate, Mode, TraceProtocol,
 };
 use crate::dns::DnsResolver;
-use crate::icmp::Protocol;
-use crate::icmp::TracerConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
 use clap::Parser;
 use config::Args;
@@ -31,16 +29,16 @@ mod backend;
 mod config;
 mod dns;
 mod frontend;
-mod icmp;
 mod report;
+mod tracing;
 
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let args = Args::parse();
     let hostname = args.hostname;
     let protocol = match args.protocol {
-        TraceProtocol::Icmp => Protocol::Icmp,
-        TraceProtocol::Udp => Protocol::Udp,
+        TraceProtocol::Icmp => tracing::TracerProtocol::Icmp,
+        TraceProtocol::Udp => tracing::TracerProtocol::Udp,
     };
     let first_ttl = args.first_ttl;
     let max_ttl = args.max_ttl;
@@ -69,7 +67,7 @@ fn main() -> anyhow::Result<()> {
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
-    let tracer_config = TracerConfig::new(
+    let tracer_config = tracing::TracerConfig::new(
         target_addr,
         protocol,
         trace_identifier,
