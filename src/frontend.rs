@@ -46,35 +46,62 @@ const TABLE_WIDTH: [Constraint; 11] = [
     Constraint::Percentage(5),
 ];
 
+/// Tui configuration.
+pub struct TuiConfig {
+    /// The IP address of the target.
+    target_addr: IpAddr,
+    /// The hostname of the target.
+    hostname: String,
+    /// Refresh rate.
+    refresh_rate: Duration,
+    /// Preserve screen on exit.
+    preserve_screen: bool,
+    /// How to render addresses.
+    address_mode: AddressMode,
+    /// The maximum number of addresses to show per hop.
+    max_addrs: Option<u8>,
+}
+
+impl TuiConfig {
+    pub fn new(
+        target_addr: IpAddr,
+        hostname: String,
+        refresh_rate: Duration,
+        preserve_screen: bool,
+        address_mode: AddressMode,
+        max_addrs: Option<u8>,
+    ) -> Self {
+        Self {
+            target_addr,
+            hostname,
+            refresh_rate,
+            preserve_screen,
+            address_mode,
+            max_addrs,
+        }
+    }
+}
+
 struct TuiApp {
+    tracer_config: TracerConfig,
+    tui_config: TuiConfig,
     table_state: TableState,
     trace: Trace,
     resolver: DnsResolver,
-    target_hostname: String,
-    target_addr: IpAddr,
-    tracer_config: TracerConfig,
     show_help: bool,
     frozen_start: Option<SystemTime>,
-    tui_address_mode: AddressMode,
 }
 
 impl TuiApp {
-    fn new(
-        target_hostname: String,
-        target_addr: IpAddr,
-        tracer_config: TracerConfig,
-        tui_address_mode: AddressMode,
-    ) -> Self {
+    fn new(tracer_config: TracerConfig, tui_config: TuiConfig) -> Self {
         Self {
             table_state: TableState::default(),
             trace: Trace::default(),
             resolver: DnsResolver::default(),
-            target_hostname,
-            target_addr,
             tracer_config,
+            tui_config,
             show_help: false,
             frozen_start: None,
-            tui_address_mode,
         }
     }
     pub fn next(&mut self) {
@@ -132,28 +159,17 @@ impl TuiApp {
 
 /// Run the frontend TUI.
 pub fn run_frontend(
-    target_hostname: String,
-    target_addr: IpAddr,
-    data: &Arc<RwLock<Trace>>,
-    config: TracerConfig,
-    refresh_rate: Duration,
-    preserve_screen: bool,
-    tui_address_mode: AddressMode,
+    trace: &Arc<RwLock<Trace>>,
+    tracer_config: TracerConfig,
+    tui_config: TuiConfig,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let res = run_app(
-        &mut terminal,
-        data,
-        target_hostname,
-        target_addr,
-        config,
-        refresh_rate,
-        tui_address_mode,
-    );
+    let preserve_screen = tui_config.preserve_screen;
+    let res = run_app(&mut terminal, trace, tui_config, tracer_config);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -169,19 +185,16 @@ pub fn run_frontend(
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     trace: &Arc<RwLock<Trace>>,
-    target_hostname: String,
-    target_addr: IpAddr,
-    config: TracerConfig,
-    refresh_rate: Duration,
-    tui_address_mode: AddressMode,
+    tui_config: TuiConfig,
+    tracer_config: TracerConfig,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(target_hostname, target_addr, config, tui_address_mode);
+    let mut app = TuiApp::new(tracer_config, tui_config);
     loop {
         if app.frozen_start == None {
             app.trace = trace.read().clone();
         };
         terminal.draw(|f| render_all(f, &mut app))?;
-        if event::poll(refresh_rate)? {
+        if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
                 match (key.code, key.modifiers) {
                     (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
@@ -313,7 +326,10 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
     let left_spans = vec![
         Spans::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!("{} ({})", app.target_hostname, app.target_addr)),
+            Span::raw(format!(
+                "{} ({})",
+                app.tui_config.hostname, app.tui_config.target_addr
+            )),
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -403,7 +419,8 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
             hop,
             &mut app.resolver,
             app.trace.is_target(hop),
-            app.tui_address_mode,
+            app.tui_config.address_mode,
+            app.tui_config.max_addrs,
         )
     });
     let table = Table::new(rows)
@@ -436,9 +453,10 @@ fn render_table_row(
     dns: &mut DnsResolver,
     is_target: bool,
     address_mode: AddressMode,
+    max_addr: Option<u8>,
 ) -> Row<'static> {
     let ttl_cell = render_ttl_cell(hop);
-    let hostname_cell = render_hostname_cell(hop, dns, address_mode);
+    let hostname_cell = render_hostname_cell(hop, dns, address_mode, max_addr);
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
     let total_recv_cell = render_total_recv_cell(hop);
@@ -461,7 +479,10 @@ fn render_table_row(
         stddev_cell,
         status_cell,
     ];
-    let row_height = hop.addr_count().max(1) as u16;
+    let row_height = hop
+        .addr_count()
+        .min(max_addr.unwrap_or(u8::MAX) as usize)
+        .max(1) as u16;
     Row::new(cells).height(row_height).bottom_margin(0)
 }
 
@@ -493,22 +514,48 @@ fn render_hostname_cell(
     hop: &Hop,
     dns: &mut DnsResolver,
     address_mode: AddressMode,
+    max_addr: Option<u8>,
 ) -> Cell<'static> {
+    fn format_address(
+        addr: &IpAddr,
+        freq: usize,
+        hop: &Hop,
+        dns: &mut DnsResolver,
+        address_mode: AddressMode,
+    ) -> String {
+        let addr_fmt = match address_mode {
+            AddressMode::IP => addr.to_string(),
+            AddressMode::Host => dns.reverse_lookup(*addr).to_string(),
+            AddressMode::Both => format!("{} ({})", dns.reverse_lookup(*addr), addr),
+        };
+        if hop.addr_count() > 1 {
+            format!(
+                "{} [{:.1}%]",
+                addr_fmt,
+                (freq as f64 / hop.total_recv() as f64) * 100_f64
+            )
+        } else {
+            addr_fmt
+        }
+    }
+
     Cell::from(if hop.total_recv() > 0 {
-        hop.addrs()
-            .map(|addr| format_address(addr, dns, address_mode))
-            .join("\n")
+        match max_addr {
+            None => hop
+                .addrs_with_counts()
+                .map(|(addr, &freq)| format_address(addr, freq, hop, dns, address_mode))
+                .join("\n"),
+            Some(max_addr) => hop
+                .addrs_with_counts()
+                .sorted_unstable_by_key(|(_, &cnt)| cnt)
+                .rev()
+                .take(max_addr as usize)
+                .map(|(addr, &freq)| format_address(addr, freq, hop, dns, address_mode))
+                .join("\n"),
+        }
     } else {
         String::from("No response")
     })
-}
-
-fn format_address(addr: &IpAddr, dns: &mut DnsResolver, address_mode: AddressMode) -> String {
-    match address_mode {
-        AddressMode::IP => addr.to_string(),
-        AddressMode::Host => dns.reverse_lookup(*addr).to_string(),
-        AddressMode::Both => format!("{} ({})", dns.reverse_lookup(*addr), addr),
-    }
 }
 
 fn render_last_cell(hop: &Hop) -> Cell<'static> {

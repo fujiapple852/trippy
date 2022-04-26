@@ -17,6 +17,7 @@ use crate::config::{
     validate_tui_refresh_rate, Mode, TraceProtocol,
 };
 use crate::dns::DnsResolver;
+use crate::frontend::TuiConfig;
 use crate::report::{run_report_csv, run_report_json, run_report_stream};
 use clap::Parser;
 use config::Args;
@@ -50,10 +51,11 @@ fn main() -> anyhow::Result<()> {
     let packet_size = args.packet_size;
     let payload_pattern = args.payload_pattern;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
-    let preserve_screen = args.tui_preserve_screen;
+    let tui_preserve_screen = args.tui_preserve_screen;
     let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let tui_address_mode = args.tui_address_mode;
+    let max_addrs = args.tui_max_addresses_per_hop;
     let report_cycles = args.report_cycles;
     validate_ttl(first_ttl, max_ttl);
     validate_max_inflight(max_inflight);
@@ -102,15 +104,15 @@ fn main() -> anyhow::Result<()> {
 
     match args.mode {
         Mode::Tui => {
-            frontend::run_frontend(
-                hostname,
+            let tui_config = TuiConfig::new(
                 target_addr,
-                &trace_data,
-                tracer_config,
+                hostname,
                 tui_refresh_rate,
-                preserve_screen,
+                tui_preserve_screen,
                 tui_address_mode,
-            )?;
+                max_addrs,
+            );
+            frontend::run_frontend(&trace_data, tracer_config, tui_config)?;
         }
         Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
         Mode::Csv => run_report_csv(&hostname, target_addr, report_cycles, &trace_data),

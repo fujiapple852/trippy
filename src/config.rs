@@ -133,6 +133,10 @@ pub struct Args {
     #[clap(arg_enum, short = 'a', long, default_value = "host")]
     pub tui_address_mode: AddressMode,
 
+    /// The maximum number of addresses to show per hop
+    #[clap(long)]
+    pub tui_max_addresses_per_hop: Option<u8>,
+
     /// Output mode
     #[clap(arg_enum, short = 'm', long, default_value = "tui")]
     pub mode: Mode,
