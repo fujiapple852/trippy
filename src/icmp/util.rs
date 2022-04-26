@@ -14,15 +14,3 @@ impl<T> Required<T> for Option<T> {
         self.ok_or(RequiredError)
     }
 }
-
-/// TODO
-pub trait RemModU16Max {
-    /// Return the remainder modulo `u16::MAX`.
-    fn rem_u16max(self) -> u16;
-}
-
-impl RemModU16Max for usize {
-    fn rem_u16max(self) -> u16 {
-        u16::try_from(self % Self::from(u16::MAX)).unwrap()
-    }
-}

@@ -66,7 +66,7 @@ impl IcmpChannel {
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
         req.set_identifier(id);
         req.set_payload(&payload_buf[0..payload_size]);
-        req.set_sequence_number(probe.sequence());
+        req.set_sequence_number(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
         self.tx.set_ttl(probe.ttl.0)?;
         self.tx.send_to(req.to_immutable(), ip)?;
