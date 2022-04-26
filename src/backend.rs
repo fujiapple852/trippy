@@ -228,7 +228,13 @@ impl Default for Hop {
 /// Note that currently each `Probe` is published individually at the end of a round and so the lock is taken multiple
 /// times per round.
 pub fn run_backend(config: &TracerConfig, trace_data: Arc<RwLock<Trace>>) -> anyhow::Result<()> {
-    let channel = TracerChannel::new()?;
+    let channel = TracerChannel::new(
+        config.target_addr,
+        config.trace_identifier.0,
+        config.packet_size.0,
+        config.payload_pattern.0,
+        config.source_port.0,
+    )?;
     let tracer = Tracer::new(config, move |probe| {
         trace_data.write().update_from_probe(probe);
     });
