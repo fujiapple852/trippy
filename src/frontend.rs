@@ -1,4 +1,5 @@
 use crate::backend::Hop;
+use crate::config::AddressMode;
 use crate::dns::DnsResolver;
 use crate::Trace;
 use chrono::SecondsFormat;
@@ -54,10 +55,16 @@ struct TuiApp {
     tracer_config: TracerConfig,
     show_help: bool,
     frozen_start: Option<SystemTime>,
+    tui_address_mode: AddressMode,
 }
 
 impl TuiApp {
-    fn new(target_hostname: String, target_addr: IpAddr, tracer_config: TracerConfig) -> Self {
+    fn new(
+        target_hostname: String,
+        target_addr: IpAddr,
+        tracer_config: TracerConfig,
+        tui_address_mode: AddressMode,
+    ) -> Self {
         Self {
             table_state: TableState::default(),
             trace: Trace::default(),
@@ -67,6 +74,7 @@ impl TuiApp {
             tracer_config,
             show_help: false,
             frozen_start: None,
+            tui_address_mode,
         }
     }
     pub fn next(&mut self) {
@@ -130,6 +138,7 @@ pub fn run_frontend(
     config: TracerConfig,
     refresh_rate: Duration,
     preserve_screen: bool,
+    tui_address_mode: AddressMode,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -143,6 +152,7 @@ pub fn run_frontend(
         target_addr,
         config,
         refresh_rate,
+        tui_address_mode,
     );
     disable_raw_mode()?;
     if !preserve_screen {
@@ -163,14 +173,15 @@ fn run_app<B: Backend>(
     target_addr: IpAddr,
     config: TracerConfig,
     refresh_rate: Duration,
+    tui_address_mode: AddressMode,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(target_hostname, target_addr, config);
+    let mut app = TuiApp::new(target_hostname, target_addr, config, tui_address_mode);
     loop {
         if app.frozen_start == None {
             app.trace = trace.read().clone();
         };
         terminal.draw(|f| render_all(f, &mut app))?;
-        if crossterm::event::poll(refresh_rate)? {
+        if event::poll(refresh_rate)? {
             if let Event::Key(key) = event::read()? {
                 match (key.code, key.modifiers) {
                     (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
@@ -387,11 +398,14 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
 fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header();
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app
-        .trace
-        .hops()
-        .iter()
-        .map(|hop| render_table_row(hop, &mut app.resolver, app.trace.is_target(hop)));
+    let rows = app.trace.hops().iter().map(|hop| {
+        render_table_row(
+            hop,
+            &mut app.resolver,
+            app.trace.is_target(hop),
+            app.tui_address_mode,
+        )
+    });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -417,9 +431,14 @@ fn render_table_header() -> Row<'static> {
 }
 
 /// Render a single row in the table of hops.
-fn render_table_row(hop: &Hop, dns: &mut DnsResolver, is_target: bool) -> Row<'static> {
+fn render_table_row(
+    hop: &Hop,
+    dns: &mut DnsResolver,
+    is_target: bool,
+    address_mode: AddressMode,
+) -> Row<'static> {
     let ttl_cell = render_ttl_cell(hop);
-    let hostname_cell = render_hostname_cell(hop, dns);
+    let hostname_cell = render_hostname_cell(hop, dns, address_mode);
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
     let total_recv_cell = render_total_recv_cell(hop);
@@ -470,14 +489,26 @@ fn render_avg_cell(hop: &Hop) -> Cell<'static> {
     })
 }
 
-fn render_hostname_cell(hop: &Hop, dns: &mut DnsResolver) -> Cell<'static> {
+fn render_hostname_cell(
+    hop: &Hop,
+    dns: &mut DnsResolver,
+    address_mode: AddressMode,
+) -> Cell<'static> {
     Cell::from(if hop.total_recv() > 0 {
         hop.addrs()
-            .map(|addr| format!("{} ({})", dns.reverse_lookup(*addr), addr))
+            .map(|addr| format_address(addr, dns, address_mode))
             .join("\n")
     } else {
         String::from("No response")
     })
+}
+
+fn format_address(addr: &IpAddr, dns: &mut DnsResolver, address_mode: AddressMode) -> String {
+    match address_mode {
+        AddressMode::IP => addr.to_string(),
+        AddressMode::Host => dns.reverse_lookup(*addr).to_string(),
+        AddressMode::Both => format!("{} ({})", dns.reverse_lookup(*addr), addr),
+    }
 }
 
 fn render_last_cell(hop: &Hop) -> Cell<'static> {
