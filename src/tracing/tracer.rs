@@ -1,7 +1,7 @@
 use self::state::TracerState;
 use crate::tracing::error::TraceResult;
 use crate::tracing::net::{Network, ProbeResponse};
-use crate::tracing::types::{MaxInflight, Sequence, TimeToLive, TraceId};
+use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
 use crate::tracing::TracerConfig;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerProtocol};
@@ -12,6 +12,7 @@ use std::time::{Duration, SystemTime};
 pub struct Tracer<F> {
     protocol: TracerProtocol,
     trace_identifier: TraceId,
+    max_rounds: Option<MaxRounds>,
     first_ttl: TimeToLive,
     max_ttl: TimeToLive,
     grace_duration: Duration,
@@ -28,6 +29,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
         Self {
             protocol: config.protocol,
             trace_identifier: config.trace_identifier,
+            max_rounds: config.max_rounds,
             first_ttl: config.first_ttl,
             max_ttl: config.max_ttl,
             grace_duration: config.grace_duration,
@@ -45,11 +47,12 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// TODO describe algorithm
     pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
         let mut state = TracerState::new(self.first_ttl, self.min_sequence);
-        loop {
+        while !state.finished(self.max_rounds) {
             self.send_request(&mut network, &mut state)?;
             self.recv_response(&mut network, &mut state)?;
             self.update_round(&mut state);
         }
+        Ok(())
     }
 
     /// Send the next probe if required.
@@ -210,7 +213,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
 /// This is contained within a sub-module to ensure that mutations are only performed via methods on the
 /// `TracerState` struct.
 mod state {
-    use crate::tracing::types::{Round, Sequence, TimeToLive};
+    use crate::tracing::types::{MaxRounds, Round, Sequence, TimeToLive};
     use crate::tracing::Probe;
     use std::time::SystemTime;
 
@@ -313,6 +316,14 @@ mod state {
         /// Is `sequence` in the current round?
         pub fn in_round(&self, sequence: Sequence) -> bool {
             sequence >= self.round_sequence
+        }
+
+        /// Have all round completed?
+        pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
+            match max_rounds {
+                None => false,
+                Some(max_rounds) => self.round.0 > max_rounds.0,
+            }
         }
 
         /// Create and return the next `Probe` at the current `sequence` and `ttl`.

@@ -1,5 +1,5 @@
 use crate::tracing::types::{
-    MaxInflight, PacketSize, PayloadPattern, Sequence, SourcePort, TimeToLive, TraceId,
+    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Sequence, SourcePort, TimeToLive, TraceId,
 };
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -32,6 +32,7 @@ pub struct TracerConfig {
     pub target_addr: IpAddr,
     pub protocol: TracerProtocol,
     pub trace_identifier: TraceId,
+    pub max_rounds: Option<MaxRounds>,
     pub first_ttl: TimeToLive,
     pub max_ttl: TimeToLive,
     pub grace_duration: Duration,
@@ -51,6 +52,7 @@ impl TracerConfig {
     pub fn new(
         target_addr: IpAddr,
         protocol: TracerProtocol,
+        max_rounds: Option<usize>,
         trace_identifier: u16,
         first_ttl: u8,
         max_ttl: u8,
@@ -68,6 +70,7 @@ impl TracerConfig {
             target_addr,
             protocol,
             trace_identifier: TraceId::from(trace_identifier),
+            max_rounds: max_rounds.map(MaxRounds::from),
             first_ttl: TimeToLive::from(first_ttl),
             max_ttl: TimeToLive::from(max_ttl),
             grace_duration,
