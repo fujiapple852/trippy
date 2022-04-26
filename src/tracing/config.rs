@@ -17,7 +17,7 @@ pub enum TracerProtocol {
 impl Display for TracerProtocol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Icmp => write!(f, "tracing"),
+            Self::Icmp => write!(f, "icmp"),
             Self::Udp => write!(f, "udp"),
         }
     }
