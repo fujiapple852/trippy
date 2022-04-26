@@ -26,7 +26,7 @@ Feature status and high level roadmap:
 - Trace: Adjustable maximum number of unknown hops (✅)
 - Trace: Adjustable source port for `UDP` (✅)
 - Trace: UDP protocol (✅)
-- Trace: TCP protocol ([#32](https://github.com/fujiapple852/trippy/issues/32))
+- Trace: TCP protocol (✅)
 - Trace: SCTP protocol ([#41](https://github.com/fujiapple852/trippy/issues/41))
 - Trace: IPv6 ([#35](https://github.com/fujiapple852/trippy/issues/35))
 - Trace: MPLS ([#33](https://github.com/fujiapple852/trippy/issues/33))
