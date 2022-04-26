@@ -5,7 +5,6 @@ use crate::tracing::TracerConfig;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerProtocol};
 use derive_more::{Add, AddAssign, From, Rem, Sub};
-use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// Round newtype.
@@ -53,7 +52,6 @@ pub struct SourcePort(pub u16);
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
-    target_addr: IpAddr,
     protocol: TracerProtocol,
     trace_identifier: TraceId,
     first_ttl: TimeToLive,
@@ -64,16 +62,12 @@ pub struct Tracer<F> {
     read_timeout: Duration,
     min_round_duration: Duration,
     max_round_duration: Duration,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    source_port: SourcePort,
     publish: F,
 }
 
 impl<F: Fn(&Probe)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
-            target_addr: config.target_addr,
             protocol: config.protocol,
             trace_identifier: config.trace_identifier,
             first_ttl: config.first_ttl,
@@ -84,9 +78,6 @@ impl<F: Fn(&Probe)> Tracer<F> {
             read_timeout: config.read_timeout,
             min_round_duration: config.min_round_duration,
             max_round_duration: config.max_round_duration,
-            packet_size: config.packet_size,
-            payload_pattern: config.payload_pattern,
-            source_port: config.source_port,
             publish,
         }
     }
@@ -122,33 +113,9 @@ impl<F: Fn(&Probe)> Tracer<F> {
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             match self.protocol {
-                TracerProtocol::Icmp => {
-                    network.send_icmp_probe(
-                        st.next_probe(),
-                        self.target_addr,
-                        self.trace_identifier.0,
-                        self.packet_size.0,
-                        self.payload_pattern.0,
-                    )?;
-                }
-                TracerProtocol::Udp => {
-                    network.send_udp_probe(
-                        st.next_probe(),
-                        self.target_addr,
-                        self.source_port.0,
-                        self.packet_size.0,
-                        self.payload_pattern.0,
-                    )?;
-                }
-                TracerProtocol::Tcp => {
-                    network.send_tcp_probe(
-                        st.next_probe(),
-                        self.target_addr,
-                        self.source_port.0,
-                        self.packet_size.0,
-                        self.payload_pattern.0,
-                    )?;
-                }
+                TracerProtocol::Icmp => network.send_icmp_probe(st.next_probe())?,
+                TracerProtocol::Udp => network.send_udp_probe(st.next_probe())?,
+                TracerProtocol::Tcp => network.send_tcp_probe(st.next_probe())?,
             }
         }
         Ok(())
@@ -171,9 +138,9 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = match self.protocol {
-            TracerProtocol::Icmp => network.receive_probe_response_icmp(self.read_timeout)?,
-            TracerProtocol::Udp => network.receive_probe_response_udp(self.read_timeout)?,
-            TracerProtocol::Tcp => network.receive_probe_response_tcp(self.read_timeout)?,
+            TracerProtocol::Icmp => network.recv_probe_resp_icmp(self.read_timeout)?,
+            TracerProtocol::Udp => network.recv_probe_resp_udp(self.read_timeout)?,
+            TracerProtocol::Tcp => network.recv_probe_resp_tcp(self.read_timeout)?,
         };
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {

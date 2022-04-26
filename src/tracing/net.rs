@@ -43,62 +43,37 @@ const MAX_TCP_PAYLOAD_BUF: usize = MAX_UDP_BUF - TcpPacket::minimum_packet_size(
 /// An abstraction over a network interface for tracing.
 pub trait Network {
     /// Send an `ICMP` `Probe`
-    fn send_icmp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        id: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()>;
+    fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()>;
 
     /// Send a `UDP` `Probe`.
-    fn send_udp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        source_port: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()>;
+    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()>;
 
     /// Send a `TCP` `Probe`.
-    fn send_tcp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        source_port: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()>;
+    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()>;
 
     /// Receive the next Icmp packet and return an `IcmpResponse` for a ICMP probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn receive_probe_response_icmp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_icmp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
 
     /// Receive the next Icmp packet and return an `IcmpResponse` for a `Udp` probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn receive_probe_response_udp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_udp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
 
     /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn receive_probe_response_tcp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_tcp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
 }
 
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
+    ip: IpAddr,
+    identifier: u16,
+    packet_size: u16,
+    payload_value: u8,
+    source_port: u16,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
     udp_tx: TransportSender,
@@ -109,11 +84,22 @@ impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability.
-    pub fn new() -> TraceResult<Self> {
+    pub fn new(
+        ip: IpAddr,
+        identifier: u16,
+        packet_size: u16,
+        payload_value: u8,
+        source_port: u16,
+    ) -> TraceResult<Self> {
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
         let (tcp_tx, _) = make_tcp_channel()?;
         Ok(Self {
+            ip,
+            identifier,
+            packet_size,
+            payload_value,
+            source_port,
             icmp_tx,
             icmp_rx,
             udp_tx,
@@ -123,15 +109,8 @@ impl TracerChannel {
 }
 
 impl Network for TracerChannel {
-    fn send_icmp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        id: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()> {
-        let packet_size = usize::from(packet_size);
+    fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let packet_size = usize::from(self.packet_size);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -141,28 +120,21 @@ impl Network for TracerChannel {
         let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
         let icmp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - icmp_header_size - ip_header_size;
-        payload_buf.iter_mut().for_each(|x| *x = payload_value);
+        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
         let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
         req.set_icmp_type(IcmpTypes::EchoRequest);
         req.set_icmp_code(echo_request::IcmpCodes::NoCode);
-        req.set_identifier(id);
+        req.set_identifier(self.identifier);
         req.set_payload(&payload_buf[..payload_size]);
         req.set_sequence_number(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
         self.icmp_tx.set_ttl(probe.ttl.0)?;
-        self.icmp_tx.send_to(req.to_immutable(), ip)?;
+        self.icmp_tx.send_to(req.to_immutable(), self.ip)?;
         Ok(())
     }
 
-    fn send_udp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        source_port: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()> {
-        let packet_size = usize::from(packet_size);
+    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let packet_size = usize::from(self.packet_size);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -172,26 +144,19 @@ impl Network for TracerChannel {
         let mut payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
         let udp_buf_size = packet_size - ip_header_size;
         let mut udp = MutableUdpPacket::new(&mut udp_buf[..udp_buf_size]).req()?;
-        udp.set_source(source_port);
+        udp.set_source(self.source_port);
         udp.set_destination(probe.sequence.0);
         let payload_size = packet_size - udp_header_size - ip_header_size;
         udp.set_length((UdpPacket::minimum_packet_size() + payload_size) as u16);
-        payload_buf.iter_mut().for_each(|x| *x = payload_value);
+        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
         udp.set_payload(&payload_buf[..payload_size]);
         self.udp_tx.set_ttl(probe.ttl.0)?;
-        self.udp_tx.send_to(udp.to_immutable(), ip)?;
+        self.udp_tx.send_to(udp.to_immutable(), self.ip)?;
         Ok(())
     }
 
-    fn send_tcp_probe(
-        &mut self,
-        probe: Probe,
-        ip: IpAddr,
-        source_port: u16,
-        packet_size: u16,
-        payload_value: u8,
-    ) -> TraceResult<()> {
-        let packet_size = usize::from(packet_size);
+    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let packet_size = usize::from(self.packet_size);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
@@ -202,21 +167,18 @@ impl Network for TracerChannel {
         let tcp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - tcp_header_size - ip_header_size;
         let mut tcp = MutableTcpPacket::new(&mut tcp_buf[..tcp_buf_size]).req()?;
-        tcp.set_source(source_port);
+        tcp.set_source(self.source_port);
         tcp.set_destination(probe.sequence.0);
         tcp.set_flags(TcpFlags::SYN);
         tcp.set_data_offset(5);
-        payload_buf.iter_mut().for_each(|x| *x = payload_value);
+        payload_buf.iter_mut().for_each(|x| *x = self.payload_value);
         tcp.set_payload(&payload_buf[..payload_size]);
         self.tcp_tx.set_ttl(probe.ttl.0)?;
-        self.tcp_tx.send_to(tcp.to_immutable(), ip)?;
+        self.tcp_tx.send_to(tcp.to_immutable(), self.ip)?;
         Ok(())
     }
 
-    fn receive_probe_response_icmp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_icmp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
                 Some((icmp, ip)) => {
@@ -256,10 +218,7 @@ impl Network for TracerChannel {
         )
     }
 
-    fn receive_probe_response_udp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_udp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
                 Some((icmp, ip)) => {
@@ -287,10 +246,7 @@ impl Network for TracerChannel {
         )
     }
 
-    fn receive_probe_response_tcp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_tcp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
                 Some((icmp, ip)) => {
