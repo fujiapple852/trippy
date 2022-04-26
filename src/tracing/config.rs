@@ -1,4 +1,4 @@
-use crate::tracing::tracer::{
+use crate::tracing::types::{
     MaxInflight, PacketSize, PayloadPattern, Sequence, SourcePort, TimeToLive, TraceId,
 };
 use std::fmt::{Display, Formatter};

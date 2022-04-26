@@ -3,6 +3,7 @@ mod error;
 mod net;
 mod probe;
 mod tracer;
+mod types;
 mod util;
 
 pub use config::{TracerConfig, TracerProtocol};
