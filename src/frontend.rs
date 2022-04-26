@@ -1,6 +1,5 @@
 use crate::backend::Hop;
 use crate::dns::DnsResolver;
-use crate::tracing::TracerConfig;
 use crate::Trace;
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
@@ -16,6 +15,7 @@ use std::io;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use trippy::tracing::TracerConfig;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
 use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState};
