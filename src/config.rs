@@ -51,6 +51,8 @@ pub enum TraceProtocol {
     Icmp,
     /// User Datagram Protocol
     Udp,
+    /// Transmission Control Protocol
+    Tcp,
 }
 
 /// Trace a route to a host and record statistics

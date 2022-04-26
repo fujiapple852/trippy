@@ -8,6 +8,7 @@ use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
 use pnet::packet::icmp::{echo_request, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::tcp::{MutableTcpPacket, TcpFlags, TcpPacket};
 use pnet::packet::udp::{MutableUdpPacket, UdpPacket};
 use pnet::packet::Packet;
 use pnet::transport::{
@@ -33,11 +34,18 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 /// The maximum UDP payload size we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
 
+/// The maximum size of TCP packet we allow.
+const MAX_TCP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
+
+/// The maximum TCP payload size we allow.
+const MAX_TCP_PAYLOAD_BUF: usize = MAX_UDP_BUF - TcpPacket::minimum_packet_size();
+
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
     udp_tx: TransportSender,
+    tcp_tx: TransportSender,
 }
 
 impl TracerChannel {
@@ -47,10 +55,12 @@ impl TracerChannel {
     pub fn new() -> TraceResult<Self> {
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
+        let (tcp_tx, _) = make_tcp_channel()?;
         Ok(Self {
             icmp_tx,
             icmp_rx,
             udp_tx,
+            tcp_tx,
         })
     }
 
@@ -113,6 +123,37 @@ impl TracerChannel {
         udp.set_payload(&payload_buf[..payload_size]);
         self.udp_tx.set_ttl(probe.ttl.0)?;
         self.udp_tx.send_to(udp.to_immutable(), ip)?;
+        Ok(())
+    }
+
+    /// Send a `TCP` `Probe`.
+    pub fn send_tcp_probe(
+        &mut self,
+        probe: Probe,
+        ip: IpAddr,
+        source_port: u16,
+        packet_size: u16,
+        payload_value: u8,
+    ) -> TraceResult<()> {
+        let packet_size = usize::from(packet_size);
+        if packet_size > MAX_PACKET_SIZE {
+            return Err(TracerError::InvalidPacketSize(packet_size));
+        }
+        let ip_header_size = Ipv4Packet::minimum_packet_size();
+        let tcp_header_size = TcpPacket::minimum_packet_size();
+        let mut tcp_buf = [0_u8; MAX_TCP_BUF];
+        let mut payload_buf = [0_u8; MAX_TCP_PAYLOAD_BUF];
+        let tcp_buf_size = packet_size - ip_header_size;
+        let payload_size = packet_size - tcp_header_size - ip_header_size;
+        let mut tcp = MutableTcpPacket::new(&mut tcp_buf[..tcp_buf_size]).req()?;
+        tcp.set_source(source_port);
+        tcp.set_destination(probe.sequence.0);
+        tcp.set_flags(TcpFlags::SYN);
+        tcp.set_data_offset(5);
+        payload_buf.iter_mut().for_each(|x| *x = payload_value);
+        tcp.set_payload(&payload_buf[..payload_size]);
+        self.tcp_tx.set_ttl(probe.ttl.0)?;
+        self.tcp_tx.send_to(tcp.to_immutable(), ip)?;
         Ok(())
     }
 
@@ -195,6 +236,40 @@ impl TracerChannel {
             },
         )
     }
+
+    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    pub fn receive_probe_response_tcp(
+        &mut self,
+        timeout: Duration,
+    ) -> TraceResult<Option<ProbeResponse>> {
+        Ok(
+            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
+                Some((icmp, ip)) => {
+                    let recv = SystemTime::now();
+                    match icmp.get_icmp_type() {
+                        IcmpTypes::TimeExceeded => {
+                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
+                            let sequence = extract_tcp_probe(packet.payload())?;
+                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
+                                recv, ip, 0, sequence,
+                            )))
+                        }
+                        IcmpTypes::DestinationUnreachable => {
+                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
+                            let sequence = extract_tcp_probe(packet.payload())?;
+                            Some(ProbeResponse::DestinationUnreachable(
+                                ProbeResponseData::new(recv, ip, 0, sequence),
+                            ))
+                        }
+                        _ => None,
+                    }
+                }
+                None => None,
+            },
+        )
+    }
 }
 
 /// The response to a probe.
@@ -239,6 +314,13 @@ pub fn make_udp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
     Ok(transport_channel(1600, channel_type)?)
 }
 
+/// Create the communication channel needed for sending TCP packets.
+pub fn make_tcp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
+    let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Tcp);
+    let channel_type = TransportChannelType::Layer4(protocol);
+    Ok(transport_channel(1600, channel_type)?)
+}
+
 /// Get the original `EchoRequestPacket` packet embedded in the payload.
 pub fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
     let ip4 = Ipv4Packet::new(payload).req()?;
@@ -255,4 +337,27 @@ pub fn extract_udp_probe(payload: &[u8]) -> TraceResult<u16> {
     let nested_udp = &payload[header_len..];
     let nested = UdpPacket::new(nested_udp).req()?;
     Ok(nested.get_destination())
+}
+
+/// Get the original `TcpPacket` packet embedded in the payload.
+///
+/// Unlike the embedded `ICMP` and `UDP` packets, which have a minimum header size of 8 bytes, the `TCP` packet header
+/// is a minimum of 20 bytes.
+///
+/// The `ICMP` packets we are extracting these from, such as `TimeExceeded`, only guarantee that 8 bytes of the
+/// original packet (plus the IP header) be returned and so we may not have a complete TCP packet.
+///
+/// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
+/// header.
+pub fn extract_tcp_probe(payload: &[u8]) -> TraceResult<u16> {
+    let ip4 = Ipv4Packet::new(payload).unwrap();
+    let header_len = usize::from(ip4.get_header_length() * 4);
+    let nested_tcp = &payload[header_len..];
+    if nested_tcp.len() < TcpPacket::minimum_packet_size() {
+        let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
+        buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
+        Ok(TcpPacket::new(&buf).req()?.get_destination())
+    } else {
+        Ok(TcpPacket::new(nested_tcp).req()?.get_destination())
+    }
 }

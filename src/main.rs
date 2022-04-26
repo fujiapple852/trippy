@@ -38,6 +38,7 @@ fn main() -> anyhow::Result<()> {
     let protocol = match args.protocol {
         TraceProtocol::Icmp => trippy::tracing::TracerProtocol::Icmp,
         TraceProtocol::Udp => trippy::tracing::TracerProtocol::Udp,
+        TraceProtocol::Tcp => trippy::tracing::TracerProtocol::Tcp,
     };
     let first_ttl = args.first_ttl;
     let max_ttl = args.max_ttl;

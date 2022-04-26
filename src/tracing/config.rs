@@ -12,6 +12,8 @@ pub enum TracerProtocol {
     Icmp,
     /// User Datagram Protocol
     Udp,
+    /// Transmission Control Protocol
+    Tcp,
 }
 
 impl Display for TracerProtocol {
@@ -19,6 +21,7 @@ impl Display for TracerProtocol {
         match self {
             Self::Icmp => write!(f, "icmp"),
             Self::Udp => write!(f, "udp"),
+            Self::Tcp => write!(f, "tcp"),
         }
     }
 }

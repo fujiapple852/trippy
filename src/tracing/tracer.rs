@@ -141,6 +141,15 @@ impl<F: Fn(&Probe)> Tracer<F> {
                         self.payload_pattern.0,
                     )?;
                 }
+                TracerProtocol::Tcp => {
+                    channel.send_tcp_probe(
+                        st.next_probe(),
+                        self.target_addr,
+                        self.source_port.0,
+                        self.packet_size.0,
+                        self.payload_pattern.0,
+                    )?;
+                }
             }
         }
         Ok(())
@@ -165,6 +174,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
         let next = match self.protocol {
             TracerProtocol::Icmp => channel.receive_probe_response_icmp(self.read_timeout)?,
             TracerProtocol::Udp => channel.receive_probe_response_udp(self.read_timeout)?,
+            TracerProtocol::Tcp => channel.receive_probe_response_tcp(self.read_timeout)?,
         };
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {
