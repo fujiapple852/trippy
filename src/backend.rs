@@ -1,6 +1,6 @@
 use crate::config::MAX_HOPS;
 use parking_lot::RwLock;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -85,7 +85,7 @@ impl Trace {
                     hop.samples.pop();
                 }
                 let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
-                hop.addrs.insert(host);
+                *hop.addrs.entry(host).or_default() += 1;
             }
             ProbeStatus::Awaited => {
                 self.hops[index].total_sent += 1;
@@ -115,7 +115,7 @@ impl Default for Trace {
 #[derive(Debug, Clone)]
 pub struct Hop {
     ttl: u8,
-    addrs: HashSet<IpAddr>,
+    addrs: HashMap<IpAddr, usize>,
     total_sent: usize,
     total_recv: usize,
     total_time: Duration,
@@ -135,6 +135,10 @@ impl Hop {
 
     /// The set of addresses that have responded for this time-to-live.
     pub fn addrs(&self) -> impl Iterator<Item = &IpAddr> {
+        self.addrs.keys()
+    }
+
+    pub fn addrs_with_counts(&self) -> impl Iterator<Item = (&IpAddr, &usize)> {
         self.addrs.iter()
     }
 
@@ -206,7 +210,7 @@ impl Default for Hop {
     fn default() -> Self {
         Self {
             ttl: 0,
-            addrs: HashSet::default(),
+            addrs: HashMap::default(),
             total_sent: 0,
             total_recv: 0,
             total_time: Duration::default(),
