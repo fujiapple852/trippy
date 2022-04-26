@@ -252,7 +252,6 @@ fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     }
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
-    // render_status_bar(f, app, chunks[3]);
     if app.show_help {
         render_help(f);
     }
@@ -339,6 +338,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
             } else {
                 String::from("Running")
             }),
+            Span::raw(format!(", discovered {} hops", app.trace.hops().len())),
         ]),
     ];
 
