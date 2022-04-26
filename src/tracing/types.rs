@@ -4,6 +4,10 @@ use derive_more::{Add, AddAssign, From, Rem, Sub};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From, AddAssign)]
 pub struct Round(pub usize);
 
+/// `MaxRound` newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct MaxRounds(pub usize);
+
 /// `TimeToLive` (ttl) newtype.
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From, Add, Sub, AddAssign,
@@ -31,12 +35,6 @@ pub struct PacketSize(pub u16);
 /// `PayloadPattern` newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct PayloadPattern(pub u8);
-
-impl From<Sequence> for usize {
-    fn from(sequence: Sequence) -> Self {
-        sequence.0 as Self
-    }
-}
 
 /// Source port newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]

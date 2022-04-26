@@ -67,9 +67,14 @@ fn main() -> anyhow::Result<()> {
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
+    let max_rounds = match args.mode {
+        Mode::Stream | Mode::Tui => None,
+        Mode::Table | Mode::Csv | Mode::Json => Some(report_cycles),
+    };
     let tracer_config = trippy::tracing::TracerConfig::new(
         target_addr,
         protocol,
+        max_rounds,
         trace_identifier,
         first_ttl,
         max_ttl,
