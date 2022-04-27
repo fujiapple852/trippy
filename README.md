@@ -82,6 +82,9 @@ ARGS:
     <HOSTNAME>    The hostname or IP to scan
 
 OPTIONS:
+    -a, --tui-address-mode <TUI_ADDRESS_MODE>
+            How to render addresses [default: host] [possible values: ip, host, both]
+
     -c, --report-cycles <REPORT_CYCLES>
             The number of report cycles to run [default: 10]
 
@@ -89,8 +92,8 @@ OPTIONS:
             The TTL to start from [default: 1]
 
     -g, --grace-duration <GRACE_DURATION>
-            The period of time to wait for additional ICMP responses after the target has 
-            responded [default: 100ms]
+            The period of time to wait for additional ICMP responses after the target has responded
+            [default: 100ms]
 
     -h, --help
             Print help information
@@ -108,7 +111,7 @@ OPTIONS:
             The minimum sequence number [default: 33000]
 
     -p, --protocol <PROTOCOL>
-            Tracing protocol [default: icmp] [possible values: icmp, udp]
+            Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
 
         --packet-size <PACKET_SIZE>
             The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
@@ -124,6 +127,9 @@ OPTIONS:
 
     -t, --max-ttl <MAX_TTL>
             The maximum number of hops [default: 64]
+
+        --tui-max-addresses-per-hop <TUI_MAX_ADDRESSES_PER_HOP>
+            The maximum number of addresses to show per hop
 
         --tui-preserve-screen
             Preserve the screen on exit
