@@ -219,11 +219,15 @@ mod state {
 
     /// The maximum number of `Probe` entries in the circular buffer.
     ///
-    /// This is effectively also the maximum time-to-live (TTL) we can support.
+    /// This is effectively also the maximum number of time-to-live (TTL) we can support.  We only ever send TTL in
+    /// the range 1..255 so this is technically one larger than we need.
     const BUFFER_SIZE: u16 = 256;
 
     /// The maximum sequence number.
-    const MAX_SEQUENCE: Sequence = Sequence(u16::MAX);
+    ///
+    /// The sequence number is only ever wrapped between rounds and so we need to ensure that there are enough sequence
+    /// numbers for a complete round (i.e. the max TTL, which is `BUFFER_SIZE`).
+    const MAX_SEQUENCE: Sequence = Sequence(u16::MAX - BUFFER_SIZE);
 
     /// Mutable state needed for the tracing algorithm.
     #[derive(Debug)]
@@ -327,15 +331,16 @@ mod state {
         }
 
         /// Create and return the next `Probe` at the current `sequence` and `ttl`.
+        ///
+        /// We post-increment `ttl` here and so in practice we only allow `ttl` values in the range `1..254` to allow
+        /// us to use a `u8`.
         pub fn next_probe(&mut self) -> Probe {
             let probe = Probe::new(self.sequence, self.ttl, self.round, SystemTime::now());
             self.buffer[usize::from(self.sequence % BUFFER_SIZE)] = probe;
+            debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive::from(1);
-            if self.sequence == MAX_SEQUENCE {
-                self.sequence = self.min_sequence;
-            } else {
-                self.sequence += Sequence(1);
-            }
+            debug_assert!(self.sequence < Sequence(u16::MAX));
+            self.sequence += Sequence(1);
             probe
         }
 
@@ -378,7 +383,14 @@ mod state {
         }
 
         /// Advance to the next round.
+        ///
+        /// If, during the rond which just completed, we went above the max sequence number then we reset it here.
+        /// We do this here to avoid having to deal with the sequence number wrapping during a round, which is more
+        /// problematic.
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
+            if self.sequence >= MAX_SEQUENCE {
+                self.sequence = self.min_sequence;
+            }
             self.target_found = false;
             self.round_sequence = self.sequence;
             self.received_time = None;
