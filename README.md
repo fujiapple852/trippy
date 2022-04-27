@@ -45,7 +45,7 @@ Feature status and high level roadmap:
 - Tui: Display multiple hosts per hop (✅)
 - Tui: Reset statistics (✅)
 - Tui: show Jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
-- Tui: show top-N hosts per hop ([#40](https://github.com/fujiapple852/trippy/issues/40))
+- Tui: show top-N hosts per hop (✅)
 - Tui: `AS` lookup ([#34](https://github.com/fujiapple852/trippy/issues/34))
 - DNS: Basic reverse `DNS` lookup (✅)
 - DNS: Non-blocking `DNS` resolver ([#37](https://github.com/fujiapple852/trippy/issues/37))
