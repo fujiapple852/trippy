@@ -18,7 +18,10 @@ use crate::config::{
 };
 use crate::dns::DnsResolver;
 use crate::frontend::TuiConfig;
-use crate::report::{run_report_csv, run_report_json, run_report_stream};
+use crate::report::{
+    run_report_csv, run_report_json, run_report_stream, run_report_table_markdown,
+    run_report_table_pretty,
+};
 use clap::Parser;
 use config::Args;
 use parking_lot::RwLock;
@@ -72,7 +75,7 @@ fn main() -> anyhow::Result<()> {
     let trace_identifier = pid;
     let max_rounds = match args.mode {
         Mode::Stream | Mode::Tui => None,
-        Mode::Table | Mode::Csv | Mode::Json => Some(report_cycles),
+        Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
     };
     let tracer_config = trippy::tracing::TracerConfig::new(
         target_addr,
@@ -117,8 +120,8 @@ fn main() -> anyhow::Result<()> {
         Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
         Mode::Csv => run_report_csv(&hostname, target_addr, report_cycles, &trace_data),
         Mode::Json => run_report_json(&hostname, target_addr, report_cycles, &trace_data),
-        Mode::Table => todo!(),
+        Mode::Pretty => run_report_table_pretty(report_cycles, &trace_data),
+        Mode::Markdown => run_report_table_markdown(report_cycles, &trace_data),
     }
-
     Ok(())
 }
