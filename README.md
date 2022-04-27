@@ -151,31 +151,31 @@ Note that `trippy` uses raw sockets and is not currently capabilities-aware and 
 Basic usage:
 
 ```shell
-$ trippy www.bitwizard.nl
+trip www.bitwizard.nl
 ```
 
 Trace using the `udp` protocol:
 
 ```shell
-$ trippy www.bitwizard.nl -p udp
+trip www.bitwizard.nl -p udp
 ```
 
 Trace with a minimum round time of `250ms` and a grace period of `50ms`:
 
 ```shell
-$ trippy www.bitwizard.nl -i 250ms -g 50ms
+trip www.bitwizard.nl -i 250ms -g 50ms
 ```
 
 Trace with a custom first and maximum `time-to-live`:
 
 ```shell
-$ trippy www.bitwizard.nl --first-ttl 2 --max-ttl 10
+trip www.bitwizard.nl --first-ttl 2 --max-ttl 10
 ```
 
 Generate a `json` tracing report with 10 rounds of data:
 
 ```shell
-$ trippy www.bitwizard.nl -m json -c 5
+trip www.bitwizard.nl -m json -c 5
 ```
 
 ## Acknowledgement
