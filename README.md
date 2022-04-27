@@ -7,10 +7,6 @@ A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
 
 <img src="assets/trippy-0.0.0-27-04-2022.gif" alt="trippy"/>
 
-## Status
-
-In development & untested.
-
 ## Features
 
 Feature status and high level roadmap:
