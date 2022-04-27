@@ -62,6 +62,17 @@ cargo install trippy
 docker run -it fujiapple/trippy www.bitwizard.nl
 ```
 
+## Platforms
+
+Trippy has been (lightly...) tested on the following platforms:
+
+| Platform       | Version         | Status |
+|----------------|-----------------|--------|
+| Linux (Ubuntu) | 20.04           | ✅      |
+| macOS          | 11.4 (Big Sur)  | ✅      |
+| BSD            | n/a             | TBC    |
+| Windows        | n/a             | TBC    |
+
 ## Privileges
 
 Trippy uses a raw socket which require elevated privileges.  Enabling the required privilege can be achieved in several 
