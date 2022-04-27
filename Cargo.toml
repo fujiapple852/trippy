@@ -3,7 +3,11 @@ name = "trippy"
 version = "0.0.0"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 description = "A network diagnostic tool"
+documentation = "https://github.com/fujiapple852/trippy"
+homepage = "https://github.com/fujiapple852/trippy"
 repository = "https://github.com/fujiapple852/trippy"
+keywords = ["cli", "tui", "traceroute", "ping", "icmp", "tcp", "ip"]
+categories = ["command-line-utilities", "network-programming"]
 license = "Apache-2.0"
 edition = "2021"
 
