@@ -31,7 +31,7 @@ Feature status and high level roadmap:
 - Trace: Adjustable `DSCP` IP header ([#38](https://github.com/fujiapple852/trippy/issues/38))
 - Trace: Adjustable network interface binding ([#42](https://github.com/fujiapple852/trippy/issues/42))
 - Trace: Adjustable target port for `UDP`/`TCP` ([#43](https://github.com/fujiapple852/trippy/issues/43))
-- Trace: Capabilities awareness ([#36](https://github.com/fujiapple852/trippy/issues/36))
+- Trace: Capabilities awareness (✅)
 - Tui: Display core hop statistics (✅)
 - Tui: hop navigation (✅)
 - Tui: Pause display (✅)
@@ -146,8 +146,8 @@ OPTIONS:
             The TTL to start from [default: 1]
 
     -g, --grace-duration <GRACE_DURATION>
-            The period of time to wait for additional ICMP responses after the target has responded
-            [default: 100ms]
+            The period of time to wait for additional ICMP responses after the target 
+            has responded [default: 100ms]
 
     -h, --help
             Print help information
