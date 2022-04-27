@@ -117,7 +117,7 @@ pub struct Args {
     #[clap(long, default_value_t = 0)]
     pub payload_pattern: u8,
 
-    /// The source port (UDP only)
+    /// The source port (TCP & UDP only)
     #[clap(long)]
     pub source_port: Option<u16>,
 
