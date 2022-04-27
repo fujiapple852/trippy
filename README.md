@@ -49,7 +49,7 @@ Feature status and high level roadmap:
 - DNS: Non-blocking `DNS` resolver ([#37](https://github.com/fujiapple852/trippy/issues/37))
 - Report: `JSON` report mode (✅)
 - Report: `CSV` report mode (✅)
-- Report: Tabular report mode ([#44](https://github.com/fujiapple852/trippy/issues/44))
+- Report: Tabular report mode (✅)
 - Report: Streaming text mode (✅)
 
 ## Distributions
