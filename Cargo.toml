@@ -11,6 +11,11 @@ categories = ["command-line-utilities", "network-programming"]
 license = "Apache-2.0"
 edition = "2021"
 
+[[bin]]
+bench = false
+path = "src/main.rs"
+name = "trip"
+
 [dependencies]
 
 # Library dependancies
