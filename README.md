@@ -5,9 +5,7 @@
 
 A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr).
 
-## Screenshot
-
-<img src="assets/trippy-14-04-2022.png" alt="trippy"/>
+<img src="assets/trippy-0.0.0-27-04-2022.gif" alt="trippy"/>
 
 ## Status
 
