@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Trace;
+use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{
     validate_grace_duration, validate_max_inflight, validate_packet_size, validate_read_timeout,
     validate_report_cycles, validate_round_duration, validate_source_port, validate_ttl,
@@ -28,8 +29,10 @@ use parking_lot::RwLock;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
+use trippy::tracing::TracerChannel;
 
 mod backend;
+mod caps;
 mod config;
 mod dns;
 mod frontend;
@@ -69,6 +72,7 @@ fn main() -> anyhow::Result<()> {
     validate_source_port(source_port);
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(report_cycles);
+    ensure_caps()?;
     let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
@@ -95,13 +99,23 @@ fn main() -> anyhow::Result<()> {
         source_port,
     );
 
+    // Create the network channel before dropping all capabilities
+    let channel = TracerChannel::new(
+        tracer_config.target_addr,
+        tracer_config.trace_identifier,
+        tracer_config.packet_size,
+        tracer_config.payload_pattern,
+        tracer_config.source_port,
+    )?;
+    drop_caps()?;
+
     // Run the backend on a separate thread
     {
         let trace_data = trace_data.clone();
         thread::Builder::new()
             .name("backend".into())
             .spawn(move || {
-                backend::run_backend(&tracer_config, trace_data).expect("backend failed");
+                backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
             })?;
     }
 
