@@ -1,4 +1,6 @@
 use crate::{DnsResolver, Trace};
+use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
+use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use serde::{Serialize, Serializer};
@@ -139,6 +141,59 @@ pub fn run_report_json(
         hops,
     };
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
+}
+
+/// Generate a markdown table report of trace data.
+pub fn run_report_table_markdown(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>) {
+    run_report_table(report_cycles, trace_data, ASCII_MARKDOWN);
+}
+
+/// Generate a pretty table report of trace data.
+pub fn run_report_table_pretty(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>) {
+    run_report_table(report_cycles, trace_data, UTF8_FULL);
+}
+
+fn run_report_table(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>, preset: &str) {
+    let mut resolver = DnsResolver::default();
+    let trace = wait_for_round(trace_data, report_cycles);
+    let columns = vec![
+        "Hop", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
+    ];
+    let mut table = Table::new();
+    table
+        .load_preset(preset)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(columns);
+    for hop in trace.hops().iter() {
+        let ttl = hop.ttl().to_string();
+        let hosts = hop
+            .addrs()
+            .map(|ip| resolver.reverse_lookup(*ip).to_string())
+            .join("\n");
+        let host = if hosts.is_empty() {
+            String::from("???")
+        } else {
+            hosts
+        };
+        let sent = hop.total_sent().to_string();
+        let recv = hop.total_recv().to_string();
+        let last = hop
+            .last_ms()
+            .map_or_else(|| String::from("???"), |last| format!("{:.1}", last));
+        let best = hop
+            .best_ms()
+            .map_or_else(|| String::from("???"), |best| format!("{:.1}", best));
+        let worst = hop
+            .worst_ms()
+            .map_or_else(|| String::from("???"), |worst| format!("{:.1}", worst));
+        let stddev = format!("{:.1}", hop.stddev_ms());
+        let avg = format!("{:.1}", hop.avg_ms());
+        let loss_pct = format!("{:.1}", hop.loss_pct());
+        table.add_row(vec![
+            &ttl, &host, &loss_pct, &sent, &recv, &last, &avg, &best, &worst, &stddev,
+        ]);
+    }
+    println!("{table}");
 }
 
 /// Display a continuous stream of trace data.

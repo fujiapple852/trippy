@@ -36,8 +36,10 @@ pub enum Mode {
     Tui,
     /// Display a continuous stream of tracing data
     Stream,
-    /// Generate a text table report for N cycles.
-    Table,
+    /// Generate an pretty text table report for N cycles.
+    Pretty,
+    /// Generate a markdown text table report for N cycles.
+    Markdown,
     /// Generate a SCV report for N cycles.
     Csv,
     /// Generate a JSON report for N cycles.
