@@ -57,7 +57,7 @@ Feature status and high level roadmap:
 ### Cargo
 
 ```shell
-$ cargo install trippy
+cargo install trippy
 ```
 
 Note: Not yet published to `crates.io`.
@@ -65,7 +65,7 @@ Note: Not yet published to `crates.io`.
 ### Docker (Linux only)
 
 ```shell
-$ docker run -it fujiapple/trippy www.bitwizard.nl
+docker run -it fujiapple/trippy www.bitwizard.nl
 ```
 
 ## Privileges
@@ -94,9 +94,9 @@ sudo setcap CAP_NET_RAW+p $(which trip)
 Trippy is a capability aware application and will add `CAP_NET_RAW` to the effective set if it is present in the allowed
 set. Note that trippy will drop all capabilities after creating the raw socket.
 
-Note that `trippy` uses raw sockets and is not currently capabilities-aware and so needs to run as `root`.
+## Usage Examples
 
-Basic usage:
+Basic usage with default parameters:
 
 ```shell
 trip www.bitwizard.nl
@@ -126,11 +126,83 @@ Generate a `json` tracing report with 10 rounds of data:
 trip www.bitwizard.nl -m json -c 5
 ```
 
+## Reference
+
+```shell
+USAGE:
+    trip [OPTIONS] <HOSTNAME>
+
+ARGS:
+    <HOSTNAME>    The hostname or IP to scan
+
+OPTIONS:
+    -a, --tui-address-mode <TUI_ADDRESS_MODE>
+            How to render addresses [default: host] [possible values: ip, host, both]
+
+    -c, --report-cycles <REPORT_CYCLES>
+            The number of report cycles to run [default: 10]
+
+        --first-ttl <FIRST_TTL>
+            The TTL to start from [default: 1]
+
+    -g, --grace-duration <GRACE_DURATION>
+            The period of time to wait for additional ICMP responses after the target has responded
+            [default: 100ms]
+
+    -h, --help
+            Print help information
+
+    -i, --min-round-duration <MIN_ROUND_DURATION>
+            The minimum duration of every round [default: 1s]
+
+    -I, --max-round-duration <MAX_ROUND_DURATION>
+            The maximum duration of every round [default: 1s]
+
+    -m, --mode <MODE>
+            Output mode [default: tui] [possible values: tui, stream, table, csv, json]
+
+        --min-sequence <MIN_SEQUENCE>
+            The minimum sequence number [default: 33000]
+
+    -p, --protocol <PROTOCOL>
+            Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
+
+        --packet-size <PACKET_SIZE>
+            The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
+
+        --payload-pattern <PAYLOAD_PATTERN>
+            The repeating pattern in the payload of the ICMP packet [default: 0]
+
+        --read-timeout <READ_TIMEOUT>
+            The socket read timeout [default: 10ms]
+
+        --source-port <SOURCE_PORT>
+            The source port (UDP only)
+
+    -t, --max-ttl <MAX_TTL>
+            The maximum number of hops [default: 64]
+
+        --tui-max-addresses-per-hop <TUI_MAX_ADDRESSES_PER_HOP>
+            The maximum number of addresses to show per hop
+
+        --tui-preserve-screen
+            Preserve the screen on exit
+
+        --tui-refresh-rate <TUI_REFRESH_RATE>
+            The TUI refresh rate [default: 100ms]
+
+    -U, --max-inflight <MAX_INFLIGHT>
+            The maximum number of in-flight ICMP echo requests [default: 24]
+
+    -V, --version
+            Print version information
+```
+
 ## Acknowledgement
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
 , [crossterm](https://github.com/crossterm-rs/crossterm) & [pnet](https://github.com/libpnet/libpnet) as well as several
-common foundational Rust libraries.  It also draws heavily from [mtr](https://github.com/traviscross/mtr).
+common foundational Rust libraries. It also draws heavily from [mtr](https://github.com/traviscross/mtr).
 
 ## Keyboard Controls
 
