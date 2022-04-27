@@ -164,7 +164,7 @@ OPTIONS:
             The maximum duration of every round [default: 1s]
 
     -m, --mode <MODE>
-            Output mode [default: tui] [possible values: tui, stream, table, csv, json]
+            Output mode [default: tui] [possible values: tui, stream, pretty, markdown, csv, json]
 
         --min-sequence <MIN_SEQUENCE>
             The minimum sequence number [default: 33000]
@@ -182,7 +182,7 @@ OPTIONS:
             The socket read timeout [default: 10ms]
 
         --source-port <SOURCE_PORT>
-            The source port (UDP only)
+            The source port (TCP & UDP only)
 
     -t, --max-ttl <MAX_TTL>
             The maximum number of hops [default: 64]
