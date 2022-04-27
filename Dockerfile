@@ -6,5 +6,5 @@ COPY src /app/src
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc
-COPY --from=build-env /app/target/release/trippy /
-ENTRYPOINT [ "./trippy" ]
+COPY --from=build-env /app/target/release/trip /
+ENTRYPOINT [ "./trip" ]
