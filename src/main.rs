@@ -50,7 +50,7 @@ fn main() -> anyhow::Result<()> {
     let first_ttl = args.first_ttl;
     let max_ttl = args.max_ttl;
     let max_inflight = args.max_inflight;
-    let min_sequence = args.min_sequence;
+    let initial_sequence = args.initial_sequence;
     let read_timeout = humantime::parse_duration(&args.read_timeout)?;
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
@@ -90,7 +90,7 @@ fn main() -> anyhow::Result<()> {
         max_ttl,
         grace_duration,
         max_inflight,
-        min_sequence,
+        initial_sequence,
         read_timeout,
         min_round_duration,
         max_round_duration,

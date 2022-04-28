@@ -105,9 +105,9 @@ pub struct Args {
     #[clap(short = 'U', long, default_value_t = 24)]
     pub max_inflight: u8,
 
-    /// The minimum sequence number
+    /// The initial sequence number
     #[clap(long, default_value_t = 33000)]
-    pub min_sequence: u16,
+    pub initial_sequence: u16,
 
     /// The socket read timeout
     #[clap(long, default_value = "10ms")]

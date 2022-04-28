@@ -46,7 +46,7 @@ pub struct TracerConfig {
     pub max_ttl: TimeToLive,
     pub grace_duration: Duration,
     pub max_inflight: MaxInflight,
-    pub min_sequence: Sequence,
+    pub initial_sequence: Sequence,
     pub read_timeout: Duration,
     pub min_round_duration: Duration,
     pub max_round_duration: Duration,
@@ -66,7 +66,7 @@ impl TracerConfig {
         max_ttl: u8,
         grace_duration: Duration,
         max_inflight: u8,
-        min_sequence: u16,
+        initial_sequence: u16,
         read_timeout: Duration,
         min_round_duration: Duration,
         max_round_duration: Duration,
@@ -80,8 +80,8 @@ impl TracerConfig {
         if max_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!("max_ttl ({}) > {}", first_ttl, MAX_TTL)))
         }
-        if min_sequence > MAX_SEQUENCE {
-            return Err(TracerError::BadConfig(format!("min_sequence ({}) > {}", min_sequence, MAX_SEQUENCE)))
+        if initial_sequence > MAX_SEQUENCE {
+            return Err(TracerError::BadConfig(format!("initial_sequence ({}) > {}", initial_sequence, MAX_SEQUENCE)))
         }
         Ok(Self {
             target_addr,
@@ -92,7 +92,7 @@ impl TracerConfig {
             max_ttl: TimeToLive::from(max_ttl),
             grace_duration,
             max_inflight: MaxInflight::from(max_inflight),
-            min_sequence: Sequence::from(min_sequence),
+            initial_sequence: Sequence::from(initial_sequence),
             read_timeout,
             min_round_duration,
             max_round_duration,
