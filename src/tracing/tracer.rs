@@ -408,6 +408,7 @@ mod state {
         use crate::tracing::probe::IcmpPacketType;
         use crate::tracing::ProbeStatus;
         use std::net::{IpAddr, Ipv4Addr};
+        use rand::Rng;
 
         #[allow(
             clippy::cognitive_complexity,
@@ -599,6 +600,76 @@ mod state {
                 assert_eq!(probe_2_recv, probe_next1);
                 let probe_next2 = *probe_iter.next().unwrap();
                 assert_eq!(probe_3_recv, probe_next2);
+            }
+        }
+
+        #[test]
+        fn test_sequence_wrap1() {
+            // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
+            let min_sequence = Sequence(65278);
+            let mut state = TracerState::new(TimeToLive::from(1), min_sequence);
+            assert_eq!(state.round, Round(0));
+            assert_eq!(state.sequence, min_sequence);
+            assert_eq!(state.round_sequence, min_sequence);
+
+            // Create a probe at seq 65278
+            assert_eq!(state.next_probe().sequence, Sequence(65278));
+            assert_eq!(state.sequence, Sequence(65279));
+
+            // Validate the probes()
+            {
+                let mut iter = state.probes();
+                assert_eq!(iter.next().unwrap().sequence, Sequence(65278));
+                iter.take(BUFFER_SIZE as usize - 1)
+                    .for_each(|p| assert_eq!(p.sequence, Sequence(0)));
+            }
+
+            // Advance the round, which will wrap the sequence back to min_sequence
+            state.advance_round(TimeToLive::from(1));
+            assert_eq!(state.round, Round(1));
+            assert_eq!(state.sequence, min_sequence);
+            assert_eq!(state.round_sequence, min_sequence);
+
+            // Create a probe at seq 65278
+            assert_eq!(state.next_probe().sequence, Sequence(65278));
+            assert_eq!(state.sequence, Sequence(65279));
+
+            // Validate the probes() again
+            {
+                let mut iter = state.probes();
+                assert_eq!(iter.next().unwrap().sequence, Sequence(65278));
+                iter.take(BUFFER_SIZE as usize - 1)
+                    .for_each(|p| assert_eq!(p.sequence, Sequence(0)));
+            }
+        }
+
+        #[test]
+        fn test_sequence_wrap2() {
+            let total_rounds = 2000;
+            let max_probe_per_round = 254;
+            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            for _ in 0..total_rounds {
+                for _ in 0..max_probe_per_round {
+                    let _probe = state.next_probe();
+                }
+                state.advance_round(TimeToLive::from(1));
+            }
+            assert_eq!(state.round, Round(2000));
+            assert_eq!(state.round_sequence, Sequence(53320));
+            assert_eq!(state.sequence, Sequence(53320));
+        }
+
+        #[test]
+        fn test_sequence_wrap3() {
+            let total_rounds = 2000;
+            let max_probe_per_round = 20;
+            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let mut rng = rand::thread_rng();
+            for _ in 0..total_rounds {
+                for _ in 0..rng.gen_range(0..max_probe_per_round) {
+                    state.next_probe();
+                }
+                state.advance_round(TimeToLive::from(1));
             }
         }
     }
