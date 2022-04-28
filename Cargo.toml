@@ -41,3 +41,6 @@ nix = "0.24.1"
 # Library dependancies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
 caps = "0.5.3"
+
+[dev-dependencies]
+rand = "0.8.5"
