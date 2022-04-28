@@ -4,6 +4,15 @@ use crate::tracing::types::{
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::time::Duration;
+use crate::tracing::error::{TracerError, TraceResult};
+
+/// The maximum time-to-live value allowed.
+const MAX_TTL: u8 = 254;
+
+/// The maximum _starting_ sequence number allowed.
+///
+/// This ensures that there are sufficient sequence numbers available for at least one round.
+const MAX_SEQUENCE: u16 = u16::MAX - MAX_TTL as u16 - 1;
 
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone)]
@@ -48,7 +57,6 @@ pub struct TracerConfig {
 
 impl TracerConfig {
     #[allow(clippy::too_many_arguments)]
-    #[must_use]
     pub fn new(
         target_addr: IpAddr,
         protocol: TracerProtocol,
@@ -65,8 +73,17 @@ impl TracerConfig {
         packet_size: u16,
         payload_pattern: u8,
         source_port: u16,
-    ) -> Self {
-        Self {
+    ) -> TraceResult<Self> {
+        if first_ttl > MAX_TTL {
+            return Err(TracerError::BadConfig(format!("first_ttl ({}) > {}", first_ttl, MAX_TTL)))
+        }
+        if max_ttl > MAX_TTL {
+            return Err(TracerError::BadConfig(format!("max_ttl ({}) > {}", first_ttl, MAX_TTL)))
+        }
+        if min_sequence > MAX_SEQUENCE {
+            return Err(TracerError::BadConfig(format!("min_sequence ({}) > {}", min_sequence, MAX_SEQUENCE)))
+        }
+        Ok(Self {
             target_addr,
             protocol,
             trace_identifier: TraceId::from(trace_identifier),
@@ -82,6 +99,6 @@ impl TracerConfig {
             packet_size: PacketSize::from(packet_size),
             payload_pattern: PayloadPattern::from(payload_pattern),
             source_port: SourcePort::from(source_port),
-        }
+        })
     }
 }

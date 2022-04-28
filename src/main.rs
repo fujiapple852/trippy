@@ -97,7 +97,7 @@ fn main() -> anyhow::Result<()> {
         packet_size,
         payload_pattern,
         source_port,
-    );
+    )?;
 
     // Create the network channel before dropping all capabilities
     let channel = TracerChannel::new(

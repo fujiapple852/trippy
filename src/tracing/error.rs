@@ -9,6 +9,8 @@ pub type TraceResult<T> = Result<T, TracerError>;
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
+    #[error("invalid config: {0}")]
+    BadConfig(String),
     #[error("missing required field: {0}")]
     Required(#[from] RequiredError),
     #[error("IO error: {0}")]
