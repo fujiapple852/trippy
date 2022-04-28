@@ -407,8 +407,8 @@ mod state {
         use super::*;
         use crate::tracing::probe::IcmpPacketType;
         use crate::tracing::ProbeStatus;
-        use std::net::{IpAddr, Ipv4Addr};
         use rand::Rng;
+        use std::net::{IpAddr, Ipv4Addr};
 
         #[allow(
             clippy::cognitive_complexity,
