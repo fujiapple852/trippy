@@ -3,7 +3,9 @@ use std::process::exit;
 use std::time::Duration;
 
 /// The maximum number of hops we allow.
-pub const MAX_HOPS: usize = 256;
+///
+/// The IP `ttl` is a u8 (0..255) but since a `ttl` of zero isn't useful we only allow 255 distinct hops.
+pub const MAX_HOPS: usize = u8::MAX as usize;
 
 /// The minimum TUI refresh rate.
 const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
