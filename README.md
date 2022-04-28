@@ -166,8 +166,8 @@ OPTIONS:
     -m, --mode <MODE>
             Output mode [default: tui] [possible values: tui, stream, pretty, markdown, csv, json]
 
-        --min-sequence <MIN_SEQUENCE>
-            The minimum sequence number [default: 33000]
+        --initial-sequence <MIN_SEQUENCE>
+            The initial sequence number [default: 33000]
 
     -p, --protocol <PROTOCOL>
             Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]

@@ -17,7 +17,7 @@ pub struct Tracer<F> {
     max_ttl: TimeToLive,
     grace_duration: Duration,
     max_inflight: MaxInflight,
-    min_sequence: Sequence,
+    initial_sequence: Sequence,
     read_timeout: Duration,
     min_round_duration: Duration,
     max_round_duration: Duration,
@@ -34,7 +34,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
             max_ttl: config.max_ttl,
             grace_duration: config.grace_duration,
             max_inflight: config.max_inflight,
-            min_sequence: config.min_sequence,
+            initial_sequence: config.initial_sequence,
             read_timeout: config.read_timeout,
             min_round_duration: config.min_round_duration,
             max_round_duration: config.max_round_duration,
@@ -46,7 +46,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
     ///
     /// TODO describe algorithm
     pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
-        let mut state = TracerState::new(self.first_ttl, self.min_sequence);
+        let mut state = TracerState::new(self.first_ttl, self.initial_sequence);
         while !state.finished(self.max_rounds) {
             self.send_request(&mut network, &mut state)?;
             self.recv_response(&mut network, &mut state)?;
@@ -234,8 +234,8 @@ mod state {
     pub struct TracerState {
         /// The state of all `Probe` requests and responses.
         buffer: [Probe; BUFFER_SIZE as usize],
-        /// The minimum sequence number configuration, used to reset sequence when it wraps around.
-        min_sequence: Sequence,
+        /// The initial sequence number configuration, used to reset sequence when it wraps around.
+        initial_sequence: Sequence,
         /// An increasing sequence number for every `EchoRequest`.
         sequence: Sequence,
         /// The starting sequence number of the current round.
@@ -259,12 +259,12 @@ mod state {
     }
 
     impl TracerState {
-        pub fn new(first_ttl: TimeToLive, min_sequence: Sequence) -> Self {
+        pub fn new(first_ttl: TimeToLive, initial_sequence: Sequence) -> Self {
             Self {
                 buffer: [Probe::default(); BUFFER_SIZE as usize],
-                min_sequence,
-                sequence: min_sequence,
-                round_sequence: min_sequence,
+                initial_sequence,
+                sequence: initial_sequence,
+                round_sequence: initial_sequence,
                 ttl: first_ttl,
                 round: Round::from(0),
                 round_start: SystemTime::now(),
@@ -389,7 +389,7 @@ mod state {
         /// problematic.
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
             if self.sequence >= MAX_SEQUENCE {
-                self.sequence = self.min_sequence;
+                self.sequence = self.initial_sequence;
             }
             self.target_found = false;
             self.round_sequence = self.sequence;
@@ -606,11 +606,11 @@ mod state {
         #[test]
         fn test_sequence_wrap1() {
             // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
-            let min_sequence = Sequence(65278);
-            let mut state = TracerState::new(TimeToLive::from(1), min_sequence);
+            let initial_sequence = Sequence(65278);
+            let mut state = TracerState::new(TimeToLive::from(1), initial_sequence);
             assert_eq!(state.round, Round(0));
-            assert_eq!(state.sequence, min_sequence);
-            assert_eq!(state.round_sequence, min_sequence);
+            assert_eq!(state.sequence, initial_sequence);
+            assert_eq!(state.round_sequence, initial_sequence);
 
             // Create a probe at seq 65278
             assert_eq!(state.next_probe().sequence, Sequence(65278));
@@ -624,11 +624,11 @@ mod state {
                     .for_each(|p| assert_eq!(p.sequence, Sequence(0)));
             }
 
-            // Advance the round, which will wrap the sequence back to min_sequence
+            // Advance the round, which will wrap the sequence back to initial_sequence
             state.advance_round(TimeToLive::from(1));
             assert_eq!(state.round, Round(1));
-            assert_eq!(state.sequence, min_sequence);
-            assert_eq!(state.round_sequence, min_sequence);
+            assert_eq!(state.sequence, initial_sequence);
+            assert_eq!(state.round_sequence, initial_sequence);
 
             // Create a probe at seq 65278
             assert_eq!(state.next_probe().sequence, Sequence(65278));
