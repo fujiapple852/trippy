@@ -125,7 +125,7 @@ Trace with a custom first and maximum `time-to-live`:
 trip www.bitwizard.nl --first-ttl 2 --max-ttl 10
 ```
 
-Generate a `json` tracing report with 10 rounds of data:
+Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 10 rounds of data:
 
 ```shell
 trip www.bitwizard.nl -m json -c 5
