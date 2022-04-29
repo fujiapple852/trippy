@@ -1,7 +1,6 @@
 use crate::backend::Hop;
 use crate::config::AddressMode;
-use crate::dns::DnsResolver;
-use crate::Trace;
+use crate::{DnsResolver, Trace};
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
 use crossterm::{
@@ -93,11 +92,11 @@ struct TuiApp {
 }
 
 impl TuiApp {
-    fn new(tracer_config: TracerConfig, tui_config: TuiConfig) -> Self {
+    fn new(tracer_config: TracerConfig, tui_config: TuiConfig, resolver: DnsResolver) -> Self {
         Self {
             table_state: TableState::default(),
             trace: Trace::default(),
-            resolver: DnsResolver::default(),
+            resolver,
             tracer_config,
             tui_config,
             show_help: false,
@@ -162,6 +161,7 @@ pub fn run_frontend(
     trace: &Arc<RwLock<Trace>>,
     tracer_config: TracerConfig,
     tui_config: TuiConfig,
+    resolver: DnsResolver,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -169,7 +169,7 @@ pub fn run_frontend(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let preserve_screen = tui_config.preserve_screen;
-    let res = run_app(&mut terminal, trace, tui_config, tracer_config);
+    let res = run_app(&mut terminal, trace, tui_config, tracer_config, resolver);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -187,8 +187,9 @@ fn run_app<B: Backend>(
     trace: &Arc<RwLock<Trace>>,
     tui_config: TuiConfig,
     tracer_config: TracerConfig,
+    resolver: DnsResolver,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(tracer_config, tui_config);
+    let mut app = TuiApp::new(tracer_config, tui_config, resolver);
     loop {
         if app.frozen_start == None {
             app.trace = trace.read().clone();
