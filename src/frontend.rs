@@ -1,5 +1,5 @@
 use crate::backend::Hop;
-use crate::config::AddressMode;
+use crate::config::{AddressMode, DnsResolveMethod};
 use crate::{DnsResolver, Trace};
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
@@ -335,8 +335,9 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
-                "protocol={} interval={} grace={} start-ttl={} max-ttl={}",
+                "protocol={} dns={} interval={} grace={} start-ttl={} max-ttl={}",
                 app.tracer_config.protocol,
+                format_dns_method(app.resolver.config().resolve_method),
                 humantime::format_duration(app.tracer_config.min_round_duration),
                 humantime::format_duration(app.tracer_config.grace_duration),
                 app.tracer_config.first_ttl.0,
@@ -365,6 +366,16 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .alignment(Alignment::Left);
     f.render_widget(right, rect);
     f.render_widget(left, rect);
+}
+
+/// Format the `DnsResolveMethod`.
+fn format_dns_method(resolve_method: DnsResolveMethod) -> String {
+    match resolve_method {
+        DnsResolveMethod::System => String::from("system"),
+        DnsResolveMethod::Resolv => String::from("resolv"),
+        DnsResolveMethod::Google => String::from("google"),
+        DnsResolveMethod::Cloudflare => String::from("cloudflare"),
+    }
 }
 
 /// Render the splash screen.
