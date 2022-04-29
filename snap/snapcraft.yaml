@@ -1,0 +1,13 @@
+name: trippy
+version: '0.2.0+git'
+summary: A network diagnostic tool
+description: A network diagnostic tool, inspired by MTR
+base: core18
+confinement: devmode
+parts:
+  trippy:
+    plugin: rust
+    source: .
+apps:
+  trippy:
+    command: bin/trip
