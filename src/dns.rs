@@ -105,6 +105,11 @@ impl DnsResolver {
     pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr)
     }
+
+    /// Get the `DnsResolverConfig`.
+    pub fn config(&self) -> &DnsResolverConfig {
+        self.inner.config()
+    }
 }
 
 /// Private impl of resolver.
@@ -142,6 +147,7 @@ mod inner {
 
     /// Resolver implementation.
     pub struct DnsResolverInner {
+        config: DnsResolverConfig,
         provider: DnsProvider,
         tx: Sender<IpAddr>,
         addr_cache: Cache,
@@ -178,10 +184,15 @@ mod inner {
                 });
             }
             Self {
+                config,
                 provider,
                 tx,
                 addr_cache,
             }
+        }
+
+        pub fn config(&self) -> &DnsResolverConfig {
+            &self.config
         }
 
         pub fn lookup(&self, hostname: &str) -> anyhow::Result<Vec<IpAddr>> {
