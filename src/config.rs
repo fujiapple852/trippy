@@ -146,6 +146,10 @@ pub struct Args {
     #[clap(arg_enum, short = 'r', long, default_value = "system")]
     pub dns_resolve_method: DnsResolveMethod,
 
+    /// Lookup autonomous system (AS) information during DNS queries.
+    #[clap(long, short = 'z')]
+    pub dns_lookup_as_info: bool,
+
     /// Preserve the screen on exit
     #[clap(long)]
     pub tui_preserve_screen: bool,
@@ -266,5 +270,16 @@ pub fn validate_ttl(first_ttl: u8, max_ttl: u8) {
     if first_ttl > max_ttl {
         eprintln!("first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})");
         exit(-1);
+    }
+}
+
+/// Validate `dns_resolve_method` and `dns_lookup_as_info`
+pub fn validate_dns(dns_resolve_method: DnsResolveMethod, dns_lookup_as_info: bool) {
+    match dns_resolve_method {
+        DnsResolveMethod::System if dns_lookup_as_info => {
+            eprintln!("AS lookup not supported by resolver `system` (use '-r' to choose another resolver)");
+            exit(-1);
+        }
+        _ => {}
     }
 }

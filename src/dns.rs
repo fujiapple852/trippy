@@ -174,7 +174,7 @@ mod inner {
                 let cache = addr_cache.clone();
                 let provider = provider.clone();
                 thread::spawn(move || {
-                    resolver_queue_processor(rx, &provider, &cache, config.lookup_as_info)
+                    resolver_queue_processor(rx, &provider, &cache, config.lookup_as_info);
                 });
             }
             Self {
