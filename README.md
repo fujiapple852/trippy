@@ -131,6 +131,12 @@ Generate a `json` tracing report with 10 rounds of data:
 trip www.bitwizard.nl -m json -c 5
 ```
 
+Perform DNS queries using the `google` DNS server (or `cloudflare`, `system`, `resolv`):
+
+```shell
+trip www.bitwizard.nl -r google
+```
+
 ## Reference
 
 ```shell
