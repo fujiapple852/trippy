@@ -148,17 +148,21 @@ ARGS:
 
 OPTIONS:
     -a, --tui-address-mode <TUI_ADDRESS_MODE>
-            How to render addresses [default: host] [possible values: ip, host, both]
+            How to render addresses [default: host] [possible values: ip, host,
+            both]
 
     -c, --report-cycles <REPORT_CYCLES>
             The number of report cycles to run [default: 10]
+
+        --dns-timeout <DNS_TIMEOUT>
+            The maximum time to wait to perform DNS queries [default: 5s]
 
         --first-ttl <FIRST_TTL>
             The TTL to start from [default: 1]
 
     -g, --grace-duration <GRACE_DURATION>
-            The period of time to wait for additional ICMP responses after the target 
-            has responded [default: 100ms]
+            The period of time to wait for additional ICMP responses after the
+            target has responded [default: 100ms]
 
     -h, --help
             Print help information
@@ -169,20 +173,26 @@ OPTIONS:
     -I, --max-round-duration <MAX_ROUND_DURATION>
             The maximum duration of every round [default: 1s]
 
-    -m, --mode <MODE>
-            Output mode [default: tui] [possible values: tui, stream, pretty, markdown, csv, json]
-
-        --initial-sequence <MIN_SEQUENCE>
+        --initial-sequence <INITIAL_SEQUENCE>
             The initial sequence number [default: 33000]
+
+    -m, --mode <MODE>
+            Output mode [default: tui] [possible values: tui, stream, pretty,
+            markdown, csv, json]
 
     -p, --protocol <PROTOCOL>
             Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
 
         --packet-size <PACKET_SIZE>
-            The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
+            The size of IP packet to send (IP header + ICMP header + payload)
+            [default: 84]
 
         --payload-pattern <PAYLOAD_PATTERN>
             The repeating pattern in the payload of the ICMP packet [default: 0]
+
+    -r, --dns-resolve-method <DNS_RESOLVE_METHOD>
+            How to perform DNS queries [default: system] [possible values:
+            system, resolv, google, cloudflare]
 
         --read-timeout <READ_TIMEOUT>
             The socket read timeout [default: 10ms]
