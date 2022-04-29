@@ -17,7 +17,7 @@ use crate::config::{
     validate_report_cycles, validate_round_duration, validate_source_port, validate_ttl,
     validate_tui_refresh_rate, Mode, TraceProtocol,
 };
-use crate::dns::DnsResolver;
+use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::frontend::TuiConfig;
 use crate::report::{
     run_report_csv, run_report_json, run_report_stream, run_report_table_markdown,
@@ -67,7 +67,8 @@ fn main() -> anyhow::Result<()> {
     validate_report_cycles(args.report_cycles);
     ensure_caps()?;
     let trace_data = Arc::new(RwLock::new(Trace::default()));
-    let resolver = DnsResolver::new(dns_resolve_method, dns_timeout);
+    let dns_config = DnsResolverConfig::new(dns_resolve_method, dns_timeout, false);
+    let resolver = DnsResolver::new(dns_config);
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
     let max_rounds = match args.mode {
