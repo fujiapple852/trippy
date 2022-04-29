@@ -75,7 +75,7 @@ Trippy has been (lightly...) tested on the following platforms:
 
 ## Privileges
 
-Trippy uses a raw socket which require elevated privileges.  Enabling the required privilege can be achieved in several 
+Trippy uses a raw socket which require elevated privileges. Enabling the required privilege can be achieved in several
 ways, including:
 
 1: Run as `root` user via `sudo`:
@@ -137,7 +137,8 @@ Perform DNS queries using the `google` DNS server (or `cloudflare`, `system`, `r
 trip www.bitwizard.nl -r google
 ```
 
-Lookup AS information for all discovered IP addresses (not yet available for the `system` resolver, see [#66](https://github.com/fujiapple852/trippy/issues/66)):
+Lookup AS information for all discovered IP addresses (not yet available for the `system` resolver,
+see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
 trip www.bitwizard.nl -r google -z
