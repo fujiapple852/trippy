@@ -47,34 +47,27 @@ fn main() -> anyhow::Result<()> {
         TraceProtocol::Udp => trippy::tracing::TracerProtocol::Udp,
         TraceProtocol::Tcp => trippy::tracing::TracerProtocol::Tcp,
     };
-    let first_ttl = args.first_ttl;
-    let max_ttl = args.max_ttl;
-    let max_inflight = args.max_inflight;
-    let initial_sequence = args.initial_sequence;
     let read_timeout = humantime::parse_duration(&args.read_timeout)?;
     let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
     let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
-    let packet_size = args.packet_size;
-    let payload_pattern = args.payload_pattern;
     let grace_duration = humantime::parse_duration(&args.grace_duration)?;
-    let tui_preserve_screen = args.tui_preserve_screen;
     let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
-    let tui_address_mode = args.tui_address_mode;
-    let max_addrs = args.tui_max_addresses_per_hop;
     let report_cycles = args.report_cycles;
-    validate_ttl(first_ttl, max_ttl);
-    validate_max_inflight(max_inflight);
+    let dns_resolve_method = args.dns_resolve_method;
+    let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
+    validate_ttl(args.first_ttl, args.max_ttl);
+    validate_max_inflight(args.max_inflight);
     validate_read_timeout(read_timeout);
     validate_round_duration(min_round_duration, max_round_duration);
     validate_grace_duration(grace_duration);
-    validate_packet_size(packet_size);
+    validate_packet_size(args.packet_size);
     validate_source_port(source_port);
     validate_tui_refresh_rate(tui_refresh_rate);
-    validate_report_cycles(report_cycles);
+    validate_report_cycles(args.report_cycles);
     ensure_caps()?;
-    let resolver = DnsResolver::new();
     let trace_data = Arc::new(RwLock::new(Trace::default()));
+    let resolver = DnsResolver::new(dns_resolve_method, dns_timeout);
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
     let max_rounds = match args.mode {
@@ -86,16 +79,16 @@ fn main() -> anyhow::Result<()> {
         protocol,
         max_rounds,
         trace_identifier,
-        first_ttl,
-        max_ttl,
+        args.first_ttl,
+        args.max_ttl,
         grace_duration,
-        max_inflight,
-        initial_sequence,
+        args.max_inflight,
+        args.initial_sequence,
         read_timeout,
         min_round_duration,
         max_round_duration,
-        packet_size,
-        payload_pattern,
+        args.packet_size,
+        args.payload_pattern,
         source_port,
     )?;
 
@@ -125,17 +118,29 @@ fn main() -> anyhow::Result<()> {
                 target_addr,
                 hostname,
                 tui_refresh_rate,
-                tui_preserve_screen,
-                tui_address_mode,
-                max_addrs,
+                args.tui_preserve_screen,
+                args.tui_address_mode,
+                args.tui_max_addresses_per_hop,
             );
-            frontend::run_frontend(&trace_data, tracer_config, tui_config)?;
+            frontend::run_frontend(&trace_data, tracer_config, tui_config, resolver)?;
         }
         Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
-        Mode::Csv => run_report_csv(&hostname, target_addr, report_cycles, &trace_data),
-        Mode::Json => run_report_json(&hostname, target_addr, report_cycles, &trace_data),
-        Mode::Pretty => run_report_table_pretty(report_cycles, &trace_data),
-        Mode::Markdown => run_report_table_markdown(report_cycles, &trace_data),
+        Mode::Csv => run_report_csv(
+            &hostname,
+            target_addr,
+            report_cycles,
+            &resolver,
+            &trace_data,
+        ),
+        Mode::Json => run_report_json(
+            &hostname,
+            target_addr,
+            report_cycles,
+            &resolver,
+            &trace_data,
+        ),
+        Mode::Pretty => run_report_table_pretty(report_cycles, &resolver, &trace_data),
+        Mode::Markdown => run_report_table_markdown(report_cycles, &resolver, &trace_data),
     }
     Ok(())
 }

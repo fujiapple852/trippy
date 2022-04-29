@@ -70,6 +70,19 @@ pub enum AddressMode {
     Both,
 }
 
+/// How DNS queries wil be resolved.
+#[derive(Debug, Copy, Clone, ArgEnum)]
+pub enum DnsResolveMethod {
+    /// Resolve using the OS resolver.
+    System,
+    /// Resolve using the `/etc/resolv.conf` DNS configuration.
+    Resolv,
+    /// Resolve using the Google `8.8.8.8` DNS service.
+    Google,
+    /// Resolve using the Cloudflare `1.1.1.1` DNS service.
+    Cloudflare,
+}
+
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -124,6 +137,14 @@ pub struct Args {
     /// The source port (TCP & UDP only)
     #[clap(long)]
     pub source_port: Option<u16>,
+
+    /// The maximum time to wait to perform DNS queries.
+    #[clap(long, default_value = "5s")]
+    pub dns_timeout: String,
+
+    /// How to perform DNS queries.
+    #[clap(arg_enum, short = 'r', long, default_value = "system")]
+    pub dns_resolve_method: DnsResolveMethod,
 
     /// Preserve the screen on exit
     #[clap(long)]

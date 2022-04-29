@@ -14,17 +14,14 @@ pub fn run_report_csv(
     hostname: &str,
     target_addr: IpAddr,
     report_cycles: usize,
+    resolver: &DnsResolver,
     trace_data: &Arc<RwLock<Trace>>,
 ) {
-    let mut resolver = DnsResolver::default();
     let trace = wait_for_round(trace_data, report_cycles);
     println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops().iter() {
         let ttl = hop.ttl();
-        let hosts = hop
-            .addrs()
-            .map(|ip| resolver.reverse_lookup(*ip).to_string())
-            .join(":");
+        let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
         let host = if hosts.is_empty() {
             String::from("???")
         } else {
@@ -101,9 +98,9 @@ pub fn run_report_json(
     hostname: &str,
     target_addr: IpAddr,
     report_cycles: usize,
+    resolver: &DnsResolver,
     trace_data: &Arc<RwLock<Trace>>,
 ) {
-    let mut resolver = DnsResolver::default();
     let trace = wait_for_round(trace_data, report_cycles);
     let hops: Vec<ReportHop> = trace
         .hops()
@@ -144,17 +141,29 @@ pub fn run_report_json(
 }
 
 /// Generate a markdown table report of trace data.
-pub fn run_report_table_markdown(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>) {
-    run_report_table(report_cycles, trace_data, ASCII_MARKDOWN);
+pub fn run_report_table_markdown(
+    report_cycles: usize,
+    resolver: &DnsResolver,
+    trace_data: &Arc<RwLock<Trace>>,
+) {
+    run_report_table(report_cycles, resolver, trace_data, ASCII_MARKDOWN);
 }
 
 /// Generate a pretty table report of trace data.
-pub fn run_report_table_pretty(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>) {
-    run_report_table(report_cycles, trace_data, UTF8_FULL);
+pub fn run_report_table_pretty(
+    report_cycles: usize,
+    resolver: &DnsResolver,
+    trace_data: &Arc<RwLock<Trace>>,
+) {
+    run_report_table(report_cycles, resolver, trace_data, UTF8_FULL);
 }
 
-fn run_report_table(report_cycles: usize, trace_data: &Arc<RwLock<Trace>>, preset: &str) {
-    let mut resolver = DnsResolver::default();
+fn run_report_table(
+    report_cycles: usize,
+    resolver: &DnsResolver,
+    trace_data: &Arc<RwLock<Trace>>,
+    preset: &str,
+) {
     let trace = wait_for_round(trace_data, report_cycles);
     let columns = vec![
         "Hop", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
