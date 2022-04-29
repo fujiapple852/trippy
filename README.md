@@ -217,6 +217,9 @@ OPTIONS:
 
     -V, --version
             Print version information
+
+    -z, --dns-lookup-as-info
+            Lookup autonomous system (AS) information during DNS queries
 ```
 
 ## Acknowledgement
