@@ -13,9 +13,9 @@
 use crate::backend::Trace;
 use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{
-    validate_grace_duration, validate_max_inflight, validate_packet_size, validate_read_timeout,
-    validate_report_cycles, validate_round_duration, validate_source_port, validate_ttl,
-    validate_tui_refresh_rate, Mode, TraceProtocol,
+    validate_dns, validate_grace_duration, validate_max_inflight, validate_packet_size,
+    validate_read_timeout, validate_report_cycles, validate_round_duration, validate_source_port,
+    validate_ttl, validate_tui_refresh_rate, Mode, TraceProtocol,
 };
 use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::frontend::TuiConfig;
@@ -29,7 +29,7 @@ use parking_lot::RwLock;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
-use trippy::tracing::TracerChannel;
+use trippy::tracing::{TracerChannel, TracerConfig};
 
 mod backend;
 mod caps;
@@ -54,7 +54,6 @@ fn main() -> anyhow::Result<()> {
     let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let report_cycles = args.report_cycles;
-    let dns_resolve_method = args.dns_resolve_method;
     let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
     validate_ttl(args.first_ttl, args.max_ttl);
     validate_max_inflight(args.max_inflight);
@@ -65,17 +64,20 @@ fn main() -> anyhow::Result<()> {
     validate_source_port(source_port);
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(args.report_cycles);
-    ensure_caps()?;
+    validate_dns(args.dns_resolve_method, args.dns_lookup_as_info);
     let trace_data = Arc::new(RwLock::new(Trace::default()));
-    let dns_config = DnsResolverConfig::new(dns_resolve_method, dns_timeout, false);
-    let resolver = DnsResolver::new(dns_config);
+    let resolver = DnsResolver::new(DnsResolverConfig::new(
+        args.dns_resolve_method,
+        dns_timeout,
+        args.dns_lookup_as_info,
+    ));
     let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
     let trace_identifier = pid;
     let max_rounds = match args.mode {
         Mode::Stream | Mode::Tui => None,
         Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
     };
-    let tracer_config = trippy::tracing::TracerConfig::new(
+    let tracer_config = TracerConfig::new(
         target_addr,
         protocol,
         max_rounds,
@@ -92,27 +94,7 @@ fn main() -> anyhow::Result<()> {
         args.payload_pattern,
         source_port,
     )?;
-
-    // Create the network channel before dropping all capabilities
-    let channel = TracerChannel::new(
-        tracer_config.target_addr,
-        tracer_config.trace_identifier,
-        tracer_config.packet_size,
-        tracer_config.payload_pattern,
-        tracer_config.source_port,
-    )?;
-    drop_caps()?;
-
-    // Run the backend on a separate thread
-    {
-        let trace_data = trace_data.clone();
-        thread::Builder::new()
-            .name("backend".into())
-            .spawn(move || {
-                backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
-            })?;
-    }
-
+    start_backend(tracer_config, trace_data.clone())?;
     match args.mode {
         Mode::Tui => {
             let tui_config = TuiConfig::new(
@@ -143,5 +125,28 @@ fn main() -> anyhow::Result<()> {
         Mode::Pretty => run_report_table_pretty(report_cycles, &resolver, &trace_data),
         Mode::Markdown => run_report_table_markdown(report_cycles, &resolver, &trace_data),
     }
+    Ok(())
+}
+
+/// Create the network channel and then dropping all capabilities.
+fn start_backend(
+    tracer_config: TracerConfig,
+    trace_data: Arc<RwLock<Trace>>,
+) -> anyhow::Result<()> {
+    ensure_caps()?;
+    let channel = TracerChannel::new(
+        tracer_config.target_addr,
+        tracer_config.trace_identifier,
+        tracer_config.packet_size,
+        tracer_config.payload_pattern,
+        tracer_config.source_port,
+    )?;
+    drop_caps()?;
+    thread::Builder::new()
+        .name("backend".into())
+        .spawn(move || {
+            backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
+        })?;
+
     Ok(())
 }
