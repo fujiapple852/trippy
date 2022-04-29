@@ -42,7 +42,7 @@ Feature status and high level roadmap:
 - Tui: show top-N hosts per hop (✅)
 - Tui: `AS` lookup ([#34](https://github.com/fujiapple852/trippy/issues/34))
 - DNS: Basic reverse `DNS` lookup (✅)
-- DNS: Non-blocking `DNS` resolver ([#37](https://github.com/fujiapple852/trippy/issues/37))
+- DNS: Non-blocking `DNS` resolver (✅)
 - Report: `JSON` report mode (✅)
 - Report: `CSV` report mode (✅)
 - Report: Tabular report mode (✅)
