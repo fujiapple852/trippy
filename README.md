@@ -56,6 +56,11 @@ Feature status and high level roadmap:
 cargo install trippy
 ```
 
+### NetBSD
+```shell
+pkgin install trippy
+```
+
 ### Docker (Linux only)
 
 ```shell
@@ -70,7 +75,7 @@ Trippy has been (lightly...) tested on the following platforms:
 |----------------|-----------------|--------|
 | Linux (Ubuntu) | 20.04           | ✅      |
 | macOS          | 11.4 (Big Sur)  | ✅      |
-| BSD            | n/a             | TBC    |
+| NetBSD         | current         | ✅      |
 | Windows        | n/a             | TBC    |
 
 ## Privileges
