@@ -20,7 +20,7 @@ name = "trip"
 
 # Library dependancies
 pnet = "0.29.0"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 derive_more = "0.99.17"
 
 # TUI dependancies
