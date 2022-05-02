@@ -311,28 +311,28 @@ impl ProbeResponseData {
 }
 
 /// Create the communication channel needed for sending and receiving ICMP packets.
-pub fn make_icmp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
+fn make_icmp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
     let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Icmp);
     let channel_type = TransportChannelType::Layer4(protocol);
     Ok(transport_channel(1600, channel_type)?)
 }
 
 /// Create the communication channel needed for sending UDP packets.
-pub fn make_udp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
+fn make_udp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
     let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Udp);
     let channel_type = TransportChannelType::Layer4(protocol);
     Ok(transport_channel(1600, channel_type)?)
 }
 
 /// Create the communication channel needed for sending TCP packets.
-pub fn make_tcp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
+fn make_tcp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
     let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Tcp);
     let channel_type = TransportChannelType::Layer4(protocol);
     Ok(transport_channel(1600, channel_type)?)
 }
 
 /// Get the original `EchoRequestPacket` packet embedded in the payload.
-pub fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
+fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
     let ip4 = Ipv4Packet::new(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_icmp = &payload[header_len..];
@@ -341,7 +341,7 @@ pub fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>
 }
 
 /// Get the original `UdpPacket` packet embedded in the payload.
-pub fn extract_udp_probe(payload: &[u8]) -> TraceResult<u16> {
+fn extract_udp_probe(payload: &[u8]) -> TraceResult<u16> {
     let ip4 = Ipv4Packet::new(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_udp = &payload[header_len..];
@@ -359,7 +359,7 @@ pub fn extract_udp_probe(payload: &[u8]) -> TraceResult<u16> {
 ///
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
 /// header.
-pub fn extract_tcp_probe(payload: &[u8]) -> TraceResult<u16> {
+fn extract_tcp_probe(payload: &[u8]) -> TraceResult<u16> {
     let ip4 = Ipv4Packet::new(payload).unwrap();
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_tcp = &payload[header_len..];
