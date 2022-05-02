@@ -12,7 +12,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 ## Features
 
 - Trace using multiple protocols:
-    - ICMP, UDP & TCP
+    - `ICMP`, `UDP` & `TCP`
 - Customizable tracing options:
     - packet size & payload pattern
     - start and maximum time-to-live (TTL)
@@ -23,11 +23,11 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
-    - Lookup (autonomous system)[https://en.wikipedia.org/wiki/Autonomous_system_(Internet)] number (ASN) and name
+    - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
     - Freeze/unfreeze the Tui, reset the stats, preserve screen on exit
     - Responsive UI (adjustable refresh rate, non-blocking DNS queries)
 - Generate tracing reports:
-    - json, csv & tables (pretty-printed and markdown)
+    - `json`, `csv` & tables (pretty-printed and markdown)
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD)
 - Capabilities aware application (Linux only)
