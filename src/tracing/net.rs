@@ -11,7 +11,7 @@ use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
 use pnet::packet::icmp::{echo_request, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
-use pnet::packet::tcp::{MutableTcpPacket, TcpFlags, TcpPacket};
+use pnet::packet::tcp::{ipv4_checksum, MutableTcpPacket, TcpFlags, TcpPacket};
 use pnet::packet::udp::{MutableUdpPacket, UdpPacket};
 use pnet::packet::Packet;
 use pnet::transport::{
@@ -181,6 +181,11 @@ impl Network for TracerChannel {
         tcp.set_destination(probe.sequence.0);
         tcp.set_flags(TcpFlags::SYN);
         tcp.set_data_offset(5);
+        tcp.set_checksum(tcp_checksum(
+            &tcp.to_immutable(),
+            &self.src_addr,
+            &self.dest_addr,
+        ));
         payload_buf
             .iter_mut()
             .for_each(|x| *x = self.payload_pattern.0);
@@ -400,5 +405,15 @@ fn extract_tcp_probe(payload: &[u8]) -> TraceResult<u16> {
         Ok(TcpPacket::new(&buf).req()?.get_destination())
     } else {
         Ok(TcpPacket::new(nested_tcp).req()?.get_destination())
+    }
+}
+
+/// Calculate the TCP IPv4 checksum.
+///
+/// Currently this only supports Ipv4.
+fn tcp_checksum(tcp: &TcpPacket<'_>, src_addr: &IpAddr, dest_addr: &IpAddr) -> u16 {
+    match (src_addr, dest_addr) {
+        (IpAddr::V4(src), IpAddr::V4(dest)) => ipv4_checksum(tcp, src, dest),
+        _ => unreachable!(),
     }
 }
