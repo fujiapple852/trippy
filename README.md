@@ -219,6 +219,14 @@ OPTIONS:
             Lookup autonomous system (AS) information during DNS queries
 ```
 
+## Limitations
+
+Trippy does not currently support the following features:
+
+- IPv6 ([#35](https://github.com/fujiapple852/trippy/issues/35))
+- Adjustable network interface binding ([#42](https://github.com/fujiapple852/trippy/issues/42))
+- Adjustable target port for `UDP`/`TCP` ([#43](https://github.com/fujiapple852/trippy/issues/43))
+
 ## Acknowledgement
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
