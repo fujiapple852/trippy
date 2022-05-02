@@ -107,7 +107,7 @@ impl TuiApp {
             frozen_start: None,
         }
     }
-    pub fn next(&mut self) {
+    pub fn next_hop(&mut self) {
         let hop_count = self.trace.hops().len();
         if hop_count == 0 {
             return;
@@ -126,7 +126,7 @@ impl TuiApp {
         self.table_state.select(Some(i));
     }
 
-    pub fn previous(&mut self) {
+    pub fn previous_hop(&mut self) {
         let hop_count = self.trace.hops().len();
         if hop_count == 0 {
             return;
@@ -212,8 +212,8 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('k'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.resolver.flush();
                     }
-                    (KeyCode::Down, _) if !app.show_help => app.next(),
-                    (KeyCode::Up, _) if !app.show_help => app.previous(),
+                    (KeyCode::Down, _) if !app.show_help => app.next_hop(),
+                    (KeyCode::Up, _) if !app.show_help => app.previous_hop(),
                     (KeyCode::Esc, _) if !app.show_help => app.clear(),
                     (KeyCode::Esc, _) if app.show_help => app.toggle_help(),
                     _ => {}
