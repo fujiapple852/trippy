@@ -244,10 +244,6 @@ The [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) data is ret
 the [IP to ASN Mapping Service](https://team-cymru.com/community-services/ip-asn-mapping/#dns) provided
 by [Team Cymru](https://team-cymru.com).
 
-## Keyboard Controls
-
-Press `h` in the Tui to display te keyboard controls.
-
 ## License
 
 This project is distributed under the terms of the Apache License (Version 2.0).
