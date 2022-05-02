@@ -12,44 +12,26 @@ issues.
 
 ## Features
 
-Feature status and high level roadmap:
-
-- Trace: ICMP protocol (✅)
-- Trace: Adjustable packet size (✅)
-- Trace: Adjustable payload pattern (✅)
-- Trace: Adjustable starting and ended time-to-live values (✅)
-- Trace: Adjustable minimum and maximum round trip time (✅)
-- Trace: Adjustable round end grace period (✅)
-- Trace: Adjustable maximum number of unknown hops (✅)
-- Trace: Adjustable source port for `UDP` (✅)
-- Trace: UDP protocol (✅)
-- Trace: TCP protocol (✅)
-- Trace: SCTP protocol ([#41](https://github.com/fujiapple852/trippy/issues/41))
-- Trace: IPv6 ([#35](https://github.com/fujiapple852/trippy/issues/35))
-- Trace: MPLS ([#33](https://github.com/fujiapple852/trippy/issues/33))
-- Trace: Adjustable `DSCP` IP header ([#38](https://github.com/fujiapple852/trippy/issues/38))
-- Trace: Adjustable network interface binding ([#42](https://github.com/fujiapple852/trippy/issues/42))
-- Trace: Adjustable target port for `UDP`/`TCP` ([#43](https://github.com/fujiapple852/trippy/issues/43))
-- Trace: Capabilities awareness (✅)
-- Tui: Display core hop statistics (✅)
-- Tui: hop navigation (✅)
-- Tui: Pause display (✅)
-- Tui: Help dialog (✅)
-- Tui: Allow preserving screen on exit (✅)
-- Tui: Adjustable refresh rate (✅)
-- Tui: RTT history per hop (✅)
-- Tui: RTT frequency histogram per hop (✅)
-- Tui: Display multiple hosts per hop (✅)
-- Tui: Reset statistics (✅)
-- Tui: show Jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
-- Tui: show top-N hosts per hop (✅)
-- Tui: `AS` lookup (✅)
-- DNS: Basic reverse `DNS` lookup (✅)
-- DNS: Non-blocking `DNS` resolver (✅)
-- Report: `JSON` report mode (✅)
-- Report: `CSV` report mode (✅)
-- Report: Tabular report mode (✅)
-- Report: Streaming text mode (✅)
+- Trace using multiple protocols:
+    - ICMP, UDP & TCP
+- Customizable tracing options:
+    - packet size & payload pattern
+    - start and maximum time-to-live (TTL)
+    - minimum and maximum round duration
+    - round end grace period & maximum number of unknown hops
+    - source port (`TCP` & `UDP`)
+- Tui interface:
+    - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
+    - Per hop round-trip-time (RTT) history and frequency distributing charts
+    - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
+    - Lookup (autonomous system)[https://en.wikipedia.org/wiki/Autonomous_system_(Internet)] number (ASN) and name
+    - Freeze/unfreeze the Tui, reset the stats, preserve screen on exit
+    - Responsive UI (adjustable refresh rate, non-blocking DNS queries)
+- Generate tracing reports:
+    - json, csv & tables (pretty-printed and markdown)
+    - configurable reporting cycles
+- Runs on multiple platform (macOS, Linux, NetBSD)
+- Capabilities aware application (Linux only)
 
 ## Distributions
 
