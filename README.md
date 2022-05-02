@@ -7,8 +7,7 @@ A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
 
 <img src="assets/trippy-0.0.0-27-04-2022.gif" alt="trippy"/>
 
-Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network routing
-issues.
+Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
 
 ## Features
 
