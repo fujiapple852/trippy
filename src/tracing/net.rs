@@ -70,7 +70,7 @@ pub trait Network {
 
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
-    ip: IpAddr,
+    dest_addr: IpAddr,
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
@@ -86,7 +86,7 @@ impl TracerChannel {
     ///
     /// This operation requires the `CAP_NET_RAW` capability.
     pub fn new(
-        ip: IpAddr,
+        dest_addr: IpAddr,
         identifier: TraceId,
         packet_size: PacketSize,
         payload_pattern: PayloadPattern,
@@ -96,7 +96,7 @@ impl TracerChannel {
         let (udp_tx, _) = make_udp_channel()?;
         let (tcp_tx, _) = make_tcp_channel()?;
         Ok(Self {
-            ip,
+            dest_addr,
             identifier,
             packet_size,
             payload_pattern,
@@ -132,7 +132,7 @@ impl Network for TracerChannel {
         req.set_sequence_number(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
         self.icmp_tx.set_ttl(probe.ttl.0)?;
-        self.icmp_tx.send_to(req.to_immutable(), self.ip)?;
+        self.icmp_tx.send_to(req.to_immutable(), self.dest_addr)?;
         Ok(())
     }
 
@@ -156,7 +156,7 @@ impl Network for TracerChannel {
             .for_each(|x| *x = self.payload_pattern.0);
         udp.set_payload(&payload_buf[..payload_size]);
         self.udp_tx.set_ttl(probe.ttl.0)?;
-        self.udp_tx.send_to(udp.to_immutable(), self.ip)?;
+        self.udp_tx.send_to(udp.to_immutable(), self.dest_addr)?;
         Ok(())
     }
 
@@ -181,7 +181,7 @@ impl Network for TracerChannel {
             .for_each(|x| *x = self.payload_pattern.0);
         tcp.set_payload(&payload_buf[..payload_size]);
         self.tcp_tx.set_ttl(probe.ttl.0)?;
-        self.tcp_tx.send_to(tcp.to_immutable(), self.ip)?;
+        self.tcp_tx.send_to(tcp.to_immutable(), self.dest_addr)?;
         Ok(())
     }
 
