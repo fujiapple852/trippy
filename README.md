@@ -27,7 +27,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Freeze/unfreeze the Tui, reset the stats, preserve screen on exit
     - Responsive UI (adjustable refresh rate, non-blocking DNS queries)
 - Generate tracing reports:
-    - `json`, `csv` & tables (pretty-printed and markdown)
+    - `json`, `csv` & tabular (pretty-printed and markdown)
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD)
 - Capabilities aware application (Linux only)
