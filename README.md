@@ -42,6 +42,7 @@ cargo install trippy
 ```
 
 ### NetBSD
+
 ```shell
 pkgin install trippy
 ```
@@ -231,7 +232,7 @@ Trippy does not currently support the following features:
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
 , [crossterm](https://github.com/crossterm-rs/crossterm) & [pnet](https://github.com/libpnet/libpnet) as well as several
-common foundational Rust libraries.  It also draws heavily from [mtr](https://github.com/traviscross/mtr).
+common foundational Rust libraries. It also draws heavily from [mtr](https://github.com/traviscross/mtr).
 
 The [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) data is retrieved from
 the [IP to ASN Mapping Service](https://team-cymru.com/community-services/ip-asn-mapping/#dns) provided
