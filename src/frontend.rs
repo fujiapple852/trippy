@@ -59,6 +59,8 @@ pub struct TuiConfig {
     address_mode: AddressMode,
     /// The maximum number of addresses to show per hop.
     max_addrs: Option<u8>,
+    /// The maximum number of samples to record per hop.
+    max_samples: usize,
 }
 
 impl TuiConfig {
@@ -69,6 +71,7 @@ impl TuiConfig {
         preserve_screen: bool,
         address_mode: AddressMode,
         max_addrs: Option<u8>,
+        max_samples: usize,
     ) -> Self {
         Self {
             target_addr,
@@ -77,6 +80,7 @@ impl TuiConfig {
             preserve_screen,
             address_mode,
             max_addrs,
+            max_samples,
         }
     }
 }
@@ -95,7 +99,7 @@ impl TuiApp {
     fn new(tracer_config: TracerConfig, tui_config: TuiConfig, resolver: DnsResolver) -> Self {
         Self {
             table_state: TableState::default(),
-            trace: Trace::default(),
+            trace: Trace::new(tui_config.max_samples),
             resolver,
             tracer_config,
             tui_config,
@@ -204,7 +208,7 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
                     (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.clear();
-                        *trace.write() = Trace::default();
+                        *trace.write() = Trace::new(app.tui_config.max_samples);
                     }
                     (KeyCode::Char('k'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.resolver.flush();
