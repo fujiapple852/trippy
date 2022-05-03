@@ -24,7 +24,7 @@ pub struct Tracer<F> {
     publish: F,
 }
 
-impl<F: Fn(&Probe, u8)> Tracer<F> {
+impl<F: Fn(&[Probe], u8)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
             protocol: config.protocol,
@@ -198,11 +198,7 @@ impl<F: Fn(&Probe, u8)> Tracer<F> {
                 size.min(max_allowed) + 1
             })
         };
-        state.probes().iter().for_each(|probe| {
-            debug_assert_eq!(probe.round, state.round());
-            debug_assert_ne!(probe.ttl.0, 0);
-            (self.publish)(probe, max_received_ttl);
-        });
+        (self.publish)(state.probes(), max_received_ttl);
     }
 }
 
@@ -287,10 +283,6 @@ mod state {
 
         pub const fn ttl(&self) -> TimeToLive {
             self.ttl
-        }
-
-        pub const fn round(&self) -> Round {
-            self.round
         }
 
         pub const fn round_start(&self) -> SystemTime {
