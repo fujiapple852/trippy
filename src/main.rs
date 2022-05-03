@@ -13,12 +13,12 @@
 use crate::backend::Trace;
 use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{
-    validate_dns, validate_grace_duration, validate_max_inflight, validate_packet_size,
-    validate_read_timeout, validate_report_cycles, validate_round_duration, validate_source_port,
-    validate_ttl, validate_tui_refresh_rate, Mode, TraceProtocol,
+    validate_dns, validate_grace_duration, validate_max_inflight, validate_multi,
+    validate_packet_size, validate_read_timeout, validate_report_cycles, validate_round_duration,
+    validate_source_port, validate_ttl, validate_tui_refresh_rate, Mode, TraceProtocol,
 };
 use crate::dns::{DnsResolver, DnsResolverConfig};
-use crate::frontend::TuiConfig;
+use crate::frontend::{TuiConfig, TuiTraceInfo};
 use crate::report::{
     run_report_csv, run_report_json, run_report_stream, run_report_table_markdown,
     run_report_table_pretty,
@@ -38,10 +38,11 @@ mod dns;
 mod frontend;
 mod report;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let args = Args::parse();
-    let hostname = args.hostname;
+    let targets = args.targets;
     let protocol = match args.protocol {
         TraceProtocol::Icmp => trippy::tracing::TracerProtocol::Icmp,
         TraceProtocol::Udp => trippy::tracing::TracerProtocol::Udp,
@@ -55,6 +56,11 @@ fn main() -> anyhow::Result<()> {
     let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
     let report_cycles = args.report_cycles;
     let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
+    let max_rounds = match args.mode {
+        Mode::Stream | Mode::Tui => None,
+        Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
+    };
+    validate_multi(args.mode, args.protocol, &targets);
     validate_ttl(args.first_ttl, args.max_ttl);
     validate_max_inflight(args.max_inflight);
     validate_read_timeout(read_timeout);
@@ -65,66 +71,83 @@ fn main() -> anyhow::Result<()> {
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(args.report_cycles);
     validate_dns(args.dns_resolve_method, args.dns_lookup_as_info);
-    let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
     let resolver = DnsResolver::new(DnsResolverConfig::new(
         args.dns_resolve_method,
         dns_timeout,
         args.dns_lookup_as_info,
     ));
-    let target_addr: IpAddr = resolver.lookup(&hostname)?[0];
-    let trace_identifier = pid;
-    let max_rounds = match args.mode {
-        Mode::Stream | Mode::Tui => None,
-        Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
-    };
-    let tracer_config = TracerConfig::new(
-        target_addr,
-        protocol,
-        max_rounds,
-        trace_identifier,
-        args.first_ttl,
-        args.max_ttl,
-        grace_duration,
-        args.max_inflight,
-        args.initial_sequence,
-        read_timeout,
-        min_round_duration,
-        max_round_duration,
-        args.packet_size,
-        args.payload_pattern,
-        source_port,
-    )?;
-    start_backend(tracer_config, trace_data.clone())?;
+    ensure_caps()?;
+    let traces: Vec<_> = targets
+        .iter()
+        .map(|target| {
+            let target_addr: IpAddr = resolver.lookup(target)?[0];
+            let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
+            Ok(TuiTraceInfo::new(
+                trace_data,
+                target.clone(),
+                target_addr,
+                protocol.to_string(),
+                args.first_ttl,
+                args.max_ttl,
+                grace_duration,
+                min_round_duration,
+            ))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    for (i, info) in traces.iter().enumerate() {
+        let tracer_config = TracerConfig::new(
+            info.target_addr,
+            protocol,
+            max_rounds,
+            pid + i as u16,
+            args.first_ttl,
+            args.max_ttl,
+            grace_duration,
+            args.max_inflight,
+            args.initial_sequence,
+            read_timeout,
+            min_round_duration,
+            max_round_duration,
+            args.packet_size,
+            args.payload_pattern,
+            source_port,
+        )?;
+        start_backend(tracer_config, info.data.clone())?;
+    }
+    drop_caps()?;
     match args.mode {
         Mode::Tui => {
             let tui_config = TuiConfig::new(
-                target_addr,
-                hostname,
                 tui_refresh_rate,
                 args.tui_preserve_screen,
                 args.tui_address_mode,
                 args.tui_max_addresses_per_hop,
                 args.tui_max_samples,
             );
-            frontend::run_frontend(&trace_data, tracer_config, tui_config, resolver)?;
+            frontend::run_frontend(traces, tui_config, resolver)?;
         }
-        Mode::Stream => run_report_stream(&hostname, target_addr, min_round_duration, &trace_data),
+        Mode::Stream => run_report_stream(
+            &traces[0].target_hostname,
+            traces[0].target_addr,
+            traces[0].min_round_duration,
+            &traces[0].data,
+        ),
         Mode::Csv => run_report_csv(
-            &hostname,
-            target_addr,
+            &traces[0].target_hostname,
+            traces[0].target_addr,
             report_cycles,
             &resolver,
-            &trace_data,
+            &traces[0].data,
         ),
         Mode::Json => run_report_json(
-            &hostname,
-            target_addr,
+            &traces[0].target_hostname,
+            traces[0].target_addr,
             report_cycles,
             &resolver,
-            &trace_data,
+            &traces[0].data,
         ),
-        Mode::Pretty => run_report_table_pretty(report_cycles, &resolver, &trace_data),
-        Mode::Markdown => run_report_table_markdown(report_cycles, &resolver, &trace_data),
+        Mode::Pretty => run_report_table_pretty(report_cycles, &resolver, &traces[0].data),
+        Mode::Markdown => run_report_table_markdown(report_cycles, &resolver, &traces[0].data),
     }
     Ok(())
 }
@@ -134,7 +157,6 @@ fn start_backend(
     tracer_config: TracerConfig,
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
-    ensure_caps()?;
     let channel = TracerChannel::new(
         tracer_config.target_addr,
         tracer_config.trace_identifier,
@@ -142,10 +164,10 @@ fn start_backend(
         tracer_config.payload_pattern,
         tracer_config.source_port,
     )?;
-    drop_caps()?;
     thread::Builder::new()
-        .name("backend".into())
+        .name(format!("tracer-{}", tracer_config.trace_identifier.0))
         .spawn(move || {
+            drop_caps().expect("failed to drop capabilities in tracer thread");
             backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
         })?;
 
