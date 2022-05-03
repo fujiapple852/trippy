@@ -216,21 +216,17 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// `Probe` which is assumed to represent the TTL of the target host.
     fn publish_trace(&self, state: &TracerState) {
         let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
-            // If we started at ttl N and found the target at ttl M then the round contains M - N + 1 entries
-            target_ttl.0 - self.first_ttl.0 + 1
+            target_ttl
         } else {
-            // If we did not receive any responses then the round is size 0
-            // If we started at ttl N and received a max ttl response M then the round contains M - N + 2 entries,
-            // where the 'extra' entry represents the next ttl which did not receive a response.  This is capped by the
-            // maximum allowed round size and so the largest ttl may not be the 'extra' one.
-            state.max_received_ttl().map_or(0, |max_received_ttl| {
-                let size = max_received_ttl.0.saturating_sub(self.first_ttl.0) + 1;
-                let max_allowed = self.max_ttl.0 - self.first_ttl.0;
-                size.min(max_allowed) + 1
-            })
+            state
+                .max_received_ttl()
+                .map_or(TimeToLive(0), |max_received_ttl| {
+                    let max_sent_ttl = state.ttl() - TimeToLive(1);
+                    max_sent_ttl.min(max_received_ttl + TimeToLive(1))
+                })
         };
         let probes = state.probes();
-        let largest_ttl = TimeToLive::from(max_received_ttl);
+        let largest_ttl = max_received_ttl;
         let reason = if state.target_found() {
             CompletionReason::TargetFound
         } else {
