@@ -24,7 +24,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
     - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
-    - Freeze/unfreeze the Tui, reset the stats, preserve screen on exit
+    - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI (adjustable refresh rate, non-blocking DNS queries)
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
