@@ -2,10 +2,29 @@ use self::state::TracerState;
 use crate::tracing::error::TraceResult;
 use crate::tracing::net::{Network, ProbeResponse};
 use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
-use crate::tracing::TracerConfig;
+use crate::tracing::TracerProtocol;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
-use crate::tracing::{Probe, TracerProtocol};
+use crate::tracing::{Probe, TracerConfig};
 use std::time::{Duration, SystemTime};
+
+/// The output from a round of tracing.
+#[derive(Debug, Clone)]
+pub struct TracerRound<'a> {
+    /// The state of all `Probe` that were sent in the round.
+    pub probes: &'a [Probe],
+    /// The largest time-to-live (ttl) for which we received a reply in the round.
+    pub largest_ttl: TimeToLive,
+}
+
+impl<'a> TracerRound<'a> {
+    #[must_use]
+    pub fn new(probes: &'a [Probe], largest_ttl: TimeToLive) -> Self {
+        Self {
+            probes,
+            largest_ttl,
+        }
+    }
+}
 
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
@@ -24,7 +43,7 @@ pub struct Tracer<F> {
     publish: F,
 }
 
-impl<F: Fn(&[Probe], u8)> Tracer<F> {
+impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
             protocol: config.protocol,
@@ -198,7 +217,8 @@ impl<F: Fn(&[Probe], u8)> Tracer<F> {
                 size.min(max_allowed) + 1
             })
         };
-        (self.publish)(state.probes(), max_received_ttl);
+        let round = TracerRound::new(state.probes(), TimeToLive::from(max_received_ttl));
+        (self.publish)(&round);
     }
 }
 
