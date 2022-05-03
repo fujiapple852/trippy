@@ -198,7 +198,7 @@ impl<F: Fn(&Probe, u8)> Tracer<F> {
                 size.min(max_allowed) + 1
             })
         };
-        state.probes().for_each(|probe| {
+        state.probes().iter().for_each(|probe| {
             debug_assert_eq!(probe.round, state.round());
             debug_assert_ne!(probe.ttl.0, 0);
             (self.publish)(probe, max_received_ttl);
@@ -274,10 +274,10 @@ mod state {
             }
         }
 
-        /// Get an iterator over the `Probe` in the current round.
-        pub fn probes(&self) -> impl Iterator<Item = &Probe> + '_ {
+        /// Get a slice of `Probe` for the current round.
+        pub fn probes(&self) -> &[Probe] {
             let round_size = self.sequence - self.round_sequence;
-            self.buffer.iter().take(round_size.0 as usize)
+            &self.buffer[..round_size.0 as usize]
         }
 
         /// Get the `Probe` for `sequence`
@@ -486,7 +486,7 @@ mod state {
 
             // Validate the probes() iterator returns returns only a single probe
             {
-                let mut probe_iter = state.probes();
+                let mut probe_iter = state.probes().iter();
                 let probe_next1 = *probe_iter.next().unwrap();
                 assert_eq!(probe_1_fetch, probe_next1);
                 assert_eq!(None, probe_iter.next());
@@ -552,7 +552,7 @@ mod state {
 
             // Validate the probes() iterator returns the two probes in the states we expect
             {
-                let mut probe_iter = state.probes();
+                let mut probe_iter = state.probes().iter();
                 let probe_next1 = *probe_iter.next().unwrap();
                 assert_eq!(probe_2_recv, probe_next1);
                 let probe_next2 = *probe_iter.next().unwrap();
@@ -583,7 +583,7 @@ mod state {
 
             // Validate the probes() iterator returns the two probes in the states we expect
             {
-                let mut probe_iter = state.probes();
+                let mut probe_iter = state.probes().iter();
                 let probe_next1 = *probe_iter.next().unwrap();
                 assert_eq!(probe_2_recv, probe_next1);
                 let probe_next2 = *probe_iter.next().unwrap();
@@ -606,7 +606,7 @@ mod state {
 
             // Validate the probes()
             {
-                let mut iter = state.probes();
+                let mut iter = state.probes().iter();
                 assert_eq!(iter.next().unwrap().sequence, Sequence(65278));
                 iter.take(BUFFER_SIZE as usize - 1)
                     .for_each(|p| assert_eq!(p.sequence, Sequence(0)));
@@ -624,7 +624,7 @@ mod state {
 
             // Validate the probes() again
             {
-                let mut iter = state.probes();
+                let mut iter = state.probes().iter();
                 assert_eq!(iter.next().unwrap().sequence, Sequence(65278));
                 iter.take(BUFFER_SIZE as usize - 1)
                     .for_each(|p| assert_eq!(p.sequence, Sequence(0)));
