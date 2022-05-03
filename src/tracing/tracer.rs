@@ -14,16 +14,28 @@ pub struct TracerRound<'a> {
     pub probes: &'a [Probe],
     /// The largest time-to-live (ttl) for which we received a reply in the round.
     pub largest_ttl: TimeToLive,
+    /// Indicates what triggered the completion of the tracing round.
+    pub reason: CompletionReason,
 }
 
 impl<'a> TracerRound<'a> {
     #[must_use]
-    pub fn new(probes: &'a [Probe], largest_ttl: TimeToLive) -> Self {
+    pub fn new(probes: &'a [Probe], largest_ttl: TimeToLive, reason: CompletionReason) -> Self {
         Self {
             probes,
             largest_ttl,
+            reason,
         }
     }
+}
+
+/// Indicates what triggered the completion of the tracing round.
+#[derive(Debug, Copy, Clone)]
+pub enum CompletionReason {
+    /// The round ended because the target was found.
+    TargetFound,
+    /// The round ended because the time exceeded the configured maximum round time.
+    RoundTimeLimitExceeded,
 }
 
 /// Trace a path to a target.
@@ -217,8 +229,14 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 size.min(max_allowed) + 1
             })
         };
-        let round = TracerRound::new(state.probes(), TimeToLive::from(max_received_ttl));
-        (self.publish)(&round);
+        let probes = state.probes();
+        let largest_ttl = TimeToLive::from(max_received_ttl);
+        let reason = if state.target_found() {
+            CompletionReason::TargetFound
+        } else {
+            CompletionReason::RoundTimeLimitExceeded
+        };
+        (self.publish)(&TracerRound::new(probes, largest_ttl, reason));
     }
 }
 
