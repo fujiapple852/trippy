@@ -85,9 +85,10 @@ impl<F: Fn(&Probe, u8)> Tracer<F> {
     /// Read and process the next incoming `ICMP` packet.
     ///
     /// We allow multiple probes to be in-flight at any time and we cannot guaranteed that responses will be
-    /// received in-order.  We therefore maintain a circular buffer which holds details of each `Probe` which is
-    /// indexed by a sequence number (modulo the buffer size).  The sequence number is set in the outgoing `ICMP`
-    /// `EchoRequest` (or `UDP` / `TCP`) packet and returned in both the `TimeExceeded` and `EchoReply` responses.
+    /// received in-order.  We therefore maintain a buffer which holds details of each `Probe` which is
+    /// indexed by the offset of the sequence number from the sequence number at the beginning of the round.  The
+    /// sequence number is set in the outgoing `ICMP` `EchoRequest` (or `UDP` / `TCP`) packet and returned in both
+    /// the `TimeExceeded` and `EchoReply` responses.
     ///
     /// Each incoming `ICMP` packet contains the original `ICMP` `EchoRequest` packet from which we can read the
     /// `identifier` that we set which we can now validate to ensure we only process responses which correspond to
@@ -214,7 +215,7 @@ mod state {
     use crate::tracing::Probe;
     use std::time::SystemTime;
 
-    /// The maximum number of `Probe` entries in the circular buffer.
+    /// The maximum number of `Probe` entries in the buffer.
     ///
     /// This is effectively also the maximum number of time-to-live (TTL) we can support.  We only ever send TTL in
     /// the range 1..255 so this is technically one larger than we need.
@@ -276,16 +277,12 @@ mod state {
         /// Get an iterator over the `Probe` in the current round.
         pub fn probes(&self) -> impl Iterator<Item = &Probe> + '_ {
             let round_size = self.sequence - self.round_sequence;
-            self.buffer
-                .iter()
-                .cycle()
-                .skip(usize::from(self.round_sequence % BUFFER_SIZE))
-                .take(round_size.0 as usize)
+            self.buffer.iter().take(round_size.0 as usize)
         }
 
         /// Get the `Probe` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> Probe {
-            self.buffer[usize::from(sequence % BUFFER_SIZE)]
+            self.buffer[usize::from(sequence - self.round_sequence)]
         }
 
         pub const fn ttl(&self) -> TimeToLive {
@@ -335,7 +332,7 @@ mod state {
         /// us to use a `u8`.
         pub fn next_probe(&mut self) -> Probe {
             let probe = Probe::new(self.sequence, self.ttl, self.round, SystemTime::now());
-            self.buffer[usize::from(self.sequence % BUFFER_SIZE)] = probe;
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive::from(1);
             debug_assert!(self.sequence < Sequence(u16::MAX));
@@ -372,7 +369,7 @@ mod state {
                 }
                 _ => {}
             }
-            self.buffer[usize::from(sequence % BUFFER_SIZE)] = probe;
+            self.buffer[usize::from(sequence - self.round_sequence)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
                 Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
                 None => Some(probe.ttl),
