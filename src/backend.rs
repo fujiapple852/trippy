@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
-use trippy::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig};
+use trippy::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig, TracerRound};
 
 /// The maximum number of historic samples to keep per hop.
 const MAX_SAMPLES: usize = 256;
@@ -56,10 +56,10 @@ impl Trace {
         }
     }
 
-    /// Update the tracing state from a `Probe`.
-    pub fn update_from_probes(&mut self, probes: &[Probe], max_received_ttl: u8) {
-        self.highest_ttl = self.highest_ttl.max(max_received_ttl);
-        for probe in probes {
+    /// Update the tracing state from a `TracerRound`.
+    pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
+        self.highest_ttl = self.highest_ttl.max(round.largest_ttl.0);
+        for probe in round.probes {
             self.update_from_probe(probe);
         }
     }
@@ -242,8 +242,8 @@ pub fn run_backend(
     channel: TracerChannel,
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
-    let tracer = Tracer::new(config, move |probes, received| {
-        trace_data.write().update_from_probes(probes, received);
+    let tracer = Tracer::new(config, move |round| {
+        trace_data.write().update_from_round(round);
     });
     Ok(tracer.trace(channel)?)
 }
