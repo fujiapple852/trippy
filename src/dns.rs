@@ -110,6 +110,10 @@ impl DnsResolver {
     pub fn config(&self) -> &DnsResolverConfig {
         self.inner.config()
     }
+
+    pub fn flush(&self) {
+        self.inner.flush();
+    }
 }
 
 /// Private impl of resolver.
@@ -247,6 +251,10 @@ mod inner {
             } else {
                 dns_entry
             }
+        }
+
+        pub fn flush(&self) {
+            self.addr_cache.write().clear();
         }
     }
 
