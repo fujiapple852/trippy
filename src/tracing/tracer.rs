@@ -162,17 +162,17 @@ impl<F: Fn(&Probe)> Tracer<F> {
     ///
     /// 1 - the round has exceed the minimum round duration AND
     /// 2 - the duration since the last packet was received exceeds the grace period AND
-    /// 2 - either:
+    /// 3 - either:
     ///     A - the target has been found OR
     ///     B - the target has not been found and the round has exceeded the maximum round duration
     fn update_round(&self, st: &mut TracerState) {
         let now = SystemTime::now();
         let round_duration = now.duration_since(st.round_start()).unwrap_or_default();
-        if round_duration > self.min_round_duration
-            && exceeds(st.received_time(), now, self.grace_duration)
-            && st.target_found()
-            || round_duration > self.max_round_duration
-        {
+        let round_min = round_duration > self.min_round_duration;
+        let grace_exceeded = exceeds(st.received_time(), now, self.grace_duration);
+        let round_max = round_duration > self.max_round_duration;
+        let target_found = st.target_found();
+        if round_min && grace_exceeded && target_found || round_max {
             self.publish_trace(st);
             st.advance_round(self.first_ttl);
         }
