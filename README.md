@@ -194,6 +194,9 @@ OPTIONS:
         --read-timeout <READ_TIMEOUT>
             The socket read timeout [default: 10ms]
 
+    -s, --tui-max-samples <TUI_MAX_SAMPLES>
+            The maximum number of samples to record per hop [default: 256]
+
         --source-port <SOURCE_PORT>
             The source port (TCP & UDP only)
 
