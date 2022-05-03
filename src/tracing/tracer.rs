@@ -24,7 +24,7 @@ pub struct Tracer<F> {
     publish: F,
 }
 
-impl<F: Fn(&Probe)> Tracer<F> {
+impl<F: Fn(&Probe, u8)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
             protocol: config.protocol,
@@ -183,7 +183,7 @@ impl<F: Fn(&Probe)> Tracer<F> {
     /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
     /// `Probe` which is assumed to represent the TTL of the target host.
     fn publish_trace(&self, state: &TracerState) {
-        let round_size = if let Some(target_ttl) = state.target_ttl() {
+        let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
             // If we started at ttl N and found the target at ttl M then the round contains M - N + 1 entries
             target_ttl.0 - self.first_ttl.0 + 1
         } else {
@@ -197,14 +197,11 @@ impl<F: Fn(&Probe)> Tracer<F> {
                 size.min(max_allowed) + 1
             })
         };
-        state
-            .probes()
-            .take(usize::from(round_size))
-            .for_each(|probe| {
-                debug_assert_eq!(probe.round, state.round());
-                debug_assert_ne!(probe.ttl.0, 0);
-                (self.publish)(probe);
-            });
+        state.probes().for_each(|probe| {
+            debug_assert_eq!(probe.round, state.round());
+            debug_assert_ne!(probe.ttl.0, 0);
+            (self.publish)(probe, max_received_ttl);
+        });
     }
 }
 
@@ -278,10 +275,12 @@ mod state {
 
         /// Get an iterator over the `Probe` in the current round.
         pub fn probes(&self) -> impl Iterator<Item = &Probe> + '_ {
+            let round_size = self.sequence - self.round_sequence;
             self.buffer
                 .iter()
                 .cycle()
                 .skip(usize::from(self.round_sequence % BUFFER_SIZE))
+                .take(round_size.0 as usize)
         }
 
         /// Get the `Probe` for `sequence`
@@ -493,15 +492,7 @@ mod state {
                 let mut probe_iter = state.probes();
                 let probe_next1 = *probe_iter.next().unwrap();
                 assert_eq!(probe_1_fetch, probe_next1);
-                let probe_next2 = *probe_iter.next().unwrap();
-                assert_eq!(probe_next2.sequence, Sequence(0));
-                assert_eq!(probe_next2.ttl, TimeToLive(0));
-                assert_eq!(probe_next2.round, Round(0));
-                assert_eq!(probe_next2.received, None);
-                assert_eq!(probe_next2.host, None);
-                assert_eq!(probe_next2.sent.is_some(), false);
-                assert_eq!(probe_next2.status, ProbeStatus::NotSent);
-                assert_eq!(probe_next2.icmp_packet_type, None);
+                assert_eq!(None, probe_iter.next());
             }
 
             // Advance to the next round
