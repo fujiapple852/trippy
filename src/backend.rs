@@ -6,12 +6,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use trippy::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig, TracerRound};
 
-/// The maximum number of historic samples to keep per hop.
-const MAX_SAMPLES: usize = 256;
-
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
 pub struct Trace {
+    max_samples: usize,
     lowest_ttl: u8,
     highest_ttl: u8,
     round: usize,
@@ -19,6 +17,16 @@ pub struct Trace {
 }
 
 impl Trace {
+    pub fn new(max_samples: usize) -> Self {
+        Self {
+            max_samples,
+            lowest_ttl: 0,
+            highest_ttl: 0,
+            round: 0,
+            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+        }
+    }
+
     /// The current round of tracing.
     pub fn round(&self) -> usize {
         self.round
@@ -87,7 +95,7 @@ impl Trace {
                 hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
                 hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
                 hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
-                if hop.samples.len() > MAX_SAMPLES {
+                if hop.samples.len() > self.max_samples {
                     hop.samples.pop();
                 }
                 let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
@@ -97,22 +105,11 @@ impl Trace {
                 self.hops[index].total_sent += 1;
                 self.hops[index].ttl = probe.ttl.0;
                 self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > MAX_SAMPLES {
+                if self.hops[index].samples.len() > self.max_samples {
                     self.hops[index].samples.pop();
                 }
             }
             ProbeStatus::NotSent => {}
-        }
-    }
-}
-
-impl Default for Trace {
-    fn default() -> Self {
-        Self {
-            lowest_ttl: 0,
-            highest_ttl: 0,
-            round: 0,
-            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
         }
     }
 }

@@ -150,6 +150,10 @@ pub struct Args {
     #[clap(long, short = 'z')]
     pub dns_lookup_as_info: bool,
 
+    /// The maximum number of samples to record per hop.
+    #[clap(long, short = 's', default_value_t = 256)]
+    pub tui_max_samples: usize,
+
     /// Preserve the screen on exit
     #[clap(long)]
     pub tui_preserve_screen: bool,

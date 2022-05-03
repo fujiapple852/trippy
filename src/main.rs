@@ -65,7 +65,7 @@ fn main() -> anyhow::Result<()> {
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(args.report_cycles);
     validate_dns(args.dns_resolve_method, args.dns_lookup_as_info);
-    let trace_data = Arc::new(RwLock::new(Trace::default()));
+    let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
     let resolver = DnsResolver::new(DnsResolverConfig::new(
         args.dns_resolve_method,
         dns_timeout,
@@ -104,6 +104,7 @@ fn main() -> anyhow::Result<()> {
                 args.tui_preserve_screen,
                 args.tui_address_mode,
                 args.tui_max_addresses_per_hop,
+                args.tui_max_samples,
             );
             frontend::run_frontend(&trace_data, tracer_config, tui_config, resolver)?;
         }
