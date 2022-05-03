@@ -57,14 +57,20 @@ impl Trace {
     }
 
     /// Update the tracing state from a `Probe`.
-    pub fn update_from_probe(&mut self, probe: &Probe, max_received_ttl: u8) {
+    pub fn update_from_probes(&mut self, probes: &[Probe], max_received_ttl: u8) {
+        self.highest_ttl = self.highest_ttl.max(max_received_ttl);
+        for probe in probes {
+            self.update_from_probe(probe);
+        }
+    }
+
+    fn update_from_probe(&mut self, probe: &Probe) {
         let index = usize::from(probe.ttl.0) - 1;
         if self.lowest_ttl == 0 {
             self.lowest_ttl = probe.ttl.0;
         } else {
             self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
         }
-        self.highest_ttl = self.highest_ttl.max(max_received_ttl);
         self.round = self.round.max(probe.round.0);
         match probe.status {
             ProbeStatus::Complete => {
@@ -236,8 +242,8 @@ pub fn run_backend(
     channel: TracerChannel,
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
-    let tracer = Tracer::new(config, move |probe, received| {
-        trace_data.write().update_from_probe(probe, received);
+    let tracer = Tracer::new(config, move |probes, received| {
+        trace_data.write().update_from_probes(probes, received);
     });
     Ok(tracer.trace(channel)?)
 }
