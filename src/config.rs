@@ -87,8 +87,9 @@ pub enum DnsResolveMethod {
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// The hostname or IP to scan
-    pub hostname: String,
+    /// A space delimited list of hostnames and IPs to trace
+    #[clap(required = true)]
+    pub targets: Vec<String>,
 
     /// Tracing protocol.
     #[clap(arg_enum, short = 'p', long, default_value = "icmp")]
@@ -177,6 +178,23 @@ pub struct Args {
     /// The number of report cycles to run
     #[clap(short = 'c', long, default_value_t = 10)]
     pub report_cycles: usize,
+}
+
+/// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
+pub fn validate_multi(mode: Mode, protocol: TraceProtocol, targets: &Vec<String>) {
+    match (mode, protocol) {
+        (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
+            if targets.len() > 1 =>
+        {
+            eprintln!("only a single target may be specified for this mode");
+            exit(-1);
+        }
+        (_, TraceProtocol::Tcp | TraceProtocol::Udp) if targets.len() > 1 => {
+            eprintln!("only a single target may be specified for TCP and UDP tracing");
+            exit(-1);
+        }
+        _ => {}
+    }
 }
 
 /// Validate `report_cycles`

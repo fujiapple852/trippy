@@ -15,10 +15,9 @@ use std::io;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use trippy::tracing::TracerConfig;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState};
+use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -45,12 +44,60 @@ const TABLE_WIDTH: [Constraint; 11] = [
     Constraint::Percentage(5),
 ];
 
+const LAYOUT_WITHOUT_TABS: [Constraint; 3] = [
+    Constraint::Length(5),
+    Constraint::Min(10),
+    Constraint::Length(6),
+];
+
+const LAYOUT_WITH_TABS: [Constraint; 4] = [
+    Constraint::Length(5),
+    Constraint::Length(3),
+    Constraint::Min(10),
+    Constraint::Length(6),
+];
+
+/// Information about a `Trace` needed for the Tui.
+#[derive(Debug, Clone)]
+pub struct TuiTraceInfo {
+    pub data: Arc<RwLock<Trace>>,
+    pub target_hostname: String,
+    pub target_addr: IpAddr,
+    pub protocol: String,
+    pub first_ttl: u8,
+    pub max_ttl: u8,
+    pub grace_duration: Duration,
+    pub min_round_duration: Duration,
+}
+
+impl TuiTraceInfo {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        data: Arc<RwLock<Trace>>,
+        target_hostname: String,
+        target_addr: IpAddr,
+        protocol: String,
+        first_ttl: u8,
+        max_ttl: u8,
+        grace_duration: Duration,
+        min_round_duration: Duration,
+    ) -> Self {
+        Self {
+            data,
+            target_hostname,
+            target_addr,
+            protocol,
+            first_ttl,
+            max_ttl,
+            grace_duration,
+            min_round_duration,
+        }
+    }
+}
+
 /// Tui configuration.
+#[derive(Debug)]
 pub struct TuiConfig {
-    /// The IP address of the target.
-    target_addr: IpAddr,
-    /// The hostname of the target.
-    hostname: String,
     /// Refresh rate.
     refresh_rate: Duration,
     /// Preserve screen on exit.
@@ -65,8 +112,6 @@ pub struct TuiConfig {
 
 impl TuiConfig {
     pub fn new(
-        target_addr: IpAddr,
-        hostname: String,
         refresh_rate: Duration,
         preserve_screen: bool,
         address_mode: AddressMode,
@@ -74,8 +119,6 @@ impl TuiConfig {
         max_samples: usize,
     ) -> Self {
         Self {
-            target_addr,
-            hostname,
             refresh_rate,
             preserve_screen,
             address_mode,
@@ -86,30 +129,49 @@ impl TuiConfig {
 }
 
 struct TuiApp {
-    tracer_config: TracerConfig,
+    selected_tracer_data: Trace,
+    trace_info: Vec<TuiTraceInfo>,
     tui_config: TuiConfig,
     table_state: TableState,
-    trace: Trace,
+    trace_selected: usize,
     resolver: DnsResolver,
     show_help: bool,
     frozen_start: Option<SystemTime>,
 }
 
 impl TuiApp {
-    fn new(tracer_config: TracerConfig, tui_config: TuiConfig, resolver: DnsResolver) -> Self {
+    fn new(tui_config: TuiConfig, resolver: DnsResolver, trace_info: Vec<TuiTraceInfo>) -> Self {
         Self {
-            table_state: TableState::default(),
-            trace: Trace::new(tui_config.max_samples),
-            resolver,
-            tracer_config,
+            selected_tracer_data: Trace::new(tui_config.max_samples),
+            trace_info,
             tui_config,
+            table_state: TableState::default(),
+            trace_selected: 0,
+            resolver,
             show_help: false,
             frozen_start: None,
         }
     }
 
+    fn tracer_data(&self) -> &Trace {
+        &self.selected_tracer_data
+    }
+
+    fn snapshot_trace_data(&mut self) {
+        self.selected_tracer_data = self.trace_info[self.trace_selected].data.read().clone();
+    }
+
+    fn clear_trace_data(&mut self) {
+        *self.trace_info[self.trace_selected].data.write() =
+            Trace::new(self.tui_config.max_samples);
+    }
+
+    fn tracer_config(&self) -> &TuiTraceInfo {
+        &self.trace_info[self.trace_selected]
+    }
+
     fn next_hop(&mut self) {
-        let hop_count = self.tracer_data.hops().len();
+        let hop_count = self.tracer_data().hops().len();
         if hop_count == 0 {
             return;
         }
@@ -128,7 +190,7 @@ impl TuiApp {
     }
 
     fn previous_hop(&mut self) {
-        let hop_count = self.tracer_data.hops().len();
+        let hop_count = self.tracer_data().hops().len();
         if hop_count == 0 {
             return;
         }
@@ -146,7 +208,7 @@ impl TuiApp {
     }
 
     fn next_trace(&mut self) {
-        if self.trace_selected < self.tracer_config.len() - 1 {
+        if self.trace_selected < self.trace_info.len() - 1 {
             self.trace_selected += 1;
         }
     }
@@ -175,8 +237,7 @@ impl TuiApp {
 
 /// Run the frontend TUI.
 pub fn run_frontend(
-    trace: &Arc<RwLock<Trace>>,
-    tracer_config: TracerConfig,
+    traces: Vec<TuiTraceInfo>,
     tui_config: TuiConfig,
     resolver: DnsResolver,
 ) -> anyhow::Result<()> {
@@ -186,7 +247,7 @@ pub fn run_frontend(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let preserve_screen = tui_config.preserve_screen;
-    let res = run_app(&mut terminal, trace, tui_config, tracer_config, resolver);
+    let res = run_app(&mut terminal, traces, tui_config, resolver);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -200,17 +261,16 @@ pub fn run_frontend(
 
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
-    trace: &Arc<RwLock<Trace>>,
+    trace_info: Vec<TuiTraceInfo>,
     tui_config: TuiConfig,
-    tracer_config: TracerConfig,
     resolver: DnsResolver,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(tracer_config, tui_config, resolver);
+    let mut app = TuiApp::new(tui_config, resolver, trace_info);
     loop {
         if app.frozen_start == None {
-            app.trace = trace.read().clone();
+            app.snapshot_trace_data();
         };
-        terminal.draw(|f| render_all(f, &mut app))?;
+        terminal.draw(|f| render_app(f, &mut app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
                 match (key.code, key.modifiers) {
@@ -220,7 +280,7 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
                     (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.clear();
-                        *trace.write() = Trace::new(app.tui_config.max_samples);
+                        app.clear_trace_data();
                     }
                     (KeyCode::Char('k'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.resolver.flush();
@@ -229,6 +289,14 @@ fn run_app<B: Backend>(
                     (KeyCode::Up, _) if !app.show_help => app.previous_hop(),
                     (KeyCode::Esc, _) if !app.show_help => app.clear(),
                     (KeyCode::Esc, _) if app.show_help => app.toggle_help(),
+                    (KeyCode::Left, _) if !app.show_help => {
+                        app.previous_trace();
+                        app.clear();
+                    }
+                    (KeyCode::Right, _) if !app.show_help => {
+                        app.next_trace();
+                        app.clear();
+                    }
                     _ => {}
                 }
             }
@@ -243,6 +311,8 @@ fn run_app<B: Backend>(
 ///  ____________________________________
 /// |               Header               |
 ///  ------------------------------------
+/// |                Tabs                |
+///  ------------------------------------
 /// |                                    |
 /// |                                    |
 /// |                                    |
@@ -256,72 +326,31 @@ fn run_app<B: Backend>(
 ///  ------------------------------------
 ///
 /// Header - the title, configuration, destination, clock and keyboard controls
+/// Tab - a tab for each target being traced (only shown if > 1 target requested)
 /// Hops - a table where each row represents a single hop (time-to-live) in the trace
 /// History - a graph of historic round-trip ping samples for the target host
 /// Frequency - a histogram of sample frequencies by round-trip time for the target host
 ///
 /// On startup a splash screen is shown in place of the hops table, until the completion of the first round.
-fn render_all<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+fn render_app<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+    let constraints = if app.trace_info.len() > 1 {
+        LAYOUT_WITH_TABS.as_slice()
+    } else {
+        LAYOUT_WITHOUT_TABS.as_slice()
+    };
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage(15),
-                Constraint::Percentage(65),
-                Constraint::Percentage(20),
-            ]
-            .as_ref(),
-        )
+        .constraints(constraints.as_ref())
         .split(f.size());
-    let bottom_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
-        .split(chunks[2]);
     render_header(f, app, chunks[0]);
-    if app.trace.hops().is_empty() {
-        render_splash(f, chunks[1]);
+    if app.trace_info.len() > 1 {
+        render_tabs(f, app, chunks[1]);
+        render_body(f, chunks[2], app);
+        render_footer(f, chunks[3], app);
     } else {
-        render_table(f, app, chunks[1]);
+        render_body(f, chunks[1], app);
+        render_footer(f, chunks[2], app);
     }
-    render_history(f, app, bottom_chunks[0]);
-    render_ping_frequency(f, app, bottom_chunks[1]);
-    if app.show_help {
-        render_help(f);
-    }
-}
-
-/// Render help
-fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
-    let block = Block::default()
-        .title(" Controls ")
-        .title_alignment(Alignment::Center)
-        .borders(Borders::ALL)
-        .style(Style::default().bg(Color::Blue))
-        .border_type(BorderType::Double);
-    let up_down_span = Spans::from(vec![Span::raw("[up]/[down] - select hop")]);
-    let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
-    let pause_span = Spans::from(vec![Span::raw("[f]         - toggle freeze display")]);
-    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]    - reset statistics")]);
-    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]    - flush DNS cache")]);
-    let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
-    let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
-    let control_spans = vec![
-        up_down_span,
-        esc_span,
-        pause_span,
-        reset_span,
-        flush_span,
-        help_span,
-        quit_span,
-    ];
-    let control = Paragraph::new(control_spans)
-        .style(Style::default())
-        .block(block.clone())
-        .alignment(Alignment::Left);
-    let area = centered_rect(50, 30, f.size());
-    f.render_widget(Clear, area);
-    f.render_widget(block, area);
-    f.render_widget(control, area);
 }
 
 /// Render the title, config, target, clock and keyboard controls.
@@ -350,19 +379,20 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
                 "{} ({})",
-                app.tui_config.hostname, app.tui_config.target_addr
+                app.tracer_config().target_hostname,
+                app.tracer_config().target_addr
             )),
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
                 "protocol={} dns={} interval={} grace={} start-ttl={} max-ttl={}",
-                app.tracer_config.protocol,
+                app.tracer_config().protocol,
                 format_dns_method(app.resolver.config().resolve_method),
-                humantime::format_duration(app.tracer_config.min_round_duration),
-                humantime::format_duration(app.tracer_config.grace_duration),
-                app.tracer_config.first_ttl.0,
-                app.tracer_config.max_ttl.0
+                humantime::format_duration(app.tracer_config().min_round_duration),
+                humantime::format_duration(app.tracer_config().grace_duration),
+                app.tracer_config().first_ttl,
+                app.tracer_config().max_ttl
             )),
         ]),
         Spans::from(vec![
@@ -377,7 +407,10 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
             } else {
                 String::from("Running")
             }),
-            Span::raw(format!(", discovered {} hops", app.trace.hops().len())),
+            Span::raw(format!(
+                ", discovered {} hops",
+                app.tracer_data().hops().len()
+            )),
         ]),
     ];
 
@@ -396,6 +429,47 @@ fn format_dns_method(resolve_method: DnsResolveMethod) -> String {
         DnsResolveMethod::Resolv => String::from("resolv"),
         DnsResolveMethod::Google => String::from("google"),
         DnsResolveMethod::Cloudflare => String::from("cloudflare"),
+    }
+}
+
+/// Render the tabs, one per trace.
+fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let tabs_block = Block::default()
+        .title("Traces")
+        .title_alignment(Alignment::Left)
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .style(Style::default());
+    let titles: Vec<_> = app
+        .trace_info
+        .iter()
+        .map(|trace| {
+            Spans::from(Span::styled(
+                &trace.target_hostname,
+                Style::default().fg(Color::Green),
+            ))
+        })
+        .collect();
+    let tabs = Tabs::new(titles)
+        .block(tabs_block.clone())
+        .select(app.trace_selected)
+        .style(Style::default())
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::Black),
+        );
+    f.render_widget(tabs, rect);
+}
+
+/// Render the body.
+///
+/// This is the table of hop data or, if there is no data, the spash screen.
+fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
+    if app.tracer_data().hops().is_empty() {
+        render_splash(f, rec);
+    } else {
+        render_table(f, app, rec);
     }
 }
 
@@ -447,7 +521,7 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
 fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header();
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app.trace.hops().iter().map(|hop| {
+    let rows = app.tracer_data().hops().iter().map(|hop| {
         render_table_row(
             hop,
             &app.resolver,
@@ -634,12 +708,27 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
     })
 }
 
+/// Render the footer.
+///
+/// This contains the history and frequency charts.
+fn render_footer<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
+    let bottom_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
+        .split(rec);
+    render_history(f, app, bottom_chunks[0]);
+    render_ping_frequency(f, app, bottom_chunks[1]);
+    if app.show_help {
+        render_help(f);
+    }
+}
+
 /// Render the ping history for the final hop which is typically the target.
 fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
-    let target_hop = app
-        .table_state
-        .selected()
-        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops()[s]);
+    let target_hop = app.table_state.selected().map_or_else(
+        || app.tracer_data().target_hop(),
+        |s| &app.tracer_data().hops()[s],
+    );
     let data = target_hop
         .samples()
         .iter()
@@ -660,10 +749,10 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
 
 /// Render a histogram of ping frequencies.
 fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
-    let target_hop = app
-        .table_state
-        .selected()
-        .map_or_else(|| app.trace.target_hop(), |s| &app.trace.hops()[s]);
+    let target_hop = app.table_state.selected().map_or_else(
+        || app.tracer_data().target_hop(),
+        |s| &app.tracer_data().hops()[s],
+    );
     let freq_data = sample_frequency(target_hop.samples());
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
@@ -683,6 +772,42 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
                 .add_modifier(Modifier::BOLD),
         );
     f.render_widget(barchart, rect);
+}
+
+/// Render help
+fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
+    let block = Block::default()
+        .title(" Controls ")
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .style(Style::default().bg(Color::Blue))
+        .border_type(BorderType::Double);
+    let up_down_span = Spans::from(vec![Span::raw("[up]/[down] - select hop")]);
+    let left_right_span = Spans::from(vec![Span::raw("[left]/[right] - select trace")]);
+    let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
+    let pause_span = Spans::from(vec![Span::raw("[f]         - toggle freeze display")]);
+    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]    - reset statistics")]);
+    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]    - flush DNS cache")]);
+    let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
+    let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
+    let control_spans = vec![
+        up_down_span,
+        left_right_span,
+        esc_span,
+        pause_span,
+        reset_span,
+        flush_span,
+        help_span,
+        quit_span,
+    ];
+    let control = Paragraph::new(control_spans)
+        .style(Style::default())
+        .block(block.clone())
+        .alignment(Alignment::Left);
+    let area = centered_rect(50, 30, f.size());
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+    f.render_widget(control, area);
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
