@@ -206,6 +206,9 @@ fn run_app<B: Backend>(
                         app.clear();
                         *trace.write() = Trace::default();
                     }
+                    (KeyCode::Char('k'), KeyModifiers::CONTROL) if !app.show_help => {
+                        app.resolver.flush();
+                    }
                     (KeyCode::Down, _) if !app.show_help => app.next(),
                     (KeyCode::Up, _) if !app.show_help => app.previous(),
                     (KeyCode::Esc, _) if !app.show_help => app.clear(),
@@ -283,6 +286,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
     let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
     let pause_span = Spans::from(vec![Span::raw("[f]         - toggle freeze display")]);
     let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]    - reset statistics")]);
+    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]    - flush DNS cache")]);
     let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
     let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
     let control_spans = vec![
@@ -290,6 +294,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         esc_span,
         pause_span,
         reset_span,
+        flush_span,
         help_span,
         quit_span,
     ];
