@@ -4,7 +4,7 @@ use crate::{DnsResolver, Trace};
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
 use crossterm::{
-    event::{self, DisableMouseCapture, Event, KeyCode},
+    event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -178,7 +178,6 @@ pub fn run_frontend(
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     }
-    execute!(terminal.backend_mut(), DisableMouseCapture)?;
     terminal.show_cursor()?;
     if let Err(err) = res {
         println!("{:?}", err);
