@@ -107,8 +107,9 @@ impl TuiApp {
             frozen_start: None,
         }
     }
-    pub fn next_hop(&mut self) {
-        let hop_count = self.trace.hops().len();
+
+    fn next_hop(&mut self) {
+        let hop_count = self.tracer_data.hops().len();
         if hop_count == 0 {
             return;
         }
@@ -126,8 +127,8 @@ impl TuiApp {
         self.table_state.select(Some(i));
     }
 
-    pub fn previous_hop(&mut self) {
-        let hop_count = self.trace.hops().len();
+    fn previous_hop(&mut self) {
+        let hop_count = self.tracer_data.hops().len();
         if hop_count == 0 {
             return;
         }
@@ -144,15 +145,27 @@ impl TuiApp {
         self.table_state.select(Some(i));
     }
 
-    pub fn clear(&mut self) {
+    fn next_trace(&mut self) {
+        if self.trace_selected < self.tracer_config.len() - 1 {
+            self.trace_selected += 1;
+        }
+    }
+
+    fn previous_trace(&mut self) {
+        if self.trace_selected > 0 {
+            self.trace_selected -= 1;
+        };
+    }
+
+    fn clear(&mut self) {
         self.table_state.select(None);
     }
 
-    pub fn toggle_help(&mut self) {
+    fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
     }
 
-    pub fn toggle_freeze(&mut self) {
+    fn toggle_freeze(&mut self) {
         self.frozen_start = match self.frozen_start {
             None => Some(SystemTime::now()),
             Some(_) => None,
