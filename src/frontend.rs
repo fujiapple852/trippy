@@ -450,8 +450,8 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
     let rows = app.trace.hops().iter().map(|hop| {
         render_table_row(
             hop,
-            &mut app.resolver,
-            app.trace.is_target(hop),
+            &app.resolver,
+            app.tracer_data().is_target(hop),
             app.tui_config.address_mode,
             app.tui_config.max_addrs,
         )
@@ -483,7 +483,7 @@ fn render_table_header() -> Row<'static> {
 /// Render a single row in the table of hops.
 fn render_table_row(
     hop: &Hop,
-    dns: &mut DnsResolver,
+    dns: &DnsResolver,
     is_target: bool,
     address_mode: AddressMode,
     max_addr: Option<u8>,
@@ -545,7 +545,7 @@ fn render_avg_cell(hop: &Hop) -> Cell<'static> {
 
 fn render_hostname_cell(
     hop: &Hop,
-    dns: &mut DnsResolver,
+    dns: &DnsResolver,
     address_mode: AddressMode,
     max_addr: Option<u8>,
 ) -> Cell<'static> {
@@ -553,7 +553,7 @@ fn render_hostname_cell(
         addr: &IpAddr,
         freq: usize,
         hop: &Hop,
-        dns: &mut DnsResolver,
+        dns: &DnsResolver,
         address_mode: AddressMode,
     ) -> String {
         let addr_fmt = match address_mode {
