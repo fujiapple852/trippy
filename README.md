@@ -56,12 +56,12 @@ docker run -it fujiapple/trippy www.bitwizard.nl
 
 Trippy has been (lightly...) tested on the following platforms:
 
-| Platform       | Version         | Status |
-|----------------|-----------------|--------|
-| Linux (Ubuntu) | 20.04           | ✅      |
-| macOS          | 11.4 (Big Sur)  | ✅      |
-| NetBSD         | current         | ✅      |
-| Windows        | n/a             | TBC    |
+| Platform       | Version        | Status | Notes                                                       |
+|----------------|----------------|--------|-------------------------------------------------------------|
+| Linux (Ubuntu) | 20.04          | ✅      |                                                             |
+| macOS          | 11.4 (Big Sur) | ✅      |                                                             |
+| NetBSD         | current        | ✅      |                                                             |
+| Windows        | 10             | ❌      | See [#98](https://github.com/fujiapple852/trippy/issues/98) |
 
 ## Privileges
 
