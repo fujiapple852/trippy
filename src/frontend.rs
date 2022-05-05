@@ -256,6 +256,10 @@ impl TuiApp {
         };
     }
 
+    fn toggle_asinfo(&mut self) {
+        self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
+    }
+
     fn expand_hosts(&mut self) {
         self.tui_config.max_addrs = match self.tui_config.max_addrs {
             None => Some(1),
@@ -362,6 +366,10 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('b'), _) if !app.show_help => {
                         app.tui_config.address_mode = AddressMode::Both;
                     }
+                    (KeyCode::Char('z'), _) if !app.show_help => {
+                        app.toggle_asinfo();
+                        app.resolver.flush();
+                    }
                     (KeyCode::Char('{'), _) if !app.show_help => app.contract_hosts_min(),
                     (KeyCode::Char('}'), _) if !app.show_help => app.expand_hosts_max(),
                     (KeyCode::Char('['), _) if !app.show_help => app.contract_hosts(),
@@ -455,16 +463,22 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
-                "protocol={} dns={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
+                "protocol={} dns={} as-info={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
                 app.tracer_config().protocol,
                 format_dns_method(app.resolver.config().resolve_method),
+                if app.tui_config.lookup_as_info {
+                    String::from("on")
+                } else {
+                    String::from("off")
+                },
                 humantime::format_duration(app.tracer_config().min_round_duration),
                 humantime::format_duration(app.tracer_config().grace_duration),
                 app.tracer_config().first_ttl,
                 app.tracer_config().max_ttl,
                 app.tui_config
                     .max_addrs
-                    .map_or_else(|| String::from("auto"), |m| m.to_string())
+                    .map_or_else(|| String::from("auto"), |m| m.to_string()),
+
             )),
         ]),
         Spans::from(vec![
