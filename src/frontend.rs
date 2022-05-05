@@ -297,6 +297,15 @@ fn run_app<B: Backend>(
                         app.next_trace();
                         app.clear();
                     }
+                    (KeyCode::Char('i'), _) if !app.show_help => {
+                        app.tui_config.address_mode = AddressMode::IP;
+                    }
+                    (KeyCode::Char('n'), _) if !app.show_help => {
+                        app.tui_config.address_mode = AddressMode::Host;
+                    }
+                    (KeyCode::Char('b'), _) if !app.show_help => {
+                        app.tui_config.address_mode = AddressMode::Both;
+                    }
                     _ => {}
                 }
             }
@@ -788,6 +797,11 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
     let pause_span = Spans::from(vec![Span::raw("[f]            - toggle freeze display")]);
     let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]       - reset statistics")]);
     let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]       - flush DNS cache")]);
+    let ip_only_span = Spans::from(vec![Span::raw("[i]            - show IP only")]);
+    let hostname_only_span = Spans::from(vec![Span::raw("[n]            - show hostname only")]);
+    let both_span = Spans::from(vec![Span::raw(
+        "[b]            - show both IP and hostname",
+    )]);
     let help_span = Spans::from(vec![Span::raw("[h]            - toggle help")]);
     let quit_span = Spans::from(vec![Span::raw("[q]            - quit")]);
     let control_spans = vec![
@@ -797,6 +811,9 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         pause_span,
         reset_span,
         flush_span,
+        ip_only_span,
+        hostname_only_span,
+        both_span,
         help_span,
         quit_span,
     ];
