@@ -120,6 +120,8 @@ pub struct TuiConfig {
     preserve_screen: bool,
     /// How to render addresses.
     address_mode: AddressMode,
+    /// Lookup `AS` information.
+    lookup_as_info: bool,
     /// The maximum number of addresses to show per hop.
     max_addrs: Option<u8>,
     /// The maximum number of samples to record per hop.
@@ -131,6 +133,7 @@ impl TuiConfig {
         refresh_rate: Duration,
         preserve_screen: bool,
         address_mode: AddressMode,
+        lookup_as_info: bool,
         max_addrs: Option<u8>,
         max_samples: usize,
     ) -> Self {
@@ -138,6 +141,7 @@ impl TuiConfig {
             refresh_rate,
             preserve_screen,
             address_mode,
+            lookup_as_info,
             max_addrs,
             max_samples,
         }
