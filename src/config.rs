@@ -181,7 +181,7 @@ pub struct Args {
 }
 
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
-pub fn validate_multi(mode: Mode, protocol: TraceProtocol, targets: &Vec<String>) {
+pub fn validate_multi(mode: Mode, protocol: TraceProtocol, targets: &[String] ) {
     match (mode, protocol) {
         (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
             if targets.len() > 1 =>
