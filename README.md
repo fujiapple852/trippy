@@ -20,6 +20,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - round end grace period & maximum number of unknown hops
     - source port (`TCP` & `UDP`)
 - Tui interface:
+    - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
@@ -103,6 +104,13 @@ Trace using the `udp` protocol:
 trip www.bitwizard.nl -p udp
 ```
 
+Trace to multiple targets simultaneously (`icmp` protocol only,
+see [#72](https://github.com/fujiapple852/trippy/issues/72)):
+
+```shell
+trip www.bitwizard.nl google.com crates.io
+```
+
 Trace with a minimum round time of `250ms` and a grace period of `50ms`:
 
 ```shell
@@ -141,7 +149,7 @@ USAGE:
     trip [OPTIONS] <HOSTNAME>
 
 ARGS:
-    <HOSTNAME>    The hostname or IP to scan
+    <TARGETS>...    A space delimited list of hostnames and IPs to trace
 
 OPTIONS:
     -a, --tui-address-mode <TUI_ADDRESS_MODE>
