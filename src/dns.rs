@@ -61,15 +61,13 @@ pub struct AsInfo {
 pub struct DnsResolverConfig {
     pub resolve_method: DnsResolveMethod,
     pub timeout: Duration,
-    pub lookup_as_info: bool,
 }
 
 impl DnsResolverConfig {
-    pub fn new(resolve_method: DnsResolveMethod, timeout: Duration, lookup_as_info: bool) -> Self {
+    pub fn new(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
             timeout,
-            lookup_as_info,
         }
     }
 }
