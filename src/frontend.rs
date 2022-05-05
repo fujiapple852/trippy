@@ -57,6 +57,22 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
     Constraint::Length(6),
 ];
 
+const HELP_LINES: [&str; 13] = [
+    "[up] & [down]    - select hop",
+    "[left] & [right] - select trace",
+    "[esc]            - clear selection",
+    "f                - toggle freeze display",
+    "Ctrl+r           - reset statistics",
+    "Ctrl+k           - flush DNS cache",
+    "i                - show IP only",
+    "n                - show hostname only",
+    "b                - show both IP and hostname",
+    "[ & ]            - expand & collapse hosts",
+    "{ & }            - expand & collapse hosts to max and min",
+    "h                - toggle help",
+    "q                - quit",
+];
+
 /// Information about a `Trace` needed for the Tui.
 #[derive(Debug, Clone)]
 pub struct TuiTraceInfo {
@@ -832,40 +848,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Blue))
         .border_type(BorderType::Double);
-    let up_down_span = Spans::from(vec![Span::raw("[up] & [down]    - select hop")]);
-    let left_right_span = Spans::from(vec![Span::raw("[left] & [right] - select trace")]);
-    let esc_span = Spans::from(vec![Span::raw("[esc]            - clear selection")]);
-    let pause_span = Spans::from(vec![Span::raw("f                - toggle freeze display")]);
-    let reset_span = Spans::from(vec![Span::raw("Ctrl+r           - reset statistics")]);
-    let flush_span = Spans::from(vec![Span::raw("Ctrl+k           - flush DNS cache")]);
-    let ip_only_span = Spans::from(vec![Span::raw("i                - show IP only")]);
-    let hostname_only_span = Spans::from(vec![Span::raw("n                - show hostname only")]);
-    let both_span = Spans::from(vec![Span::raw(
-        "b                - show both IP and hostname",
-    )]);
-    let expand_span = Spans::from(vec![Span::raw(
-        "[ & ]            - expand & collapse hosts",
-    )]);
-    let min_max_hosts_span = Spans::from(vec![Span::raw(
-        "{ & }            - expand & collapse hosts to max and min",
-    )]);
-    let help_span = Spans::from(vec![Span::raw("h                - toggle help")]);
-    let quit_span = Spans::from(vec![Span::raw("q                - quit")]);
-    let control_spans = vec![
-        up_down_span,
-        left_right_span,
-        esc_span,
-        pause_span,
-        reset_span,
-        flush_span,
-        ip_only_span,
-        hostname_only_span,
-        both_span,
-        expand_span,
-        min_max_hosts_span,
-        help_span,
-        quit_span,
-    ];
+    let control_spans: Vec<_> = HELP_LINES.iter().map(|&line| Spans::from(line)).collect();
     let control = Paragraph::new(control_spans)
         .style(Style::default())
         .block(block.clone())
