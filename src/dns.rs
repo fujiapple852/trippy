@@ -81,10 +81,10 @@ pub struct DnsResolver {
 }
 
 impl DnsResolver {
-    pub fn new(config: DnsResolverConfig) -> Self {
-        Self {
-            inner: Rc::new(DnsResolverInner::new(config)),
-        }
+    pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
+        Ok(Self {
+            inner: Rc::new(DnsResolverInner::start(config)?),
+        })
     }
 
     /// Resolve a DNS hostname to IP addresses.
@@ -158,7 +158,7 @@ mod inner {
     }
 
     impl DnsResolverInner {
-        pub fn new(config: DnsResolverConfig) -> Self {
+        pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
             let (tx, rx) = bounded(RESOLVER_MAX_QUEUE_SIZE);
             let addr_cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -174,8 +174,8 @@ mod inner {
                         Resolver::new(ResolverConfig::cloudflare(), options)
                     }
                     DnsResolveMethod::System => unreachable!(),
-                };
-                let resolver = Arc::new(res.expect("resolver"));
+                }?;
+                let resolver = Arc::new(res);
                 DnsProvider::TrustDns(resolver)
             };
 
@@ -187,12 +187,12 @@ mod inner {
                     resolver_queue_processor(rx, &provider, &cache, config.lookup_as_info);
                 });
             }
-            Self {
+            Ok(Self {
                 config,
                 provider,
                 tx,
                 addr_cache,
-            }
+            })
         }
 
         pub fn config(&self) -> &DnsResolverConfig {
