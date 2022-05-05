@@ -12,7 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added the `-r` (`--dns-resolve-method`) flag to specify using either the OS DNS resolver (default), a 3rd party
-  resolver (Google `1.1.1.1` and Cloudflare `8.8.8.8`) or DNS resolver configuration from the `/etc/resolv.conf` file
+  resolver (Google `8.8.8.8` and Cloudflare `1.1.1.1`) or DNS resolver configuration from the `/etc/resolv.conf` file
 - Added the `-z` (`--dns-lookup-as-info`) flag to display the ASN for each discovered host. This is not yet supported
   for the default `system` resolver, see [#66](https://github.com/fujiapple852/trippy/issues/66).
 - Added the `--dns-timeout` flag to allow setting a timeout on all DNS queries
