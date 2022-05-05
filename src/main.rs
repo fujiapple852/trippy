@@ -71,11 +71,11 @@ fn main() -> anyhow::Result<()> {
     validate_tui_refresh_rate(tui_refresh_rate);
     validate_report_cycles(args.report_cycles);
     validate_dns(args.dns_resolve_method, args.dns_lookup_as_info);
-    let resolver = DnsResolver::new(DnsResolverConfig::new(
+    let resolver = DnsResolver::start(DnsResolverConfig::new(
         args.dns_resolve_method,
         dns_timeout,
         args.dns_lookup_as_info,
-    ));
+    ))?;
     ensure_caps()?;
     let traces: Vec<_> = targets
         .iter()
