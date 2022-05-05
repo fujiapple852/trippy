@@ -24,9 +24,12 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
-    - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
-    - Responsive UI (adjustable refresh rate, non-blocking DNS queries)
+    - Responsive UI with adjustable refresh rate
+- DNS:
+    - use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
+    - Lazy reverse DNS queries
+    - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
     - configurable reporting cycles
@@ -98,7 +101,7 @@ Basic usage with default parameters:
 trip www.bitwizard.nl
 ```
 
-Trace using the `udp` protocol:
+Trace using the `udp` (or `tcp` or `icmp`) protocol:
 
 ```shell
 trip www.bitwizard.nl -p udp
@@ -129,7 +132,7 @@ Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds 
 trip www.bitwizard.nl -m json -c 5
 ```
 
-Perform DNS queries using the `google` DNS server (or `cloudflare`, `system`, `resolv`):
+Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, `resolv`):
 
 ```shell
 trip www.bitwizard.nl -r google
