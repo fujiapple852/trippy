@@ -367,8 +367,15 @@ fn run_app<B: Backend>(
                         app.tui_config.address_mode = AddressMode::Both;
                     }
                     (KeyCode::Char('z'), _) if !app.show_help => {
-                        app.toggle_asinfo();
-                        app.resolver.flush();
+                        match app.resolver.config().resolve_method {
+                            DnsResolveMethod::Resolv
+                            | DnsResolveMethod::Google
+                            | DnsResolveMethod::Cloudflare => {
+                                app.toggle_asinfo();
+                                app.resolver.flush();
+                            }
+                            DnsResolveMethod::System => {}
+                        }
                     }
                     (KeyCode::Char('{'), _) if !app.show_help => app.contract_hosts_min(),
                     (KeyCode::Char('}'), _) if !app.show_help => app.expand_hosts_max(),
