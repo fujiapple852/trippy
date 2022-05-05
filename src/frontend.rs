@@ -233,6 +233,40 @@ impl TuiApp {
             Some(_) => None,
         };
     }
+
+    fn expand_hosts(&mut self) {
+        self.tui_config.max_addrs = match self.tui_config.max_addrs {
+            None => Some(1),
+            Some(i) if i < self.max_hosts() => Some(i + 1),
+            Some(i) => Some(i),
+        }
+    }
+
+    fn contract_hosts(&mut self) {
+        self.tui_config.max_addrs = match self.tui_config.max_addrs {
+            Some(i) if i > 1 => Some(i - 1),
+            _ => None,
+        }
+    }
+
+    fn expand_hosts_max(&mut self) {
+        self.tui_config.max_addrs = Some(self.max_hosts());
+    }
+
+    fn contract_hosts_min(&mut self) {
+        self.tui_config.max_addrs = Some(1);
+    }
+
+    /// The maximum number of hosts per hop for the currently selected trace.
+    fn max_hosts(&self) -> u8 {
+        self.selected_tracer_data
+            .hops()
+            .iter()
+            .map(|h| h.addrs().count())
+            .max()
+            .and_then(|i| u8::try_from(i).ok())
+            .unwrap_or_default()
+    }
 }
 
 /// Run the frontend TUI.
@@ -306,6 +340,10 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('b'), _) if !app.show_help => {
                         app.tui_config.address_mode = AddressMode::Both;
                     }
+                    (KeyCode::Char('{'), _) if !app.show_help => app.contract_hosts_min(),
+                    (KeyCode::Char('}'), _) if !app.show_help => app.expand_hosts_max(),
+                    (KeyCode::Char('['), _) if !app.show_help => app.contract_hosts(),
+                    (KeyCode::Char(']'), _) if !app.show_help => app.expand_hosts(),
                     _ => {}
                 }
             }
@@ -395,13 +433,16 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
-                "protocol={} dns={} interval={} grace={} start-ttl={} max-ttl={}",
+                "protocol={} dns={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
                 app.tracer_config().protocol,
                 format_dns_method(app.resolver.config().resolve_method),
                 humantime::format_duration(app.tracer_config().min_round_duration),
                 humantime::format_duration(app.tracer_config().grace_duration),
                 app.tracer_config().first_ttl,
-                app.tracer_config().max_ttl
+                app.tracer_config().max_ttl,
+                app.tui_config
+                    .max_addrs
+                    .map_or_else(|| String::from("auto"), |m| m.to_string())
             )),
         ]),
         Spans::from(vec![
@@ -791,19 +832,25 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Blue))
         .border_type(BorderType::Double);
-    let up_down_span = Spans::from(vec![Span::raw("[up]/[down]    - select hop")]);
-    let left_right_span = Spans::from(vec![Span::raw("[left]/[right] - select trace")]);
-    let esc_span = Spans::from(vec![Span::raw("[esc]          - clear selection")]);
-    let pause_span = Spans::from(vec![Span::raw("[f]            - toggle freeze display")]);
-    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]       - reset statistics")]);
-    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]       - flush DNS cache")]);
-    let ip_only_span = Spans::from(vec![Span::raw("[i]            - show IP only")]);
-    let hostname_only_span = Spans::from(vec![Span::raw("[n]            - show hostname only")]);
+    let up_down_span = Spans::from(vec![Span::raw("[up] & [down]    - select hop")]);
+    let left_right_span = Spans::from(vec![Span::raw("[left] & [right] - select trace")]);
+    let esc_span = Spans::from(vec![Span::raw("[esc]            - clear selection")]);
+    let pause_span = Spans::from(vec![Span::raw("f                - toggle freeze display")]);
+    let reset_span = Spans::from(vec![Span::raw("Ctrl+r           - reset statistics")]);
+    let flush_span = Spans::from(vec![Span::raw("Ctrl+k           - flush DNS cache")]);
+    let ip_only_span = Spans::from(vec![Span::raw("i                - show IP only")]);
+    let hostname_only_span = Spans::from(vec![Span::raw("n                - show hostname only")]);
     let both_span = Spans::from(vec![Span::raw(
-        "[b]            - show both IP and hostname",
+        "b                - show both IP and hostname",
     )]);
-    let help_span = Spans::from(vec![Span::raw("[h]            - toggle help")]);
-    let quit_span = Spans::from(vec![Span::raw("[q]            - quit")]);
+    let expand_span = Spans::from(vec![Span::raw(
+        "[ & ]            - expand & collapse hosts",
+    )]);
+    let min_max_hosts_span = Spans::from(vec![Span::raw(
+        "{ & }            - expand & collapse hosts to max and min",
+    )]);
+    let help_span = Spans::from(vec![Span::raw("h                - toggle help")]);
+    let quit_span = Spans::from(vec![Span::raw("q                - quit")]);
     let control_spans = vec![
         up_down_span,
         left_right_span,
@@ -814,6 +861,8 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         ip_only_span,
         hostname_only_span,
         both_span,
+        expand_span,
+        min_max_hosts_span,
         help_span,
         quit_span,
     ];
@@ -821,7 +870,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .style(Style::default())
         .block(block.clone())
         .alignment(Alignment::Left);
-    let area = centered_rect(50, 30, f.size());
+    let area = centered_rect(50, 40, f.size());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
     f.render_widget(control, area);
