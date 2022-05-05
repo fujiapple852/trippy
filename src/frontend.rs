@@ -782,14 +782,14 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Blue))
         .border_type(BorderType::Double);
-    let up_down_span = Spans::from(vec![Span::raw("[up]/[down] - select hop")]);
+    let up_down_span = Spans::from(vec![Span::raw("[up]/[down]    - select hop")]);
     let left_right_span = Spans::from(vec![Span::raw("[left]/[right] - select trace")]);
-    let esc_span = Spans::from(vec![Span::raw("[esc]       - clear selection")]);
-    let pause_span = Spans::from(vec![Span::raw("[f]         - toggle freeze display")]);
-    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]    - reset statistics")]);
-    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]    - flush DNS cache")]);
-    let help_span = Spans::from(vec![Span::raw("[h]         - toggle help")]);
-    let quit_span = Spans::from(vec![Span::raw("[q]         - quit")]);
+    let esc_span = Spans::from(vec![Span::raw("[esc]          - clear selection")]);
+    let pause_span = Spans::from(vec![Span::raw("[f]            - toggle freeze display")]);
+    let reset_span = Spans::from(vec![Span::raw("Ctrl+[r]       - reset statistics")]);
+    let flush_span = Spans::from(vec![Span::raw("Ctrl+[k]       - flush DNS cache")]);
+    let help_span = Spans::from(vec![Span::raw("[h]            - toggle help")]);
+    let quit_span = Spans::from(vec![Span::raw("[q]            - quit")]);
     let control_spans = vec![
         up_down_span,
         left_right_span,
