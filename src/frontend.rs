@@ -451,6 +451,26 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
+    let protocol = &app.tracer_config().protocol;
+    let dns = format_dns_method(app.resolver.config().resolve_method);
+    let as_info = match app.resolver.config().resolve_method {
+        DnsResolveMethod::System => String::from("n/a"),
+        DnsResolveMethod::Resolv | DnsResolveMethod::Google | DnsResolveMethod::Cloudflare => {
+            if app.tui_config.lookup_as_info {
+                String::from("on")
+            } else {
+                String::from("off")
+            }
+        }
+    };
+    let interval = humantime::format_duration(app.tracer_config().min_round_duration);
+    let grace = humantime::format_duration(app.tracer_config().grace_duration);
+    let first_ttl = app.tracer_config().first_ttl;
+    let max_ttl = app.tracer_config().max_ttl;
+    let max_hosts = app
+        .tui_config
+        .max_addrs
+        .map_or_else(|| String::from("auto"), |m| m.to_string());
     let left_spans = vec![
         Spans::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -462,25 +482,8 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!(
-                "protocol={} dns={} as-info={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
-                app.tracer_config().protocol,
-                format_dns_method(app.resolver.config().resolve_method),
-                if app.tui_config.lookup_as_info {
-                    String::from("on")
-                } else {
-                    String::from("off")
-                },
-                humantime::format_duration(app.tracer_config().min_round_duration),
-                humantime::format_duration(app.tracer_config().grace_duration),
-                app.tracer_config().first_ttl,
-                app.tracer_config().max_ttl,
-                app.tui_config
-                    .max_addrs
-                    .map_or_else(|| String::from("auto"), |m| m.to_string()),
-
-            )),
-        ]),
+            Span::raw(format!("protocol={} dns={} as-info={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
+                              protocol, dns, as_info, interval, grace, first_ttl, max_ttl, max_hosts))]),
         Spans::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(if let Some(start) = app.frozen_start {
