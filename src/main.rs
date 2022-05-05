@@ -118,6 +118,7 @@ fn main() -> anyhow::Result<()> {
                 tui_refresh_rate,
                 args.tui_preserve_screen,
                 args.tui_address_mode,
+                args.dns_lookup_as_info,
                 args.tui_max_addresses_per_hop,
                 args.tui_max_samples,
             );
