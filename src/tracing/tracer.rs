@@ -141,9 +141,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
-                if (self.trace_identifier == trace_id || trace_id == TraceId::from(0))
-                    && st.in_round(sequence)
-                {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     let probe = st
                         .probe_at(sequence)
                         .with_status(ProbeStatus::Complete)
@@ -158,14 +156,14 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
-                if self.trace_identifier == trace_id && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     let probe = st
                         .probe_at(sequence)
                         .with_status(ProbeStatus::Complete)
                         .with_icmp_packet_type(IcmpPacketType::Unreachable)
                         .with_host(ip)
                         .with_received(received);
-                    st.update_probe(sequence, probe, received, false);
+                    st.update_probe(sequence, probe, received, true);
                 }
             }
             Some(ProbeResponse::EchoReply(data)) => {
@@ -173,7 +171,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let received = data.recv;
                 let ip = data.addr;
                 let trace_id = TraceId::from(data.identifier);
-                if self.trace_identifier == trace_id && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     let probe = st
                         .probe_at(sequence)
                         .with_status(ProbeStatus::Complete)
@@ -233,6 +231,13 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             CompletionReason::RoundTimeLimitExceeded
         };
         (self.publish)(&TracerRound::new(probes, largest_ttl, reason));
+    }
+
+    /// Check if the `TraceId` matches the expected value for this tracer.
+    ///
+    /// A special value of `0` is accepted for `udp` and `tcp` which do not have an identifier.
+    fn check_trace_id(&self, trace_id: TraceId) -> bool {
+        self.trace_identifier == trace_id || trace_id == TraceId::from(0)
     }
 }
 
