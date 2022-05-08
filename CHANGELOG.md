@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.3.0] - 2022-05-08
+
+### Added
+
 - Added ability for `icmp`  tracing to multiple targets simultaneously in
   Tui ([#72](https://github.com/fujiapple852/trippy/issues/72))
 - Added ability to enable and disable the `AS` lookup from the
@@ -25,6 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Simplified `Tracer` by removing circular buffer ([#106](https://github.com/fujiapple852/trippy/issues/106))
 - Added round end reason indicator to `Tracer` ([#88](https://github.com/fujiapple852/trippy/issues/88))
+- SHow better error message for failed DNS resolution ([#119](https://github.com/fujiapple852/trippy/issues/119))
 
 ### Fixed
 
@@ -38,6 +47,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   target ([#103](https://github.com/fujiapple852/trippy/issues/103))
 - Tracing with `tcp` protocol not working as the checksum was not
   set ([#79](https://github.com/fujiapple852/trippy/issues/79))
+- Do not show FQDN for reverse DNS queries from non-system
+  resolvers ([#120](https://github.com/fujiapple852/trippy/issues/120))
 
 ## [0.2.0] - 2022-04-29
 
@@ -64,6 +75,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.3.0]: https://github.com/fujiapple852/trippy/compare/0.2.0...0.3.0
 
 [0.2.0]: https://github.com/fujiapple852/trippy/compare/0.1.0...0.2.0
 
