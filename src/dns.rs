@@ -295,7 +295,14 @@ mod inner {
                 }
                 DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
                     Ok(name) => {
-                        let hostnames = name.iter().map(Name::to_string).collect();
+                        let hostnames = name
+                            .into_iter()
+                            .map(|mut s| {
+                                s.set_fqdn(false);
+                                s
+                            })
+                            .map(|s| s.to_string())
+                            .collect();
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
                             DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info))
