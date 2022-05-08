@@ -3,6 +3,8 @@ WORKDIR /app
 COPY Cargo.toml /app
 COPY Cargo.lock /app
 COPY src /app/src
+COPY README.md /app
+COPY LICENSE /app
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc
