@@ -23,6 +23,7 @@ use crate::report::{
     run_report_csv, run_report_json, run_report_stream, run_report_table_markdown,
     run_report_table_pretty,
 };
+use anyhow::anyhow;
 use clap::Parser;
 use config::Args;
 use parking_lot::RwLock;
@@ -77,7 +78,9 @@ fn main() -> anyhow::Result<()> {
     let traces: Vec<_> = targets
         .iter()
         .map(|target| {
-            let target_addr: IpAddr = resolver.lookup(target)?[0];
+            let target_addr: IpAddr = resolver
+                .lookup(target)
+                .map_err(|e| anyhow!("failed to resolve target: {} ({})", target, e))?[0];
             let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
             Ok(TuiTraceInfo::new(
                 trace_data,
