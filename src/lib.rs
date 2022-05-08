@@ -1,5 +1,4 @@
-//! Trippy
-//!
+#![doc = include_str!("../README.md")]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
 #![allow(
     clippy::module_name_repetitions,
