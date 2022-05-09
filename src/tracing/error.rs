@@ -17,4 +17,6 @@ pub enum TracerError {
     Required(#[from] RequiredError),
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
+    #[error("address not available")]
+    AddressNotAvailable,
 }
