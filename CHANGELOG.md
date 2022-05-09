@@ -13,6 +13,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+## [0.3.1] - 2022-05-09
+
+### Fixed
+
+- Local Ipv4 discovery fails on some platforms ([#133](https://github.com/fujiapple852/trippy/issues/133),
+   [#142](https://github.com/fujiapple852/trippy/issues/142))
+
 ## [0.3.0] - 2022-05-08
 
 ### Added
@@ -75,6 +82,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.3.1]: https://github.com/fujiapple852/trippy/compare/0.3.0...0.3.1
 
 [0.3.0]: https://github.com/fujiapple852/trippy/compare/0.2.0...0.3.0
 
