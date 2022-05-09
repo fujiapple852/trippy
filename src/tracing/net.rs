@@ -2,8 +2,6 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::Probe;
-use pnet::datalink::interfaces;
-use pnet::ipnetwork::IpNetwork;
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::packet::icmp::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
@@ -19,7 +17,8 @@ use pnet::transport::{
     TransportReceiver, TransportSender,
 };
 use pnet::util;
-use std::net::IpAddr;
+use socket2::{Domain, Protocol, SockAddr, Type};
+use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, SystemTime};
 
 /// The maximum size of the IP packet we allow.
@@ -70,6 +69,9 @@ pub trait Network {
     fn recv_probe_resp_tcp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
 }
 
+/// The default target port to connect to for TCP and UDP tracing.
+const DEFAULT_TARGET_PORT: u16 = 80;
+
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
     src_addr: IpAddr,
@@ -95,7 +97,7 @@ impl TracerChannel {
         payload_pattern: PayloadPattern,
         source_port: SourcePort,
     ) -> TraceResult<Self> {
-        let src_addr = discover_default_src_addr()?;
+        let src_addr = discover_ipv4_addr(dest_addr)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
         let (tcp_tx, _) = make_tcp_channel()?;
@@ -320,30 +322,18 @@ impl ProbeResponseData {
     }
 }
 
-/// Discover the default `IpAddr::V4` that will be used by the transport channel.
+/// Discover the local `IpAddr::V4` that will be used for the target `IpAddr`.
 ///
-/// This is needed so we can can compute checksums for outgoing `TCP` and `UDP` packets.
+/// This is needed so we can can compute checksums for outgoing `TCP` packets.
 ///
-/// As the `pnet` documentation says:
-///
-/// > If you need the default network interface, you can choose the first
-/// > one that is up, not loopback and has an IP. This is not guaranteed to
-/// > work on each system but should work for basic packet sniffing
-fn discover_default_src_addr() -> TraceResult<IpAddr> {
-    let all_interfaces = interfaces();
-    let default_ipv4 = all_interfaces
-        .iter()
-        .find(|e| e.is_up() && !e.is_loopback() && !e.ips.is_empty())
-        .and_then(|interface| {
-            interface.ips.iter().find_map(|ip| match ip {
-                IpNetwork::V4(ipv4) => Some(IpAddr::V4(ipv4.ip())),
-                IpNetwork::V6(_) => None,
-            })
-        });
-    match default_ipv4 {
-        Some(ip) => Ok(ip),
-        None => Err(TracerError::UnknownDefaultInterface),
-    }
+/// Note that no packets are transmitted by this method.
+fn discover_ipv4_addr(target: IpAddr) -> TraceResult<IpAddr> {
+    let socket = socket2::Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+    socket.connect(&SockAddr::from(SocketAddr::new(
+        target,
+        DEFAULT_TARGET_PORT,
+    )))?;
+    Ok(socket.local_addr()?.as_socket().req()?.ip())
 }
 
 /// Create the communication channel needed for sending and receiving ICMP packets.
