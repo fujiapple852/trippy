@@ -1,7 +1,8 @@
 use self::state::TracerState;
-use crate::tracing::error::TraceResult;
+use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::{Network, ProbeResponse};
 use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
+use crate::tracing::util::Required;
 use crate::tracing::TracerProtocol;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerConfig};
@@ -110,8 +111,26 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             match self.protocol {
                 TracerProtocol::Icmp => network.send_icmp_probe(st.next_probe())?,
                 TracerProtocol::Udp => network.send_udp_probe(st.next_probe())?,
-                TracerProtocol::Tcp => network.send_tcp_probe(st.next_probe())?,
-            }
+                TracerProtocol::Tcp => {
+                    let mut probe = if st.round_has_capacity() {
+                        st.next_probe()
+                    } else {
+                        return Err(TracerError::AddressNotAvailable);
+                    };
+                    while let Err(err) = network.send_tcp_probe(probe) {
+                        match err {
+                            TracerError::AddressNotAvailable => {
+                                if st.round_has_capacity() {
+                                    probe = st.reissue_probe();
+                                } else {
+                                    return Err(TracerError::AddressNotAvailable);
+                                }
+                            }
+                            other => return Err(other),
+                        }
+                    }
+                }
+            };
         }
         Ok(())
     }
@@ -180,6 +199,38 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                         .probe_at(sequence)
                         .with_status(ProbeStatus::Complete)
                         .with_icmp_packet_type(IcmpPacketType::EchoReply)
+                        .with_host(ip)
+                        .with_received(received);
+                    st.update_probe(sequence, probe, received, true);
+                }
+            }
+            Some(ProbeResponse::TcpRefused(data)) => {
+                let ttl = TimeToLive(data.ttl);
+                let received = data.recv;
+                let ip = self.target_addr;
+                let probe = st.probe_for_ttl(ttl).req()?;
+                let sequence = probe.sequence;
+                if st.in_round(sequence) {
+                    let probe = st
+                        .probe_at(sequence)
+                        .with_status(ProbeStatus::Complete)
+                        .with_icmp_packet_type(IcmpPacketType::NotApplicable)
+                        .with_host(ip)
+                        .with_received(received);
+                    st.update_probe(sequence, probe, received, true);
+                }
+            }
+            Some(ProbeResponse::TcpReply(data)) => {
+                let ttl = TimeToLive(data.ttl);
+                let received = data.recv;
+                let ip = data.addr;
+                let probe = st.probe_for_ttl(ttl).req()?;
+                let sequence = probe.sequence;
+                if st.in_round(sequence) {
+                    let probe = st
+                        .probe_at(sequence)
+                        .with_status(ProbeStatus::Complete)
+                        .with_icmp_packet_type(IcmpPacketType::NotApplicable)
                         .with_host(ip)
                         .with_received(received);
                     st.update_probe(sequence, probe, received, true);
@@ -256,14 +307,26 @@ mod state {
 
     /// The maximum number of `Probe` entries in the buffer.
     ///
-    /// This is effectively also the maximum number of time-to-live (TTL) we can support.  We only ever send TTL in
-    /// the range 1..255 so this is technically one larger than we need.
-    const BUFFER_SIZE: u16 = 256;
+    /// This is larger than maximum number of time-to-live (TTL) we can support to allow for skipped sequences.
+    const BUFFER_SIZE: u16 = 1024;
 
     /// The maximum sequence number.
     ///
     /// The sequence number is only ever wrapped between rounds and so we need to ensure that there are enough sequence
-    /// numbers for a complete round (i.e. the max TTL, which is `BUFFER_SIZE`).
+    /// numbers for a complete round.
+    ///
+    /// A sequence number can be skipped if, for example, the port for that sequence number cannot be bound as it is
+    /// already in use.
+    ///
+    /// To ensure each `Probe` is in the correct place in the buffer (i.e. the index into the buffer is always
+    /// `Probe.sequence - round_sequence`), when we skip a sequence we leave the skipped `Probe` in-place and use the
+    /// next slot for the next sequence.
+    ///
+    /// We cap the number of sequences that can potentially be skipped in a round to ensure that sequence number does
+    /// not even need to wrap around during a round.
+    ///
+    /// We only ever send `ttl` in the range 1..255 and so we may use all buffer capacity, except the minimum needed to
+    /// send up to a max `ttl` of 255 (a `ttl` of 0 is never sent).
     const MAX_SEQUENCE: Sequence = Sequence(u16::MAX - BUFFER_SIZE);
 
     /// Mutable state needed for the tracing algorithm.
@@ -358,6 +421,12 @@ mod state {
             sequence >= self.round_sequence && sequence.0 - self.round_sequence.0 < BUFFER_SIZE
         }
 
+        /// Do we have capacity in the current round for another sequence?
+        pub fn round_has_capacity(&self) -> bool {
+            let round_size = self.sequence - self.round_sequence;
+            round_size.0 < BUFFER_SIZE
+        }
+
         /// Have all round completed?
         pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
             match max_rounds {
@@ -427,6 +496,7 @@ mod state {
                     Some(ttl) => Some(ttl),
                 };
             }
+
             self.buffer[usize::from(sequence - self.round_sequence)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
                 Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
@@ -695,8 +765,8 @@ mod state {
                 state.advance_round(TimeToLive::from(1));
             }
             assert_eq!(state.round, Round(2000));
-            assert_eq!(state.round_sequence, Sequence(53320));
-            assert_eq!(state.sequence, Sequence(53320));
+            assert_eq!(state.round_sequence, Sequence(33000));
+            assert_eq!(state.sequence, Sequence(33000));
         }
 
         #[test]
@@ -714,11 +784,28 @@ mod state {
         }
 
         #[test]
+        fn test_sequence_wrap_with_skip() {
+            let total_rounds = 2000;
+            let max_probe_per_round = 254;
+            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            for _ in 0..total_rounds {
+                for _ in 0..max_probe_per_round {
+                    let _ = state.next_probe();
+                    let _ = state.reissue_probe();
+                }
+                state.advance_round(TimeToLive::from(1));
+            }
+            assert_eq!(state.round, Round(2000));
+            assert_eq!(state.round_sequence, Sequence(56876));
+            assert_eq!(state.sequence, Sequence(56876));
+        }
+
+        #[test]
         fn test_in_round() {
             let state = TracerState::new(TimeToLive::from(1), Sequence(33000));
             assert!(state.in_round(Sequence(33000)));
-            assert!(state.in_round(Sequence(33255)));
-            assert!(!state.in_round(Sequence(33256)));
+            assert!(state.in_round(Sequence(34023)));
+            assert!(!state.in_round(Sequence(34024)));
         }
     }
 }
