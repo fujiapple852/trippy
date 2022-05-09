@@ -1168,6 +1168,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
+ "socket2",
  "thiserror",
  "trust-dns-resolver",
  "tui",

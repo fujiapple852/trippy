@@ -20,6 +20,7 @@ name = "trip"
 
 # Library dependancies
 pnet = "0.29.0"
+socket2 = "0.4.4"
 thiserror = "1.0.31"
 derive_more = "0.99.17"
 
