@@ -80,7 +80,10 @@ fn main() -> anyhow::Result<()> {
         .map(|target| {
             let target_addr: IpAddr = resolver
                 .lookup(target)
-                .map_err(|e| anyhow!("failed to resolve target: {} ({})", target, e))?[0];
+                .map_err(|e| anyhow!("failed to resolve target: {} ({})", target, e))?
+                .into_iter()
+                .find(|addr| matches!(addr, IpAddr::V4(_)))
+                .unwrap();
             let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
             Ok(TuiTraceInfo::new(
                 trace_data,
