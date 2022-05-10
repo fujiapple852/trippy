@@ -18,7 +18,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Local Ipv4 discovery fails on some platforms ([#133](https://github.com/fujiapple852/trippy/issues/133),
-   [#142](https://github.com/fujiapple852/trippy/issues/142))
+  [#142](https://github.com/fujiapple852/trippy/issues/142))
+- DNS resolution not filtering for `IPv4` addresses ([#148](https://github.com/fujiapple852/trippy/issues/148))
+  - Note: see [#35](https://github.com/fujiapple852/trippy/issues/35) for the status of `IPv6` support
 
 ## [0.3.0] - 2022-05-08
 
