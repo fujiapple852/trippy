@@ -1,5 +1,6 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/Continuous%20integration/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
 [![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.3.1)
+[![Status](https://img.shields.io/badge/status-alpha-blue)](https://github.com/fujiapple852/trippy)
 
 # Trippy
 
