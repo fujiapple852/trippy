@@ -40,6 +40,10 @@ pub struct PayloadPattern(pub u8);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct SourcePort(pub u16);
 
+/// Destination port newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct DestinationPort(pub u16);
+
 impl From<Sequence> for usize {
     fn from(sequence: Sequence) -> Self {
         sequence.0 as Self
