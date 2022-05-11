@@ -379,6 +379,28 @@ mod state {
             probe
         }
 
+        /// Re-issue the `Probe` with the next sequence number.
+        ///
+        /// This will mark the `Probe` at the previous `sequence` as skipped and re-create it with the previous `ttl`
+        /// and the current `sequence`.
+        ///
+        /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method then afterwards:
+        /// - The `Probe` at sequence `3` will be reset to default values (i.e. `NotSent` status)
+        /// - A new `Probe` will be created at sequence `4` with a `ttl` of `5`
+        pub fn reissue_probe(&mut self) -> Probe {
+            self.buffer[usize::from(self.sequence - self.round_sequence) - 1] = Probe::default();
+            let probe = Probe::new(
+                self.sequence,
+                self.ttl - TimeToLive(1),
+                self.round,
+                SystemTime::now(),
+            );
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
+            debug_assert!(self.sequence < Sequence(u16::MAX));
+            self.sequence += Sequence(1);
+            probe
+        }
+
         /// Update the state of an `Probe`.
         ///
         /// We want to update:
