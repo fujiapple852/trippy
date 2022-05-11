@@ -139,6 +139,10 @@ pub struct Args {
     #[clap(long)]
     pub source_port: Option<u16>,
 
+    /// The destination port (TCP only)
+    #[clap(long, short = 'P', default_value_t = 80)]
+    pub port: u16,
+
     /// The maximum time to wait to perform DNS queries.
     #[clap(long, default_value = "5s")]
     pub dns_timeout: String,
