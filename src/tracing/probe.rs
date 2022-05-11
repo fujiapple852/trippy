@@ -99,7 +99,12 @@ impl Default for ProbeStatus {
 /// The type of ICMP packet received.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IcmpPacketType {
+    /// TimeExceeded packet.
     TimeExceeded,
+    /// EchoReply packet.
     EchoReply,
+    /// Unreachable packet.
     Unreachable,
+    /// Non-ICMP response (i.e. for some `UDP` & `TCP` probes).
+    NotApplicable,
 }
