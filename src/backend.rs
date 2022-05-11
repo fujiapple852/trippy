@@ -73,15 +73,11 @@ impl Trace {
     }
 
     fn update_from_probe(&mut self, probe: &Probe) {
-        let index = usize::from(probe.ttl.0) - 1;
-        if self.lowest_ttl == 0 {
-            self.lowest_ttl = probe.ttl.0;
-        } else {
-            self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
-        }
-        self.round = self.round.max(probe.round.0);
+        self.update_lowest_ttl(probe);
+        self.update_round(probe);
         match probe.status {
             ProbeStatus::Complete => {
+                let index = usize::from(probe.ttl.0) - 1;
                 let hop = &mut self.hops[index];
                 hop.ttl = probe.ttl.0;
                 hop.total_sent += 1;
@@ -102,6 +98,7 @@ impl Trace {
                 *hop.addrs.entry(host).or_default() += 1;
             }
             ProbeStatus::Awaited => {
+                let index = usize::from(probe.ttl.0) - 1;
                 self.hops[index].total_sent += 1;
                 self.hops[index].ttl = probe.ttl.0;
                 self.hops[index].samples.insert(0, Duration::default());
@@ -110,6 +107,24 @@ impl Trace {
                 }
             }
             ProbeStatus::NotSent => {}
+        }
+    }
+
+    /// Update `lowest_ttl` for valid probes.
+    fn update_lowest_ttl(&mut self, probe: &Probe) {
+        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
+            if self.lowest_ttl == 0 {
+                self.lowest_ttl = probe.ttl.0;
+            } else {
+                self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
+            }
+        }
+    }
+
+    /// Update `round` for valid probes.
+    fn update_round(&mut self, probe: &Probe) {
+        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
+            self.round = self.round.max(probe.round.0);
         }
     }
 }
