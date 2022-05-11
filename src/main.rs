@@ -114,6 +114,7 @@ fn main() -> anyhow::Result<()> {
             args.packet_size,
             args.payload_pattern,
             source_port,
+            args.port,
         )?;
         start_backend(tracer_config, info.data.clone())?;
     }
