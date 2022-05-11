@@ -323,6 +323,11 @@ mod state {
             self.buffer[usize::from(sequence - self.round_sequence)]
         }
 
+        /// Find the first `Probe` for `ttl`.
+        pub fn probe_for_ttl(&self, ttl: TimeToLive) -> Option<&Probe> {
+            self.probes().iter().find(|p| p.ttl == ttl)
+        }
+
         pub const fn ttl(&self) -> TimeToLive {
             self.ttl
         }
