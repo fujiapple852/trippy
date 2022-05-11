@@ -5,6 +5,7 @@ use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceI
 use crate::tracing::TracerProtocol;
 use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerConfig};
+use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The output from a round of tracing.
@@ -41,6 +42,7 @@ pub enum CompletionReason {
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
+    target_addr: IpAddr,
     protocol: TracerProtocol,
     trace_identifier: TraceId,
     max_rounds: Option<MaxRounds>,
@@ -58,6 +60,7 @@ pub struct Tracer<F> {
 impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
+            target_addr: config.target_addr,
             protocol: config.protocol,
             trace_identifier: config.trace_identifier,
             max_rounds: config.max_rounds,
