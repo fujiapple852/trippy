@@ -354,7 +354,7 @@ mod state {
 
         /// Is `sequence` in the current round?
         pub fn in_round(&self, sequence: Sequence) -> bool {
-            sequence >= self.round_sequence
+            sequence >= self.round_sequence && sequence.0 - self.round_sequence.0 < BUFFER_SIZE
         }
 
         /// Have all round completed?
@@ -720,6 +720,14 @@ mod state {
                 }
                 state.advance_round(TimeToLive::from(1));
             }
+        }
+
+        #[test]
+        fn test_in_round() {
+            let state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            assert!(state.in_round(Sequence(33000)));
+            assert!(state.in_round(Sequence(33255)));
+            assert!(!state.in_round(Sequence(33256)));
         }
     }
 }
