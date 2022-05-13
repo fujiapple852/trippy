@@ -123,7 +123,7 @@ impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
-    pub fn new(config: &TracerConfig) -> TraceResult<Self> {
+    pub fn connect(config: &TracerConfig) -> TraceResult<Self> {
         let src_addr = discover_ipv4_addr(config.target_addr, config.destination_port.0)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
