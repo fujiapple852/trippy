@@ -16,6 +16,7 @@ use std::io;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use trippy::tracing::TracerProtocol;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
 use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
@@ -81,7 +82,8 @@ pub struct TuiTraceInfo {
     pub data: Arc<RwLock<Trace>>,
     pub target_hostname: String,
     pub target_addr: IpAddr,
-    pub protocol: String,
+    pub target_port: u16,
+    pub protocol: TracerProtocol,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub grace_duration: Duration,
@@ -94,7 +96,8 @@ impl TuiTraceInfo {
         data: Arc<RwLock<Trace>>,
         target_hostname: String,
         target_addr: IpAddr,
-        protocol: String,
+        target_port: u16,
+        protocol: TracerProtocol,
         first_ttl: u8,
         max_ttl: u8,
         grace_duration: Duration,
@@ -104,6 +107,7 @@ impl TuiTraceInfo {
             data,
             target_hostname,
             target_addr,
+            target_port,
             protocol,
             first_ttl,
             max_ttl,
@@ -458,7 +462,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    let protocol = &app.tracer_config().protocol;
+    let protocol = &app.tracer_config().protocol.to_string();
     let dns = format_dns_method(app.resolver.config().resolve_method);
     let as_info = match app.resolver.config().resolve_method {
         DnsResolveMethod::System => String::from("n/a"),
@@ -478,14 +482,28 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .tui_config
         .max_addrs
         .map_or_else(|| String::from("auto"), |m| m.to_string());
-    let left_spans = vec![
-        Spans::from(vec![
-            Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!(
+    let target = match app.tracer_config().protocol {
+        TracerProtocol::Icmp => {
+            format!(
                 "{} ({})",
                 app.tracer_config().target_hostname,
                 app.tracer_config().target_addr
-            )),
+            )
+        }
+        TracerProtocol::Udp | TracerProtocol::Tcp => {
+            format!(
+                "{}:{} ({}:{})",
+                app.tracer_config().target_hostname,
+                app.tracer_config().target_port,
+                app.tracer_config().target_addr,
+                app.tracer_config().target_port
+            )
+        }
+    };
+    let left_spans = vec![
+        Spans::from(vec![
+            Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(target),
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
