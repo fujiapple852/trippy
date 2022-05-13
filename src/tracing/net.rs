@@ -144,6 +144,12 @@ impl TracerChannel {
             tcp_probes: ArrayVec::new(),
         })
     }
+
+    /// Get the source `IpAddr` of the channel.
+    #[must_use]
+    pub fn src_addr(&self) -> IpAddr {
+        self.src_addr
+    }
 }
 
 impl Network for TracerChannel {
