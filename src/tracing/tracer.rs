@@ -292,10 +292,6 @@ mod state {
         /// Note that this is _not_ reset each round and that it can also _change_ over time, including going _down_ as
         /// responses can be are received out-of-order.
         target_ttl: Option<TimeToLive>,
-        /// The sequence of the `EchoReply` from the target host.
-        ///
-        /// Note that this is reset each round.
-        target_seq: Option<Sequence>,
         /// The timestamp of the echo response packet.
         received_time: Option<SystemTime>,
     }
@@ -313,7 +309,6 @@ mod state {
                 target_found: false,
                 max_received_ttl: None,
                 target_ttl: None,
-                target_seq: None,
                 received_time: None,
             }
         }
@@ -425,16 +420,12 @@ mod state {
             received_time: SystemTime,
             found: bool,
         ) {
-            match (self.target_ttl, self.target_seq) {
-                (None, _) if found => {
-                    self.target_ttl = Some(probe.ttl);
-                    self.target_seq = Some(sequence);
-                }
-                (Some(_), Some(target_seq)) if found && sequence < target_seq => {
-                    self.target_ttl = Some(probe.ttl);
-                    self.target_seq = Some(sequence);
-                }
-                _ => {}
+            if found {
+                self.target_ttl = match self.target_ttl {
+                    None => Some(probe.ttl),
+                    Some(ttl) if probe.ttl < ttl => Some(probe.ttl),
+                    Some(ttl) => Some(ttl),
+                };
             }
             self.buffer[usize::from(sequence - self.round_sequence)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
@@ -461,7 +452,6 @@ mod state {
             self.max_received_ttl = None;
             self.round += Round::from(1);
             self.ttl = first_ttl;
-            self.target_seq = None;
         }
     }
 
@@ -487,7 +477,6 @@ mod state {
             assert_eq!(state.sequence, Sequence(33000));
             assert_eq!(state.round_sequence, Sequence(33000));
             assert_eq!(state.ttl, TimeToLive(1));
-            assert_eq!(state.target_seq, None);
             assert_eq!(state.max_received_ttl, None);
             assert_eq!(state.received_time, None);
             assert_eq!(state.target_ttl, None);
@@ -545,7 +534,6 @@ mod state {
             assert_eq!(state.sequence, Sequence(33001));
             assert_eq!(state.round_sequence, Sequence(33000));
             assert_eq!(state.ttl, TimeToLive(2));
-            assert_eq!(state.target_seq, None);
             assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
             assert_eq!(state.received_time, Some(received_1));
             assert_eq!(state.target_ttl, None);
@@ -567,7 +555,6 @@ mod state {
             assert_eq!(state.sequence, Sequence(33001));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(1));
-            assert_eq!(state.target_seq, None);
             assert_eq!(state.max_received_ttl, None);
             assert_eq!(state.received_time, None);
             assert_eq!(state.target_ttl, None);
@@ -611,7 +598,6 @@ mod state {
             assert_eq!(state.sequence, Sequence(33003));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(3));
-            assert_eq!(state.target_seq, None);
             assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
             assert_eq!(state.received_time, Some(received_2));
             assert_eq!(state.target_ttl, None);
@@ -642,7 +628,6 @@ mod state {
             assert_eq!(state.sequence, Sequence(33003));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(3));
-            assert_eq!(state.target_seq, Some(Sequence(33002)));
             assert_eq!(state.max_received_ttl, Some(TimeToLive(2)));
             assert_eq!(state.received_time, Some(received_3));
             assert_eq!(state.target_ttl, Some(TimeToLive(2)));
