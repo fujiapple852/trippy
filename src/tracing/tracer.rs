@@ -181,17 +181,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                     st.complete_probe_echo_reply(sequence, host, received);
                 }
             }
-            Some(ProbeResponse::TcpRefused(data)) => {
-                let ttl = TimeToLive(data.ttl);
-                let received = data.recv;
-                let host = self.target_addr;
-                let probe = st.probe_for_ttl(ttl).req()?;
-                let sequence = probe.sequence;
-                if st.in_round(sequence) {
-                    st.complete_probe_other(sequence, host, received);
-                }
-            }
-            Some(ProbeResponse::TcpReply(data)) => {
+            Some(ProbeResponse::TcpReply(data) | ProbeResponse::TcpRefused(data)) => {
                 let ttl = TimeToLive(data.ttl);
                 let received = data.recv;
                 let host = data.addr;
