@@ -4,7 +4,6 @@ use crate::tracing::net::{Network, ProbeResponse};
 use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::TracerProtocol;
-use crate::tracing::{IcmpPacketType, ProbeStatus};
 use crate::tracing::{Probe, TracerConfig};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -161,79 +160,49 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             Some(ProbeResponse::TimeExceeded(data)) => {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
-                let ip = data.addr;
-                let is_target = ip == self.target_addr;
+                let host = data.addr;
+                let is_target = host == self.target_addr;
                 let trace_id = TraceId::from(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
-                    let probe = st
-                        .probe_at(sequence)
-                        .with_status(ProbeStatus::Complete)
-                        .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
-                        .with_host(ip)
-                        .with_received(received);
-                    st.update_probe(sequence, probe, received, is_target);
+                    st.complete_probe_time_exceeded(sequence, host, received, is_target);
                 }
             }
             Some(ProbeResponse::DestinationUnreachable(data)) => {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
-                let ip = data.addr;
+                let host = data.addr;
                 let trace_id = TraceId::from(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
-                    let probe = st
-                        .probe_at(sequence)
-                        .with_status(ProbeStatus::Complete)
-                        .with_icmp_packet_type(IcmpPacketType::Unreachable)
-                        .with_host(ip)
-                        .with_received(received);
-                    st.update_probe(sequence, probe, received, true);
+                    st.complete_probe_unreachable(sequence, host, received);
                 }
             }
             Some(ProbeResponse::EchoReply(data)) => {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
-                let ip = data.addr;
+                let host = data.addr;
                 let trace_id = TraceId::from(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
-                    let probe = st
-                        .probe_at(sequence)
-                        .with_status(ProbeStatus::Complete)
-                        .with_icmp_packet_type(IcmpPacketType::EchoReply)
-                        .with_host(ip)
-                        .with_received(received);
-                    st.update_probe(sequence, probe, received, true);
+                    st.complete_probe_echo_reply(sequence, host, received);
                 }
             }
             Some(ProbeResponse::TcpRefused(data)) => {
                 let ttl = TimeToLive(data.ttl);
                 let received = data.recv;
-                let ip = self.target_addr;
+                let host = self.target_addr;
                 let probe = st.probe_for_ttl(ttl).req()?;
                 let sequence = probe.sequence;
                 if st.in_round(sequence) {
-                    let probe = st
-                        .probe_at(sequence)
-                        .with_status(ProbeStatus::Complete)
-                        .with_icmp_packet_type(IcmpPacketType::NotApplicable)
-                        .with_host(ip)
-                        .with_received(received);
-                    st.update_probe(sequence, probe, received, true);
+                    st.complete_probe_other(sequence, host, received);
                 }
             }
             Some(ProbeResponse::TcpReply(data)) => {
                 let ttl = TimeToLive(data.ttl);
                 let received = data.recv;
-                let ip = data.addr;
+                let host = data.addr;
                 let probe = st.probe_for_ttl(ttl).req()?;
                 let sequence = probe.sequence;
                 if st.in_round(sequence) {
-                    let probe = st
-                        .probe_at(sequence)
-                        .with_status(ProbeStatus::Complete)
-                        .with_icmp_packet_type(IcmpPacketType::NotApplicable)
-                        .with_host(ip)
-                        .with_received(received);
-                    st.update_probe(sequence, probe, received, true);
+                    st.complete_probe_other(sequence, host, received);
                 }
             }
             None => {}
@@ -302,7 +271,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 /// `TracerState` struct.
 mod state {
     use crate::tracing::types::{MaxRounds, Round, Sequence, TimeToLive};
-    use crate::tracing::Probe;
+    use crate::tracing::{IcmpPacketType, Probe, ProbeStatus};
+    use std::net::IpAddr;
     use std::time::SystemTime;
 
     /// The maximum number of `Probe` entries in the buffer.
@@ -471,25 +441,91 @@ mod state {
             probe
         }
 
-        /// Update the state of an `Probe`.
+        /// Mark the `Probe` at `sequence` completed as `TimeExceeded` and update the round state.
+        pub fn complete_probe_time_exceeded(
+            &mut self,
+            sequence: Sequence,
+            host: IpAddr,
+            received: SystemTime,
+            is_target: bool,
+        ) {
+            self.complete_probe(
+                sequence,
+                IcmpPacketType::TimeExceeded,
+                host,
+                received,
+                is_target,
+            );
+        }
+
+        /// Mark the `Probe` at `sequence` completed as `Unreachable` and update the round state.
+        pub fn complete_probe_unreachable(
+            &mut self,
+            sequence: Sequence,
+            host: IpAddr,
+            received: SystemTime,
+        ) {
+            self.complete_probe(sequence, IcmpPacketType::Unreachable, host, received, true);
+        }
+
+        /// Mark the `Probe` at `sequence` completed as `EchoReply` and update the round state.
+        pub fn complete_probe_echo_reply(
+            &mut self,
+            sequence: Sequence,
+            host: IpAddr,
+            received: SystemTime,
+        ) {
+            self.complete_probe(sequence, IcmpPacketType::EchoReply, host, received, true);
+        }
+
+        /// Mark the `Probe` at `sequence` completed as `NotApplicable` and update the round state.
+        pub fn complete_probe_other(
+            &mut self,
+            sequence: Sequence,
+            host: IpAddr,
+            received: SystemTime,
+        ) {
+            self.complete_probe(
+                sequence,
+                IcmpPacketType::NotApplicable,
+                host,
+                received,
+                true,
+            );
+        }
+
+        /// Update the state of a `Probe` and the trace.
         ///
         /// We want to update:
         ///
-        /// - the target ttl to be the time-to-live of the `Probe` request from the target
-        /// - the maximum ttl we have observed this round
-        /// - the latest packet received time
+        /// - the `target_ttl` to be the time-to-live of the `Probe` request from the target
+        /// - the `max_received_ttl` we have observed this round
+        /// - the latest packet `received_time` in this round
+        /// - whether the target has been found in this round
         ///
         /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid overwriting the state with
-        /// stale values.  We may also receive multiple replies from the target host with differing time-to-live values and
-        /// so must ensure we use the time-to-live with the lowest sequence number.
-        pub fn update_probe(
+        /// stale values.  We may also receive multiple replies from the target host with differing time-to-live values
+        /// and so must ensure we use the time-to-live with the lowest sequence number.
+        fn complete_probe(
             &mut self,
             sequence: Sequence,
-            probe: Probe,
-            received_time: SystemTime,
-            found: bool,
+            icmp_packet_type: IcmpPacketType,
+            host: IpAddr,
+            received: SystemTime,
+            is_target: bool,
         ) {
-            if found {
+            // Retrieve and update the `Probe` at `sequence`.
+            let probe = self
+                .probe_at(sequence)
+                .with_status(ProbeStatus::Complete)
+                .with_icmp_packet_type(icmp_packet_type)
+                .with_host(host)
+                .with_received(received);
+            self.buffer[usize::from(sequence - self.round_sequence)] = probe;
+
+            // If this `Probe` found the target then we set the `target_tll` if not already set, being careful to
+            // account for `Probes` being received out-of-order.
+            if is_target {
                 self.target_ttl = match self.target_ttl {
                     None => Some(probe.ttl),
                     Some(ttl) if probe.ttl < ttl => Some(probe.ttl),
@@ -497,13 +533,13 @@ mod state {
                 };
             }
 
-            self.buffer[usize::from(sequence - self.round_sequence)] = probe;
             self.max_received_ttl = match self.max_received_ttl {
-                Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
                 None => Some(probe.ttl),
+                Some(max_received_ttl) => Some(max_received_ttl.max(probe.ttl)),
             };
-            self.received_time = Some(received_time);
-            self.target_found |= found;
+
+            self.received_time = Some(received);
+            self.target_found |= is_target;
         }
 
         /// Advance to the next round.
@@ -577,13 +613,7 @@ mod state {
             // Update the state of the probe 1 after receiving a TimeExceeded
             let received_1 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            let probe_1_recv = state
-                .probe_at(Sequence(33000))
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
-                .with_host(host)
-                .with_received(received_1);
-            state.update_probe(Sequence(33000), probe_1_recv, received_1, false);
+            state.complete_probe_time_exceeded(Sequence(33000), host, received_1, false);
 
             // Validate the state of the probe 1 after the update
             let probe_1_fetch = state.probe_at(Sequence(33000));
@@ -655,13 +685,8 @@ mod state {
             // Update the state of probe 2 after receiving a TimeExceeded
             let received_2 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            let probe_2_recv = state
-                .probe_at(Sequence(33001))
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
-                .with_host(host)
-                .with_received(received_2);
-            state.update_probe(Sequence(33001), probe_2_recv, received_2, false);
+            state.complete_probe_time_exceeded(Sequence(33001), host, received_2, false);
+            let probe_2_recv = state.probe_at(Sequence(33001));
 
             // Validate the TracerState after the update to probe 2
             assert_eq!(state.round, Round(1));
@@ -685,13 +710,8 @@ mod state {
             // Update the state of probe 3 after receiving a EchoReply
             let received_3 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            let probe_3_recv = state
-                .probe_at(Sequence(33002))
-                .with_status(ProbeStatus::Complete)
-                .with_icmp_packet_type(IcmpPacketType::EchoReply)
-                .with_host(host)
-                .with_received(received_3);
-            state.update_probe(Sequence(33002), probe_3_recv, received_3, true);
+            state.complete_probe_echo_reply(Sequence(33002), host, received_3);
+            let probe_3_recv = state.probe_at(Sequence(33002));
 
             // Validate the TracerState after the update to probe 3
             assert_eq!(state.round, Round(1));
