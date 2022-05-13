@@ -118,6 +118,34 @@ impl TracerChannel {
 
 impl Network for TracerChannel {
     fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        self.dispatch_icmp_probe(probe)
+    }
+
+    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        self.dispatch_udp_probe(probe)
+    }
+
+    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        self.dispatch_tcp_probe(probe)
+    }
+
+    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        self.handle_icmp_socket_for_icmp()
+    }
+
+    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        self.handle_icmp_socket_for_udp()
+    }
+
+    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        Ok(self
+            .handle_tcp_socket()?
+            .or(self.handle_icmp_socket_for_tcp()?))
+    }
+}
+
+impl TracerChannel {
+    fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
@@ -143,7 +171,7 @@ impl Network for TracerChannel {
         Ok(())
     }
 
-    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
@@ -167,7 +195,7 @@ impl Network for TracerChannel {
         Ok(())
     }
 
-    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
         socket.set_nonblocking(true)?;
         let local_addr = SocketAddr::new(self.src_addr, probe.sequence.0);
@@ -199,7 +227,8 @@ impl Network for TracerChannel {
         Ok(())
     }
 
-    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (ICMP protocol).
+    pub fn handle_icmp_socket_for_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
@@ -239,7 +268,8 @@ impl Network for TracerChannel {
         )
     }
 
-    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (UDP protocol).
+    pub fn handle_icmp_socket_for_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
@@ -267,16 +297,36 @@ impl Network for TracerChannel {
         )
     }
 
-    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        Ok(self
-            .handle_tcp_socket()?
-            .or(self.handle_icmp_socket_for_tcp()?))
+    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (TCP protocol).
+    pub fn handle_icmp_socket_for_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        Ok(
+            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
+                Some((icmp, ip)) => {
+                    let recv = SystemTime::now();
+                    match icmp.get_icmp_type() {
+                        IcmpTypes::TimeExceeded => {
+                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
+                            let sequence = extract_tcp_probe(packet.payload())?;
+                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
+                                recv, ip, 0, sequence,
+                            )))
+                        }
+                        IcmpTypes::DestinationUnreachable => {
+                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
+                            let sequence = extract_tcp_probe(packet.payload())?;
+                            Some(ProbeResponse::DestinationUnreachable(
+                                ProbeResponseData::new(recv, ip, 0, sequence),
+                            ))
+                        }
+                        _ => None,
+                    }
+                }
+                None => None,
+            },
+        )
     }
-}
 
-impl TracerChannel {
     /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
-    ///
     ///
     /// Any TCP socket which has not connected or failed after a timeout wil be removed.
     pub fn handle_tcp_socket(&mut self) -> TraceResult<Option<ProbeResponse>> {
@@ -314,35 +364,6 @@ impl TracerChannel {
             }
         }
         Ok(None)
-    }
-
-    /// Generate a `ProbeResponse` for the next available ICMP packet, if any.
-    pub fn handle_icmp_socket_for_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
-                Some((icmp, ip)) => {
-                    let recv = SystemTime::now();
-                    match icmp.get_icmp_type() {
-                        IcmpTypes::TimeExceeded => {
-                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                            let sequence = extract_tcp_probe(packet.payload())?;
-                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                                recv, ip, 0, sequence,
-                            )))
-                        }
-                        IcmpTypes::DestinationUnreachable => {
-                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                            let sequence = extract_tcp_probe(packet.payload())?;
-                            Some(ProbeResponse::DestinationUnreachable(
-                                ProbeResponseData::new(recv, ip, 0, sequence),
-                            ))
-                        }
-                        _ => None,
-                    }
-                }
-                None => None,
-            },
-        )
     }
 }
 
