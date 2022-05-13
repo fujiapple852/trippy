@@ -163,15 +163,7 @@ fn start_backend(
     tracer_config: TracerConfig,
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
-    let channel = TracerChannel::new(
-        tracer_config.target_addr,
-        tracer_config.trace_identifier,
-        tracer_config.packet_size,
-        tracer_config.payload_pattern,
-        tracer_config.source_port,
-        tracer_config.destination_port,
-        tracer_config.min_round_duration,
-    )?;
+    let channel = TracerChannel::new(&tracer_config)?;
     thread::Builder::new()
         .name(format!("tracer-{}", tracer_config.trace_identifier.0))
         .spawn(move || {
