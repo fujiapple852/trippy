@@ -196,6 +196,15 @@ impl TuiApp {
         &self.trace_info[self.trace_selected]
     }
 
+    fn clamp_selected_hop(&mut self) {
+        let hop_count = self.tracer_data().hops().len();
+        if let Some(selected) = self.table_state.selected() {
+            if selected > hop_count - 1 {
+                self.table_state.select(Some(hop_count - 1));
+            }
+        }
+    }
+
     fn next_hop(&mut self) {
         let hop_count = self.tracer_data().hops().len();
         if hop_count == 0 {
@@ -333,6 +342,7 @@ fn run_app<B: Backend>(
     loop {
         if app.frozen_start == None {
             app.snapshot_trace_data();
+            app.clamp_selected_hop();
         };
         terminal.draw(|f| render_app(f, &mut app))?;
         if event::poll(app.tui_config.refresh_rate)? {
