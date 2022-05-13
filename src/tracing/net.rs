@@ -113,9 +113,8 @@ impl Network for TracerChannel {
 
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         match self.protocol {
-            TracerProtocol::Icmp => self.recv_icmp_probe(),
-            TracerProtocol::Udp => self.recv_udp_probe(),
-            TracerProtocol::Tcp => Ok(self.recv_tcp_sockets()?.or(self.recv_tcp_probe()?)),
+            TracerProtocol::Icmp | TracerProtocol::Udp => self.recv_icmp_probe(),
+            TracerProtocol::Tcp => Ok(self.recv_tcp_sockets()?.or(self.recv_icmp_probe()?)),
         }
     }
 }
@@ -203,7 +202,7 @@ impl TracerChannel {
         Ok(())
     }
 
-    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (ICMP protocol).
+    /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     pub fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
@@ -212,88 +211,57 @@ impl TracerChannel {
                     match icmp.get_icmp_type() {
                         IcmpTypes::TimeExceeded => {
                             let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                            let echo_request = extract_echo_request(packet.payload())?;
-                            let identifier = echo_request.get_identifier();
-                            let sequence = echo_request.get_sequence_number();
-                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                                recv, ip, identifier, sequence,
-                            )))
+                            let resp = match self.protocol {
+                                TracerProtocol::Icmp => {
+                                    let echo_request = extract_echo_request(packet.payload())?;
+                                    let identifier = echo_request.get_identifier();
+                                    let sequence = echo_request.get_sequence_number();
+                                    ProbeResponseData::new(recv, ip, identifier, sequence)
+                                }
+                                TracerProtocol::Udp => {
+                                    let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                                    let sequence = extract_udp_probe(packet.payload())?;
+                                    ProbeResponseData::new(recv, ip, 0, sequence)
+                                }
+                                TracerProtocol::Tcp => {
+                                    let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                                    let sequence = extract_tcp_probe(packet.payload())?;
+                                    ProbeResponseData::new(recv, ip, 0, sequence)
+                                }
+                            };
+                            Some(ProbeResponse::TimeExceeded(resp))
                         }
                         IcmpTypes::DestinationUnreachable => {
                             let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                            let echo_request = extract_echo_request(packet.payload())?;
-                            let identifier = echo_request.get_identifier();
-                            let sequence = echo_request.get_sequence_number();
-                            Some(ProbeResponse::DestinationUnreachable(
-                                ProbeResponseData::new(recv, ip, identifier, sequence),
-                            ))
+                            let resp = match self.protocol {
+                                TracerProtocol::Icmp => {
+                                    let echo_request = extract_echo_request(packet.payload())?;
+                                    let identifier = echo_request.get_identifier();
+                                    let sequence = echo_request.get_sequence_number();
+                                    ProbeResponseData::new(recv, ip, identifier, sequence)
+                                }
+                                TracerProtocol::Udp => {
+                                    let sequence = extract_udp_probe(packet.payload())?;
+                                    ProbeResponseData::new(recv, ip, 0, sequence)
+                                }
+                                TracerProtocol::Tcp => {
+                                    let sequence = extract_tcp_probe(packet.payload())?;
+                                    ProbeResponseData::new(recv, ip, 0, sequence)
+                                }
+                            };
+                            Some(ProbeResponse::DestinationUnreachable(resp))
                         }
-                        IcmpTypes::EchoReply => {
-                            let packet = EchoReplyPacket::new(icmp.packet()).req()?;
-                            let identifier = packet.get_identifier();
-                            let sequence = packet.get_sequence_number();
-                            Some(ProbeResponse::EchoReply(ProbeResponseData::new(
-                                recv, ip, identifier, sequence,
-                            )))
-                        }
-                        _ => None,
-                    }
-                }
-                None => None,
-            },
-        )
-    }
-
-    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (UDP protocol).
-    pub fn recv_udp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
-                Some((icmp, ip)) => {
-                    let recv = SystemTime::now();
-                    match icmp.get_icmp_type() {
-                        IcmpTypes::TimeExceeded => {
-                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                            let sequence = extract_udp_probe(packet.payload())?;
-                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                                recv, ip, 0, sequence,
-                            )))
-                        }
-                        IcmpTypes::DestinationUnreachable => {
-                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                            let sequence = extract_udp_probe(packet.payload())?;
-                            Some(ProbeResponse::DestinationUnreachable(
-                                ProbeResponseData::new(recv, ip, 0, sequence),
-                            ))
-                        }
-                        _ => None,
-                    }
-                }
-                None => None,
-            },
-        )
-    }
-
-    /// Generate a `ProbeResponse` for the next available ICMP packet, if any (TCP protocol).
-    pub fn recv_tcp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
-                Some((icmp, ip)) => {
-                    let recv = SystemTime::now();
-                    match icmp.get_icmp_type() {
-                        IcmpTypes::TimeExceeded => {
-                            let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                            let sequence = extract_tcp_probe(packet.payload())?;
-                            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                                recv, ip, 0, sequence,
-                            )))
-                        }
-                        IcmpTypes::DestinationUnreachable => {
-                            let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                            let sequence = extract_tcp_probe(packet.payload())?;
-                            Some(ProbeResponse::DestinationUnreachable(
-                                ProbeResponseData::new(recv, ip, 0, sequence),
-                            ))
-                        }
+                        IcmpTypes::EchoReply => match self.protocol {
+                            TracerProtocol::Icmp => {
+                                let packet = EchoReplyPacket::new(icmp.packet()).req()?;
+                                let identifier = packet.get_identifier();
+                                let sequence = packet.get_sequence_number();
+                                Some(ProbeResponse::EchoReply(ProbeResponseData::new(
+                                    recv, ip, identifier, sequence,
+                                )))
+                            }
+                            TracerProtocol::Udp | TracerProtocol::Tcp => None,
+                        },
                         _ => None,
                     }
                 }
