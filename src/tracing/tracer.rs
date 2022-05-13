@@ -107,16 +107,16 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             match self.protocol {
                 TracerProtocol::Icmp => {
-                    network.send_probe(st.next_probe(), TracerProtocol::Icmp)?;
+                    network.send_probe(st.next_probe())?;
                 }
-                TracerProtocol::Udp => network.send_probe(st.next_probe(), TracerProtocol::Udp)?,
+                TracerProtocol::Udp => network.send_probe(st.next_probe())?,
                 TracerProtocol::Tcp => {
                     let mut probe = if st.round_has_capacity() {
                         st.next_probe()
                     } else {
                         return Err(TracerError::AddressNotAvailable);
                     };
-                    while let Err(err) = network.send_probe(probe, TracerProtocol::Tcp) {
+                    while let Err(err) = network.send_probe(probe) {
                         match err {
                             TracerError::AddressNotAvailable => {
                                 if st.round_has_capacity() {
@@ -151,7 +151,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
-        let next = network.recv_probe(self.protocol)?;
+        let next = network.recv_probe()?;
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {
                 let sequence = Sequence(data.sequence);

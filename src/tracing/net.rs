@@ -46,12 +46,12 @@ const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size(
 /// An abstraction over a network interface for tracing.
 pub trait Network {
     /// Send a `Probe`
-    fn send_probe(&mut self, probe: Probe, protocol: TracerProtocol) -> TraceResult<()>;
+    fn send_probe(&mut self, probe: Probe) -> TraceResult<()>;
 
     /// Receive the next Icmp packet and return an `ProbeResponse`.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe(&mut self, protocol: TracerProtocol) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>>;
 }
 
 /// The maximum number of TCP probes we allow.
@@ -59,6 +59,7 @@ const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
+    protocol: TracerProtocol,
     src_addr: IpAddr,
     dest_addr: IpAddr,
     identifier: TraceId,
@@ -83,6 +84,7 @@ impl TracerChannel {
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
         Ok(Self {
+            protocol: config.protocol,
             src_addr,
             dest_addr: config.target_addr,
             identifier: config.trace_identifier,
@@ -101,16 +103,16 @@ impl TracerChannel {
 }
 
 impl Network for TracerChannel {
-    fn send_probe(&mut self, probe: Probe, protocol: TracerProtocol) -> TraceResult<()> {
-        match protocol {
+    fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        match self.protocol {
             TracerProtocol::Icmp => self.dispatch_icmp_probe(probe),
             TracerProtocol::Udp => self.dispatch_udp_probe(probe),
             TracerProtocol::Tcp => self.dispatch_tcp_probe(probe),
         }
     }
 
-    fn recv_probe(&mut self, protocol: TracerProtocol) -> TraceResult<Option<ProbeResponse>> {
-        match protocol {
+    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        match self.protocol {
             TracerProtocol::Icmp => self.handle_icmp_socket_for_icmp(),
             TracerProtocol::Udp => self.handle_icmp_socket_for_udp(),
             TracerProtocol::Tcp => Ok(self
