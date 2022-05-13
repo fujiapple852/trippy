@@ -66,7 +66,7 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
-        self.highest_ttl = self.highest_ttl.max(round.largest_ttl.0);
+        self.highest_ttl = round.largest_ttl.0;
         for probe in round.probes {
             self.update_from_probe(probe);
         }
