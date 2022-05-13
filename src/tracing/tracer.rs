@@ -288,8 +288,13 @@ mod state {
         /// The maximum time-to-live echo response packet we have received.
         max_received_ttl: Option<TimeToLive>,
         /// The observed time-to-live of the `EchoReply` from the target host.
+        ///
+        /// Note that this is _not_ reset each round and that it can also _change_ over time, including going _down_ as
+        /// responses can be are received out-of-order.
         target_ttl: Option<TimeToLive>,
         /// The sequence of the `EchoReply` from the target host.
+        ///
+        /// Note that this is reset each round.
         target_seq: Option<Sequence>,
         /// The timestamp of the echo response packet.
         received_time: Option<SystemTime>,
