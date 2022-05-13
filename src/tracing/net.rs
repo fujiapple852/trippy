@@ -113,11 +113,9 @@ impl Network for TracerChannel {
 
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         match self.protocol {
-            TracerProtocol::Icmp => self.handle_icmp_socket_for_icmp(),
-            TracerProtocol::Udp => self.handle_icmp_socket_for_udp(),
-            TracerProtocol::Tcp => Ok(self
-                .handle_tcp_socket()?
-                .or(self.handle_icmp_socket_for_tcp()?)),
+            TracerProtocol::Icmp => self.recv_icmp_probe(),
+            TracerProtocol::Udp => self.recv_udp_probe(),
+            TracerProtocol::Tcp => Ok(self.recv_tcp_sockets()?.or(self.recv_tcp_probe()?)),
         }
     }
 }
@@ -206,7 +204,7 @@ impl TracerChannel {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any (ICMP protocol).
-    pub fn handle_icmp_socket_for_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    pub fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
@@ -247,7 +245,7 @@ impl TracerChannel {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any (UDP protocol).
-    pub fn handle_icmp_socket_for_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    pub fn recv_udp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
@@ -276,7 +274,7 @@ impl TracerChannel {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any (TCP protocol).
-    pub fn handle_icmp_socket_for_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    pub fn recv_tcp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
             match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
@@ -307,7 +305,7 @@ impl TracerChannel {
     /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
     ///
     /// Any TCP socket which has not connected or failed after a timeout wil be removed.
-    pub fn handle_tcp_socket(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    pub fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
         let found_index = self
