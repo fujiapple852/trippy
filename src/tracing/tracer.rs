@@ -51,7 +51,6 @@ pub struct Tracer<F> {
     grace_duration: Duration,
     max_inflight: MaxInflight,
     initial_sequence: Sequence,
-    read_timeout: Duration,
     min_round_duration: Duration,
     max_round_duration: Duration,
     publish: F,
@@ -69,7 +68,6 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             grace_duration: config.grace_duration,
             max_inflight: config.max_inflight,
             initial_sequence: config.initial_sequence,
-            read_timeout: config.read_timeout,
             min_round_duration: config.min_round_duration,
             max_round_duration: config.max_round_duration,
             publish,
@@ -152,9 +150,9 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = match self.protocol {
-            TracerProtocol::Icmp => network.recv_probe_resp_icmp(self.read_timeout)?,
-            TracerProtocol::Udp => network.recv_probe_resp_udp(self.read_timeout)?,
-            TracerProtocol::Tcp => network.recv_probe_resp_tcp(self.read_timeout)?,
+            TracerProtocol::Icmp => network.recv_probe_resp_icmp()?,
+            TracerProtocol::Udp => network.recv_probe_resp_udp()?,
+            TracerProtocol::Tcp => network.recv_probe_resp_tcp()?,
         };
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {

@@ -2,7 +2,7 @@ use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::Probe;
+use crate::tracing::{Probe, TracerConfig};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -57,17 +57,17 @@ pub trait Network {
     /// Receive the next Icmp packet and return an `IcmpResponse` for a ICMP probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_icmp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>>;
 
     /// Receive the next Icmp packet and return an `IcmpResponse` for a `Udp` probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_udp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>>;
 
     /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_tcp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>>;
 }
 
 /// The maximum number of TCP probes we allow.
@@ -82,38 +82,32 @@ pub struct TracerChannel {
     payload_pattern: PayloadPattern,
     source_port: SourcePort,
     destination_port: DestinationPort,
+    icmp_read_timeout: Duration,
+    tcp_connect_timeout: Duration,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
     udp_tx: TransportSender,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
-    tcp_connect_timeout: Duration,
 }
 
 impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
-    pub fn new(
-        dest_addr: IpAddr,
-        identifier: TraceId,
-        packet_size: PacketSize,
-        payload_pattern: PayloadPattern,
-        source_port: SourcePort,
-        destination_port: DestinationPort,
-        tcp_connect_timeout: Duration,
-    ) -> TraceResult<Self> {
-        let src_addr = discover_ipv4_addr(dest_addr, destination_port.0)?;
+    pub fn new(config: &TracerConfig) -> TraceResult<Self> {
+        let src_addr = discover_ipv4_addr(config.target_addr, config.destination_port.0)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
         Ok(Self {
-            tcp_connect_timeout,
             src_addr,
-            dest_addr,
-            identifier,
-            packet_size,
-            payload_pattern,
-            source_port,
-            destination_port,
+            dest_addr: config.target_addr,
+            identifier: config.trace_identifier,
+            packet_size: config.packet_size,
+            payload_pattern: config.payload_pattern,
+            source_port: config.source_port,
+            destination_port: config.destination_port,
+            icmp_read_timeout: config.read_timeout,
+            tcp_connect_timeout: config.min_round_duration,
             icmp_tx,
             icmp_rx,
             udp_tx,
@@ -205,9 +199,9 @@ impl Network for TracerChannel {
         Ok(())
     }
 
-    fn recv_probe_resp_icmp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
+            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
                     let recv = SystemTime::now();
                     match icmp.get_icmp_type() {
@@ -245,9 +239,9 @@ impl Network for TracerChannel {
         )
     }
 
-    fn recv_probe_resp_udp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
+            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
                     let recv = SystemTime::now();
                     match icmp.get_icmp_type() {
@@ -273,10 +267,10 @@ impl Network for TracerChannel {
         )
     }
 
-    fn recv_probe_resp_tcp(&mut self, timeout: Duration) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(self
             .handle_tcp_socket()?
-            .or(self.handle_icmp_socket_for_tcp(timeout)?))
+            .or(self.handle_icmp_socket_for_tcp()?))
     }
 }
 
@@ -323,12 +317,9 @@ impl TracerChannel {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any.
-    pub fn handle_icmp_socket_for_tcp(
-        &mut self,
-        timeout: Duration,
-    ) -> TraceResult<Option<ProbeResponse>> {
+    pub fn handle_icmp_socket_for_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
         Ok(
-            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(timeout)? {
+            match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
                 Some((icmp, ip)) => {
                     let recv = SystemTime::now();
                     match icmp.get_icmp_type() {
