@@ -24,7 +24,7 @@ use pnet::transport::{
 use pnet::util;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::ErrorKind;
-use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
+use std::net::{IpAddr, Shutdown, SocketAddr};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
@@ -289,7 +289,7 @@ impl TracerChannel {
                         if nix::Error::from_i32(code) == nix::Error::ECONNREFUSED {
                             return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
                                 SystemTime::now(),
-                                IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                                self.dest_addr,
                                 ttl,
                             ))));
                         }
