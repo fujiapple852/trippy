@@ -2,7 +2,7 @@ use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{Probe, TracerConfig};
+use crate::tracing::{Probe, TracerConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -45,29 +45,13 @@ const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size(
 
 /// An abstraction over a network interface for tracing.
 pub trait Network {
-    /// Send an `ICMP` `Probe`
-    fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()>;
+    /// Send a `Probe`
+    fn send_probe(&mut self, probe: Probe, protocol: TracerProtocol) -> TraceResult<()>;
 
-    /// Send a `UDP` `Probe`.
-    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()>;
-
-    /// Send a `TCP` `Probe`.
-    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()>;
-
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a ICMP probe.
+    /// Receive the next Icmp packet and return an `ProbeResponse`.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>>;
-
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Udp` probe.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>>;
-
-    /// Receive the next Icmp packet and return an `IcmpResponse` for a `Tcp` probe.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe(&mut self, protocol: TracerProtocol) -> TraceResult<Option<ProbeResponse>>;
 }
 
 /// The maximum number of TCP probes we allow.
@@ -117,30 +101,22 @@ impl TracerChannel {
 }
 
 impl Network for TracerChannel {
-    fn send_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        self.dispatch_icmp_probe(probe)
+    fn send_probe(&mut self, probe: Probe, protocol: TracerProtocol) -> TraceResult<()> {
+        match protocol {
+            TracerProtocol::Icmp => self.dispatch_icmp_probe(probe),
+            TracerProtocol::Udp => self.dispatch_udp_probe(probe),
+            TracerProtocol::Tcp => self.dispatch_tcp_probe(probe),
+        }
     }
 
-    fn send_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        self.dispatch_udp_probe(probe)
-    }
-
-    fn send_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        self.dispatch_tcp_probe(probe)
-    }
-
-    fn recv_probe_resp_icmp(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        self.handle_icmp_socket_for_icmp()
-    }
-
-    fn recv_probe_resp_udp(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        self.handle_icmp_socket_for_udp()
-    }
-
-    fn recv_probe_resp_tcp(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        Ok(self
-            .handle_tcp_socket()?
-            .or(self.handle_icmp_socket_for_tcp()?))
+    fn recv_probe(&mut self, protocol: TracerProtocol) -> TraceResult<Option<ProbeResponse>> {
+        match protocol {
+            TracerProtocol::Icmp => self.handle_icmp_socket_for_icmp(),
+            TracerProtocol::Udp => self.handle_icmp_socket_for_udp(),
+            TracerProtocol::Tcp => Ok(self
+                .handle_tcp_socket()?
+                .or(self.handle_icmp_socket_for_tcp()?)),
+        }
     }
 }
 
