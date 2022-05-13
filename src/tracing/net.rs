@@ -28,6 +28,64 @@ use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
+/// The response to a probe.
+#[derive(Debug, Copy, Clone)]
+pub enum ProbeResponse {
+    TimeExceeded(ProbeResponseData),
+    DestinationUnreachable(ProbeResponseData),
+    EchoReply(ProbeResponseData),
+    TcpReply(TcpProbeResponseData),
+    TcpRefused(TcpProbeResponseData),
+}
+
+/// The data in the probe response.
+#[derive(Debug, Copy, Clone)]
+pub struct ProbeResponseData {
+    pub recv: SystemTime,
+    pub addr: IpAddr,
+    pub identifier: u16,
+    pub sequence: u16,
+}
+
+impl ProbeResponseData {
+    fn new(recv: SystemTime, addr: IpAddr, identifier: u16, sequence: u16) -> Self {
+        Self {
+            recv,
+            addr,
+            identifier,
+            sequence,
+        }
+    }
+}
+
+/// The data in the TCP probe response.
+#[derive(Debug, Copy, Clone)]
+pub struct TcpProbeResponseData {
+    pub recv: SystemTime,
+    pub addr: IpAddr,
+    pub ttl: u8,
+}
+
+impl TcpProbeResponseData {
+    fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
+        Self { recv, addr, ttl }
+    }
+}
+
+/// An abstraction over a network interface for tracing.
+pub trait Network {
+    /// Send a `Probe`
+    fn send_probe(&mut self, probe: Probe) -> TraceResult<()>;
+
+    /// Receive the next Icmp packet and return a `ProbeResponse`.
+    ///
+    /// Returns `None` if the read times out or the packet read is not one of the types expected.
+    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>>;
+}
+
+/// The maximum number of TCP probes we allow.
+const MAX_TCP_PROBES: usize = 256;
+
 /// The maximum size of the IP packet we allow.
 const MAX_PACKET_SIZE: usize = 1024;
 
@@ -42,20 +100,6 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 
 /// The maximum UDP payload size we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
-
-/// An abstraction over a network interface for tracing.
-pub trait Network {
-    /// Send a `Probe`
-    fn send_probe(&mut self, probe: Probe) -> TraceResult<()>;
-
-    /// Receive the next Icmp packet and return an `ProbeResponse`.
-    ///
-    /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>>;
-}
-
-/// The maximum number of TCP probes we allow.
-const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `ICMP` packets.
 pub struct TracerChannel {
@@ -261,50 +305,6 @@ struct TcpProbe {
 impl TcpProbe {
     pub fn new(socket: Socket, start: SystemTime) -> Self {
         Self { socket, start }
-    }
-}
-
-/// The response to a probe.
-#[derive(Debug, Copy, Clone)]
-pub enum ProbeResponse {
-    TimeExceeded(ProbeResponseData),
-    DestinationUnreachable(ProbeResponseData),
-    EchoReply(ProbeResponseData),
-    TcpReply(TcpProbeResponseData),
-    TcpRefused(TcpProbeResponseData),
-}
-
-/// The data in probe response.
-#[derive(Debug, Copy, Clone)]
-pub struct ProbeResponseData {
-    pub recv: SystemTime,
-    pub addr: IpAddr,
-    pub identifier: u16,
-    pub sequence: u16,
-}
-
-impl ProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, identifier: u16, sequence: u16) -> Self {
-        Self {
-            recv,
-            addr,
-            identifier,
-            sequence,
-        }
-    }
-}
-
-///
-#[derive(Debug, Copy, Clone)]
-pub struct TcpProbeResponseData {
-    pub recv: SystemTime,
-    pub addr: IpAddr,
-    pub ttl: u8,
-}
-
-impl TcpProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
-        Self { recv, addr, ttl }
     }
 }
 
