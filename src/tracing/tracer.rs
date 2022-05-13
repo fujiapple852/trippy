@@ -143,6 +143,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let ip = data.addr;
+                let is_target = ip == self.target_addr;
                 let trace_id = TraceId::from(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     let probe = st
@@ -151,7 +152,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                         .with_icmp_packet_type(IcmpPacketType::TimeExceeded)
                         .with_host(ip)
                         .with_received(received);
-                    st.update_probe(sequence, probe, received, false);
+                    st.update_probe(sequence, probe, received, is_target);
                 }
             }
             Some(ProbeResponse::DestinationUnreachable(data)) => {
