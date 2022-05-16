@@ -15,7 +15,7 @@ use pnet::packet::icmp::{echo_request, IcmpPacket, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::tcp::TcpPacket;
-use pnet::packet::udp::{ipv4_checksum, MutableUdpPacket, UdpPacket};
+use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
 use pnet::transport::{
     icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
@@ -157,7 +157,6 @@ pub struct TracerChannel {
     tcp_connect_timeout: Duration,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
-    udp_tx: TransportSender,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
@@ -168,7 +167,6 @@ impl TracerChannel {
     pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
         let src_addr = discover_ipv4_addr(config.target_addr, config.destination_port.0)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
-        let (udp_tx, _) = make_udp_channel()?;
         Ok(Self {
             protocol: config.protocol,
             src_addr,
@@ -182,7 +180,6 @@ impl TracerChannel {
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_tx,
             icmp_rx,
-            udp_tx,
             tcp_probes: ArrayVec::new(),
         })
     }
@@ -239,32 +236,32 @@ impl TracerChannel {
     }
 
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+        socket.set_nonblocking(true)?;
+        let local_addr = SocketAddr::new(self.src_addr, self.source_port.0);
+        match socket.bind(&SockAddr::from(local_addr)) {
+            Ok(_) => {}
+            Err(err) => {
+                return match err.kind() {
+                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => Err(AddressNotAvailable),
+                    _ => Err(TracerError::from(err)),
+                };
+            }
+        };
+        socket.set_ttl(u32::from(probe.ttl.0))?;
+        let remote_addr = SocketAddr::new(self.dest_addr, probe.sequence.0);
         let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
         let ip_header_size = Ipv4Packet::minimum_packet_size();
         let udp_header_size = UdpPacket::minimum_packet_size();
-        let mut udp_buf = [0_u8; MAX_UDP_BUF];
         let mut payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
-        let udp_buf_size = packet_size - ip_header_size;
-        let mut udp = MutableUdpPacket::new(&mut udp_buf[..udp_buf_size]).req()?;
-        udp.set_source(self.source_port.0);
-        udp.set_destination(probe.sequence.0);
         let payload_size = packet_size - udp_header_size - ip_header_size;
-        udp.set_length((UdpPacket::minimum_packet_size() + payload_size) as u16);
         payload_buf
             .iter_mut()
             .for_each(|x| *x = self.payload_pattern.0);
-        udp.set_payload(&payload_buf[..payload_size]);
-        match (self.src_addr, self.dest_addr) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                udp.set_checksum(ipv4_checksum(&udp.to_immutable(), &src_addr, &dest_addr));
-            }
-            _ => unreachable!(),
-        }
-        self.udp_tx.set_ttl(probe.ttl.0)?;
-        self.udp_tx.send_to(udp.to_immutable(), self.dest_addr)?;
+        socket.send_to(&payload_buf[..payload_size], &SockAddr::from(remote_addr))?;
         Ok(())
     }
 
@@ -376,13 +373,6 @@ fn discover_ipv4_addr(target: IpAddr, port: u16) -> TraceResult<IpAddr> {
 /// Create the communication channel needed for sending and receiving ICMP packets.
 fn make_icmp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
     let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Icmp);
-    let channel_type = TransportChannelType::Layer4(protocol);
-    Ok(transport_channel(1600, channel_type)?)
-}
-
-/// Create the communication channel needed for sending UDP packets.
-fn make_udp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
-    let protocol = TransportProtocol::Ipv4(IpNextHeaderProtocols::Udp);
     let channel_type = TransportChannelType::Layer4(protocol);
     Ok(transport_channel(1600, channel_type)?)
 }
