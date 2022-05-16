@@ -1,5 +1,7 @@
 use anyhow::anyhow;
 use clap::{ArgEnum, Parser};
+use std::net::IpAddr;
+use std::str::FromStr;
 use std::time::Duration;
 use trippy::tracing::TracerProtocol;
 
@@ -136,6 +138,10 @@ pub struct Args {
     #[clap(long, default_value_t = 0)]
     pub payload_pattern: u8,
 
+    /// The source address
+    #[clap(short = 'A', long)]
+    pub source_address: Option<String>,
+
     /// The source port (TCP & UDP only)
     #[clap(long)]
     pub source_port: Option<u16>,
@@ -199,6 +205,7 @@ pub struct TrippyConfig {
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
+    pub source_addr: Option<IpAddr>,
     pub source_port: u16,
     pub destination_port: u16,
     pub dns_timeout: Duration,
@@ -228,6 +235,14 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
         let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
         let grace_duration = humantime::parse_duration(&args.grace_duration)?;
+        let source_address = args
+            .source_address
+            .as_ref()
+            .map(|addr| {
+                IpAddr::from_str(addr)
+                    .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
+            })
+            .transpose()?;
         let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
         let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
         let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
@@ -259,6 +274,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             read_timeout,
             packet_size: args.packet_size,
             payload_pattern: args.payload_pattern,
+            source_addr: source_address,
             source_port,
             destination_port: args.port,
             dns_timeout,

@@ -138,6 +138,7 @@ fn make_channel_config(
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
         args.protocol,
+        args.source_addr,
         target_addr,
         trace_identifier,
         args.packet_size,
