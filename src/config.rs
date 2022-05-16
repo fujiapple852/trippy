@@ -106,11 +106,11 @@ pub struct Args {
     #[clap(long, short = 'P', default_value_t = 80, display_order = 3)]
     pub target_port: u16,
 
-    /// The source port (UDP only)
-    #[clap(long, display_order = 4)]
+    /// The source port (UDP only) [default: auto]
+    #[clap(long, short = 'S', display_order = 4)]
     pub source_port: Option<u16>,
 
-    /// The source IP address
+    /// The source IP address [default: auto]
     #[clap(short = 'A', long, display_order = 5)]
     pub source_address: Option<String>,
 
@@ -135,7 +135,7 @@ pub struct Args {
     pub max_inflight: u8,
 
     /// The TTL to start from
-    #[clap(long, default_value_t = 1, display_order = 11)]
+    #[clap(short = 'f', long, default_value_t = 1, display_order = 11)]
     pub first_ttl: u8,
 
     /// The maximum number of TTL hops
@@ -183,7 +183,7 @@ pub struct Args {
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(long, display_order = 20)]
+    #[clap(short = 'M', long, display_order = 20)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
