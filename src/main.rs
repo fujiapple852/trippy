@@ -126,7 +126,7 @@ fn make_tracer_config(
         args.packet_size,
         args.payload_pattern,
         args.source_port,
-        args.destination_port,
+        args.target_port,
     )?)
 }
 
@@ -144,7 +144,7 @@ fn make_channel_config(
         args.packet_size,
         args.payload_pattern,
         args.source_port,
-        args.destination_port,
+        args.target_port,
         args.read_timeout,
         args.min_round_duration,
     )
@@ -164,7 +164,7 @@ fn make_trace_info(
         args.source_port,
         target,
         target_addr,
-        args.destination_port,
+        args.target_port,
         args.protocol,
         args.first_ttl,
         args.max_ttl,

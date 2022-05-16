@@ -102,9 +102,9 @@ pub struct Args {
     #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
     pub protocol: TraceProtocol,
 
-    /// The destination port (TCP only)
+    /// The target port (TCP only)
     #[clap(long, short = 'P', default_value_t = 80, display_order = 3)]
-    pub port: u16,
+    pub target_port: u16,
 
     /// The source port (UDP only)
     #[clap(long, display_order = 4)]
@@ -219,7 +219,7 @@ pub struct TrippyConfig {
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
     pub source_port: u16,
-    pub destination_port: u16,
+    pub target_port: u16,
     pub dns_timeout: Duration,
     pub dns_resolve_method: DnsResolveMethod,
     pub dns_lookup_as_info: bool,
@@ -288,7 +288,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             payload_pattern: args.payload_pattern,
             source_addr: source_address,
             source_port,
-            destination_port: args.port,
+            target_port: args.target_port,
             dns_timeout,
             dns_resolve_method: args.dns_resolve_method,
             dns_lookup_as_info: args.dns_lookup_as_info,
