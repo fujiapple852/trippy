@@ -15,7 +15,7 @@ use pnet::packet::icmp::{echo_request, IcmpPacket, IcmpTypes};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::tcp::TcpPacket;
-use pnet::packet::udp::{MutableUdpPacket, UdpPacket};
+use pnet::packet::udp::{ipv4_checksum, MutableUdpPacket, UdpPacket};
 use pnet::packet::Packet;
 use pnet::transport::{
     icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
@@ -257,6 +257,12 @@ impl TracerChannel {
             .iter_mut()
             .for_each(|x| *x = self.payload_pattern.0);
         udp.set_payload(&payload_buf[..payload_size]);
+        match (self.src_addr, self.dest_addr) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
+                udp.set_checksum(ipv4_checksum(&udp.to_immutable(), &src_addr, &dest_addr));
+            }
+            _ => unreachable!(),
+        }
         self.udp_tx.set_ttl(probe.ttl.0)?;
         self.udp_tx.send_to(udp.to_immutable(), self.dest_addr)?;
         Ok(())
