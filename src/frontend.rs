@@ -449,24 +449,9 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .tui_config
         .max_addrs
         .map_or_else(|| String::from("auto"), |m| m.to_string());
-    let target = match app.tracer_config().protocol {
-        TracerProtocol::Icmp => {
-            format!(
-                "{} ({})",
-                app.tracer_config().target_hostname,
-                app.tracer_config().target_addr
-            )
-        }
-        TracerProtocol::Udp | TracerProtocol::Tcp => {
-            format!(
-                "{}:{} ({}:{})",
-                app.tracer_config().target_hostname,
-                app.tracer_config().target_port,
-                app.tracer_config().target_addr,
-                app.tracer_config().target_port
-            )
-        }
-    };
+    let source = render_source(app);
+    let dest = render_destination(app);
+    let target = format!("{} -> {}", source, dest);
     let left_spans = vec![
         Spans::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -501,6 +486,66 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .alignment(Alignment::Left);
     f.render_widget(right, rect);
     f.render_widget(left, rect);
+}
+
+/// Render the source address of the trace.
+fn render_source(app: &mut TuiApp) -> String {
+    let source = match app.tracer_config().protocol {
+        TracerProtocol::Icmp => {
+            format!(
+                "{} ({})",
+                app.resolver.reverse_lookup(app.tracer_config().source_addr),
+                app.tracer_config().source_addr
+            )
+        }
+        TracerProtocol::Udp => {
+            format!(
+                "{}:{} ({}:{})",
+                app.resolver.reverse_lookup(app.tracer_config().source_addr),
+                app.tracer_config().source_port,
+                app.tracer_config().source_addr,
+                app.tracer_config().source_port,
+            )
+        }
+        TracerProtocol::Tcp => {
+            format!(
+                "{}:* ({}:*)",
+                app.resolver.reverse_lookup(app.tracer_config().source_addr),
+                app.tracer_config().source_addr,
+            )
+        }
+    };
+    source
+}
+
+/// Render the destination address.
+fn render_destination(app: &mut TuiApp) -> String {
+    let dest = match app.tracer_config().protocol {
+        TracerProtocol::Icmp => {
+            format!(
+                "{} ({})",
+                app.tracer_config().target_hostname,
+                app.tracer_config().target_addr
+            )
+        }
+        TracerProtocol::Udp => {
+            format!(
+                "{}:* ({}:*)",
+                app.tracer_config().target_hostname,
+                app.tracer_config().target_addr,
+            )
+        }
+        TracerProtocol::Tcp => {
+            format!(
+                "{}:{} ({}:{})",
+                app.tracer_config().target_hostname,
+                app.tracer_config().target_port,
+                app.tracer_config().target_addr,
+                app.tracer_config().target_port
+            )
+        }
+    };
+    dest
 }
 
 /// Format the `DnsResolveMethod`.

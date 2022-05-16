@@ -15,7 +15,7 @@ use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{Mode, TrippyConfig};
 use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::frontend::TuiConfig;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use clap::Parser;
 use config::Args;
 use parking_lot::RwLock;
@@ -23,7 +23,7 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use trippy::tracing::{TracerChannel, TracerConfig, TracerProtocol};
+use trippy::tracing::{TracerChannel, TracerChannelConfig, TracerConfig, TracerProtocol};
 
 mod backend;
 mod caps;
@@ -35,39 +35,56 @@ mod report;
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
-    ensure_caps()?;
     let resolver = DnsResolver::start(DnsResolverConfig::new(
         cfg.dns_resolve_method,
         cfg.dns_timeout,
     ))?;
+    ensure_caps()?;
     let traces: Vec<_> = cfg
         .targets
         .iter()
-        .map(|target| make_trace_info(&cfg, &resolver, target))
+        .enumerate()
+        .map(|(i, target_host)| start_tracer(&cfg, target_host, pid + i as u16, &resolver))
         .collect::<anyhow::Result<Vec<_>>>()?;
-    for (i, info) in traces.iter().enumerate() {
-        let trace_identifier = pid + i as u16;
-        let tracer_config = make_tracer_config(&cfg, info.target_addr, trace_identifier)?;
-        start_backend(tracer_config, info.data.clone())?;
-    }
     drop_caps()?;
     run_frontend(&cfg, resolver, traces)?;
     Ok(())
 }
 
-/// Create a network channel in a thread and drop all capabilities.
-fn start_backend(
-    tracer_config: TracerConfig,
-    trace_data: Arc<RwLock<Trace>>,
-) -> anyhow::Result<()> {
-    let channel = TracerChannel::connect(&tracer_config)?;
-    thread::Builder::new()
-        .name(format!("tracer-{}", tracer_config.trace_identifier.0))
-        .spawn(move || {
-            drop_caps().expect("failed to drop capabilities in tracer thread");
-            backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
-        })?;
-    Ok(())
+/// Start a tracer to a given target.
+fn start_tracer(
+    cfg: &TrippyConfig,
+    target_host: &str,
+    trace_identifier: u16,
+    resolver: &DnsResolver,
+) -> Result<TraceInfo, Error> {
+    let target_addr: IpAddr = resolver
+        .lookup(target_host)
+        .map_err(|e| anyhow!("failed to resolve target: {} ({})", target_host, e))?
+        .into_iter()
+        .find(|addr| matches!(addr, IpAddr::V4(_)))
+        .ok_or_else(|| anyhow!("failed to find an IPv4 address for target: {}", target_host))?;
+    let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
+    let channel_config = make_channel_config(cfg, target_addr, trace_identifier);
+    let channel = TracerChannel::connect(&channel_config)?;
+    let source_addr = channel.src_addr();
+    let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
+    {
+        let trace_data = trace_data.clone();
+        thread::Builder::new()
+            .name(format!("tracer-{}", tracer_config.trace_identifier.0))
+            .spawn(move || {
+                drop_caps().expect("failed to drop capabilities in tracer thread");
+                backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
+            })?;
+    }
+    Ok(make_trace_info(
+        cfg,
+        trace_data,
+        source_addr,
+        target_host.to_string(),
+        target_addr,
+    ))
 }
 
 /// Run the TUI, stream or report.
@@ -113,22 +130,38 @@ fn make_tracer_config(
     )?)
 }
 
+/// Make the tracer configuration.
+fn make_channel_config(
+    args: &TrippyConfig,
+    target_addr: IpAddr,
+    trace_identifier: u16,
+) -> TracerChannelConfig {
+    TracerChannelConfig::new(
+        args.protocol,
+        target_addr,
+        trace_identifier,
+        args.packet_size,
+        args.payload_pattern,
+        args.source_port,
+        args.destination_port,
+        args.read_timeout,
+        args.min_round_duration,
+    )
+}
+
 /// Make the per-trace information.
 fn make_trace_info(
     args: &TrippyConfig,
-    resolver: &DnsResolver,
-    target: &str,
-) -> anyhow::Result<TraceInfo> {
-    let target_addr: IpAddr = resolver
-        .lookup(target)
-        .map_err(|e| anyhow!("failed to resolve target: {} ({})", target, e))?
-        .into_iter()
-        .find(|addr| matches!(addr, IpAddr::V4(_)))
-        .unwrap();
-    let trace_data = Arc::new(RwLock::new(Trace::new(args.tui_max_samples)));
-    Ok(TraceInfo::new(
+    trace_data: Arc<RwLock<Trace>>,
+    source_addr: IpAddr,
+    target: String,
+    target_addr: IpAddr,
+) -> TraceInfo {
+    TraceInfo::new(
         trace_data,
-        target.to_string(),
+        source_addr,
+        args.source_port,
+        target,
         target_addr,
         args.destination_port,
         args.protocol,
@@ -136,7 +169,7 @@ fn make_trace_info(
         args.max_ttl,
         args.grace_duration,
         args.min_round_duration,
-    ))
+    )
 }
 
 /// Make the TUI configuration.
@@ -155,6 +188,8 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
 #[derive(Debug, Clone)]
 pub struct TraceInfo {
     pub data: Arc<RwLock<Trace>>,
+    pub source_addr: IpAddr,
+    pub source_port: u16,
     pub target_hostname: String,
     pub target_addr: IpAddr,
     pub target_port: u16,
@@ -170,6 +205,8 @@ impl TraceInfo {
     #[must_use]
     pub fn new(
         data: Arc<RwLock<Trace>>,
+        source_addr: IpAddr,
+        source_port: u16,
         target_hostname: String,
         target_addr: IpAddr,
         target_port: u16,
@@ -181,6 +218,8 @@ impl TraceInfo {
     ) -> Self {
         Self {
             data,
+            source_addr,
+            source_port,
             target_hostname,
             target_addr,
             target_port,
