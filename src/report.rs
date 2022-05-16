@@ -1,23 +1,16 @@
-use crate::{DnsResolver, Trace};
+use crate::{DnsResolver, Trace, TraceInfo};
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use serde::{Serialize, Serializer};
-use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 
 /// Generate a CSV report of trace data.
-pub fn run_report_csv(
-    hostname: &str,
-    target_addr: IpAddr,
-    report_cycles: usize,
-    resolver: &DnsResolver,
-    trace_data: &Arc<RwLock<Trace>>,
-) {
-    let trace = wait_for_round(trace_data, report_cycles);
+pub fn run_report_csv(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
+    let trace = wait_for_round(&info.data, report_cycles);
     println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops().iter() {
         let ttl = hop.ttl();
@@ -43,7 +36,18 @@ pub fn run_report_csv(
         let loss_pct = hop.loss_pct();
         println!(
             "{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
-            hostname, target_addr, ttl, host, loss_pct, sent, recv, last, avg, best, worst, stddev
+            info.target_hostname,
+            info.target_addr,
+            ttl,
+            host,
+            loss_pct,
+            sent,
+            recv,
+            last,
+            avg,
+            best,
+            worst,
+            stddev
         );
     }
 }
@@ -94,14 +98,8 @@ where
 }
 
 /// Generate a CSV report of trace data.
-pub fn run_report_json(
-    hostname: &str,
-    target_addr: IpAddr,
-    report_cycles: usize,
-    resolver: &DnsResolver,
-    trace_data: &Arc<RwLock<Trace>>,
-) {
-    let trace = wait_for_round(trace_data, report_cycles);
+pub fn run_report_json(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
+    let trace = wait_for_round(&info.data, report_cycles);
     let hops: Vec<ReportHop> = trace
         .hops()
         .iter()
@@ -131,8 +129,8 @@ pub fn run_report_json(
     let report = Report {
         info: ReportInfo {
             target: Host {
-                ip: target_addr.to_string(),
-                hostname: hostname.to_string(),
+                ip: info.target_addr.to_string(),
+                hostname: info.target_hostname.to_string(),
             },
         },
         hops,
@@ -141,30 +139,17 @@ pub fn run_report_json(
 }
 
 /// Generate a markdown table report of trace data.
-pub fn run_report_table_markdown(
-    report_cycles: usize,
-    resolver: &DnsResolver,
-    trace_data: &Arc<RwLock<Trace>>,
-) {
-    run_report_table(report_cycles, resolver, trace_data, ASCII_MARKDOWN);
+pub fn run_report_table_md(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
+    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN);
 }
 
 /// Generate a pretty table report of trace data.
-pub fn run_report_table_pretty(
-    report_cycles: usize,
-    resolver: &DnsResolver,
-    trace_data: &Arc<RwLock<Trace>>,
-) {
-    run_report_table(report_cycles, resolver, trace_data, UTF8_FULL);
+pub fn run_report_table_pretty(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
+    run_report_table(info, report_cycles, resolver, UTF8_FULL);
 }
 
-fn run_report_table(
-    report_cycles: usize,
-    resolver: &DnsResolver,
-    trace_data: &Arc<RwLock<Trace>>,
-    preset: &str,
-) {
-    let trace = wait_for_round(trace_data, report_cycles);
+fn run_report_table(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver, preset: &str) {
+    let trace = wait_for_round(&info.data, report_cycles);
     let columns = vec![
         "Hop", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
     ];
@@ -206,15 +191,10 @@ fn run_report_table(
 }
 
 /// Display a continuous stream of trace data.
-pub fn run_report_stream(
-    hostname: &str,
-    target_addr: IpAddr,
-    interval: Duration,
-    trace_data: &Arc<RwLock<Trace>>,
-) {
-    println!("Tracing to {} ({})", hostname, target_addr);
+pub fn run_report_stream(info: &TraceInfo) {
+    println!("Tracing to {} ({})", info.target_hostname, info.target_addr);
     loop {
-        let trace_data = trace_data.read().clone();
+        let trace_data = &info.data.read().clone();
         for hop in trace_data.hops() {
             let ttl = hop.ttl();
             let addrs = hop.addrs().collect::<Vec<_>>();
@@ -240,7 +220,7 @@ pub fn run_report_stream(
                 ttl, addrs, loss_pct, sent, recv, last, best, worst, avg, stddev
             );
         }
-        sleep(interval);
+        sleep(info.min_round_duration);
     }
 }
 

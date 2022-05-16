@@ -77,36 +77,12 @@ fn run_frontend(
     traces: Vec<TraceInfo>,
 ) -> anyhow::Result<()> {
     match args.mode {
-        Mode::Tui => {
-            let tui_config = make_tui_config(args);
-            frontend::run_frontend(traces, tui_config, resolver)?;
-        }
-        Mode::Stream => report::run_report_stream(
-            &traces[0].target_hostname,
-            traces[0].target_addr,
-            traces[0].min_round_duration,
-            &traces[0].data,
-        ),
-        Mode::Csv => report::run_report_csv(
-            &traces[0].target_hostname,
-            traces[0].target_addr,
-            args.report_cycles,
-            &resolver,
-            &traces[0].data,
-        ),
-        Mode::Json => report::run_report_json(
-            &traces[0].target_hostname,
-            traces[0].target_addr,
-            args.report_cycles,
-            &resolver,
-            &traces[0].data,
-        ),
-        Mode::Pretty => {
-            report::run_report_table_pretty(args.report_cycles, &resolver, &traces[0].data);
-        }
-        Mode::Markdown => {
-            report::run_report_table_markdown(args.report_cycles, &resolver, &traces[0].data);
-        }
+        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver)?,
+        Mode::Stream => report::run_report_stream(&traces[0]),
+        Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver),
+        Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver),
+        Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver),
+        Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver),
     }
     Ok(())
 }
