@@ -2,7 +2,7 @@ use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{Probe, TracerConfig, TracerProtocol};
+use crate::tracing::{Probe, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -119,11 +119,53 @@ pub struct TracerChannel {
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
+/// Tracer network channel configuration.
+#[derive(Debug, Copy, Clone)]
+pub struct TracerChannelConfig {
+    protocol: TracerProtocol,
+    target_addr: IpAddr,
+    identifier: TraceId,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
+    source_port: SourcePort,
+    destination_port: DestinationPort,
+    icmp_read_timeout: Duration,
+    tcp_connect_timeout: Duration,
+}
+
+impl TracerChannelConfig {
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn new(
+        protocol: TracerProtocol,
+        target_addr: IpAddr,
+        identifier: u16,
+        packet_size: u16,
+        payload_pattern: u8,
+        source_port: u16,
+        destination_port: u16,
+        icmp_read_timeout: Duration,
+        tcp_connect_timeout: Duration,
+    ) -> Self {
+        Self {
+            protocol,
+            target_addr,
+            identifier: TraceId(identifier),
+            packet_size: PacketSize(packet_size),
+            payload_pattern: PayloadPattern(payload_pattern),
+            source_port: SourcePort(source_port),
+            destination_port: DestinationPort(destination_port),
+            icmp_read_timeout,
+            tcp_connect_timeout,
+        }
+    }
+}
+
 impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
-    pub fn connect(config: &TracerConfig) -> TraceResult<Self> {
+    pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
         let src_addr = discover_ipv4_addr(config.target_addr, config.destination_port.0)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         let (udp_tx, _) = make_udp_channel()?;
@@ -131,13 +173,13 @@ impl TracerChannel {
             protocol: config.protocol,
             src_addr,
             dest_addr: config.target_addr,
-            identifier: config.trace_identifier,
+            identifier: config.identifier,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
             source_port: config.source_port,
             destination_port: config.destination_port,
-            icmp_read_timeout: config.read_timeout,
-            tcp_connect_timeout: config.min_round_duration,
+            icmp_read_timeout: config.icmp_read_timeout,
+            tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_tx,
             icmp_rx,
             udp_tx,

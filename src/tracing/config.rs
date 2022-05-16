@@ -36,7 +36,7 @@ impl Display for TracerProtocol {
     }
 }
 
-/// TODO
+/// Tracing algorithm configuration.
 #[derive(Debug, Copy, Clone)]
 pub struct TracerConfig {
     pub target_addr: IpAddr,
