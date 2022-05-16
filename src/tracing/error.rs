@@ -1,5 +1,6 @@
 use crate::tracing::util::RequiredError;
 use std::io;
+use std::net::IpAddr;
 use thiserror::Error;
 
 pub type TraceResult<T> = Result<T, TracerError>;
@@ -19,4 +20,6 @@ pub enum TracerError {
     IoError(#[from] io::Error),
     #[error("address not available")]
     AddressNotAvailable,
+    #[error("invalid source IP address: {0}")]
+    InvalidSourceAddr(IpAddr),
 }

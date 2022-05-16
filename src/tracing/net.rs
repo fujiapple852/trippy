@@ -1,4 +1,4 @@
-use crate::tracing::error::TracerError::AddressNotAvailable;
+use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId};
 use crate::tracing::util::Required;
@@ -105,6 +105,7 @@ const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size(
 #[derive(Debug, Copy, Clone)]
 pub struct TracerChannelConfig {
     protocol: TracerProtocol,
+    source_addr: Option<IpAddr>,
     target_addr: IpAddr,
     identifier: TraceId,
     packet_size: PacketSize,
@@ -120,6 +121,7 @@ impl TracerChannelConfig {
     #[must_use]
     pub fn new(
         protocol: TracerProtocol,
+        source_addr: Option<IpAddr>,
         target_addr: IpAddr,
         identifier: u16,
         packet_size: u16,
@@ -131,6 +133,7 @@ impl TracerChannelConfig {
     ) -> Self {
         Self {
             protocol,
+            source_addr,
             target_addr,
             identifier: TraceId(identifier),
             packet_size: PacketSize(packet_size),
@@ -165,7 +168,10 @@ impl TracerChannel {
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
     pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
-        let src_addr = discover_ipv4_addr(config.target_addr, config.destination_port.0)?;
+        let src_addr = match config.source_addr {
+            None => discover_ipv4_addr(config.target_addr, config.destination_port.0),
+            Some(addr) => validate_local_ipv4_addr(addr),
+        }?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         Ok(Self {
             protocol: config.protocol,
@@ -368,6 +374,16 @@ fn discover_ipv4_addr(target: IpAddr, port: u16) -> TraceResult<IpAddr> {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
     socket.connect(&SockAddr::from(SocketAddr::new(target, port)))?;
     Ok(socket.local_addr()?.as_socket().req()?.ip())
+}
+
+/// Validate that we can bind to the source address.
+fn validate_local_ipv4_addr(source_addr: IpAddr) -> TraceResult<IpAddr> {
+    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+    let addr = SocketAddr::new(source_addr, 0);
+    match socket.bind(&SockAddr::from(addr)) {
+        Ok(_) => Ok(source_addr),
+        Err(_) => Err(InvalidSourceAddr(addr.ip())),
+    }
 }
 
 /// Create the communication channel needed for sending and receiving ICMP packets.
