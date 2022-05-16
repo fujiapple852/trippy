@@ -101,24 +101,6 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 /// The maximum UDP payload size we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
 
-/// A channel for sending and receiving `ICMP` packets.
-pub struct TracerChannel {
-    protocol: TracerProtocol,
-    src_addr: IpAddr,
-    dest_addr: IpAddr,
-    identifier: TraceId,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    source_port: SourcePort,
-    destination_port: DestinationPort,
-    icmp_read_timeout: Duration,
-    tcp_connect_timeout: Duration,
-    icmp_tx: TransportSender,
-    icmp_rx: TransportReceiver,
-    udp_tx: TransportSender,
-    tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
-}
-
 /// Tracer network channel configuration.
 #[derive(Debug, Copy, Clone)]
 pub struct TracerChannelConfig {
@@ -159,6 +141,24 @@ impl TracerChannelConfig {
             tcp_connect_timeout,
         }
     }
+}
+
+/// A channel for sending and receiving `ICMP` packets.
+pub struct TracerChannel {
+    protocol: TracerProtocol,
+    src_addr: IpAddr,
+    dest_addr: IpAddr,
+    identifier: TraceId,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
+    source_port: SourcePort,
+    destination_port: DestinationPort,
+    icmp_read_timeout: Duration,
+    tcp_connect_timeout: Duration,
+    icmp_tx: TransportSender,
+    icmp_rx: TransportReceiver,
+    udp_tx: TransportSender,
+    tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
 impl TracerChannel {
