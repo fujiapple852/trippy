@@ -180,7 +180,7 @@ pub struct Args {
 
     /// The maximum number of addresses to show per hop
     #[clap(long)]
-    pub tui_max_addresses_per_hop: Option<u8>,
+    pub tui_max_addrs: Option<u8>,
 
     /// Output mode
     #[clap(arg_enum, short = 'm', long, default_value = "tui")]
@@ -215,7 +215,7 @@ pub struct TrippyConfig {
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
     pub tui_address_mode: AddressMode,
-    pub max_addrs: Option<u8>,
+    pub tui_max_addrs: Option<u8>,
     pub mode: Mode,
     pub report_cycles: usize,
     pub max_rounds: Option<usize>,
@@ -284,7 +284,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tui_preserve_screen: args.tui_preserve_screen,
             tui_refresh_rate,
             tui_address_mode: args.tui_address_mode,
-            max_addrs: args.tui_max_addresses_per_hop,
+            tui_max_addrs: args.tui_max_addrs,
             mode: args.mode,
             report_cycles: args.report_cycles,
             max_rounds,
