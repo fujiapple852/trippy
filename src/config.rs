@@ -106,11 +106,11 @@ pub struct Args {
     #[clap(long, short = 'P', default_value_t = 80, display_order = 3)]
     pub port: u16,
 
-    /// The source port (TCP & UDP only)
+    /// The source port (UDP only)
     #[clap(long, display_order = 4)]
     pub source_port: Option<u16>,
 
-    /// The source address
+    /// The source IP address
     #[clap(short = 'A', long, display_order = 5)]
     pub source_address: Option<String>,
 
@@ -138,7 +138,7 @@ pub struct Args {
     #[clap(long, default_value_t = 1, display_order = 11)]
     pub first_ttl: u8,
 
-    /// The maximum number of hops
+    /// The maximum number of TTL hops
     #[clap(short = 't', long, default_value_t = 64, display_order = 12)]
     pub max_ttl: u8,
 
@@ -186,7 +186,7 @@ pub struct Args {
     #[clap(long, display_order = 20)]
     pub tui_max_addrs: Option<u8>,
 
-    /// The maximum number of samples to record per hop.
+    /// The maximum number of samples to record per hop
     #[clap(long, short = 's', default_value_t = 256, display_order = 21)]
     pub tui_max_samples: usize,
 
