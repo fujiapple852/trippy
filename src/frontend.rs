@@ -1,7 +1,7 @@
 use crate::backend::Hop;
 use crate::config::{AddressMode, DnsResolveMethod};
 use crate::dns::{DnsEntry, Resolved};
-use crate::{DnsResolver, Trace};
+use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
 use crossterm::event::KeyModifiers;
 use crossterm::{
@@ -10,11 +10,9 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use itertools::Itertools;
-use parking_lot::RwLock;
 use std::collections::BTreeMap;
 use std::io;
 use std::net::IpAddr;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::TracerProtocol;
 use tui::layout::{Alignment, Direction, Rect};
@@ -76,47 +74,6 @@ const HELP_LINES: [&str; 14] = [
     "q                - quit",
 ];
 
-/// Information about a `Trace` needed for the Tui.
-#[derive(Debug, Clone)]
-pub struct TuiTraceInfo {
-    pub data: Arc<RwLock<Trace>>,
-    pub target_hostname: String,
-    pub target_addr: IpAddr,
-    pub target_port: u16,
-    pub protocol: TracerProtocol,
-    pub first_ttl: u8,
-    pub max_ttl: u8,
-    pub grace_duration: Duration,
-    pub min_round_duration: Duration,
-}
-
-impl TuiTraceInfo {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        data: Arc<RwLock<Trace>>,
-        target_hostname: String,
-        target_addr: IpAddr,
-        target_port: u16,
-        protocol: TracerProtocol,
-        first_ttl: u8,
-        max_ttl: u8,
-        grace_duration: Duration,
-        min_round_duration: Duration,
-    ) -> Self {
-        Self {
-            data,
-            target_hostname,
-            target_addr,
-            target_port,
-            protocol,
-            first_ttl,
-            max_ttl,
-            grace_duration,
-            min_round_duration,
-        }
-    }
-}
-
 /// Tui configuration.
 #[derive(Debug)]
 pub struct TuiConfig {
@@ -156,7 +113,7 @@ impl TuiConfig {
 
 struct TuiApp {
     selected_tracer_data: Trace,
-    trace_info: Vec<TuiTraceInfo>,
+    trace_info: Vec<TraceInfo>,
     tui_config: TuiConfig,
     table_state: TableState,
     trace_selected: usize,
@@ -166,7 +123,7 @@ struct TuiApp {
 }
 
 impl TuiApp {
-    fn new(tui_config: TuiConfig, resolver: DnsResolver, trace_info: Vec<TuiTraceInfo>) -> Self {
+    fn new(tui_config: TuiConfig, resolver: DnsResolver, trace_info: Vec<TraceInfo>) -> Self {
         Self {
             selected_tracer_data: Trace::new(tui_config.max_samples),
             trace_info,
@@ -192,7 +149,7 @@ impl TuiApp {
             Trace::new(self.tui_config.max_samples);
     }
 
-    fn tracer_config(&self) -> &TuiTraceInfo {
+    fn tracer_config(&self) -> &TraceInfo {
         &self.trace_info[self.trace_selected]
     }
 
@@ -310,7 +267,7 @@ impl TuiApp {
 
 /// Run the frontend TUI.
 pub fn run_frontend(
-    traces: Vec<TuiTraceInfo>,
+    traces: Vec<TraceInfo>,
     tui_config: TuiConfig,
     resolver: DnsResolver,
 ) -> anyhow::Result<()> {
@@ -334,7 +291,7 @@ pub fn run_frontend(
 
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
-    trace_info: Vec<TuiTraceInfo>,
+    trace_info: Vec<TraceInfo>,
     tui_config: TuiConfig,
     resolver: DnsResolver,
 ) -> io::Result<()> {

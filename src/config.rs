@@ -1,6 +1,7 @@
+use anyhow::anyhow;
 use clap::{ArgEnum, Parser};
-use std::process::exit;
 use std::time::Duration;
+use trippy::tracing::TracerProtocol;
 
 /// The maximum number of hops we allow.
 ///
@@ -184,128 +185,251 @@ pub struct Args {
     pub report_cycles: usize,
 }
 
+/// Fully parsed and validate configuration.
+pub struct TrippyConfig {
+    pub targets: Vec<String>,
+    pub protocol: TracerProtocol,
+    pub first_ttl: u8,
+    pub max_ttl: u8,
+    pub min_round_duration: Duration,
+    pub max_round_duration: Duration,
+    pub grace_duration: Duration,
+    pub max_inflight: u8,
+    pub initial_sequence: u16,
+    pub read_timeout: Duration,
+    pub packet_size: u16,
+    pub payload_pattern: u8,
+    pub source_port: u16,
+    pub destination_port: u16,
+    pub dns_timeout: Duration,
+    pub dns_resolve_method: DnsResolveMethod,
+    pub dns_lookup_as_info: bool,
+    pub tui_max_samples: usize,
+    pub tui_preserve_screen: bool,
+    pub tui_refresh_rate: Duration,
+    pub tui_address_mode: AddressMode,
+    pub max_addrs: Option<u8>,
+    pub mode: Mode,
+    pub report_cycles: usize,
+    pub max_rounds: Option<usize>,
+}
+
+impl TryFrom<(Args, u16)> for TrippyConfig {
+    type Error = anyhow::Error;
+
+    fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
+        let (args, pid) = data;
+        let protocol = match args.protocol {
+            TraceProtocol::Icmp => TracerProtocol::Icmp,
+            TraceProtocol::Udp => TracerProtocol::Udp,
+            TraceProtocol::Tcp => TracerProtocol::Tcp,
+        };
+        let read_timeout = humantime::parse_duration(&args.read_timeout)?;
+        let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
+        let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
+        let grace_duration = humantime::parse_duration(&args.grace_duration)?;
+        let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
+        let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
+        let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
+        let max_rounds = match args.mode {
+            Mode::Stream | Mode::Tui => None,
+            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(args.report_cycles),
+        };
+        validate_multi(args.mode, args.protocol, &args.targets)?;
+        validate_ttl(args.first_ttl, args.max_ttl)?;
+        validate_max_inflight(args.max_inflight)?;
+        validate_read_timeout(read_timeout)?;
+        validate_round_duration(min_round_duration, max_round_duration)?;
+        validate_grace_duration(grace_duration)?;
+        validate_packet_size(args.packet_size)?;
+        validate_source_port(source_port)?;
+        validate_tui_refresh_rate(tui_refresh_rate)?;
+        validate_report_cycles(args.report_cycles)?;
+        validate_dns(args.dns_resolve_method, args.dns_lookup_as_info)?;
+        Ok(Self {
+            targets: args.targets,
+            protocol,
+            first_ttl: args.first_ttl,
+            max_ttl: args.max_ttl,
+            min_round_duration,
+            max_round_duration,
+            grace_duration,
+            max_inflight: args.max_inflight,
+            initial_sequence: args.initial_sequence,
+            read_timeout,
+            packet_size: args.packet_size,
+            payload_pattern: args.payload_pattern,
+            source_port,
+            destination_port: args.port,
+            dns_timeout,
+            dns_resolve_method: args.dns_resolve_method,
+            dns_lookup_as_info: args.dns_lookup_as_info,
+            tui_max_samples: args.tui_max_samples,
+            tui_preserve_screen: args.tui_preserve_screen,
+            tui_refresh_rate,
+            tui_address_mode: args.tui_address_mode,
+            max_addrs: args.tui_max_addresses_per_hop,
+            mode: args.mode,
+            report_cycles: args.report_cycles,
+            max_rounds,
+        })
+    }
+}
+
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
-pub fn validate_multi(mode: Mode, protocol: TraceProtocol, targets: &[String]) {
+pub fn validate_multi(
+    mode: Mode,
+    protocol: TraceProtocol,
+    targets: &[String],
+) -> anyhow::Result<()> {
     match (mode, protocol) {
         (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
             if targets.len() > 1 =>
         {
-            eprintln!("only a single target may be specified for this mode");
-            exit(-1);
+            Err(anyhow!(
+                "only a single target may be specified for this mode"
+            ))
         }
-        (_, TraceProtocol::Tcp | TraceProtocol::Udp) if targets.len() > 1 => {
-            eprintln!("only a single target may be specified for TCP and UDP tracing");
-            exit(-1);
-        }
-        _ => {}
+        (_, TraceProtocol::Tcp | TraceProtocol::Udp) if targets.len() > 1 => Err(anyhow!(
+            "only a single target may be specified for TCP and UDP tracing"
+        )),
+        _ => Ok(()),
     }
 }
 
-/// Validate `report_cycles`
-pub fn validate_report_cycles(report_cycles: usize) {
+/// Validate `first_ttl` and `max_ttl`.
+pub fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
+    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
+        Err(anyhow!(
+            "first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}"
+        ))
+    } else if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
+        Err(anyhow!(
+            "max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}"
+        ))
+    } else if first_ttl > max_ttl {
+        Err(anyhow!(
+            "first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `max_inflight`.
+pub fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
+    if max_inflight == 0 {
+        Err(anyhow!(
+            "max_inflight ({}) must be greater than zero",
+            max_inflight
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `read_timeout`.
+pub fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
+    if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
+        Err(anyhow!(
+            "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
+            read_timeout,
+            MIN_READ_TIMEOUT_MS,
+            MAX_READ_TIMEOUT_MS
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `min_round_duration` and `max_round_duration`.
+pub fn validate_round_duration(
+    min_round_duration: Duration,
+    max_round_duration: Duration,
+) -> anyhow::Result<()> {
+    if min_round_duration > max_round_duration {
+        Err(anyhow!(
+            "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
+            max_round_duration,
+            min_round_duration
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `grace_duration`.
+pub fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
+    if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
+        Err(anyhow!(
+            "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
+            grace_duration,
+            MIN_GRACE_DURATION_MS,
+            MAX_GRACE_DURATION_MS
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `packet_size`.
+pub fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
+    if (MIN_PACKET_SIZE..=MAX_PACKET_SIZE).contains(&packet_size) {
+        Ok(())
+    } else {
+        Err(anyhow!(
+            "packet_size ({}) must be between {} and {} inclusive",
+            packet_size,
+            MIN_PACKET_SIZE,
+            MAX_PACKET_SIZE
+        ))
+    }
+}
+
+/// Validate `source_port`.
+pub fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
+    if source_port < 1024 {
+        Err(anyhow!("source_port ({}) must be >= 1024", source_port))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `tui_refresh_rate`.
+pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
+    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
+        Err(anyhow!(
+            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
+            tui_refresh_rate,
+            TUI_MIN_REFRESH_RATE_MS,
+            TUI_MAX_REFRESH_RATE_MS
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `report_cycles`.
+pub fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
     if report_cycles == 0 {
-        eprintln!(
+        Err(anyhow!(
             "report_cycles ({}) must be greater than zero",
             report_cycles
-        );
-        exit(-1);
+        ))
+    } else {
+        Ok(())
     }
 }
 
-/// Validate `tui_refresh_rate`
-pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) {
-    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
-        eprintln!(
-            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
-            tui_refresh_rate, TUI_MIN_REFRESH_RATE_MS, TUI_MAX_REFRESH_RATE_MS
-        );
-        exit(-1);
-    }
-}
-
-/// Validate `grace_duration`
-pub fn validate_grace_duration(grace_duration: Duration) {
-    if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
-        eprintln!(
-            "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
-            grace_duration, MIN_GRACE_DURATION_MS, MAX_GRACE_DURATION_MS
-        );
-        exit(-1);
-    }
-}
-
-/// Validate `packet_size`
-pub fn validate_packet_size(packet_size: u16) {
-    if !(MIN_PACKET_SIZE..=MAX_PACKET_SIZE).contains(&packet_size) {
-        eprintln!(
-            "packet_size ({}) must be between {} and {} inclusive",
-            packet_size, MIN_PACKET_SIZE, MAX_PACKET_SIZE
-        );
-        exit(-1);
-    }
-}
-
-/// Validate `source_port`
-pub fn validate_source_port(source_port: u16) {
-    if source_port < 1024 {
-        eprintln!("source_port ({}) must be >= 1024", source_port);
-        exit(-1);
-    }
-}
-
-/// Validate `min_round_duration` and `max_round_duration`
-pub fn validate_round_duration(min_round_duration: Duration, max_round_duration: Duration) {
-    if min_round_duration > max_round_duration {
-        eprintln!(
-            "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
-            max_round_duration, min_round_duration
-        );
-        exit(-1);
-    }
-}
-
-/// Validate `read_timeout`
-pub fn validate_read_timeout(read_timeout: Duration) {
-    if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
-        eprintln!(
-            "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
-            read_timeout, MIN_READ_TIMEOUT_MS, MAX_READ_TIMEOUT_MS
-        );
-        exit(-1);
-    }
-}
-
-/// Validate `max_inflight`
-pub fn validate_max_inflight(max_inflight: u8) {
-    if max_inflight == 0 {
-        eprintln!("max_inflight ({}) must be greater than zero", max_inflight);
-        exit(-1);
-    }
-}
-
-/// Validate `first_ttl` and `max_ttl`
-pub fn validate_ttl(first_ttl: u8, max_ttl: u8) {
-    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
-        eprintln!("first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}");
-        exit(-1);
-    }
-    if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
-        eprintln!("max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}");
-        exit(-1);
-    }
-    if first_ttl > max_ttl {
-        eprintln!("first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})");
-        exit(-1);
-    }
-}
-
-/// Validate `dns_resolve_method` and `dns_lookup_as_info`
-pub fn validate_dns(dns_resolve_method: DnsResolveMethod, dns_lookup_as_info: bool) {
+/// Validate `dns_resolve_method` and `dns_lookup_as_info`.
+pub fn validate_dns(
+    dns_resolve_method: DnsResolveMethod,
+    dns_lookup_as_info: bool,
+) -> anyhow::Result<()> {
     match dns_resolve_method {
-        DnsResolveMethod::System if dns_lookup_as_info => {
-            eprintln!("AS lookup not supported by resolver `system` (use '-r' to choose another resolver)");
-            exit(-1);
-        }
-        _ => {}
+        DnsResolveMethod::System if dns_lookup_as_info => Err(anyhow!(
+            "AS lookup not supported by resolver `system` (use '-r' to choose another resolver)"
+        )),
+        _ => Ok(()),
     }
 }
