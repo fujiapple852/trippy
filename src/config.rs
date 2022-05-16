@@ -94,100 +94,112 @@ pub struct Args {
     #[clap(required = true)]
     pub targets: Vec<String>,
 
+    /// Output mode
+    #[clap(arg_enum, short = 'm', long, default_value = "tui", display_order = 1)]
+    pub mode: Mode,
+
     /// Tracing protocol.
-    #[clap(arg_enum, short = 'p', long, default_value = "icmp")]
+    #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
     pub protocol: TraceProtocol,
 
-    /// The TTL to start from
-    #[clap(long, default_value_t = 1)]
-    pub first_ttl: u8,
+    /// The destination port (TCP only)
+    #[clap(long, short = 'P', default_value_t = 80, display_order = 3)]
+    pub port: u16,
 
-    /// The maximum number of hops
-    #[clap(short = 't', long, default_value_t = 64)]
-    pub max_ttl: u8,
+    /// The source port (TCP & UDP only)
+    #[clap(long, display_order = 4)]
+    pub source_port: Option<u16>,
+
+    /// The source address
+    #[clap(short = 'A', long, display_order = 5)]
+    pub source_address: Option<String>,
 
     /// The minimum duration of every round
-    #[clap(short = 'i', long, default_value = "1s")]
+    #[clap(short = 'i', long, default_value = "1s", display_order = 6)]
     pub min_round_duration: String,
 
     /// The maximum duration of every round
-    #[clap(short = 'I', long, default_value = "1s")]
+    #[clap(short = 'I', long, default_value = "1s", display_order = 7)]
     pub max_round_duration: String,
 
+    /// The initial sequence number
+    #[clap(long, default_value_t = 33000, display_order = 8)]
+    pub initial_sequence: u16,
+
     /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short = 'g', long, default_value = "100ms")]
+    #[clap(short = 'g', long, default_value = "100ms", display_order = 9)]
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 24)]
+    #[clap(short = 'U', long, default_value_t = 24, display_order = 10)]
     pub max_inflight: u8,
 
-    /// The initial sequence number
-    #[clap(long, default_value_t = 33000)]
-    pub initial_sequence: u16,
+    /// The TTL to start from
+    #[clap(long, default_value_t = 1, display_order = 11)]
+    pub first_ttl: u8,
 
-    /// The socket read timeout
-    #[clap(long, default_value = "10ms")]
-    pub read_timeout: String,
+    /// The maximum number of hops
+    #[clap(short = 't', long, default_value_t = 64, display_order = 12)]
+    pub max_ttl: u8,
 
     /// The size of IP packet to send (IP header + ICMP header + payload)
-    #[clap(long, default_value_t = 84)]
+    #[clap(long, default_value_t = 84, display_order = 13)]
     pub packet_size: u16,
 
     /// The repeating pattern in the payload of the ICMP packet
-    #[clap(long, default_value_t = 0)]
+    #[clap(long, default_value_t = 0, display_order = 14)]
     pub payload_pattern: u8,
 
-    /// The source address
-    #[clap(short = 'A', long)]
-    pub source_address: Option<String>,
-
-    /// The source port (TCP & UDP only)
-    #[clap(long)]
-    pub source_port: Option<u16>,
-
-    /// The destination port (TCP only)
-    #[clap(long, short = 'P', default_value_t = 80)]
-    pub port: u16,
-
-    /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s")]
-    pub dns_timeout: String,
+    /// The socket read timeout
+    #[clap(long, default_value = "10ms", display_order = 15)]
+    pub read_timeout: String,
 
     /// How to perform DNS queries.
-    #[clap(arg_enum, short = 'r', long, default_value = "system")]
+    #[clap(
+        arg_enum,
+        short = 'r',
+        long,
+        default_value = "system",
+        display_order = 16
+    )]
     pub dns_resolve_method: DnsResolveMethod,
 
+    /// The maximum time to wait to perform DNS queries.
+    #[clap(long, default_value = "5s", display_order = 17)]
+    pub dns_timeout: String,
+
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z')]
+    #[clap(long, short = 'z', display_order = 18)]
     pub dns_lookup_as_info: bool,
 
-    /// The maximum number of samples to record per hop.
-    #[clap(long, short = 's', default_value_t = 256)]
-    pub tui_max_samples: usize,
-
-    /// Preserve the screen on exit
-    #[clap(long)]
-    pub tui_preserve_screen: bool,
-
-    /// The TUI refresh rate
-    #[clap(long, default_value = "100ms")]
-    pub tui_refresh_rate: String,
-
     /// How to render addresses.
-    #[clap(arg_enum, short = 'a', long, default_value = "host")]
+    #[clap(
+        arg_enum,
+        short = 'a',
+        long,
+        default_value = "host",
+        display_order = 19
+    )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(long)]
+    #[clap(long, display_order = 20)]
     pub tui_max_addrs: Option<u8>,
 
-    /// Output mode
-    #[clap(arg_enum, short = 'm', long, default_value = "tui")]
-    pub mode: Mode,
+    /// The maximum number of samples to record per hop.
+    #[clap(long, short = 's', default_value_t = 256, display_order = 21)]
+    pub tui_max_samples: usize,
+
+    /// Preserve the screen on exit
+    #[clap(long, display_order = 22)]
+    pub tui_preserve_screen: bool,
+
+    /// The TUI refresh rate
+    #[clap(long, default_value = "100ms", display_order = 23)]
+    pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 24)]
     pub report_cycles: usize,
 }
 
