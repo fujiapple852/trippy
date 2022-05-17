@@ -1,7 +1,7 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
-    DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId, TypeOfService,
+    DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId, TypeOfService, Port
 };
 use crate::tracing::util::Required;
 use crate::tracing::{Probe, TracerProtocol};
@@ -103,6 +103,61 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 
 /// The maximum UDP payload size we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
+
+/// Whether to fix the src, dest or both ports for a trace.
+#[derive(Debug, Copy, Clone)]
+pub enum PortDirection {
+    /// Trace without any source or destination port (i.e. for ICMP tracing).
+    None,
+    /// Trace from a fixed source port to a variable destination port (i.e. 5000 -> *).
+    ///
+    /// This is the default direction for UDP tracing.
+    FixedSrc(Port),
+    /// Trace from a variable source port to a fixed destination port (i.e. * -> 80).
+    ///
+    /// This is the default direction for TCP tracing.
+    FixedDest(Port),
+    /// Trace from a fixed source port to a fixed destination port (i.e. 5000 -> 80).
+    ///
+    /// When both ports are fixed another element of the IP header is required to vary per probe such that probes can
+    /// be identified.  Typically this is only used for UDP, whereby the checksum is manipulated by adjusting the
+    /// payload and therefore used as the identifier.
+    ///
+    /// Note that this case is not currently implemented.
+    FixedBoth(Port, Port),
+}
+
+impl PortDirection {
+    #[must_use]
+    pub fn new_fixed_src(src: u16) -> Self {
+        Self::FixedSrc(Port(src))
+    }
+
+    #[must_use]
+    pub fn new_fixed_dest(dest: u16) -> Self {
+        Self::FixedDest(Port(dest))
+    }
+
+    #[must_use]
+    pub fn new_fixed_both(src: u16, dest: u16) -> Self {
+        Self::FixedBoth(Port(src), Port(dest))
+    }
+
+    #[must_use]
+    pub fn src(&self) -> Option<Port> {
+        match *self {
+            Self::FixedSrc(src) | Self::FixedBoth(src, _) => Some(src),
+            _ => None,
+        }
+    }
+    #[must_use]
+    pub fn dest(&self) -> Option<Port> {
+        match *self {
+            Self::FixedDest(dest) | Self::FixedBoth(_, dest) => Some(dest),
+            _ => None,
+        }
+    }
+}
 
 /// Tracer network channel configuration.
 #[derive(Debug, Clone)]
