@@ -150,8 +150,12 @@ pub struct Args {
     #[clap(long, default_value_t = 0, display_order = 14)]
     pub payload_pattern: u8,
 
+    /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only)
+    #[clap(short = 'Q', long, default_value_t = 0, display_order = 15)]
+    pub tos: u8,
+
     /// The socket read timeout
-    #[clap(long, default_value = "10ms", display_order = 15)]
+    #[clap(long, default_value = "10ms", display_order = 16)]
     pub read_timeout: String,
 
     /// How to perform DNS queries.
@@ -160,16 +164,16 @@ pub struct Args {
         short = 'r',
         long,
         default_value = "system",
-        display_order = 16
+        display_order = 17
     )]
     pub dns_resolve_method: DnsResolveMethod,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 17)]
+    #[clap(long, default_value = "5s", display_order = 18)]
     pub dns_timeout: String,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 18)]
+    #[clap(long, short = 'z', display_order = 19)]
     pub dns_lookup_as_info: bool,
 
     /// How to render addresses.
@@ -178,28 +182,28 @@ pub struct Args {
         short = 'a',
         long,
         default_value = "host",
-        display_order = 19
+        display_order = 20
     )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 20)]
+    #[clap(short = 'M', long, display_order = 21)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 21)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 22)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 22)]
+    #[clap(long, display_order = 23)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 23)]
+    #[clap(long, default_value = "100ms", display_order = 24)]
     pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 24)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 25)]
     pub report_cycles: usize,
 }
 
@@ -214,6 +218,7 @@ pub struct TrippyConfig {
     pub grace_duration: Duration,
     pub max_inflight: u8,
     pub initial_sequence: u16,
+    pub tos: u8,
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
@@ -286,6 +291,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             read_timeout,
             packet_size: args.packet_size,
             payload_pattern: args.payload_pattern,
+            tos: args.tos,
             source_addr: source_address,
             source_port,
             target_port: args.target_port,

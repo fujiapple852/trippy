@@ -36,6 +36,10 @@ pub struct PacketSize(pub u16);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct PayloadPattern(pub u8);
 
+/// `TypeOfService` (aka `DSCP` & `ECN`) newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
+pub struct TypeOfService(pub u8);
+
 /// Source port newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct SourcePort(pub u16);

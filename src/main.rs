@@ -143,6 +143,7 @@ fn make_channel_config(
         trace_identifier,
         args.packet_size,
         args.payload_pattern,
+        args.tos,
         args.source_port,
         args.target_port,
         args.read_timeout,
