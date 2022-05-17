@@ -1,6 +1,8 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::types::{DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId};
+use crate::tracing::types::{
+    DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId, TypeOfService,
+};
 use crate::tracing::util::Required;
 use crate::tracing::{Probe, TracerProtocol};
 use arrayvec::ArrayVec;
@@ -110,6 +112,7 @@ pub struct TracerChannelConfig {
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    tos: TypeOfService,
     source_port: SourcePort,
     destination_port: DestinationPort,
     icmp_read_timeout: Duration,
@@ -126,6 +129,7 @@ impl TracerChannelConfig {
         identifier: u16,
         packet_size: u16,
         payload_pattern: u8,
+        tos: u8,
         source_port: u16,
         destination_port: u16,
         icmp_read_timeout: Duration,
@@ -138,6 +142,7 @@ impl TracerChannelConfig {
             identifier: TraceId(identifier),
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
+            tos: TypeOfService(tos),
             source_port: SourcePort(source_port),
             destination_port: DestinationPort(destination_port),
             icmp_read_timeout,
@@ -154,6 +159,7 @@ pub struct TracerChannel {
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    tos: TypeOfService,
     source_port: SourcePort,
     destination_port: DestinationPort,
     icmp_read_timeout: Duration,
@@ -180,6 +186,7 @@ impl TracerChannel {
             identifier: config.identifier,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
+            tos: config.tos,
             source_port: config.source_port,
             destination_port: config.destination_port,
             icmp_read_timeout: config.icmp_read_timeout,
@@ -255,6 +262,7 @@ impl TracerChannel {
             }
         };
         socket.set_ttl(u32::from(probe.ttl.0))?;
+        socket.set_tos(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(self.dest_addr, probe.sequence.0);
         let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
@@ -285,6 +293,7 @@ impl TracerChannel {
             }
         };
         socket.set_ttl(u32::from(probe.ttl.0))?;
+        socket.set_tos(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(self.dest_addr, self.destination_port.0);
         match socket.connect(&SockAddr::from(remote_addr)) {
             Ok(_) => {}
