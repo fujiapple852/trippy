@@ -18,6 +18,8 @@ pub enum TracerError {
     Required(#[from] RequiredError),
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
+    #[error("insufficient buffer capacity")]
+    InsufficientCapacity,
     #[error("address not available")]
     AddressNotAvailable,
     #[error("invalid source IP address: {0}")]

@@ -114,7 +114,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                     let mut probe = if st.round_has_capacity() {
                         st.next_probe()
                     } else {
-                        return Err(TracerError::AddressNotAvailable);
+                        return Err(TracerError::InsufficientCapacity);
                     };
                     while let Err(err) = network.send_probe(probe) {
                         match err {
@@ -122,7 +122,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                                 if st.round_has_capacity() {
                                     probe = st.reissue_probe();
                                 } else {
-                                    return Err(TracerError::AddressNotAvailable);
+                                    return Err(TracerError::InsufficientCapacity);
                                 }
                             }
                             other => return Err(other),
