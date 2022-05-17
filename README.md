@@ -130,6 +130,30 @@ Trace with a custom first and maximum `time-to-live`:
 trip www.bitwizard.nl --first-ttl 2 --max-ttl 10
 ```
 
+Use custom destination port `443` for `tcp` tracing:
+
+```shell
+trip www.bitwizard.nl -p tcp -P 443
+```
+
+Use custom source port `5000` for `udp` tracing:
+
+```shell
+trip www.bitwizard.nl -p udp -S 5000
+```
+
+Trace with a custom source address:
+
+```shell
+trip www.bitwizard.nl -p tcp -A 127.0.0.1
+```
+
+Trace with a source address determined by the IPv4 address for interface `en0`:
+
+```shell
+trip www.bitwizard.nl -p tcp -I en0
+```
+
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
