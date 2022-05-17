@@ -9,9 +9,40 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added `-P` (`--target-port`) flag to allow specifying the source
+  port ([1](https://github.com/fujiapple852/trippy/commit/5773fe5e5323543612be6bd4606db5aa8347d71e),
+  [2](https://github.com/fujiapple852/trippy/commit/9f03047dd231b10b13911fcc7af60afbb8b21473))
+- Added ability to tracing with either a fixed source or a fixed destination port for both `udp` and `tcp`
+  tracing ([#43](https://github.com/fujiapple852/trippy/issues/43))
+- Display source and destination ports in Tui ([#156](https://github.com/fujiapple852/trippy/issues/156))
+- Added the `-A` (`--source-address`) flag to allow specifying the source
+  address ([#162](https://github.com/fujiapple852/trippy/issues/162))
+- Added the `-I` (`--interface`) flag to allow specifying the source
+  interface ([#142](https://github.com/fujiapple852/trippy/issues/42))
+- Added the `-Q` (`--tos`) flag to allow specifying the `TOS` (`DSCP`+`ECN`) `IPv4` header
+  value ([#38](https://github.com/fujiapple852/trippy/issues/38))
+
 ### Changed
 
+- Changed `tcp` tracing to use a standard (non-raw) socket to be able to detect the
+  target ([#134](https://github.com/fujiapple852/trippy/issues/134))
+- Changed `udp` tracing to use a standard (non-raw) socket ([#155](https://github.com/fujiapple852/trippy/issues/155))
+- Renamed the `--tui-max-addresses-per-hop` flag
+  as `tui-max-addrs` ([#165](https://github.com/fujiapple852/trippy/issues/165))
+- Reorder the cli flags in the help output ([#163](https://github.com/fujiapple852/trippy/issues/163))
+- Change short alias for flag `max_round_duration` from `-I`
+  to `-T` ([1](https://github.com/fujiapple852/trippy/commit/15978b0909139bb2b38baa4c6f6ca969c818fc75))
+- Added short cli flags for `source-port` (`-S`), `first-ttl` (`-f`)
+  and `tui-max-addrs` (`-M`) ([1](https://github.com/fujiapple852/trippy/commit/6a6a490174582c8500972b89407ba8d694c4c6fa))
+
 ### Fixed
+
+- Checksums for `udp` packets were not being set (obsoleted
+  by [#155](https://github.com/fujiapple852/trippy/issues/155)) ([#159](https://github.com/fujiapple852/trippy/issues/159))
+- `TimeExceeded` responses _from_ the target address were not being
+  handled ([1](https://github.com/fujiapple852/trippy/commit/3afa41326a33287a3ad9c17713dd7426ca86b481))
+- The largest time-to-live for a given round was being calculated incorrectly in some
+  cases ([1](https://github.com/fujiapple852/trippy/commit/688a8d00d84a816449cfee48b2d6f6dd90946511))
 
 ## [0.3.1] - 2022-05-09
 
@@ -20,7 +51,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Local Ipv4 discovery fails on some platforms ([#133](https://github.com/fujiapple852/trippy/issues/133),
   [#142](https://github.com/fujiapple852/trippy/issues/142))
 - DNS resolution not filtering for `IPv4` addresses ([#148](https://github.com/fujiapple852/trippy/issues/148))
-  - Note: see [#35](https://github.com/fujiapple852/trippy/issues/35) for the status of `IPv6` support
+    - Note: see [#35](https://github.com/fujiapple852/trippy/issues/35) for the status of `IPv6` support
 
 ## [0.3.0] - 2022-05-08
 
