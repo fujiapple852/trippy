@@ -1,7 +1,6 @@
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
-    DestinationPort, MaxInflight, MaxRounds, PacketSize, PayloadPattern, Sequence, SourcePort,
-    TimeToLive, TraceId,
+    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Sequence, TimeToLive, TraceId,
 };
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -53,8 +52,6 @@ pub struct TracerConfig {
     pub max_round_duration: Duration,
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
-    pub source_port: SourcePort,
-    pub destination_port: DestinationPort,
 }
 
 impl TracerConfig {
@@ -74,8 +71,6 @@ impl TracerConfig {
         max_round_duration: Duration,
         packet_size: u16,
         payload_pattern: u8,
-        source_port: u16,
-        destination_port: u16,
     ) -> TraceResult<Self> {
         if first_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
@@ -110,8 +105,6 @@ impl TracerConfig {
             max_round_duration,
             packet_size: PacketSize::from(packet_size),
             payload_pattern: PayloadPattern::from(payload_pattern),
-            source_port: SourcePort::from(source_port),
-            destination_port: DestinationPort::from(destination_port),
         })
     }
 }

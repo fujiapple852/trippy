@@ -23,7 +23,9 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use trippy::tracing::{TracerChannel, TracerChannelConfig, TracerConfig, TracerProtocol};
+use trippy::tracing::{
+    PortDirection, TracerChannel, TracerChannelConfig, TracerConfig, TracerProtocol,
+};
 
 mod backend;
 mod caps;
@@ -125,8 +127,6 @@ fn make_tracer_config(
         args.max_round_duration,
         args.packet_size,
         args.payload_pattern,
-        args.source_port,
-        args.target_port,
     )?)
 }
 
@@ -145,8 +145,7 @@ fn make_channel_config(
         args.packet_size,
         args.payload_pattern,
         args.tos,
-        args.source_port,
-        args.target_port,
+        args.port_direction,
         args.read_timeout,
         args.min_round_duration,
     )
@@ -163,10 +162,9 @@ fn make_trace_info(
     TraceInfo::new(
         trace_data,
         source_addr,
-        args.source_port,
         target,
         target_addr,
-        args.target_port,
+        args.port_direction,
         args.protocol,
         args.first_ttl,
         args.max_ttl,
@@ -192,10 +190,9 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
 pub struct TraceInfo {
     pub data: Arc<RwLock<Trace>>,
     pub source_addr: IpAddr,
-    pub source_port: u16,
     pub target_hostname: String,
     pub target_addr: IpAddr,
-    pub target_port: u16,
+    pub port_direction: PortDirection,
     pub protocol: TracerProtocol,
     pub first_ttl: u8,
     pub max_ttl: u8,
@@ -209,10 +206,9 @@ impl TraceInfo {
     pub fn new(
         data: Arc<RwLock<Trace>>,
         source_addr: IpAddr,
-        source_port: u16,
         target_hostname: String,
         target_addr: IpAddr,
-        target_port: u16,
+        port_direction: PortDirection,
         protocol: TracerProtocol,
         first_ttl: u8,
         max_ttl: u8,
@@ -222,10 +218,9 @@ impl TraceInfo {
         Self {
             data,
             source_addr,
-            source_port,
             target_hostname,
             target_addr,
-            target_port,
+            port_direction,
             protocol,
             first_ttl,
             max_ttl,

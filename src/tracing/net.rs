@@ -1,8 +1,6 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::types::{
-    DestinationPort, PacketSize, PayloadPattern, SourcePort, TraceId, TypeOfService, Port
-};
+use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{Probe, TracerProtocol};
 use arrayvec::ArrayVec;
@@ -104,6 +102,9 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 /// The maximum UDP payload size we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
 
+/// The port used for local address discovery if not dest port is available.
+const DISCOVERY_PORT: Port = Port(80);
+
 /// Whether to fix the src, dest or both ports for a trace.
 #[derive(Debug, Copy, Clone)]
 pub enum PortDirection {
@@ -170,8 +171,7 @@ pub struct TracerChannelConfig {
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
-    source_port: SourcePort,
-    destination_port: DestinationPort,
+    port_direction: PortDirection,
     icmp_read_timeout: Duration,
     tcp_connect_timeout: Duration,
 }
@@ -188,8 +188,7 @@ impl TracerChannelConfig {
         packet_size: u16,
         payload_pattern: u8,
         tos: u8,
-        source_port: u16,
-        destination_port: u16,
+        port_direction: PortDirection,
         icmp_read_timeout: Duration,
         tcp_connect_timeout: Duration,
     ) -> Self {
@@ -202,8 +201,7 @@ impl TracerChannelConfig {
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
             tos: TypeOfService(tos),
-            source_port: SourcePort(source_port),
-            destination_port: DestinationPort(destination_port),
+            port_direction,
             icmp_read_timeout,
             tcp_connect_timeout,
         }
@@ -219,8 +217,7 @@ pub struct TracerChannel {
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
-    source_port: SourcePort,
-    destination_port: DestinationPort,
+    port_direction: PortDirection,
     icmp_read_timeout: Duration,
     tcp_connect_timeout: Duration,
     icmp_tx: TransportSender,
@@ -243,8 +240,7 @@ impl TracerChannel {
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
             tos: config.tos,
-            source_port: config.source_port,
-            destination_port: config.destination_port,
+            port_direction: config.port_direction,
             icmp_read_timeout: config.icmp_read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_tx,
@@ -263,7 +259,10 @@ impl TracerChannel {
         match (config.source_addr, config.interface.as_ref()) {
             (Some(addr), None) => validate_local_ipv4_addr(addr),
             (None, Some(interface)) => lookup_interface_addr(interface),
-            (None, None) => discover_ipv4_addr(config.target_addr, config.destination_port.0),
+            (None, None) => discover_ipv4_addr(
+                config.target_addr,
+                config.port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
+            ),
             (Some(_), Some(_)) => unreachable!(),
         }
     }
@@ -314,9 +313,14 @@ impl TracerChannel {
     }
 
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let (src_port, dest_port) = match self.port_direction {
+            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
+            PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+        };
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
-        let local_addr = SocketAddr::new(self.src_addr, self.source_port.0);
+        let local_addr = SocketAddr::new(self.src_addr, src_port);
         match socket.bind(&SockAddr::from(local_addr)) {
             Ok(_) => {}
             Err(err) => {
@@ -330,7 +334,7 @@ impl TracerChannel {
         };
         socket.set_ttl(u32::from(probe.ttl.0))?;
         socket.set_tos(u32::from(self.tos.0))?;
-        let remote_addr = SocketAddr::new(self.dest_addr, probe.sequence.0);
+        let remote_addr = SocketAddr::new(self.dest_addr, dest_port);
         let packet_size = usize::from(self.packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
@@ -347,9 +351,15 @@ impl TracerChannel {
     }
 
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+        let (src_port, dest_port) = match self.port_direction {
+            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
+            PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+        };
         let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
         socket.set_nonblocking(true)?;
-        let local_addr = SocketAddr::new(self.src_addr, probe.sequence.0);
+        socket.set_reuse_port(true)?;
+        let local_addr = SocketAddr::new(self.src_addr, src_port);
         match socket.bind(&SockAddr::from(local_addr)) {
             Ok(_) => {}
             Err(err) => {
@@ -363,7 +373,7 @@ impl TracerChannel {
         };
         socket.set_ttl(u32::from(probe.ttl.0))?;
         socket.set_tos(u32::from(self.tos.0))?;
-        let remote_addr = SocketAddr::new(self.dest_addr, self.destination_port.0);
+        let remote_addr = SocketAddr::new(self.dest_addr, dest_port);
         match socket.connect(&SockAddr::from(remote_addr)) {
             Ok(_) => {}
             Err(err) => {
@@ -385,7 +395,12 @@ impl TracerChannel {
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         match icmp_packet_iter(&mut self.icmp_rx).next_with_timeout(self.icmp_read_timeout)? {
             None => Ok(None),
-            Some((icmp, ip)) => Ok(extract_probe_resp(self.protocol, &icmp, ip)?),
+            Some((icmp, ip)) => Ok(extract_probe_resp(
+                self.protocol,
+                self.port_direction,
+                &icmp,
+                ip,
+            )?),
         }
     }
 
@@ -445,8 +460,6 @@ impl TcpProbe {
 
 /// Discover the local `IpAddr::V4` that will be used for the target `IpAddr`.
 ///
-/// This is needed so we can can compute checksums for outgoing `TCP` packets.
-///
 /// Note that no packets are transmitted by this method.
 fn discover_ipv4_addr(target: IpAddr, port: u16) -> TraceResult<IpAddr> {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
@@ -490,6 +503,7 @@ fn make_icmp_channel() -> TraceResult<(TransportSender, TransportReceiver)> {
 /// Extract a `ProbeResponse` from an ICMP packet.
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    direction: PortDirection,
     icmp: &IcmpPacket<'_>,
     ip: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -497,14 +511,14 @@ fn extract_probe_resp(
     Ok(match icmp.get_icmp_type() {
         IcmpTypes::TimeExceeded => {
             let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-            let (id, seq) = extract_time_exceeded(&packet, protocol)?;
+            let (id, seq) = extract_time_exceeded(&packet, protocol, direction)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                 recv, ip, id, seq,
             )))
         }
         IcmpTypes::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-            let (id, seq) = extract_dest_unreachable(&packet, protocol)?;
+            let (id, seq) = extract_dest_unreachable(&packet, protocol, direction)?;
             Some(ProbeResponse::DestinationUnreachable(
                 ProbeResponseData::new(recv, ip, id, seq),
             ))
@@ -528,6 +542,7 @@ fn extract_probe_resp(
 fn extract_time_exceeded(
     packet: &TimeExceededPacket<'_>,
     protocol: TracerProtocol,
+    direction: PortDirection,
 ) -> TraceResult<(u16, u16)> {
     Ok(match protocol {
         TracerProtocol::Icmp => {
@@ -538,12 +553,20 @@ fn extract_time_exceeded(
         }
         TracerProtocol::Udp => {
             let packet = TimeExceededPacket::new(packet.packet()).req()?;
-            let sequence = extract_udp_packet(packet.payload())?;
+            let (src, dest) = extract_udp_packet(packet.payload())?;
+            let sequence = match direction {
+                PortDirection::FixedDest(_) => src,
+                _ => dest,
+            };
             (0, sequence)
         }
         TracerProtocol::Tcp => {
             let packet = TimeExceededPacket::new(packet.packet()).req()?;
-            let sequence = extract_tcp_packet(packet.payload())?;
+            let (src, dest) = extract_tcp_packet(packet.payload())?;
+            let sequence = match direction {
+                PortDirection::FixedSrc(_) => dest,
+                _ => src,
+            };
             (0, sequence)
         }
     })
@@ -553,6 +576,7 @@ fn extract_time_exceeded(
 fn extract_dest_unreachable(
     packet: &DestinationUnreachablePacket<'_>,
     protocol: TracerProtocol,
+    direction: PortDirection,
 ) -> TraceResult<(u16, u16)> {
     Ok(match protocol {
         TracerProtocol::Icmp => {
@@ -562,11 +586,19 @@ fn extract_dest_unreachable(
             (identifier, sequence)
         }
         TracerProtocol::Udp => {
-            let sequence = extract_udp_packet(packet.payload())?;
+            let (src, dest) = extract_udp_packet(packet.payload())?;
+            let sequence = match direction {
+                PortDirection::FixedDest(_) => src,
+                _ => dest,
+            };
             (0, sequence)
         }
         TracerProtocol::Tcp => {
-            let sequence = extract_tcp_packet(packet.payload())?;
+            let (src, dest) = extract_tcp_packet(packet.payload())?;
+            let sequence = match direction {
+                PortDirection::FixedSrc(_) => dest,
+                _ => src,
+            };
             (0, sequence)
         }
     })
@@ -581,16 +613,16 @@ fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
     Ok(nested_echo)
 }
 
-/// Get the original `UdpPacket` packet embedded in the payload.
-fn extract_udp_packet(payload: &[u8]) -> TraceResult<u16> {
+/// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
+fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
     let ip4 = Ipv4Packet::new(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_udp = &payload[header_len..];
     let nested = UdpPacket::new(nested_udp).req()?;
-    Ok(nested.get_destination())
+    Ok((nested.get_source(), nested.get_destination()))
 }
 
-/// Get the original `TcpPacket` packet embedded in the payload.
+/// Get the src and dest ports from the original `TcpPacket` packet embedded in the payload.
 ///
 /// Unlike the embedded `ICMP` and `UDP` packets, which have a minimum header size of 8 bytes, the `TCP` packet header
 /// is a minimum of 20 bytes.
@@ -600,16 +632,18 @@ fn extract_udp_packet(payload: &[u8]) -> TraceResult<u16> {
 ///
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
 /// header.
-fn extract_tcp_packet(payload: &[u8]) -> TraceResult<u16> {
+fn extract_tcp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
     let ip4 = Ipv4Packet::new(payload).unwrap();
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_tcp = &payload[header_len..];
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
-        Ok(TcpPacket::new(&buf).req()?.get_source())
+        let tcp_packet = TcpPacket::new(&buf).req()?;
+        Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     } else {
-        Ok(TcpPacket::new(nested_tcp).req()?.get_source())
+        let tcp_packet = TcpPacket::new(nested_tcp).req()?;
+        Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     }
 }
 

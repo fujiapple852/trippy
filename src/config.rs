@@ -3,7 +3,7 @@ use clap::{ArgEnum, Parser};
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::tracing::TracerProtocol;
+use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// The maximum number of hops we allow.
 ///
@@ -102,11 +102,11 @@ pub struct Args {
     #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
     pub protocol: TraceProtocol,
 
-    /// The target port (TCP only)
-    #[clap(long, short = 'P', default_value_t = 80, display_order = 3)]
-    pub target_port: u16,
+    /// The target port (TCP & UDP only) [default: 80]
+    #[clap(long, short = 'P', display_order = 3)]
+    pub target_port: Option<u16>,
 
-    /// The source port (UDP only) [default: auto]
+    /// The source port (TCP & UDP only) [default: auto]
     #[clap(long, short = 'S', display_order = 4)]
     pub source_port: Option<u16>,
 
@@ -228,8 +228,7 @@ pub struct TrippyConfig {
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
     pub interface: Option<String>,
-    pub source_port: u16,
-    pub target_port: u16,
+    pub port_direction: PortDirection,
     pub dns_timeout: Duration,
     pub dns_resolve_method: DnsResolveMethod,
     pub dns_lookup_as_info: bool,
@@ -265,7 +264,22 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let source_port = args.source_port.unwrap_or_else(|| pid.max(1024));
+        let port_direction = match (args.protocol, args.source_port, args.target_port) {
+            (TraceProtocol::Icmp, _, _) => PortDirection::None,
+            (TraceProtocol::Udp, None, None) => PortDirection::new_fixed_src(pid.max(1024)),
+            (TraceProtocol::Udp, Some(src), None) => {
+                validate_source_port(src)?;
+                PortDirection::new_fixed_src(src)
+            }
+            (TraceProtocol::Tcp, None, None) => PortDirection::new_fixed_dest(80),
+            (TraceProtocol::Tcp, Some(src), None) => PortDirection::new_fixed_src(src),
+            (_, None, Some(dest)) => PortDirection::new_fixed_dest(dest),
+            (_, Some(_), Some(_)) => {
+                return Err(anyhow!(
+                    "only one of source-port and target-port may be fixed"
+                ));
+            }
+        };
         let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
         let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
         let max_rounds = match args.mode {
@@ -279,7 +293,6 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
         validate_packet_size(args.packet_size)?;
-        validate_source_port(source_port)?;
         validate_tui_refresh_rate(tui_refresh_rate)?;
         validate_report_cycles(args.report_cycles)?;
         validate_dns(args.dns_resolve_method, args.dns_lookup_as_info)?;
@@ -299,8 +312,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tos: args.tos,
             source_addr: source_address,
             interface: args.interface,
-            source_port,
-            target_port: args.target_port,
+            port_direction,
             dns_timeout,
             dns_resolve_method: args.dns_resolve_method,
             dns_lookup_as_info: args.dns_lookup_as_info,
