@@ -1,6 +1,6 @@
 use crate::tracing::util::RequiredError;
 use std::io;
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use thiserror::Error;
 
 pub type TraceResult<T> = Result<T, TracerError>;
@@ -20,8 +20,8 @@ pub enum TracerError {
     IoError(#[from] io::Error),
     #[error("insufficient buffer capacity")]
     InsufficientCapacity,
-    #[error("address not available")]
-    AddressNotAvailable,
+    #[error("address not available: {0}")]
+    AddressNotAvailable(SocketAddr),
     #[error("invalid source IP address: {0}")]
     InvalidSourceAddr(IpAddr),
 }

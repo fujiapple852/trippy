@@ -321,7 +321,9 @@ impl TracerChannel {
             Ok(_) => {}
             Err(err) => {
                 return match err.kind() {
-                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => Err(AddressNotAvailable),
+                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                        Err(AddressNotAvailable(local_addr))
+                    }
                     _ => Err(TracerError::from(err)),
                 };
             }
@@ -352,7 +354,9 @@ impl TracerChannel {
             Ok(_) => {}
             Err(err) => {
                 return match err.kind() {
-                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => Err(AddressNotAvailable),
+                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                        Err(AddressNotAvailable(local_addr))
+                    }
                     _ => Err(TracerError::from(err)),
                 };
             }
