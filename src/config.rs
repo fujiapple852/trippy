@@ -119,7 +119,7 @@ pub struct Args {
     pub min_round_duration: String,
 
     /// The maximum duration of every round
-    #[clap(short = 'I', long, default_value = "1s", display_order = 7)]
+    #[clap(short = 'T', long, default_value = "1s", display_order = 7)]
     pub max_round_duration: String,
 
     /// The initial sequence number
