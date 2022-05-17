@@ -111,51 +111,55 @@ pub struct Args {
     pub source_port: Option<u16>,
 
     /// The source IP address [default: auto]
-    #[clap(short = 'A', long, display_order = 5)]
+    #[clap(short = 'A', long, display_order = 5, conflicts_with = "interface")]
     pub source_address: Option<String>,
 
+    /// The network interface [default: auto]
+    #[clap(short = 'I', long, display_order = 6)]
+    pub interface: Option<String>,
+
     /// The minimum duration of every round
-    #[clap(short = 'i', long, default_value = "1s", display_order = 6)]
+    #[clap(short = 'i', long, default_value = "1s", display_order = 7)]
     pub min_round_duration: String,
 
     /// The maximum duration of every round
-    #[clap(short = 'T', long, default_value = "1s", display_order = 7)]
+    #[clap(short = 'T', long, default_value = "1s", display_order = 8)]
     pub max_round_duration: String,
 
     /// The initial sequence number
-    #[clap(long, default_value_t = 33000, display_order = 8)]
+    #[clap(long, default_value_t = 33000, display_order = 9)]
     pub initial_sequence: u16,
 
     /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short = 'g', long, default_value = "100ms", display_order = 9)]
+    #[clap(short = 'g', long, default_value = "100ms", display_order = 10)]
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 24, display_order = 10)]
+    #[clap(short = 'U', long, default_value_t = 24, display_order = 11)]
     pub max_inflight: u8,
 
     /// The TTL to start from
-    #[clap(short = 'f', long, default_value_t = 1, display_order = 11)]
+    #[clap(short = 'f', long, default_value_t = 1, display_order = 12)]
     pub first_ttl: u8,
 
     /// The maximum number of TTL hops
-    #[clap(short = 't', long, default_value_t = 64, display_order = 12)]
+    #[clap(short = 't', long, default_value_t = 64, display_order = 13)]
     pub max_ttl: u8,
 
     /// The size of IP packet to send (IP header + ICMP header + payload)
-    #[clap(long, default_value_t = 84, display_order = 13)]
+    #[clap(long, default_value_t = 84, display_order = 14)]
     pub packet_size: u16,
 
     /// The repeating pattern in the payload of the ICMP packet
-    #[clap(long, default_value_t = 0, display_order = 14)]
+    #[clap(long, default_value_t = 0, display_order = 15)]
     pub payload_pattern: u8,
 
     /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only)
-    #[clap(short = 'Q', long, default_value_t = 0, display_order = 15)]
+    #[clap(short = 'Q', long, default_value_t = 0, display_order = 16)]
     pub tos: u8,
 
     /// The socket read timeout
-    #[clap(long, default_value = "10ms", display_order = 16)]
+    #[clap(long, default_value = "10ms", display_order = 17)]
     pub read_timeout: String,
 
     /// How to perform DNS queries.
@@ -164,16 +168,16 @@ pub struct Args {
         short = 'r',
         long,
         default_value = "system",
-        display_order = 17
+        display_order = 18
     )]
     pub dns_resolve_method: DnsResolveMethod,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 18)]
+    #[clap(long, default_value = "5s", display_order = 19)]
     pub dns_timeout: String,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 19)]
+    #[clap(long, short = 'z', display_order = 20)]
     pub dns_lookup_as_info: bool,
 
     /// How to render addresses.
@@ -182,28 +186,28 @@ pub struct Args {
         short = 'a',
         long,
         default_value = "host",
-        display_order = 20
+        display_order = 21
     )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 21)]
+    #[clap(short = 'M', long, display_order = 22)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 22)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 23)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 23)]
+    #[clap(long, display_order = 24)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 24)]
+    #[clap(long, default_value = "100ms", display_order = 25)]
     pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 25)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 26)]
     pub report_cycles: usize,
 }
 
@@ -223,6 +227,7 @@ pub struct TrippyConfig {
     pub packet_size: u16,
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
+    pub interface: Option<String>,
     pub source_port: u16,
     pub target_port: u16,
     pub dns_timeout: Duration,
@@ -293,6 +298,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             payload_pattern: args.payload_pattern,
             tos: args.tos,
             source_addr: source_address,
+            interface: args.interface,
             source_port,
             target_port: args.target_port,
             dns_timeout,
