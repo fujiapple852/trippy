@@ -8,6 +8,7 @@ use crate::tracing::{Probe, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
+use nix::sys::socket::{AddressFamily, SockaddrLike};
 use nix::sys::time::{TimeVal, TimeValLike};
 use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
@@ -26,7 +27,7 @@ use pnet::transport::{
 use pnet::util;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::ErrorKind;
-use std::net::{IpAddr, Shutdown, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
@@ -104,10 +105,11 @@ const MAX_UDP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size();
 
 /// Tracer network channel configuration.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct TracerChannelConfig {
     protocol: TracerProtocol,
     source_addr: Option<IpAddr>,
+    interface: Option<String>,
     target_addr: IpAddr,
     identifier: TraceId,
     packet_size: PacketSize,
@@ -125,6 +127,7 @@ impl TracerChannelConfig {
     pub fn new(
         protocol: TracerProtocol,
         source_addr: Option<IpAddr>,
+        interface: Option<String>,
         target_addr: IpAddr,
         identifier: u16,
         packet_size: u16,
@@ -138,6 +141,7 @@ impl TracerChannelConfig {
         Self {
             protocol,
             source_addr,
+            interface,
             target_addr,
             identifier: TraceId(identifier),
             packet_size: PacketSize(packet_size),
@@ -174,10 +178,7 @@ impl TracerChannel {
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
     pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
-        let src_addr = match config.source_addr {
-            None => discover_ipv4_addr(config.target_addr, config.destination_port.0),
-            Some(addr) => validate_local_ipv4_addr(addr),
-        }?;
+        let src_addr = Self::make_src_addr(config)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel()?;
         Ok(Self {
             protocol: config.protocol,
@@ -201,6 +202,15 @@ impl TracerChannel {
     #[must_use]
     pub fn src_addr(&self) -> IpAddr {
         self.src_addr
+    }
+
+    fn make_src_addr(config: &TracerChannelConfig) -> TraceResult<IpAddr> {
+        match (config.source_addr, config.interface.as_ref()) {
+            (Some(addr), None) => validate_local_ipv4_addr(addr),
+            (None, Some(interface)) => lookup_interface_addr(interface),
+            (None, None) => discover_ipv4_addr(config.target_addr, config.destination_port.0),
+            (Some(_), Some(_)) => unreachable!(),
+        }
     }
 }
 
@@ -393,6 +403,22 @@ fn validate_local_ipv4_addr(source_addr: IpAddr) -> TraceResult<IpAddr> {
         Ok(_) => Ok(source_addr),
         Err(_) => Err(InvalidSourceAddr(addr.ip())),
     }
+}
+
+/// Lookup the IPv4 address for a named interface.
+fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
+    nix::ifaddrs::getifaddrs()
+        .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
+        .into_iter()
+        .find_map(|ia| {
+            ia.address.and_then(|addr| match addr.family() {
+                Some(AddressFamily::Inet) if ia.interface_name == name => addr
+                    .as_sockaddr_in()
+                    .map(|sock_addr| IpAddr::V4(Ipv4Addr::from(sock_addr.ip()))),
+                _ => None,
+            })
+        })
+        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
 }
 
 /// Create the communication channel needed for sending and receiving ICMP packets.

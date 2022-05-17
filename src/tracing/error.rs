@@ -10,8 +10,8 @@ pub type TraceResult<T> = Result<T, TracerError>;
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
-    #[error("unknown default interface")]
-    UnknownDefaultInterface,
+    #[error("unknown interface: {0}")]
+    UnknownInterface(String),
     #[error("invalid config: {0}")]
     BadConfig(String),
     #[error("missing required field: {0}")]
