@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
-use trippy::tracing::TracerProtocol;
+use trippy::tracing::PortDirection;
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
 use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
@@ -490,62 +490,36 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
 
 /// Render the source address of the trace.
 fn render_source(app: &mut TuiApp) -> String {
-    let source = match app.tracer_config().protocol {
-        TracerProtocol::Icmp => {
-            format!(
-                "{} ({})",
-                app.resolver.reverse_lookup(app.tracer_config().source_addr),
-                app.tracer_config().source_addr
-            )
+    let src_hostname = app.resolver.reverse_lookup(app.tracer_config().source_addr);
+    let src_addr = app.tracer_config().source_addr;
+    match app.tracer_config().port_direction {
+        PortDirection::None => {
+            format!("{} ({})", src_hostname, src_addr)
         }
-        TracerProtocol::Udp => {
-            format!(
-                "{}:{} ({}:{})",
-                app.resolver.reverse_lookup(app.tracer_config().source_addr),
-                app.tracer_config().source_port,
-                app.tracer_config().source_addr,
-                app.tracer_config().source_port,
-            )
+        PortDirection::FixedDest(_) => {
+            format!("{}:* ({}:*)", src_hostname, src_addr)
         }
-        TracerProtocol::Tcp => {
-            format!(
-                "{}:* ({}:*)",
-                app.resolver.reverse_lookup(app.tracer_config().source_addr),
-                app.tracer_config().source_addr,
-            )
+        PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
+            format!("{}:{} ({}:{})", src_hostname, src.0, src_addr, src.0)
         }
-    };
-    source
+    }
 }
 
 /// Render the destination address.
 fn render_destination(app: &mut TuiApp) -> String {
-    let dest = match app.tracer_config().protocol {
-        TracerProtocol::Icmp => {
-            format!(
-                "{} ({})",
-                app.tracer_config().target_hostname,
-                app.tracer_config().target_addr
-            )
+    let dest_hostname = &app.tracer_config().target_hostname;
+    let dest_addr = app.tracer_config().target_addr;
+    match app.tracer_config().port_direction {
+        PortDirection::None => {
+            format!("{} ({})", dest_hostname, dest_addr)
         }
-        TracerProtocol::Udp => {
-            format!(
-                "{}:* ({}:*)",
-                app.tracer_config().target_hostname,
-                app.tracer_config().target_addr,
-            )
+        PortDirection::FixedSrc(_) => {
+            format!("{}:* ({}:*)", dest_hostname, dest_addr)
         }
-        TracerProtocol::Tcp => {
-            format!(
-                "{}:{} ({}:{})",
-                app.tracer_config().target_hostname,
-                app.tracer_config().target_port,
-                app.tracer_config().target_addr,
-                app.tracer_config().target_port
-            )
+        PortDirection::FixedDest(dest) | PortDirection::FixedBoth(_, dest) => {
+            format!("{}:{} ({}:{})", dest_hostname, dest.0, dest_addr, dest.0)
         }
-    };
-    dest
+    }
 }
 
 /// Format the `DnsResolveMethod`.

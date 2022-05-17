@@ -40,14 +40,6 @@ pub struct PayloadPattern(pub u8);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct TypeOfService(pub u8);
 
-/// Source port newtype.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
-pub struct SourcePort(pub u16);
-
-/// Destination port newtype.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
-pub struct DestinationPort(pub u16);
-
 /// Port newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, From)]
 pub struct Port(pub u16);
