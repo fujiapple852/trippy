@@ -151,47 +151,52 @@ trip www.bitwizard.nl -r google -z
 
 ```shell
 USAGE:
-    trip [OPTIONS] <HOSTNAME>
+    trip [OPTIONS] <TARGETS>...
 
 ARGS:
     <TARGETS>...    A space delimited list of hostnames and IPs to trace
 
 OPTIONS:
-    -a, --tui-address-mode <TUI_ADDRESS_MODE>
-            How to render addresses [default: host] [possible values: ip, host,
-            both]
-
-    -c, --report-cycles <REPORT_CYCLES>
-            The number of report cycles to run [default: 10]
-
-        --dns-timeout <DNS_TIMEOUT>
-            The maximum time to wait to perform DNS queries [default: 5s]
-
-        --first-ttl <FIRST_TTL>
-            The TTL to start from [default: 1]
-
-    -g, --grace-duration <GRACE_DURATION>
-            The period of time to wait for additional ICMP responses after the
-            target has responded [default: 100ms]
-
-    -h, --help
-            Print help information
-
-    -i, --min-round-duration <MIN_ROUND_DURATION>
-            The minimum duration of every round [default: 1s]
-
-    -I, --max-round-duration <MAX_ROUND_DURATION>
-            The maximum duration of every round [default: 1s]
-
-        --initial-sequence <INITIAL_SEQUENCE>
-            The initial sequence number [default: 33000]
-
     -m, --mode <MODE>
             Output mode [default: tui] [possible values: tui, stream, pretty,
             markdown, csv, json]
 
     -p, --protocol <PROTOCOL>
             Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
+
+    -P, --target-port <TARGET_PORT>
+            The target port (TCP & UDP only) [default: 80]
+
+    -S, --source-port <SOURCE_PORT>
+            The source port (TCP & UDP only) [default: auto]
+
+    -A, --source-address <SOURCE_ADDRESS>
+            The source IP address [default: auto]
+
+    -I, --interface <INTERFACE>
+            The network interface [default: auto]
+
+    -i, --min-round-duration <MIN_ROUND_DURATION>
+            The minimum duration of every round [default: 1s]
+
+    -T, --max-round-duration <MAX_ROUND_DURATION>
+            The maximum duration of every round [default: 1s]
+
+        --initial-sequence <INITIAL_SEQUENCE>
+            The initial sequence number [default: 33000]
+
+    -g, --grace-duration <GRACE_DURATION>
+            The period of time to wait for additional ICMP responses after the
+            target has responded [default: 100ms]
+
+    -U, --max-inflight <MAX_INFLIGHT>
+            The maximum number of in-flight ICMP echo requests [default: 24]
+
+    -f, --first-ttl <FIRST_TTL>
+            The TTL to start from [default: 1]
+
+    -t, --max-ttl <MAX_TTL>
+            The maximum number of TTL hops [default: 64]
 
         --packet-size <PACKET_SIZE>
             The size of IP packet to send (IP header + ICMP header + payload)
@@ -200,24 +205,32 @@ OPTIONS:
         --payload-pattern <PAYLOAD_PATTERN>
             The repeating pattern in the payload of the ICMP packet [default: 0]
 
-    -r, --dns-resolve-method <DNS_RESOLVE_METHOD>
-            How to perform DNS queries [default: system] [possible values:
-            system, resolv, google, cloudflare]
+    -Q, --tos <TOS>
+            The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default:
+            0]
 
         --read-timeout <READ_TIMEOUT>
             The socket read timeout [default: 10ms]
 
+    -r, --dns-resolve-method <DNS_RESOLVE_METHOD>
+            How to perform DNS queries [default: system] [possible values:
+            system, resolv, google, cloudflare]
+
+        --dns-timeout <DNS_TIMEOUT>
+            The maximum time to wait to perform DNS queries [default: 5s]
+
+    -z, --dns-lookup-as-info
+            Lookup autonomous system (AS) information during DNS queries
+
+    -a, --tui-address-mode <TUI_ADDRESS_MODE>
+            How to render addresses [default: host] [possible values: ip, host,
+            both]
+
+    -M, --tui-max-addrs <TUI_MAX_ADDRS>
+            The maximum number of addresses to show per hop
+
     -s, --tui-max-samples <TUI_MAX_SAMPLES>
             The maximum number of samples to record per hop [default: 256]
-
-        --source-port <SOURCE_PORT>
-            The source port (TCP & UDP only)
-
-    -t, --max-ttl <MAX_TTL>
-            The maximum number of hops [default: 64]
-
-        --tui-max-addresses-per-hop <TUI_MAX_ADDRESSES_PER_HOP>
-            The maximum number of addresses to show per hop
 
         --tui-preserve-screen
             Preserve the screen on exit
@@ -225,14 +238,14 @@ OPTIONS:
         --tui-refresh-rate <TUI_REFRESH_RATE>
             The TUI refresh rate [default: 100ms]
 
-    -U, --max-inflight <MAX_INFLIGHT>
-            The maximum number of in-flight ICMP echo requests [default: 24]
+    -c, --report-cycles <REPORT_CYCLES>
+            The number of report cycles to run [default: 10]
+
+    -h, --help
+            Print help information
 
     -V, --version
             Print version information
-
-    -z, --dns-lookup-as-info
-            Lookup autonomous system (AS) information during DNS queries
 ```
 
 ## Acknowledgements
