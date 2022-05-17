@@ -20,7 +20,9 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - start and maximum time-to-live (TTL)
     - minimum and maximum round duration
     - round end grace period & maximum number of unknown hops
-    - source port (`TCP` & `UDP`)
+    - source & destination port (`TCP` & `UDP`)
+    - source address and source interface
+    - `TOS` (aka `DSCP + ECN`)
 - Tui interface:
     - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
