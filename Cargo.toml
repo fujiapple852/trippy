@@ -21,7 +21,7 @@ name = "trip"
 # Library dependencies
 pnet = "0.29.0"
 socket2 = "0.4.4"
-nix = { version = "0.24.1", default-features = false, features = [ "user", "poll" ] }
+nix = { version = "0.24.1", default-features = false, features = [ "user", "poll", "net" ] }
 thiserror = "1.0.31"
 derive_more = "0.99.17"
 arrayvec = "0.7.2"
