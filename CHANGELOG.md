@@ -9,7 +9,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added `-P` (`--target-port`) flag to allow specifying the source
+### Changed
+
+### Fixed
+
+## [0.4.0] - 2022-05-18
+
+### Added
+
+- Added `-P` (`--target-port`) flag to allow specifying the target
   port ([1](https://github.com/fujiapple852/trippy/commit/5773fe5e5323543612be6bd4606db5aa8347d71e),
   [2](https://github.com/fujiapple852/trippy/commit/9f03047dd231b10b13911fcc7af60afbb8b21473))
 - Added ability to tracing with either a fixed source or a fixed destination port for both `udp` and `tcp`
@@ -115,6 +123,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.4.0]: https://github.com/fujiapple852/trippy/compare/0.3.1...0.4.0
 
 [0.3.1]: https://github.com/fujiapple852/trippy/compare/0.3.0...0.3.1
 
