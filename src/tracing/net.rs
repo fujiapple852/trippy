@@ -360,17 +360,7 @@ impl TracerChannel {
         socket.set_nonblocking(true)?;
         socket.set_reuse_port(true)?;
         let local_addr = SocketAddr::new(self.src_addr, src_port);
-        match socket.bind(&SockAddr::from(local_addr)) {
-            Ok(_) => {}
-            Err(err) => {
-                return match err.kind() {
-                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                        Err(AddressNotAvailable(local_addr))
-                    }
-                    _ => Err(TracerError::IoError(err)),
-                };
-            }
-        };
+        socket.bind(&SockAddr::from(local_addr))?;
         socket.set_ttl(u32::from(probe.ttl.0))?;
         socket.set_tos(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(self.dest_addr, dest_port);
@@ -379,7 +369,12 @@ impl TracerChannel {
             Err(err) => {
                 if let Some(code) = err.raw_os_error() {
                     if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
-                        return Err(TracerError::IoError(err));
+                        return match err.kind() {
+                            ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                                Err(AddressNotAvailable(local_addr))
+                            }
+                            _ => Err(TracerError::IoError(err)),
+                        };
                     }
                 } else {
                     return Err(TracerError::IoError(err));
