@@ -464,16 +464,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
                               protocol, dns, as_info, interval, grace, first_ttl, max_ttl, max_hosts))]),
         Spans::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(if let Some(start) = app.frozen_start {
-                format!(
-                    "Frozen ({})",
-                    humantime::format_duration(Duration::from_secs(
-                        start.elapsed().unwrap_or_default().as_secs()
-                    ))
-                )
-            } else {
-                String::from("Running")
-            }),
+            Span::raw(render_status(app)),
             Span::raw(format!(
                 ", discovered {} hops",
                 app.tracer_data().hops().len()
@@ -523,6 +514,22 @@ fn render_destination(app: &mut TuiApp) -> String {
     }
 }
 
+/// Render te headline status of the tracing.
+fn render_status(app: &TuiApp) -> String {
+    if app.selected_tracer_data.error().is_some() {
+        String::from("Failed")
+    } else if let Some(start) = app.frozen_start {
+        format!(
+            "Frozen ({})",
+            humantime::format_duration(Duration::from_secs(
+                start.elapsed().unwrap_or_default().as_secs()
+            ))
+        )
+    } else {
+        String::from("Running")
+    }
+}
+
 /// Format the `DnsResolveMethod`.
 fn format_dns_method(resolve_method: DnsResolveMethod) -> String {
     match resolve_method {
@@ -565,13 +572,40 @@ fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
 
 /// Render the body.
 ///
-/// This is the table of hop data or, if there is no data, the splash screen.
+/// This is either an BSOD if there wa san error or the table of hop data or, if there is no data, the splash screen.
 fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
-    if app.tracer_data().hops().is_empty() {
+    if let Some(err) = app.selected_tracer_data.error() {
+        render_bsod(f, rec, err);
+    } else if app.tracer_data().hops().is_empty() {
         render_splash(f, rec);
     } else {
         render_table(f, app, rec);
     }
+}
+
+/// Render a blue screen of death.
+fn render_bsod<B: Backend>(f: &mut Frame<'_, B>, rect: Rect, error: &str) {
+    let chunks = Layout::default()
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
+        .split(rect);
+    let block = Block::default()
+        .title("Hops")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .style(Style::default().bg(Color::Blue));
+    let spans = vec![
+        Spans::from(Span::styled(
+            "Trippy Failed :(",
+            Style::default().add_modifier(Modifier::REVERSED),
+        )),
+        Spans::from(""),
+        Spans::from(error),
+        Spans::from(""),
+        Spans::from("Press q to quit "),
+    ];
+    let paragraph = Paragraph::new(spans).alignment(Alignment::Center);
+    f.render_widget(block, rect);
+    f.render_widget(paragraph, chunks[1]);
 }
 
 /// Render the splash screen.
