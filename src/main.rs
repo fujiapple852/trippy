@@ -77,7 +77,7 @@ fn start_tracer(
             .name(format!("tracer-{}", tracer_config.trace_identifier.0))
             .spawn(move || {
                 drop_caps().expect("failed to drop capabilities in tracer thread");
-                backend::run_backend(&tracer_config, channel, trace_data).expect("backend failed");
+                backend::run_backend(&tracer_config, channel, trace_data);
             })?;
     }
     Ok(make_trace_info(
