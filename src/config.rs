@@ -102,6 +102,14 @@ pub struct Args {
     #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
     pub protocol: TraceProtocol,
 
+    /// use IPv4 only
+    #[clap(short = '4', long, display_order = 2, conflicts_with = "ipv6")]
+    pub ipv4: bool,
+
+    /// Use IPv6 only
+    #[clap(short = '6', long, display_order = 2, conflicts_with = "ipv4")]
+    pub ipv6: bool,
+
     /// The target port (TCP & UDP only) [default: 80]
     #[clap(long, short = 'P', display_order = 3)]
     pub target_port: Option<u16>,
