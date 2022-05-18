@@ -14,6 +14,7 @@ pub struct Trace {
     highest_ttl: u8,
     round: usize,
     hops: Vec<Hop>,
+    error: Option<String>,
 }
 
 impl Trace {
@@ -24,6 +25,7 @@ impl Trace {
             highest_ttl: 0,
             round: 0,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+            error: None,
         }
     }
 
@@ -62,6 +64,10 @@ impl Trace {
         } else {
             &self.hops[0]
         }
+    }
+
+    pub fn error(&self) -> Option<&str> {
+        self.error.as_deref()
     }
 
     /// Update the tracing state from a `TracerRound`.
@@ -249,13 +255,15 @@ impl Default for Hop {
 ///
 /// Note that currently each `Probe` is published individually at the end of a round and so the lock is taken multiple
 /// times per round.
-pub fn run_backend(
-    config: &TracerConfig,
-    channel: TracerChannel,
-    trace_data: Arc<RwLock<Trace>>,
-) -> anyhow::Result<()> {
+pub fn run_backend(config: &TracerConfig, channel: TracerChannel, trace_data: Arc<RwLock<Trace>>) {
+    let td = trace_data.clone();
     let tracer = Tracer::new(config, move |round| {
         trace_data.write().update_from_round(round);
     });
-    Ok(tracer.trace(channel)?)
+    match tracer.trace(channel) {
+        Ok(_) => {}
+        Err(err) => {
+            td.write().error = Some(err.to_string());
+        }
+    };
 }
