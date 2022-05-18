@@ -93,18 +93,18 @@ impl TracerConfig {
         Ok(Self {
             target_addr,
             protocol,
-            trace_identifier: TraceId::from(trace_identifier),
-            max_rounds: max_rounds.map(MaxRounds::from),
-            first_ttl: TimeToLive::from(first_ttl),
-            max_ttl: TimeToLive::from(max_ttl),
+            trace_identifier: TraceId(trace_identifier),
+            max_rounds: max_rounds.map(MaxRounds),
+            first_ttl: TimeToLive(first_ttl),
+            max_ttl: TimeToLive(max_ttl),
             grace_duration,
-            max_inflight: MaxInflight::from(max_inflight),
-            initial_sequence: Sequence::from(initial_sequence),
+            max_inflight: MaxInflight(max_inflight),
+            initial_sequence: Sequence(initial_sequence),
             read_timeout,
             min_round_duration,
             max_round_duration,
-            packet_size: PacketSize::from(packet_size),
-            payload_pattern: PayloadPattern::from(payload_pattern),
+            packet_size: PacketSize(packet_size),
+            payload_pattern: PayloadPattern(payload_pattern),
         })
     }
 }
