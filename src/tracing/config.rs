@@ -14,6 +14,12 @@ const MAX_TTL: u8 = 254;
 /// This ensures that there are sufficient sequence numbers available for at least one round.
 const MAX_SEQUENCE: u16 = u16::MAX - MAX_TTL as u16 - 1;
 
+/// The address family.
+pub enum TracerAddrFamily {
+    Ipv4,
+    Ipv6,
+}
+
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone)]
 pub enum TracerProtocol {
