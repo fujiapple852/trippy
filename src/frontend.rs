@@ -306,6 +306,7 @@ fn run_app<B: Backend>(
             if let Event::Key(key) = event::read()? {
                 match (key.code, key.modifiers) {
                     (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
+                    (KeyCode::Char('c'), KeyModifiers::CONTROL) if !app.show_help => return Ok(()),
                     (KeyCode::Char('q'), _) if app.show_help => app.toggle_help(),
                     (KeyCode::Char('h'), _) => app.toggle_help(),
                     (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
