@@ -1,5 +1,5 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/Continuous%20integration/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.3.1)
+[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.4.0)
 [![Status](https://img.shields.io/badge/status-alpha-blue)](https://github.com/fujiapple852/trippy)
 [![Gitter](https://badges.gitter.im/trippy-rs/community.svg)](https://gitter.im/trippy-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
