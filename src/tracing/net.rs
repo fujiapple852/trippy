@@ -328,7 +328,7 @@ impl TracerChannel {
                     ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                         Err(AddressNotAvailable(local_addr))
                     }
-                    _ => Err(TracerError::from(err)),
+                    _ => Err(TracerError::IoError(err)),
                 };
             }
         };
@@ -367,7 +367,7 @@ impl TracerChannel {
                     ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                         Err(AddressNotAvailable(local_addr))
                     }
-                    _ => Err(TracerError::from(err)),
+                    _ => Err(TracerError::IoError(err)),
                 };
             }
         };
@@ -379,10 +379,10 @@ impl TracerChannel {
             Err(err) => {
                 if let Some(code) = err.raw_os_error() {
                     if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
-                        return Err(TracerError::from(err));
+                        return Err(TracerError::IoError(err));
                     }
                 } else {
-                    return Err(TracerError::from(err));
+                    return Err(TracerError::IoError(err));
                 }
             }
         }

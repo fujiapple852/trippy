@@ -101,8 +101,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
-            st.ttl() - st.max_received_ttl().unwrap_or_default()
-                < TimeToLive::from(self.max_inflight.0)
+            st.ttl() - st.max_received_ttl().unwrap_or_default() < TimeToLive(self.max_inflight.0)
         };
         if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
             match self.protocol {
@@ -158,7 +157,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let received = data.recv;
                 let host = data.addr;
                 let is_target = host == self.target_addr;
-                let trace_id = TraceId::from(data.identifier);
+                let trace_id = TraceId(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_time_exceeded(sequence, host, received, is_target);
                 }
@@ -167,7 +166,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let host = data.addr;
-                let trace_id = TraceId::from(data.identifier);
+                let trace_id = TraceId(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_unreachable(sequence, host, received);
                 }
@@ -176,7 +175,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let host = data.addr;
-                let trace_id = TraceId::from(data.identifier);
+                let trace_id = TraceId(data.identifier);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_echo_reply(sequence, host, received);
                 }
@@ -247,7 +246,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// A special value of `0` is accepted for `udp` and `tcp` which do not have an identifier.
     fn check_trace_id(&self, trace_id: TraceId) -> bool {
-        self.trace_identifier == trace_id || trace_id == TraceId::from(0)
+        self.trace_identifier == trace_id || trace_id == TraceId(0)
     }
 }
 
@@ -323,7 +322,7 @@ mod state {
                 sequence: initial_sequence,
                 round_sequence: initial_sequence,
                 ttl: first_ttl,
-                round: Round::from(0),
+                round: Round(0),
                 round_start: SystemTime::now(),
                 target_found: false,
                 max_received_ttl: None,
@@ -399,7 +398,7 @@ mod state {
             let probe = Probe::new(self.sequence, self.ttl, self.round, SystemTime::now());
             self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
-            self.ttl += TimeToLive::from(1);
+            self.ttl += TimeToLive(1);
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
@@ -542,7 +541,7 @@ mod state {
             self.received_time = None;
             self.round_start = SystemTime::now();
             self.max_received_ttl = None;
-            self.round += Round::from(1);
+            self.round += Round(1);
             self.ttl = first_ttl;
         }
     }
@@ -562,7 +561,7 @@ mod state {
         )]
         #[test]
         fn test_state() {
-            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
 
             // Validate the initial TracerState
             assert_eq!(state.round, Round(0));
@@ -723,7 +722,7 @@ mod state {
         fn test_sequence_wrap1() {
             // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
             let initial_sequence = Sequence(65278);
-            let mut state = TracerState::new(TimeToLive::from(1), initial_sequence);
+            let mut state = TracerState::new(TimeToLive(1), initial_sequence);
             assert_eq!(state.round, Round(0));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
@@ -741,7 +740,7 @@ mod state {
             }
 
             // Advance the round, which will wrap the sequence back to initial_sequence
-            state.advance_round(TimeToLive::from(1));
+            state.advance_round(TimeToLive(1));
             assert_eq!(state.round, Round(1));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
@@ -763,12 +762,12 @@ mod state {
         fn test_sequence_wrap2() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     let _probe = state.next_probe();
                 }
-                state.advance_round(TimeToLive::from(1));
+                state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, Round(2000));
             assert_eq!(state.round_sequence, Sequence(33000));
@@ -779,13 +778,13 @@ mod state {
         fn test_sequence_wrap3() {
             let total_rounds = 2000;
             let max_probe_per_round = 20;
-            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
             let mut rng = rand::thread_rng();
             for _ in 0..total_rounds {
                 for _ in 0..rng.gen_range(0..max_probe_per_round) {
                     state.next_probe();
                 }
-                state.advance_round(TimeToLive::from(1));
+                state.advance_round(TimeToLive(1));
             }
         }
 
@@ -793,13 +792,13 @@ mod state {
         fn test_sequence_wrap_with_skip() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     let _ = state.next_probe();
                     let _ = state.reissue_probe();
                 }
-                state.advance_round(TimeToLive::from(1));
+                state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, Round(2000));
             assert_eq!(state.round_sequence, Sequence(56876));
@@ -808,7 +807,7 @@ mod state {
 
         #[test]
         fn test_in_round() {
-            let state = TracerState::new(TimeToLive::from(1), Sequence(33000));
+            let state = TracerState::new(TimeToLive(1), Sequence(33000));
             assert!(state.in_round(Sequence(33000)));
             assert!(state.in_round(Sequence(34023)));
             assert!(!state.in_round(Sequence(34024)));
