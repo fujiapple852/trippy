@@ -564,7 +564,7 @@ fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
 
 /// Render the body.
 ///
-/// This is the table of hop data or, if there is no data, the spash screen.
+/// This is the table of hop data or, if there is no data, the splash screen.
 fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
     if app.tracer_data().hops().is_empty() {
         render_splash(f, rec);
