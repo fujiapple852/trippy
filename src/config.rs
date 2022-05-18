@@ -3,7 +3,7 @@ use clap::{ArgEnum, Parser};
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::tracing::{PortDirection, TracerProtocol};
+use trippy::tracing::{PortDirection, TracerAddrFamily, TracerProtocol};
 
 /// The maximum number of hops we allow.
 ///
@@ -223,6 +223,7 @@ pub struct Args {
 pub struct TrippyConfig {
     pub targets: Vec<String>,
     pub protocol: TracerProtocol,
+    pub addr_family: TracerAddrFamily,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub min_round_duration: Duration,
@@ -288,6 +289,11 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                 ));
             }
         };
+        let addr_family = if args.ipv6 {
+            TracerAddrFamily::Ipv6
+        } else {
+            TracerAddrFamily::Ipv4
+        };
         let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
         let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
         let max_rounds = match args.mode {
@@ -307,6 +313,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         Ok(Self {
             targets: args.targets,
             protocol,
+            addr_family,
             first_ttl: args.first_ttl,
             max_ttl: args.max_ttl,
             min_round_duration,
