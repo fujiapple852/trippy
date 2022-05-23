@@ -56,17 +56,34 @@ pub struct AsInfo {
     pub name: String,
 }
 
+/// The address family.
+#[derive(Debug, Copy, Clone)]
+pub enum IpAddrFamily {
+    Ipv4,
+    Ipv6,
+}
+
 /// Configuration for the `DnsResolver`.
 #[derive(Debug, Copy, Clone)]
 pub struct DnsResolverConfig {
     pub resolve_method: DnsResolveMethod,
+    pub addr_family: IpAddrFamily,
     pub timeout: Duration,
 }
 
 impl DnsResolverConfig {
-    pub fn new(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
+    pub fn new_ipv4(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
+            addr_family: IpAddrFamily::Ipv4,
+            timeout,
+        }
+    }
+
+    pub fn new_ipv6(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
+        Self {
+            resolve_method,
+            addr_family: IpAddrFamily::Ipv6,
             timeout,
         }
     }
@@ -123,7 +140,9 @@ impl DnsResolver {
 
 /// Private impl of resolver.
 mod inner {
-    use crate::dns::{AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, Resolved};
+    use crate::dns::{
+        AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, IpAddrFamily, Resolved,
+    };
     use anyhow::anyhow;
     use crossbeam::channel::{bounded, Receiver, Sender};
     use itertools::Itertools;
@@ -134,7 +153,7 @@ mod inner {
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
-    use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+    use trust_dns_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
     use trust_dns_resolver::error::ResolveErrorKind;
     use trust_dns_resolver::proto::rr::RecordType;
     use trust_dns_resolver::{Name, Resolver};
@@ -178,6 +197,10 @@ mod inner {
             } else {
                 let mut options = ResolverOpts::default();
                 options.timeout = config.timeout;
+                options.ip_strategy = match config.addr_family {
+                    IpAddrFamily::Ipv4 => LookupIpStrategy::Ipv4Only,
+                    IpAddrFamily::Ipv6 => LookupIpStrategy::Ipv6Only,
+                };
                 let res = match config.resolve_method {
                     DnsResolveMethod::Resolv => Resolver::from_system_conf(),
                     DnsResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
