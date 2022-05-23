@@ -162,6 +162,7 @@ fn make_channel_config(
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
         args.protocol,
+        args.addr_family,
         args.source_addr,
         args.interface.clone(),
         target_addr,
