@@ -105,6 +105,13 @@ const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_BUF - UdpPacket::minimum_packet_size(
 /// The port used for local address discovery if not dest port is available.
 const DISCOVERY_PORT: Port = Port(80);
 
+/// The address family.
+#[derive(Debug, Copy, Clone)]
+pub enum TracerAddrFamily {
+    Ipv4,
+    Ipv6,
+}
+
 /// Whether to fix the src, dest or both ports for a trace.
 #[derive(Debug, Copy, Clone)]
 pub enum PortDirection {

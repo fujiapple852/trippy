@@ -6,7 +6,7 @@ mod tracer;
 mod types;
 mod util;
 
-pub use config::{TracerAddrFamily, TracerConfig, TracerProtocol};
-pub use net::{PortDirection, TracerChannel, TracerChannelConfig};
+pub use config::{TracerConfig, TracerProtocol};
+pub use net::{PortDirection, TracerAddrFamily, TracerChannel, TracerChannelConfig};
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
 pub use tracer::{Tracer, TracerRound};
