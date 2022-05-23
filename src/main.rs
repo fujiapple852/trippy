@@ -24,7 +24,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use trippy::tracing::{
-    PortDirection, TracerChannel, TracerChannelConfig, TracerConfig, TracerProtocol,
+    PortDirection, TracerAddrFamily, TracerChannel, TracerChannelConfig, TracerConfig,
+    TracerProtocol,
 };
 
 mod backend;
@@ -37,10 +38,7 @@ mod report;
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
-    let resolver = DnsResolver::start(DnsResolverConfig::new(
-        cfg.dns_resolve_method,
-        cfg.dns_timeout,
-    ))?;
+    let resolver = start_dns_resolver(&cfg)?;
     ensure_caps()?;
     let traces: Vec<_> = cfg
         .targets
@@ -51,6 +49,20 @@ fn main() -> anyhow::Result<()> {
     drop_caps()?;
     run_frontend(&cfg, resolver, traces)?;
     Ok(())
+}
+
+/// Start the DNS resolver.
+fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
+    Ok(match cfg.addr_family {
+        TracerAddrFamily::Ipv4 => DnsResolver::start(DnsResolverConfig::new_ipv4(
+            cfg.dns_resolve_method,
+            cfg.dns_timeout,
+        ))?,
+        TracerAddrFamily::Ipv6 => DnsResolver::start(DnsResolverConfig::new_ipv6(
+            cfg.dns_resolve_method,
+            cfg.dns_timeout,
+        ))?,
+    })
 }
 
 /// Start a tracer to a given target.
@@ -64,8 +76,20 @@ fn start_tracer(
         .lookup(target_host)
         .map_err(|e| anyhow!("failed to resolve target: {} ({})", target_host, e))?
         .into_iter()
-        .find(|addr| matches!(addr, IpAddr::V4(_)))
-        .ok_or_else(|| anyhow!("failed to find an IPv4 address for target: {}", target_host))?;
+        .find(|addr| {
+            matches!(
+                (cfg.addr_family, addr),
+                (TracerAddrFamily::Ipv4, IpAddr::V4(_)) | (TracerAddrFamily::Ipv6, IpAddr::V6(_))
+            )
+        })
+        .ok_or_else(|| {
+            anyhow!(
+                "failed to find an {:?} address for target: {}",
+                cfg.addr_family,
+                target_host
+            )
+        })?;
+
     let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
     let channel_config = make_channel_config(cfg, target_addr, trace_identifier);
     let channel = TracerChannel::connect(&channel_config)?;
