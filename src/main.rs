@@ -121,11 +121,11 @@ fn run_frontend(
 ) -> anyhow::Result<()> {
     match args.mode {
         Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver)?,
-        Mode::Stream => report::run_report_stream(&traces[0]),
-        Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver),
-        Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver),
-        Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver),
-        Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver),
+        Mode::Stream => report::run_report_stream(&traces[0])?,
+        Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver)?,
     }
     Ok(())
 }
