@@ -1,6 +1,7 @@
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
-    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Sequence, TimeToLive, TraceId,
+    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
+    TypeOfService,
 };
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -13,6 +14,15 @@ const MAX_TTL: u8 = 254;
 ///
 /// This ensures that there are sufficient sequence numbers available for at least one round.
 const MAX_SEQUENCE: u16 = u16::MAX - MAX_TTL as u16 - 1;
+
+/// The address family.
+#[derive(Debug, Copy, Clone)]
+pub enum TracerAddrFamily {
+    /// Internet Protocol V4
+    Ipv4,
+    /// Internet Protocol V6
+    Ipv6,
+}
 
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone)]
@@ -31,6 +41,112 @@ impl Display for TracerProtocol {
             Self::Icmp => write!(f, "icmp"),
             Self::Udp => write!(f, "udp"),
             Self::Tcp => write!(f, "tcp"),
+        }
+    }
+}
+
+/// Whether to fix the src, dest or both ports for a trace.
+#[derive(Debug, Copy, Clone)]
+pub enum PortDirection {
+    /// Trace without any source or destination port (i.e. for ICMP tracing).
+    None,
+    /// Trace from a fixed source port to a variable destination port (i.e. 5000 -> *).
+    ///
+    /// This is the default direction for UDP tracing.
+    FixedSrc(Port),
+    /// Trace from a variable source port to a fixed destination port (i.e. * -> 80).
+    ///
+    /// This is the default direction for TCP tracing.
+    FixedDest(Port),
+    /// Trace from a fixed source port to a fixed destination port (i.e. 5000 -> 80).
+    ///
+    /// When both ports are fixed another element of the IP header is required to vary per probe such that probes can
+    /// be identified.  Typically this is only used for UDP, whereby the checksum is manipulated by adjusting the
+    /// payload and therefore used as the identifier.
+    ///
+    /// Note that this case is not currently implemented.
+    FixedBoth(Port, Port),
+}
+
+impl PortDirection {
+    #[must_use]
+    pub fn new_fixed_src(src: u16) -> Self {
+        Self::FixedSrc(Port(src))
+    }
+
+    #[must_use]
+    pub fn new_fixed_dest(dest: u16) -> Self {
+        Self::FixedDest(Port(dest))
+    }
+
+    #[must_use]
+    pub fn new_fixed_both(src: u16, dest: u16) -> Self {
+        Self::FixedBoth(Port(src), Port(dest))
+    }
+
+    #[must_use]
+    pub fn src(&self) -> Option<Port> {
+        match *self {
+            Self::FixedSrc(src) | Self::FixedBoth(src, _) => Some(src),
+            _ => None,
+        }
+    }
+    #[must_use]
+    pub fn dest(&self) -> Option<Port> {
+        match *self {
+            Self::FixedDest(dest) | Self::FixedBoth(_, dest) => Some(dest),
+            _ => None,
+        }
+    }
+}
+
+/// Tracer network channel configuration.
+#[derive(Debug, Clone)]
+pub struct TracerChannelConfig {
+    pub protocol: TracerProtocol,
+    pub addr_family: TracerAddrFamily,
+    pub source_addr: Option<IpAddr>,
+    pub interface: Option<String>,
+    pub target_addr: IpAddr,
+    pub identifier: TraceId,
+    pub packet_size: PacketSize,
+    pub payload_pattern: PayloadPattern,
+    pub tos: TypeOfService,
+    pub port_direction: PortDirection,
+    pub icmp_read_timeout: Duration,
+    pub tcp_connect_timeout: Duration,
+}
+
+impl TracerChannelConfig {
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn new(
+        protocol: TracerProtocol,
+        addr_family: TracerAddrFamily,
+        source_addr: Option<IpAddr>,
+        interface: Option<String>,
+        target_addr: IpAddr,
+        identifier: u16,
+        packet_size: u16,
+        payload_pattern: u8,
+        tos: u8,
+        port_direction: PortDirection,
+        icmp_read_timeout: Duration,
+        tcp_connect_timeout: Duration,
+    ) -> Self {
+        Self {
+            protocol,
+            addr_family,
+            source_addr,
+            interface,
+            target_addr,
+            identifier: TraceId(identifier),
+            packet_size: PacketSize(packet_size),
+            payload_pattern: PayloadPattern(payload_pattern),
+            tos: TypeOfService(tos),
+            port_direction,
+            icmp_read_timeout,
+            tcp_connect_timeout,
         }
     }
 }
