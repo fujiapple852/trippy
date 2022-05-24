@@ -300,6 +300,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             Mode::Stream | Mode::Tui => None,
             Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(args.report_cycles),
         };
+        validate_addr_family(args.protocol, addr_family)?;
         validate_multi(args.mode, args.protocol, &args.targets)?;
         validate_ttl(args.first_ttl, args.max_ttl)?;
         validate_max_inflight(args.max_inflight)?;
@@ -340,6 +341,19 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             report_cycles: args.report_cycles,
             max_rounds,
         })
+    }
+}
+
+/// Validate that the protocol and address family are supported.
+pub fn validate_addr_family(
+    protocol: TraceProtocol,
+    addr_family: TracerAddrFamily,
+) -> anyhow::Result<()> {
+    match (addr_family, protocol) {
+        (TracerAddrFamily::Ipv6, TraceProtocol::Tcp) => {
+            Err(anyhow!("Tracing using TCP over IPv6 is not yet supported"))
+        }
+        _ => Ok(()),
     }
 }
 
