@@ -2,7 +2,7 @@ use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr}
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{Probe, TracerProtocol};
+use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -77,119 +77,6 @@ const MAX_PACKET_SIZE: usize = 1024;
 
 /// The port used for local address discovery if not dest port is available.
 const DISCOVERY_PORT: Port = Port(80);
-
-/// The address family.
-#[derive(Debug, Copy, Clone)]
-pub enum TracerAddrFamily {
-    Ipv4,
-    Ipv6,
-}
-
-/// Whether to fix the src, dest or both ports for a trace.
-#[derive(Debug, Copy, Clone)]
-pub enum PortDirection {
-    /// Trace without any source or destination port (i.e. for ICMP tracing).
-    None,
-    /// Trace from a fixed source port to a variable destination port (i.e. 5000 -> *).
-    ///
-    /// This is the default direction for UDP tracing.
-    FixedSrc(Port),
-    /// Trace from a variable source port to a fixed destination port (i.e. * -> 80).
-    ///
-    /// This is the default direction for TCP tracing.
-    FixedDest(Port),
-    /// Trace from a fixed source port to a fixed destination port (i.e. 5000 -> 80).
-    ///
-    /// When both ports are fixed another element of the IP header is required to vary per probe such that probes can
-    /// be identified.  Typically this is only used for UDP, whereby the checksum is manipulated by adjusting the
-    /// payload and therefore used as the identifier.
-    ///
-    /// Note that this case is not currently implemented.
-    FixedBoth(Port, Port),
-}
-
-impl PortDirection {
-    #[must_use]
-    pub fn new_fixed_src(src: u16) -> Self {
-        Self::FixedSrc(Port(src))
-    }
-
-    #[must_use]
-    pub fn new_fixed_dest(dest: u16) -> Self {
-        Self::FixedDest(Port(dest))
-    }
-
-    #[must_use]
-    pub fn new_fixed_both(src: u16, dest: u16) -> Self {
-        Self::FixedBoth(Port(src), Port(dest))
-    }
-
-    #[must_use]
-    pub fn src(&self) -> Option<Port> {
-        match *self {
-            Self::FixedSrc(src) | Self::FixedBoth(src, _) => Some(src),
-            _ => None,
-        }
-    }
-    #[must_use]
-    pub fn dest(&self) -> Option<Port> {
-        match *self {
-            Self::FixedDest(dest) | Self::FixedBoth(_, dest) => Some(dest),
-            _ => None,
-        }
-    }
-}
-
-/// Tracer network channel configuration.
-#[derive(Debug, Clone)]
-pub struct TracerChannelConfig {
-    protocol: TracerProtocol,
-    addr_family: TracerAddrFamily,
-    source_addr: Option<IpAddr>,
-    interface: Option<String>,
-    target_addr: IpAddr,
-    identifier: TraceId,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    tos: TypeOfService,
-    port_direction: PortDirection,
-    icmp_read_timeout: Duration,
-    tcp_connect_timeout: Duration,
-}
-
-impl TracerChannelConfig {
-    #[allow(clippy::too_many_arguments)]
-    #[must_use]
-    pub fn new(
-        protocol: TracerProtocol,
-        addr_family: TracerAddrFamily,
-        source_addr: Option<IpAddr>,
-        interface: Option<String>,
-        target_addr: IpAddr,
-        identifier: u16,
-        packet_size: u16,
-        payload_pattern: u8,
-        tos: u8,
-        port_direction: PortDirection,
-        icmp_read_timeout: Duration,
-        tcp_connect_timeout: Duration,
-    ) -> Self {
-        Self {
-            protocol,
-            addr_family,
-            source_addr,
-            interface,
-            target_addr,
-            identifier: TraceId(identifier),
-            packet_size: PacketSize(packet_size),
-            payload_pattern: PayloadPattern(payload_pattern),
-            tos: TypeOfService(tos),
-            port_direction,
-            icmp_read_timeout,
-            tcp_connect_timeout,
-        }
-    }
-}
 
 /// An entry in the TCP probes array.
 #[derive(Debug)]
