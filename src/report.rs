@@ -1,4 +1,5 @@
 use crate::{DnsResolver, Trace, TraceInfo};
+use anyhow::anyhow;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
@@ -9,8 +10,12 @@ use std::thread::sleep;
 use std::time::Duration;
 
 /// Generate a CSV report of trace data.
-pub fn run_report_csv(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
-    let trace = wait_for_round(&info.data, report_cycles);
+pub fn run_report_csv(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+) -> anyhow::Result<()> {
+    let trace = wait_for_round(&info.data, report_cycles)?;
     println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops().iter() {
         let ttl = hop.ttl();
@@ -50,6 +55,7 @@ pub fn run_report_csv(info: &TraceInfo, report_cycles: usize, resolver: &DnsReso
             stddev
         );
     }
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -98,8 +104,12 @@ where
 }
 
 /// Generate a CSV report of trace data.
-pub fn run_report_json(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
-    let trace = wait_for_round(&info.data, report_cycles);
+pub fn run_report_json(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+) -> anyhow::Result<()> {
+    let trace = wait_for_round(&info.data, report_cycles)?;
     let hops: Vec<ReportHop> = trace
         .hops()
         .iter()
@@ -136,20 +146,34 @@ pub fn run_report_json(info: &TraceInfo, report_cycles: usize, resolver: &DnsRes
         hops,
     };
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
+    Ok(())
 }
 
 /// Generate a markdown table report of trace data.
-pub fn run_report_table_md(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
-    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN);
+pub fn run_report_table_md(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+) -> anyhow::Result<()> {
+    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN)
 }
 
 /// Generate a pretty table report of trace data.
-pub fn run_report_table_pretty(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver) {
-    run_report_table(info, report_cycles, resolver, UTF8_FULL);
+pub fn run_report_table_pretty(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+) -> anyhow::Result<()> {
+    run_report_table(info, report_cycles, resolver, UTF8_FULL)
 }
 
-fn run_report_table(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolver, preset: &str) {
-    let trace = wait_for_round(&info.data, report_cycles);
+fn run_report_table(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+    preset: &str,
+) -> anyhow::Result<()> {
+    let trace = wait_for_round(&info.data, report_cycles)?;
     let columns = vec![
         "Hop", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
     ];
@@ -188,13 +212,17 @@ fn run_report_table(info: &TraceInfo, report_cycles: usize, resolver: &DnsResolv
         ]);
     }
     println!("{table}");
+    Ok(())
 }
 
 /// Display a continuous stream of trace data.
-pub fn run_report_stream(info: &TraceInfo) {
+pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
     println!("Tracing to {} ({})", info.target_hostname, info.target_addr);
     loop {
         let trace_data = &info.data.read().clone();
+        if let Some(err) = trace_data.error() {
+            return Err(anyhow!("error: {}", err));
+        }
         for hop in trace_data.hops() {
             let ttl = hop.ttl();
             let addrs = hop.addrs().collect::<Vec<_>>();
@@ -225,11 +253,14 @@ pub fn run_report_stream(info: &TraceInfo) {
 }
 
 /// Block until trace data for round `round` is available.
-fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, round: usize) -> Trace {
+fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, round: usize) -> anyhow::Result<Trace> {
     let mut trace = trace_data.read().clone();
     while trace.round() < round - 1 {
         trace = trace_data.read().clone();
+        if let Some(err) = trace.error() {
+            return Err(anyhow!("error: {}", err));
+        }
         sleep(Duration::from_millis(100));
     }
-    trace
+    Ok(trace)
 }
