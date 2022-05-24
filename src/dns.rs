@@ -148,7 +148,7 @@ mod inner {
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::collections::HashMap;
-    use std::net::{IpAddr, Ipv4Addr};
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
     use std::str::FromStr;
     use std::sync::Arc;
     use std::thread;
@@ -346,17 +346,12 @@ mod inner {
 
     /// Lookup up `AsInfo` for an `IpAddr` address.
     fn lookup_asinfo(resolver: &Arc<Resolver>, addr: IpAddr) -> anyhow::Result<AsInfo> {
-        match addr {
-            IpAddr::V4(addr) => lookup_asinfo_ipv4(resolver, addr),
-            IpAddr::V6(_) => Ok(AsInfo::default()),
-        }
-    }
-
-    /// Lookup up `AsInfo` for an `Ipv4Addr` address.
-    fn lookup_asinfo_ipv4(resolver: &Arc<Resolver>, addr: Ipv4Addr) -> anyhow::Result<AsInfo> {
-        let origin_query_txt = query_asn_ipv4(resolver, addr)?;
+        let origin_query_txt = match addr {
+            IpAddr::V4(addr) => query_asn_ipv4(resolver, addr)?,
+            IpAddr::V6(addr) => query_asn_ipv6(resolver, addr)?,
+        };
         let asinfo = parse_origin_query_txt(&origin_query_txt)?;
-        let asn_query_txt = query_asn_name_ipv4(resolver, &asinfo.asn)?;
+        let asn_query_txt = query_asn_name(resolver, &asinfo.asn)?;
         let as_name = parse_asn_query_txt(&asn_query_txt)?;
         Ok(AsInfo {
             asn: asinfo.asn,
@@ -384,8 +379,28 @@ mod inner {
         Ok(bytes.to_string())
     }
 
+    /// Perform the `origin` query.
+    fn query_asn_ipv6(resolver: &Arc<Resolver>, addr: Ipv6Addr) -> anyhow::Result<String> {
+        let query = format!(
+            "{:x}.origin6.asn.cymru.com.",
+            addr.octets()
+                .iter()
+                .rev()
+                .flat_map(|o| [o & 0x0F, (o & 0xF0) >> 4])
+                .format(".")
+        );
+        let name = Name::from_str(query.as_str())?;
+        let response = resolver.lookup(name, RecordType::TXT)?;
+        let data = response
+            .iter()
+            .next()
+            .ok_or_else(|| anyhow!("asn origin6 query"))?;
+        let bytes = data.as_txt().ok_or_else(|| anyhow!("asn origin6 query"))?;
+        Ok(bytes.to_string())
+    }
+
     /// Perform the `asn` query.
-    fn query_asn_name_ipv4(resolver: &Arc<Resolver>, asn: &str) -> anyhow::Result<String> {
+    fn query_asn_name(resolver: &Arc<Resolver>, asn: &str) -> anyhow::Result<String> {
         let query = format!("AS{}.asn.cymru.com.", asn);
         let name = Name::from_str(query.as_str())?;
         let response = resolver.lookup(name, RecordType::TXT)?;
