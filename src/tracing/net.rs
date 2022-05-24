@@ -432,7 +432,7 @@ mod ipv4 {
     ) -> TraceResult<Option<ProbeResponse>> {
         match icmp_packet_iter(icmp_rx).next_with_timeout(icmp_read_timeout)? {
             None => Ok(None),
-            Some((icmp, ip)) => Ok(extract_probe_resp(protocol, direction, &icmp, ip)?),
+            Some((icmp, ip)) => Ok(extract_probe_resp_v4(protocol, direction, &icmp, ip)?),
         }
     }
 
@@ -442,31 +442,31 @@ mod ipv4 {
         packet_size - udp_header_size - ip_header_size
     }
 
-    fn extract_probe_resp(
+    fn extract_probe_resp_v4(
         protocol: TracerProtocol,
         direction: PortDirection,
-        icmp: &IcmpPacket<'_>,
+        icmp_v4: &IcmpPacket<'_>,
         ip: IpAddr,
     ) -> TraceResult<Option<ProbeResponse>> {
         let recv = SystemTime::now();
-        Ok(match icmp.get_icmp_type() {
+        Ok(match icmp_v4.get_icmp_type() {
             IcmpTypes::TimeExceeded => {
-                let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                let (id, seq) = extract_time_exceeded(&packet, protocol, direction)?;
+                let packet = TimeExceededPacket::new(icmp_v4.packet()).req()?;
+                let (id, seq) = extract_time_exceeded_v4(&packet, protocol, direction)?;
                 Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                     recv, ip, id, seq,
                 )))
             }
             IcmpTypes::DestinationUnreachable => {
-                let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                let (id, seq) = extract_dest_unreachable(&packet, protocol, direction)?;
+                let packet = DestinationUnreachablePacket::new(icmp_v4.packet()).req()?;
+                let (id, seq) = extract_dest_unreachable_v4(&packet, protocol, direction)?;
                 Some(ProbeResponse::DestinationUnreachable(
                     ProbeResponseData::new(recv, ip, id, seq),
                 ))
             }
             IcmpTypes::EchoReply => match protocol {
                 TracerProtocol::Icmp => {
-                    let packet = EchoReplyPacket::new(icmp.packet()).req()?;
+                    let packet = EchoReplyPacket::new(icmp_v4.packet()).req()?;
                     let id = packet.get_identifier();
                     let seq = packet.get_sequence_number();
                     Some(ProbeResponse::EchoReply(ProbeResponseData::new(
@@ -479,21 +479,21 @@ mod ipv4 {
         })
     }
 
-    fn extract_time_exceeded(
+    fn extract_time_exceeded_v4(
         packet: &TimeExceededPacket<'_>,
         protocol: TracerProtocol,
         direction: PortDirection,
     ) -> TraceResult<(u16, u16)> {
         Ok(match protocol {
             TracerProtocol::Icmp => {
-                let echo_request = extract_echo_request(packet.payload())?;
+                let echo_request = extract_echo_request_v4(packet.payload())?;
                 let identifier = echo_request.get_identifier();
                 let sequence = echo_request.get_sequence_number();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
                 let packet = TimeExceededPacket::new(packet.packet()).req()?;
-                let (src, dest) = extract_udp_packet(packet.payload())?;
+                let (src, dest) = extract_udp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
                     _ => dest,
@@ -502,7 +502,7 @@ mod ipv4 {
             }
             TracerProtocol::Tcp => {
                 let packet = TimeExceededPacket::new(packet.packet()).req()?;
-                let (src, dest) = extract_tcp_packet(packet.payload())?;
+                let (src, dest) = extract_tcp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
                     _ => src,
@@ -512,20 +512,20 @@ mod ipv4 {
         })
     }
 
-    fn extract_dest_unreachable(
+    fn extract_dest_unreachable_v4(
         packet: &DestinationUnreachablePacket<'_>,
         protocol: TracerProtocol,
         direction: PortDirection,
     ) -> TraceResult<(u16, u16)> {
         Ok(match protocol {
             TracerProtocol::Icmp => {
-                let echo_request = extract_echo_request(packet.payload())?;
+                let echo_request = extract_echo_request_v4(packet.payload())?;
                 let identifier = echo_request.get_identifier();
                 let sequence = echo_request.get_sequence_number();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
-                let (src, dest) = extract_udp_packet(packet.payload())?;
+                let (src, dest) = extract_udp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
                     _ => dest,
@@ -533,7 +533,7 @@ mod ipv4 {
                 (0, sequence)
             }
             TracerProtocol::Tcp => {
-                let (src, dest) = extract_tcp_packet(packet.payload())?;
+                let (src, dest) = extract_tcp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
                     _ => src,
@@ -543,7 +543,7 @@ mod ipv4 {
         })
     }
 
-    fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
+    fn extract_echo_request_v4(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
         let ip4 = Ipv4Packet::new(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_icmp = &payload[header_len..];
@@ -552,7 +552,7 @@ mod ipv4 {
     }
 
     /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
-    fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
+    fn extract_udp_packet_v4(payload: &[u8]) -> TraceResult<(u16, u16)> {
         let ip4 = Ipv4Packet::new(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_udp = &payload[header_len..];
@@ -570,7 +570,7 @@ mod ipv4 {
     ///
     /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
     /// header.
-    fn extract_tcp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
+    fn extract_tcp_packet_v4(payload: &[u8]) -> TraceResult<(u16, u16)> {
         let ip4 = Ipv4Packet::new(payload).unwrap();
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_tcp = &payload[header_len..];
@@ -675,7 +675,7 @@ mod ipv6 {
     ) -> TraceResult<Option<ProbeResponse>> {
         match icmpv6_packet_iter(icmp_rx).next_with_timeout(icmp_read_timeout)? {
             None => Ok(None),
-            Some((icmp, ip)) => Ok(extract_probe_resp(protocol, direction, &icmp, ip)?),
+            Some((icmp, ip)) => Ok(extract_probe_resp_v6(protocol, direction, &icmp, ip)?),
         }
     }
 
@@ -685,31 +685,31 @@ mod ipv6 {
         packet_size - udp_header_size - ip_header_size
     }
 
-    fn extract_probe_resp(
+    fn extract_probe_resp_v6(
         protocol: TracerProtocol,
         direction: PortDirection,
-        icmp: &Icmpv6Packet<'_>,
+        icmp_v6: &Icmpv6Packet<'_>,
         ip: IpAddr,
     ) -> TraceResult<Option<ProbeResponse>> {
         let recv = SystemTime::now();
-        Ok(match icmp.get_icmpv6_type() {
+        Ok(match icmp_v6.get_icmpv6_type() {
             Icmpv6Types::TimeExceeded => {
-                let packet = TimeExceededPacket::new(icmp.packet()).req()?;
-                let (id, seq) = extract_time_exceeded(&packet, protocol, direction)?;
+                let packet = TimeExceededPacket::new(icmp_v6.packet()).req()?;
+                let (id, seq) = extract_time_exceeded_v6(&packet, protocol, direction)?;
                 Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                     recv, ip, id, seq,
                 )))
             }
             Icmpv6Types::DestinationUnreachable => {
-                let packet = DestinationUnreachablePacket::new(icmp.packet()).req()?;
-                let (id, seq) = extract_dest_unreachable(&packet, protocol, direction)?;
+                let packet = DestinationUnreachablePacket::new(icmp_v6.packet()).req()?;
+                let (id, seq) = extract_dest_unreachable_v6(&packet, protocol, direction)?;
                 Some(ProbeResponse::DestinationUnreachable(
                     ProbeResponseData::new(recv, ip, id, seq),
                 ))
             }
             Icmpv6Types::EchoReply => match protocol {
                 TracerProtocol::Icmp => {
-                    let packet = EchoReplyPacket::new(icmp.packet()).req()?;
+                    let packet = EchoReplyPacket::new(icmp_v6.packet()).req()?;
                     let id = packet.get_identifier();
                     let seq = packet.get_sequence_number();
                     Some(ProbeResponse::EchoReply(ProbeResponseData::new(
@@ -722,21 +722,21 @@ mod ipv6 {
         })
     }
 
-    fn extract_time_exceeded(
+    fn extract_time_exceeded_v6(
         packet: &TimeExceededPacket<'_>,
         protocol: TracerProtocol,
         direction: PortDirection,
     ) -> TraceResult<(u16, u16)> {
         Ok(match protocol {
             TracerProtocol::Icmp => {
-                let echo_request = extract_echo_request(packet.payload())?;
+                let echo_request = extract_echo_request_v6(packet.payload())?;
                 let identifier = echo_request.get_identifier();
                 let sequence = echo_request.get_sequence_number();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
                 let packet = TimeExceededPacket::new(packet.packet()).req()?;
-                let (src, dest) = extract_udp_packet(packet.payload())?;
+                let (src, dest) = extract_udp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
                     _ => dest,
@@ -745,7 +745,7 @@ mod ipv6 {
             }
             TracerProtocol::Tcp => {
                 let packet = TimeExceededPacket::new(packet.packet()).req()?;
-                let (src, dest) = extract_tcp_packet(packet.payload())?;
+                let (src, dest) = extract_tcp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
                     _ => src,
@@ -755,20 +755,20 @@ mod ipv6 {
         })
     }
 
-    fn extract_dest_unreachable(
+    fn extract_dest_unreachable_v6(
         packet: &DestinationUnreachablePacket<'_>,
         protocol: TracerProtocol,
         direction: PortDirection,
     ) -> TraceResult<(u16, u16)> {
         Ok(match protocol {
             TracerProtocol::Icmp => {
-                let echo_request = extract_echo_request(packet.payload())?;
+                let echo_request = extract_echo_request_v6(packet.payload())?;
                 let identifier = echo_request.get_identifier();
                 let sequence = echo_request.get_sequence_number();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
-                let (src, dest) = extract_udp_packet(packet.payload())?;
+                let (src, dest) = extract_udp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
                     _ => dest,
@@ -776,7 +776,7 @@ mod ipv6 {
                 (0, sequence)
             }
             TracerProtocol::Tcp => {
-                let (src, dest) = extract_tcp_packet(packet.payload())?;
+                let (src, dest) = extract_tcp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
                     _ => src,
@@ -786,7 +786,7 @@ mod ipv6 {
         })
     }
 
-    fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
+    fn extract_echo_request_v6(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
         let ip6 = pnet::packet::ipv6::Ipv6Packet::new(payload).req()?;
         let packet_size = payload.len();
         let payload_size = usize::from(ip6.get_payload_length());
@@ -796,7 +796,7 @@ mod ipv6 {
         Ok(nested_echo)
     }
 
-    fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
+    fn extract_udp_packet_v6(payload: &[u8]) -> TraceResult<(u16, u16)> {
         let ip6 = Ipv6Packet::new(payload).req()?;
         let packet_size = payload.len();
         let payload_size = usize::from(ip6.get_payload_length());
@@ -807,7 +807,7 @@ mod ipv6 {
     }
 
     // TODO
-    fn extract_tcp_packet(_payload: &[u8]) -> TraceResult<(u16, u16)> {
+    fn extract_tcp_packet_v6(_payload: &[u8]) -> TraceResult<(u16, u16)> {
         unimplemented!()
     }
 }
