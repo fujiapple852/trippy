@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
-use trippy::tracing::PortDirection;
+use trippy::tracing::{PortDirection, TracerAddrFamily};
 use tui::layout::{Alignment, Direction, Rect};
 use tui::text::{Span, Spans};
 use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
@@ -430,7 +430,10 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    let protocol = &app.tracer_config().protocol.to_string();
+    let protocol = match &app.tracer_config().addr_family {
+        TracerAddrFamily::Ipv4 => format!("{}(v4)", app.tracer_config().protocol),
+        TracerAddrFamily::Ipv6 => format!("{}(v6)", app.tracer_config().protocol),
+    };
     let dns = format_dns_method(app.resolver.config().resolve_method);
     let as_info = match app.resolver.config().resolve_method {
         DnsResolveMethod::System => String::from("n/a"),
