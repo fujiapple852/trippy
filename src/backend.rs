@@ -12,7 +12,7 @@ pub struct Trace {
     max_samples: usize,
     lowest_ttl: u8,
     highest_ttl: u8,
-    round: usize,
+    round: Option<usize>,
     hops: Vec<Hop>,
     error: Option<String>,
 }
@@ -23,14 +23,14 @@ impl Trace {
             max_samples,
             lowest_ttl: 0,
             highest_ttl: 0,
-            round: 0,
+            round: None,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
             error: None,
         }
     }
 
     /// The current round of tracing.
-    pub fn round(&self) -> usize {
+    pub fn round(&self) -> Option<usize> {
         self.round
     }
 
@@ -130,7 +130,10 @@ impl Trace {
     /// Update `round` for valid probes.
     fn update_round(&mut self, probe: &Probe) {
         if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            self.round = self.round.max(probe.round.0);
+            self.round = match self.round {
+                None => Some(probe.round.0),
+                Some(r) => Some(r.max(probe.round.0)),
+            }
         }
     }
 }
