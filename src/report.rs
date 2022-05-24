@@ -253,9 +253,9 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
 }
 
 /// Block until trace data for round `round` is available.
-fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, round: usize) -> anyhow::Result<Trace> {
+fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyhow::Result<Trace> {
     let mut trace = trace_data.read().clone();
-    while trace.round() < round - 1 {
+    while trace.round().is_none() || trace.round() < Some(report_cycles - 1) {
         trace = trace_data.read().clone();
         if let Some(err) = trace.error() {
             return Err(anyhow!("error: {}", err));
