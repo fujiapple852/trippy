@@ -1,6 +1,7 @@
 mod config;
 mod error;
 mod net;
+mod packet;
 mod probe;
 mod tracer;
 mod types;
@@ -12,3 +13,6 @@ pub use config::{
 pub use net::TracerChannel;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
 pub use tracer::{Tracer, TracerRound};
+
+pub use packet::ipv4::Ipv4Packet;
+pub use packet::udp::UdpPacket;
