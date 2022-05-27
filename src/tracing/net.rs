@@ -106,6 +106,7 @@ pub struct TracerChannel {
     tcp_connect_timeout: Duration,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
+    udp_socket: Socket,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
@@ -121,6 +122,7 @@ impl TracerChannel {
         }
         let src_addr = Self::make_src_addr(config)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel(config.addr_family)?;
+        let udp_socket = make_udp_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
@@ -135,6 +137,7 @@ impl TracerChannel {
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_tx,
             icmp_rx,
+            udp_socket,
             tcp_probes: ArrayVec::new(),
         })
     }
@@ -347,7 +350,8 @@ mod ipv4 {
     use crate::tracing::net::{ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE};
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
-    use crate::tracing::{PortDirection, Probe, TracerProtocol};
+    use crate::tracing::{Ipv4Packet, PortDirection, Probe, TracerProtocol, UdpPacket};
+    use nix::libc::IPPROTO_RAW;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
     use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
     use pnet::packet::icmp::echo_reply::EchoReplyPacket;
@@ -366,7 +370,8 @@ mod ipv4 {
         icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
         TransportReceiver, TransportSender,
     };
-    use std::net::{IpAddr, Ipv4Addr};
+    use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::{Duration, SystemTime};
 
     const MAX_ICMP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
@@ -391,6 +396,13 @@ mod ipv4 {
         let channel_type =
             TransportChannelType::Layer4(TransportProtocol::Ipv4(IpNextHeaderProtocols::Icmp));
         Ok(transport_channel(1600, channel_type)?)
+    }
+
+    pub fn make_udp_socket() -> TraceResult<Socket> {
+        let udp_socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+        udp_socket.set_nonblocking(true)?;
+        udp_socket.set_header_included(true)?;
+        Ok(udp_socket)
     }
 
     pub fn dispatch_icmp_probe(
@@ -610,6 +622,7 @@ mod ipv6 {
         icmpv6_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
         TransportReceiver, TransportSender,
     };
+    use socket2::{Domain, Protocol, Socket, Type};
     use std::net::IpAddr;
     use std::time::{Duration, SystemTime};
 
@@ -632,6 +645,13 @@ mod ipv6 {
         let channel_type =
             TransportChannelType::Layer4(TransportProtocol::Ipv6(IpNextHeaderProtocols::Icmpv6));
         Ok(transport_channel(1600, channel_type)?)
+    }
+
+    pub fn make_udp_socket() -> TraceResult<Socket> {
+        let udp_socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
+        udp_socket.set_nonblocking(true)?;
+        udp_socket.set_header_included(true)?;
+        Ok(udp_socket)
     }
 
     pub fn dispatch_icmp_probe(
@@ -858,6 +878,14 @@ fn make_icmp_channel(
     match addr_family {
         TracerAddrFamily::Ipv4 => ipv4::make_icmp_channel(),
         TracerAddrFamily::Ipv6 => ipv6::make_icmp_channel(),
+    }
+}
+
+/// Make a socket for sending `UDP` packets.
+fn make_udp_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::make_udp_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_udp_socket(),
     }
 }
 
