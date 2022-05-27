@@ -596,6 +596,20 @@ mod ipv4 {
             Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
         }
     }
+
+    /// Calculate the IPV4 checksum.
+    ///
+    /// TODO uses pnet
+    fn checksum_v4(bytes: &[u8], src_addr: Ipv4Addr, dest_addr: Ipv4Addr) -> u16 {
+        pnet::util::ipv4_checksum(
+            bytes,
+            3,
+            &[],
+            &src_addr,
+            &dest_addr,
+            pnet::packet::ip::IpNextHeaderProtocols::Udp,
+        )
+    }
 }
 
 /// IPv6 implementation.
