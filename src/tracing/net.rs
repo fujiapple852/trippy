@@ -588,7 +588,7 @@ mod ipv4 {
         }
     }
 
-    pub fn udp_payload_size(packet_size: usize) -> usize {
+    fn udp_payload_size(packet_size: usize) -> usize {
         let ip_header_size = pnet::packet::ipv4::Ipv4Packet::minimum_packet_size();
         let udp_header_size = pnet::packet::udp::UdpPacket::minimum_packet_size();
         packet_size - udp_header_size - ip_header_size
@@ -850,12 +850,6 @@ mod ipv6 {
             None => Ok(None),
             Some((icmp, ip)) => Ok(extract_probe_resp_v6(protocol, direction, &icmp, ip)?),
         }
-    }
-
-    pub fn udp_payload_size(packet_size: usize) -> usize {
-        let ip_header_size = Ipv6Packet::minimum_packet_size();
-        let udp_header_size = UdpPacket::minimum_packet_size();
-        packet_size - udp_header_size - ip_header_size
     }
 
     fn extract_probe_resp_v6(
