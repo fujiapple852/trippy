@@ -114,6 +114,7 @@ pub struct TracerChannel {
     protocol: TracerProtocol,
     addr_family: TracerAddrFamily,
     src_addr: IpAddr,
+    ipv4_length_order: Ipv4TotalLengthByteOrder,
     dest_addr: IpAddr,
     identifier: TraceId,
     packet_size: PacketSize,
@@ -139,12 +140,14 @@ impl TracerChannel {
             )));
         }
         let src_addr = Self::make_src_addr(config)?;
+        let ipv4_length_order = Self::discover_ip_length_byte_order(src_addr)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel(config.addr_family)?;
         let udp_socket = make_udp_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
             src_addr,
+            ipv4_length_order,
             dest_addr: config.target_addr,
             identifier: config.identifier,
             packet_size: config.packet_size,
