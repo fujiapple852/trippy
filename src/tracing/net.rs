@@ -1,8 +1,12 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::packet::ipv4::IpProtocol;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
+use crate::tracing::{
+    Ipv4Packet, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
+    UdpPacket,
+};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::libc::IPPROTO_RAW;
@@ -308,42 +312,22 @@ impl TracerChannel {
     ///
     /// This covers both the IPv4 and IPv6 cases.
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let (src_port, dest_port) = match self.port_direction {
-            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
-            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
-            PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
-        };
-        let socket = match self.addr_family {
-            TracerAddrFamily::Ipv4 => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP)),
-            TracerAddrFamily::Ipv6 => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP)),
-        }?;
-        socket.set_nonblocking(true)?;
-        let local_addr = SocketAddr::new(self.src_addr, src_port);
-        match socket.bind(&SockAddr::from(local_addr)) {
-            Ok(_) => {}
-            Err(err) => {
-                return match err.kind() {
-                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                        Err(AddressNotAvailable(local_addr))
-                    }
-                    _ => Err(TracerError::IoError(err)),
-                };
+        match (self.addr_family, self.src_addr, self.dest_addr) {
+            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
+                ipv4::dispatch_udp_probe(
+                    &mut self.udp_socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.port_direction,
+                    self.packet_size,
+                    self.payload_pattern,
+                    self.ipv4_length_order,
+                )
             }
-        };
-        socket.set_ttl(u32::from(probe.ttl.0))?;
-        socket.set_tos(u32::from(self.tos.0))?;
-        let packet_size = usize::from(self.packet_size.0);
-        let payload_size = match self.addr_family {
-            TracerAddrFamily::Ipv4 => ipv4::udp_payload_size(packet_size),
-            TracerAddrFamily::Ipv6 => ipv6::udp_payload_size(packet_size),
-        };
-        let mut payload_buf = [0_u8; MAX_PACKET_SIZE];
-        payload_buf
-            .iter_mut()
-            .for_each(|x| *x = self.payload_pattern.0);
-        let remote_addr = SocketAddr::new(self.dest_addr, dest_port);
-        socket.send_to(&payload_buf[..payload_size], &SockAddr::from(remote_addr))?;
-        Ok(())
+            (TracerAddrFamily::Ipv6, IpAddr::V6(_), IpAddr::V6(_)) => unimplemented!(),
+            _ => unreachable!(),
+        }
     }
 
     /// Dispatch a TCP probe.
