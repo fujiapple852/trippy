@@ -219,7 +219,7 @@ impl TracerChannel {
     ///
     /// TODO validate the latter cases on a BE system
     /// TODO what do we do for IPv6?
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(all(unix, not(target_os = "linux")))]
     fn discover_ip_length_byte_order(src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
         match Self::test_send_local_ip4_packet(src_addr, 256_u16) {
             Ok(_) => Ok(Ipv4TotalLengthByteOrder::Network),
@@ -233,21 +233,11 @@ impl TracerChannel {
         }
     }
 
-    /// Discover the required byte ordering for the IPv4 header field `total_length`.
-    ///
-    /// Linux accepts either network byte order or host byte order for the `total_length` field and so we skip the
-    /// check and return network bye order unconditionally.
-    ///
-    /// TODO move platform specifics into a separate module.
-    #[cfg(target_os = "linux")]
-    fn discover_ip_length_byte_order(src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
-        Ok(Ipv4TotalLengthByteOrder::Network)
-    }
-
     /// Open a raw socket and attempt to send an `ICMP` packet to a local address.
     ///
     /// The packet is actually of length `256` bytes but we set the `total_length` based on the input provided so as to
     /// test if the OS rejects the attempt.
+    #[cfg(all(unix, not(target_os = "linux")))]
     fn test_send_local_ip4_packet(src_addr: IpAddr, total_length: u16) -> TraceResult<usize> {
         let src_addr = match src_addr {
             IpAddr::V4(addr) => addr,
@@ -266,6 +256,17 @@ impl TracerChannel {
         probe_socket.set_header_included(true)?;
         let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
         Ok(probe_socket.send_to(ipv4.packet(), &SockAddr::from(remote_addr))?)
+    }
+
+    /// Discover the required byte ordering for the IPv4 header field `total_length`.
+    ///
+    /// Linux accepts either network byte order or host byte order for the `total_length` field and so we skip the
+    /// check and return network bye order unconditionally.
+    ///
+    /// TODO move platform specifics into a separate module.
+    #[cfg(target_os = "linux")]
+    fn discover_ip_length_byte_order(_src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
+        Ok(Ipv4TotalLengthByteOrder::Network)
     }
 }
 
