@@ -76,6 +76,12 @@ const MAX_TCP_PROBES: usize = 256;
 /// The maximum size of the IP packet we allow.
 const MAX_PACKET_SIZE: usize = 1024;
 
+/// The maximum size of UDP packet we allow.
+const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
+
+/// The maximum size of UDP payload we allow.
+const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_PACKET_BUF - UdpPacket::minimum_packet_size();
+
 /// The port used for local address discovery if not dest port is available.
 const DISCOVERY_PORT: Port = Port(80);
 
@@ -444,7 +450,11 @@ impl TracerChannel {
 /// IPv4 implementation.
 mod ipv4 {
     use crate::tracing::error::{TraceResult, TracerError};
-    use crate::tracing::net::{ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE};
+    use crate::tracing::net::{
+        Ipv4TotalLengthByteOrder, ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE,
+        MAX_UDP_PACKET_BUF, MAX_UDP_PAYLOAD_BUF,
+    };
+    use crate::tracing::packet::ipv4::IpProtocol;
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
     use crate::tracing::{Ipv4Packet, PortDirection, Probe, TracerProtocol, UdpPacket};
@@ -529,6 +539,56 @@ mod ipv4 {
         req.set_checksum(util::checksum(req.packet(), 1));
         icmp_tx.set_ttl(probe.ttl.0)?;
         icmp_tx.send_to(req.to_immutable(), dest_addr)?;
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn dispatch_udp_probe(
+        udp_socket: &mut Socket,
+        probe: Probe,
+        src_addr: Ipv4Addr,
+        dest_addr: Ipv4Addr,
+        port_direction: PortDirection,
+        packet_size: PacketSize,
+        payload_pattern: PayloadPattern,
+        ipv4_length_order: Ipv4TotalLengthByteOrder,
+    ) -> TraceResult<()> {
+        let (src_port, dest_port) = match port_direction {
+            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
+            PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+        };
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+        let mut udp_payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
+        let ipv4_packet_size = usize::from(packet_size.0);
+        let udp_payload_size = udp_payload_size(ipv4_packet_size);
+        let udp_packet_size = UdpPacket::minimum_packet_size() + udp_payload_size;
+        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + udp_packet_size) as u16;
+        let ipv4_total_length_header = match ipv4_length_order {
+            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
+            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
+        };
+        udp_payload_buf
+            .iter_mut()
+            .for_each(|x| *x = payload_pattern.0);
+        let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size as usize]).req()?;
+        udp.set_source(src_port);
+        udp.set_destination(dest_port);
+        udp.set_length(udp_packet_size as u16);
+        udp.set_payload(&udp_payload_buf[..udp_payload_size]);
+        udp.set_checksum(checksum_v4(udp.packet(), src_addr, dest_addr));
+        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
+        ipv4.set_version(4);
+        ipv4.set_header_length(5);
+        ipv4.set_total_length(ipv4_total_length_header);
+        ipv4.set_ttl(probe.ttl.0);
+        ipv4.set_protocol(IpProtocol::Udp);
+        ipv4.set_source(src_addr);
+        ipv4.set_destination(dest_addr);
+        ipv4.set_payload(udp.packet());
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
+        udp_socket.send_to(ipv4.packet(), &remote_addr)?;
         Ok(())
     }
 
