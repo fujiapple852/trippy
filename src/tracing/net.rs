@@ -463,8 +463,7 @@ mod ipv4 {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::{Duration, SystemTime};
 
-    const MAX_ICMP_BUF: usize =
-        MAX_PACKET_SIZE - pnet::packet::ipv4::Ipv4Packet::minimum_packet_size();
+    const MAX_ICMP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
     const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_BUF - EchoRequestPacket::minimum_packet_size();
 
     pub fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
@@ -507,7 +506,7 @@ mod ipv4 {
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
-        let ip_header_size = pnet::packet::ipv4::Ipv4Packet::minimum_packet_size();
+        let ip_header_size = Ipv4Packet::minimum_packet_size();
         let icmp_header_size = EchoRequestPacket::minimum_packet_size();
         let mut icmp_buf = [0_u8; MAX_ICMP_BUF];
         let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
@@ -589,7 +588,7 @@ mod ipv4 {
     }
 
     fn udp_payload_size(packet_size: usize) -> usize {
-        let ip_header_size = pnet::packet::ipv4::Ipv4Packet::minimum_packet_size();
+        let ip_header_size = Ipv4Packet::minimum_packet_size();
         let udp_header_size = pnet::packet::udp::UdpPacket::minimum_packet_size();
         packet_size - udp_header_size - ip_header_size
     }
@@ -696,7 +695,7 @@ mod ipv4 {
     }
 
     fn extract_echo_request_v4(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
-        let ip4 = pnet::packet::ipv4::Ipv4Packet::new(payload).req()?;
+        let ip4 = Ipv4Packet::new_view(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_icmp = &payload[header_len..];
         let nested_echo = EchoRequestPacket::new(nested_icmp).req()?;
@@ -705,7 +704,7 @@ mod ipv4 {
 
     /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
     fn extract_udp_packet_v4(payload: &[u8]) -> TraceResult<(u16, u16)> {
-        let ip4 = pnet::packet::ipv4::Ipv4Packet::new(payload).req()?;
+        let ip4 = Ipv4Packet::new_view(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_udp = &payload[header_len..];
         let nested = pnet::packet::udp::UdpPacket::new(nested_udp).req()?;
@@ -723,7 +722,7 @@ mod ipv4 {
     /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
     /// header.
     fn extract_tcp_packet_v4(payload: &[u8]) -> TraceResult<(u16, u16)> {
-        let ip4 = pnet::packet::ipv4::Ipv4Packet::new(payload).unwrap();
+        let ip4 = Ipv4Packet::new_view(payload).unwrap();
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_tcp = &payload[header_len..];
         if nested_tcp.len() < TcpPacket::minimum_packet_size() {
