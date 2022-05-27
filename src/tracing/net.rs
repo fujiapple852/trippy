@@ -1,6 +1,5 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::packet::ipv4::IpProtocol;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{
@@ -9,13 +8,12 @@ use crate::tracing::{
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
-use nix::libc::IPPROTO_RAW;
 use nix::sys::select::FdSet;
 use nix::sys::time::{TimeVal, TimeValLike};
 use pnet::transport::{TransportReceiver, TransportSender};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::ErrorKind;
-use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
+use std::net::{IpAddr, Shutdown, SocketAddr};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
@@ -115,6 +113,7 @@ impl TcpProbe {
 /// byte order.  Linux will accept either byte order."
 #[derive(Debug, Copy, Clone)]
 pub enum Ipv4TotalLengthByteOrder {
+    #[cfg(all(unix, not(target_os = "linux")))]
     Host,
     Network,
 }
@@ -247,14 +246,18 @@ impl TracerChannel {
         let mut ipv4 = Ipv4Packet::new(&mut buf).req()?;
         ipv4.set_version(4);
         ipv4.set_header_length(5);
-        ipv4.set_protocol(IpProtocol::Icmp);
+        ipv4.set_protocol(crate::tracing::packet::ipv4::IpProtocol::Icmp);
         ipv4.set_ttl(255);
         ipv4.set_source(src_addr);
-        ipv4.set_destination(Ipv4Addr::LOCALHOST);
+        ipv4.set_destination(std::net::Ipv4Addr::LOCALHOST);
         ipv4.set_total_length(total_length);
-        let probe_socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+        let probe_socket = Socket::new(
+            Domain::IPV4,
+            Type::RAW,
+            Some(Protocol::from(nix::libc::IPPROTO_RAW)),
+        )?;
         probe_socket.set_header_included(true)?;
-        let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+        let remote_addr = SocketAddr::new(IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), 0);
         Ok(probe_socket.send_to(ipv4.packet(), &SockAddr::from(remote_addr))?)
     }
 
@@ -265,6 +268,7 @@ impl TracerChannel {
     ///
     /// TODO move platform specifics into a separate module.
     #[cfg(target_os = "linux")]
+    #[allow(clippy::unnecessary_wraps)]
     fn discover_ip_length_byte_order(_src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
         Ok(Ipv4TotalLengthByteOrder::Network)
     }
@@ -550,6 +554,7 @@ mod ipv4 {
         let udp_packet_size = UdpPacket::minimum_packet_size() + udp_payload_size;
         let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + udp_packet_size) as u16;
         let ipv4_total_length_header = match ipv4_length_order {
+            #[cfg(all(unix, not(target_os = "linux")))]
             Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
             Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
         };

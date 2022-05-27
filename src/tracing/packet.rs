@@ -36,11 +36,11 @@ pub mod ipv4 {
     impl IpProtocol {
         pub fn id(self) -> u8 {
             match self {
-                IpProtocol::Icmp => 1,
-                IpProtocol::IcmpV6 => 58,
-                IpProtocol::Udp => 17,
-                IpProtocol::Tcp => 6,
-                IpProtocol::Other(id) => id,
+                Self::Icmp => 1,
+                Self::IcmpV6 => 58,
+                Self::Udp => 17,
+                Self::Tcp => 6,
+                Self::Other(id) => id,
             }
         }
 
