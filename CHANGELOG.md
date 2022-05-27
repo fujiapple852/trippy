@@ -9,9 +9,16 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for tracing using `IPv6` for `icmp` and `udp` ([#35](https://github.com/fujiapple852/trippy/issues/35))
+- Added BSOD error reporting to Tui ([#179](https://github.com/fujiapple852/trippy/issues/179))
+- Added Ctrl-C keyboard command to quit the Tui ([#91](https://github.com/fujiapple852/trippy/issues/91))
+
 ### Changed
 
 ### Fixed
+
+- Setting `-c` (`--report-cycles`) to 1 returns no traces ([#189](https://github.com/fujiapple852/trippy/issues/189))
+- Tracer failures not being shown for reports ([#183](https://github.com/fujiapple852/trippy/issues/183))
 
 ## [0.4.0] - 2022-05-18
 
@@ -20,7 +27,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `-P` (`--target-port`) flag to allow specifying the target
   port ([1](https://github.com/fujiapple852/trippy/commit/5773fe5e5323543612be6bd4606db5aa8347d71e),
   [2](https://github.com/fujiapple852/trippy/commit/9f03047dd231b10b13911fcc7af60afbb8b21473))
-- Added ability to tracing with either a fixed source or a fixed destination port for both `udp` and `tcp`
+- Added ability to trace with either a fixed source or a fixed destination port for both `udp` and `tcp`
   tracing ([#43](https://github.com/fujiapple852/trippy/issues/43))
 - Display source and destination ports in Tui ([#156](https://github.com/fujiapple852/trippy/issues/156))
 - Added the `-A` (`--source-address`) flag to allow specifying the source
