@@ -589,7 +589,7 @@ mod ipv4 {
 
     fn udp_payload_size(packet_size: usize) -> usize {
         let ip_header_size = Ipv4Packet::minimum_packet_size();
-        let udp_header_size = pnet::packet::udp::UdpPacket::minimum_packet_size();
+        let udp_header_size = UdpPacket::minimum_packet_size();
         packet_size - udp_header_size - ip_header_size
     }
 
@@ -707,7 +707,7 @@ mod ipv4 {
         let ip4 = Ipv4Packet::new_view(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_udp = &payload[header_len..];
-        let nested = pnet::packet::udp::UdpPacket::new(nested_udp).req()?;
+        let nested = UdpPacket::new_view(nested_udp).req()?;
         Ok((nested.get_source(), nested.get_destination()))
     }
 
@@ -757,7 +757,7 @@ mod ipv6 {
     use crate::tracing::net::{ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE};
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
-    use crate::tracing::{PortDirection, Probe, TracerProtocol};
+    use crate::tracing::{PortDirection, Probe, TracerProtocol, UdpPacket};
     use nix::sys::socket::{AddressFamily, SockaddrLike};
     use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
     use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
@@ -968,7 +968,7 @@ mod ipv6 {
         let payload_size = usize::from(ip6.get_payload_length());
         let header_size = packet_size - payload_size;
         let nested = &payload[header_size..];
-        let nested_udp = pnet::packet::udp::UdpPacket::new(nested).req()?;
+        let nested_udp = UdpPacket::new_view(nested).req()?;
         Ok((nested_udp.get_source(), nested_udp.get_destination()))
     }
 
