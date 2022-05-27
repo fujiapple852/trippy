@@ -722,7 +722,7 @@ mod ipv4 {
     /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
     /// header.
     fn extract_tcp_packet_v4(payload: &[u8]) -> TraceResult<(u16, u16)> {
-        let ip4 = Ipv4Packet::new_view(payload).unwrap();
+        let ip4 = Ipv4Packet::new_view(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_tcp = &payload[header_len..];
         if nested_tcp.len() < TcpPacket::minimum_packet_size() {
