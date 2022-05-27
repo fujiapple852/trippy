@@ -15,6 +15,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 
 - Trace using multiple protocols:
     - `ICMP`, `UDP` & `TCP`
+    - `IPv4` & `IPv6`
 - Customizable tracing options:
     - packet size & payload pattern
     - start and maximum time-to-live (TTL)
@@ -154,6 +155,12 @@ Trace with a source address determined by the IPv4 address for interface `en0`:
 trip www.bitwizard.nl -p tcp -I en0
 ```
 
+Trace using `IPv6`:
+
+```shell
+trip www.bitwizard.nl -6
+```
+
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
@@ -186,6 +193,12 @@ OPTIONS:
     -m, --mode <MODE>
             Output mode [default: tui] [possible values: tui, stream, pretty,
             markdown, csv, json]
+
+    -4, --ipv4
+            use IPv4 only
+
+    -6, --ipv6
+            Use IPv6 only
 
     -p, --protocol <PROTOCOL>
             Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
