@@ -26,9 +26,9 @@ pub struct Ipv4Packet<'a> {
 }
 
 impl<'a> Ipv4Packet<'a> {
-    pub fn new(packet: &mut [u8]) -> Option<Ipv4Packet<'_>> {
-        if packet.len() >= Ipv4Packet::minimum_packet_size() {
-            Some(Ipv4Packet {
+    pub fn new(packet: &'a mut [u8]) -> Option<Ipv4Packet<'_>> {
+        if packet.len() >= Self::minimum_packet_size() {
+            Some(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
@@ -37,9 +37,9 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     #[must_use]
-    pub fn new_view(packet: &[u8]) -> Option<Ipv4Packet<'_>> {
-        if packet.len() >= Ipv4Packet::minimum_packet_size() {
-            Some(Ipv4Packet {
+    pub fn new_view(packet: &'a [u8]) -> Option<Ipv4Packet<'_>> {
+        if packet.len() >= Self::minimum_packet_size() {
+            Some(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
