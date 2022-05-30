@@ -993,19 +993,19 @@ pub mod icmp {
             let mut packet = IcmpPacket::new(&mut buf).unwrap();
             packet.set_icmp_type(IcmpType::EchoRequest);
             assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-            assert_eq!([0x08], packet.buf.as_slice()[0..1]);
+            assert_eq!([0x08], packet.packet()[0..1]);
             packet.set_icmp_type(IcmpType::EchoReply);
             assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-            assert_eq!([0x00], packet.buf.as_slice()[0..1]);
+            assert_eq!([0x00], packet.packet()[0..1]);
             packet.set_icmp_type(IcmpType::DestinationUnreachable);
             assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-            assert_eq!([0x03], packet.buf.as_slice()[0..1]);
+            assert_eq!([0x03], packet.packet()[0..1]);
             packet.set_icmp_type(IcmpType::TimeExceeded);
             assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-            assert_eq!([0x0B], packet.buf.as_slice()[0..1]);
+            assert_eq!([0x0B], packet.packet()[0..1]);
             packet.set_icmp_type(IcmpType::Other(255));
             assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
-            assert_eq!([0xFF], packet.buf.as_slice()[0..1]);
+            assert_eq!([0xFF], packet.packet()[0..1]);
         }
 
         #[test]
@@ -1014,13 +1014,13 @@ pub mod icmp {
             let mut packet = IcmpPacket::new(&mut buf).unwrap();
             packet.set_icmp_code(IcmpCode(0));
             assert_eq!(IcmpCode(0), packet.get_icmp_code());
-            assert_eq!([0x00], packet.buf.as_slice()[1..2]);
+            assert_eq!([0x00], packet.packet()[1..2]);
             packet.set_icmp_code(IcmpCode(5));
             assert_eq!(IcmpCode(5), packet.get_icmp_code());
-            assert_eq!([0x05], packet.buf.as_slice()[1..2]);
+            assert_eq!([0x05], packet.packet()[1..2]);
             packet.set_icmp_code(IcmpCode(255));
             assert_eq!(IcmpCode(255), packet.get_icmp_code());
-            assert_eq!([0xFF], packet.buf.as_slice()[1..2]);
+            assert_eq!([0xFF], packet.packet()[1..2]);
         }
 
         #[test]
@@ -1029,13 +1029,13 @@ pub mod icmp {
             let mut packet = IcmpPacket::new(&mut buf).unwrap();
             packet.set_checksum(0);
             assert_eq!(0, packet.get_checksum());
-            assert_eq!([0x00, 0x00], packet.buf.as_slice()[2..=3]);
+            assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
             packet.set_checksum(1999);
             assert_eq!(1999, packet.get_checksum());
-            assert_eq!([0x07, 0xCF], packet.buf.as_slice()[2..=3]);
+            assert_eq!([0x07, 0xCF], packet.packet()[2..=3]);
             packet.set_checksum(u16::MAX);
             assert_eq!(u16::MAX, packet.get_checksum());
-            assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[2..=3]);
+            assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
         }
     }
 
@@ -1170,19 +1170,19 @@ pub mod icmp {
                 let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
                 packet.set_icmp_type(IcmpType::EchoRequest);
                 assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-                assert_eq!([0x08], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x08], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::EchoReply);
                 assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-                assert_eq!([0x00], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x00], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::DestinationUnreachable);
                 assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-                assert_eq!([0x03], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x03], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::TimeExceeded);
                 assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-                assert_eq!([0x0B], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x0B], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::Other(255));
                 assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
-                assert_eq!([0xFF], packet.buf.as_slice()[0..1]);
+                assert_eq!([0xFF], packet.packet()[0..1]);
             }
 
             #[test]
@@ -1191,13 +1191,13 @@ pub mod icmp {
                 let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
                 packet.set_icmp_code(IcmpCode(0));
                 assert_eq!(IcmpCode(0), packet.get_icmp_code());
-                assert_eq!([0x00], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x00], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(5));
                 assert_eq!(IcmpCode(5), packet.get_icmp_code());
-                assert_eq!([0x05], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x05], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(255));
                 assert_eq!(IcmpCode(255), packet.get_icmp_code());
-                assert_eq!([0xFF], packet.buf.as_slice()[1..2]);
+                assert_eq!([0xFF], packet.packet()[1..2]);
             }
 
             #[test]
@@ -1206,13 +1206,13 @@ pub mod icmp {
                 let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
                 packet.set_checksum(0);
                 assert_eq!(0, packet.get_checksum());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
                 packet.set_checksum(1999);
                 assert_eq!(1999, packet.get_checksum());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x07, 0xCF], packet.packet()[2..=3]);
                 packet.set_checksum(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_checksum());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
             }
 
             #[test]
@@ -1221,13 +1221,13 @@ pub mod icmp {
                 let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
                 packet.set_identifier(0);
                 assert_eq!(0, packet.get_identifier());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0x00, 0x00], packet.packet()[4..=5]);
                 packet.set_identifier(1999);
                 assert_eq!(1999, packet.get_identifier());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0x07, 0xCF], packet.packet()[4..=5]);
                 packet.set_identifier(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_identifier());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[4..=5]);
             }
 
             #[test]
@@ -1236,13 +1236,13 @@ pub mod icmp {
                 let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
                 packet.set_sequence(0);
                 assert_eq!(0, packet.get_sequence());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0x00, 0x00], packet.packet()[6..=7]);
                 packet.set_sequence(1999);
                 assert_eq!(1999, packet.get_sequence());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0x07, 0xCF], packet.packet()[6..=7]);
                 packet.set_sequence(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_sequence());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
             }
         }
     }
@@ -1378,19 +1378,19 @@ pub mod icmp {
                 let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
                 packet.set_icmp_type(IcmpType::EchoRequest);
                 assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-                assert_eq!([0x08], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x08], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::EchoReply);
                 assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-                assert_eq!([0x00], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x00], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::DestinationUnreachable);
                 assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-                assert_eq!([0x03], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x03], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::TimeExceeded);
                 assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-                assert_eq!([0x0B], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x0B], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::Other(255));
                 assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
-                assert_eq!([0xFF], packet.buf.as_slice()[0..1]);
+                assert_eq!([0xFF], packet.packet()[0..1]);
             }
 
             #[test]
@@ -1399,13 +1399,13 @@ pub mod icmp {
                 let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
                 packet.set_icmp_code(IcmpCode(0));
                 assert_eq!(IcmpCode(0), packet.get_icmp_code());
-                assert_eq!([0x00], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x00], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(5));
                 assert_eq!(IcmpCode(5), packet.get_icmp_code());
-                assert_eq!([0x05], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x05], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(255));
                 assert_eq!(IcmpCode(255), packet.get_icmp_code());
-                assert_eq!([0xFF], packet.buf.as_slice()[1..2]);
+                assert_eq!([0xFF], packet.packet()[1..2]);
             }
 
             #[test]
@@ -1414,13 +1414,13 @@ pub mod icmp {
                 let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
                 packet.set_checksum(0);
                 assert_eq!(0, packet.get_checksum());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
                 packet.set_checksum(1999);
                 assert_eq!(1999, packet.get_checksum());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x07, 0xCF], packet.packet()[2..=3]);
                 packet.set_checksum(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_checksum());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
             }
 
             #[test]
@@ -1429,13 +1429,13 @@ pub mod icmp {
                 let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
                 packet.set_identifier(0);
                 assert_eq!(0, packet.get_identifier());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0x00, 0x00], packet.packet()[4..=5]);
                 packet.set_identifier(1999);
                 assert_eq!(1999, packet.get_identifier());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0x07, 0xCF], packet.packet()[4..=5]);
                 packet.set_identifier(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_identifier());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[4..=5]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[4..=5]);
             }
 
             #[test]
@@ -1444,13 +1444,13 @@ pub mod icmp {
                 let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
                 packet.set_sequence(0);
                 assert_eq!(0, packet.get_sequence());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0x00, 0x00], packet.packet()[6..=7]);
                 packet.set_sequence(1999);
                 assert_eq!(1999, packet.get_sequence());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0x07, 0xCF], packet.packet()[6..=7]);
                 packet.set_sequence(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_sequence());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[6..=7]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
             }
         }
     }
@@ -1564,19 +1564,19 @@ pub mod icmp {
                 let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
                 packet.set_icmp_type(IcmpType::EchoRequest);
                 assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-                assert_eq!([0x08], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x08], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::EchoReply);
                 assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-                assert_eq!([0x00], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x00], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::DestinationUnreachable);
                 assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-                assert_eq!([0x03], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x03], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::TimeExceeded);
                 assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-                assert_eq!([0x0B], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x0B], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::Other(255));
                 assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
-                assert_eq!([0xFF], packet.buf.as_slice()[0..1]);
+                assert_eq!([0xFF], packet.packet()[0..1]);
             }
 
             #[test]
@@ -1585,13 +1585,13 @@ pub mod icmp {
                 let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
                 packet.set_icmp_code(IcmpCode(0));
                 assert_eq!(IcmpCode(0), packet.get_icmp_code());
-                assert_eq!([0x00], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x00], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(5));
                 assert_eq!(IcmpCode(5), packet.get_icmp_code());
-                assert_eq!([0x05], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x05], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(255));
                 assert_eq!(IcmpCode(255), packet.get_icmp_code());
-                assert_eq!([0xFF], packet.buf.as_slice()[1..2]);
+                assert_eq!([0xFF], packet.packet()[1..2]);
             }
 
             #[test]
@@ -1600,13 +1600,13 @@ pub mod icmp {
                 let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
                 packet.set_checksum(0);
                 assert_eq!(0, packet.get_checksum());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
                 packet.set_checksum(1999);
                 assert_eq!(1999, packet.get_checksum());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x07, 0xCF], packet.packet()[2..=3]);
                 packet.set_checksum(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_checksum());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
             }
         }
     }
@@ -1743,19 +1743,19 @@ pub mod icmp {
                 let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
                 packet.set_icmp_type(IcmpType::EchoRequest);
                 assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-                assert_eq!([0x08], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x08], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::EchoReply);
                 assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-                assert_eq!([0x00], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x00], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::DestinationUnreachable);
                 assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-                assert_eq!([0x03], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x03], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::TimeExceeded);
                 assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-                assert_eq!([0x0B], packet.buf.as_slice()[0..1]);
+                assert_eq!([0x0B], packet.packet()[0..1]);
                 packet.set_icmp_type(IcmpType::Other(255));
                 assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
-                assert_eq!([0xFF], packet.buf.as_slice()[0..1]);
+                assert_eq!([0xFF], packet.packet()[0..1]);
             }
 
             #[test]
@@ -1764,13 +1764,13 @@ pub mod icmp {
                 let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
                 packet.set_icmp_code(IcmpCode(0));
                 assert_eq!(IcmpCode(0), packet.get_icmp_code());
-                assert_eq!([0x00], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x00], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(5));
                 assert_eq!(IcmpCode(5), packet.get_icmp_code());
-                assert_eq!([0x05], packet.buf.as_slice()[1..2]);
+                assert_eq!([0x05], packet.packet()[1..2]);
                 packet.set_icmp_code(IcmpCode(255));
                 assert_eq!(IcmpCode(255), packet.get_icmp_code());
-                assert_eq!([0xFF], packet.buf.as_slice()[1..2]);
+                assert_eq!([0xFF], packet.packet()[1..2]);
             }
 
             #[test]
@@ -1779,13 +1779,13 @@ pub mod icmp {
                 let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
                 packet.set_checksum(0);
                 assert_eq!(0, packet.get_checksum());
-                assert_eq!([0x00, 0x00], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
                 packet.set_checksum(1999);
                 assert_eq!(1999, packet.get_checksum());
-                assert_eq!([0x07, 0xCF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0x07, 0xCF], packet.packet()[2..=3]);
                 packet.set_checksum(u16::MAX);
                 assert_eq!(u16::MAX, packet.get_checksum());
-                assert_eq!([0xFF, 0xFF], packet.buf.as_slice()[2..=3]);
+                assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
             }
         }
     }
