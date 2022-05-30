@@ -47,8 +47,7 @@ impl<'a> Buffer<'a> {
 }
 
 pub mod ipv4 {
-    use crate::tracing::packet::Buffer;
-    use itertools::Itertools;
+    use crate::tracing::packet::{fmt_payload, Buffer};
     use std::fmt::{Debug, Formatter};
     use std::net::Ipv4Addr;
 
@@ -419,10 +418,7 @@ pub mod ipv4 {
                 .field("source", &self.get_source())
                 .field("destination", &self.get_destination())
                 .field("options_raw", &self.get_options_raw())
-                .field(
-                    "payload",
-                    &format!("{:02x}", &self.payload().iter().format(" ")),
-                )
+                .field("payload", &fmt_payload(self.payload()))
                 .finish()
         }
     }
@@ -694,6 +690,7 @@ pub mod ipv4 {
 
 pub mod udp {
     use crate::tracing::packet::Buffer;
+    use std::fmt::{Debug, Formatter};
 
     const SOURCE_PORT_OFFSET: usize = 0;
     const DESTINATION_PORT_OFFSET: usize = 2;
@@ -826,6 +823,17 @@ pub mod udp {
         }
     }
 
+    impl Debug for UdpPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("UdpPacket")
+                .field("source", &self.get_source())
+                .field("destination", &self.get_destination())
+                .field("length", &self.get_length())
+                .field("checksum", &self.get_checksum())
+                .finish()
+        }
+    }
+
     #[cfg(test)]
     mod tests {
         use super::*;
@@ -916,7 +924,8 @@ pub mod udp {
 }
 
 pub mod icmp {
-    use crate::tracing::packet::Buffer;
+    use crate::tracing::packet::{fmt_payload, Buffer};
+    use std::fmt::{Debug, Formatter};
 
     /// The type of ICMP packet.
     #[derive(Debug, Copy, Clone)]
@@ -975,7 +984,6 @@ pub mod icmp {
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct IcmpPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1040,11 +1048,20 @@ pub mod icmp {
         }
     }
 
+    impl Debug for IcmpPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("IcmpPacket")
+                .field("icmp_type", &self.get_icmp_type())
+                .field("icmp_code", &self.get_icmp_code())
+                .field("checksum", &self.get_checksum())
+                .finish()
+        }
+    }
+
     /// Represents an ICMP `EchoRequest` packet.
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct EchoRequestPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1138,11 +1155,23 @@ pub mod icmp {
         }
     }
 
+    impl Debug for EchoRequestPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("EchoRequestPacket")
+                .field("icmp_type", &self.get_icmp_type())
+                .field("icmp_code", &self.get_icmp_code())
+                .field("checksum", &self.get_checksum())
+                .field("identifier", &self.get_identifier())
+                .field("sequence", &self.get_sequence())
+                .field("payload", &fmt_payload(self.payload()))
+                .finish()
+        }
+    }
+
     /// Represents an ICMP `EchoReply` packet.
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct EchoReplyPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1236,11 +1265,23 @@ pub mod icmp {
         }
     }
 
+    impl Debug for EchoReplyPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("EchoReplyPacket")
+                .field("icmp_type", &self.get_icmp_type())
+                .field("icmp_code", &self.get_icmp_code())
+                .field("checksum", &self.get_checksum())
+                .field("identifier", &self.get_identifier())
+                .field("sequence", &self.get_sequence())
+                .field("payload", &fmt_payload(self.payload()))
+                .finish()
+        }
+    }
+
     /// Represents an ICMP `TimeExceeded` packet.
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct TimeExceededPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1316,11 +1357,21 @@ pub mod icmp {
         }
     }
 
+    impl Debug for TimeExceededPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("TimeExceededPacket")
+                .field("icmp_type", &self.get_icmp_type())
+                .field("icmp_code", &self.get_icmp_code())
+                .field("checksum", &self.get_checksum())
+                .field("payload", &fmt_payload(self.payload()))
+                .finish()
+        }
+    }
+
     /// Represents an ICMP `DestinationUnreachable` packet.
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct DestinationUnreachablePacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1414,4 +1465,22 @@ pub mod icmp {
             &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
         }
     }
+
+    impl Debug for DestinationUnreachablePacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("DestinationUnreachablePacket")
+                .field("icmp_type", &self.get_icmp_type())
+                .field("icmp_code", &self.get_icmp_code())
+                .field("checksum", &self.get_checksum())
+                .field("unused", &self.get_unused())
+                .field("next_hop_mtu", &self.get_next_hop_mtu())
+                .field("payload", &fmt_payload(self.payload()))
+                .finish()
+        }
+    }
+}
+
+fn fmt_payload(bytes: &[u8]) -> String {
+    use itertools::Itertools as _;
+    format!("{:02x}", bytes.iter().format(" "))
 }
