@@ -48,6 +48,8 @@ impl<'a> Buffer<'a> {
 
 pub mod ipv4 {
     use crate::tracing::packet::Buffer;
+    use itertools::Itertools;
+    use std::fmt::{Debug, Formatter};
     use std::net::Ipv4Addr;
 
     const VERSION_OFFSET: usize = 0;
@@ -95,7 +97,6 @@ pub mod ipv4 {
     ///
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
-    #[derive(Debug)]
     pub struct Ipv4Packet<'a> {
         buffer: Buffer<'a>,
     }
@@ -399,6 +400,31 @@ pub mod ipv4 {
 
     fn ipv4_payload_length(ipv4: &Ipv4Packet<'_>) -> usize {
         (ipv4.get_total_length() as usize).saturating_sub(ipv4.get_header_length() as usize * 4)
+    }
+
+    impl Debug for Ipv4Packet<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("Ipv4Packet")
+                .field("version", &self.get_version())
+                .field("header_length", &self.get_header_length())
+                .field("dscp", &self.get_dscp())
+                .field("ecn", &self.get_ecn())
+                .field("total_length", &self.get_total_length())
+                .field("identification", &self.get_identification())
+                .field("flags", &self.get_flags())
+                .field("fragment_offset", &self.get_fragment_offset())
+                .field("ttl", &self.get_ttl())
+                .field("protocol", &self.get_protocol())
+                .field("checksum", &self.get_checksum())
+                .field("source", &self.get_source())
+                .field("destination", &self.get_destination())
+                .field("options_raw", &self.get_options_raw())
+                .field(
+                    "payload",
+                    &format!("{:02x}", &self.payload().iter().format(" ")),
+                )
+                .finish()
+        }
     }
 
     #[cfg(test)]
@@ -942,6 +968,8 @@ pub mod icmp {
     const CHECKSUM_OFFSET: usize = 2;
     const IDENTIFIER_OFFSET: usize = 4;
     const SEQUENCE_OFFSET: usize = 6;
+    const UNUSED_OFFSET: usize = 4;
+    const NEXT_HOP_MTU_OFFSET: usize = 6;
 
     /// Represents an ICMP packet.
     ///
@@ -1339,7 +1367,15 @@ pub mod icmp {
             u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
         }
 
-        // TODO "next hop MTU"
+        #[must_use]
+        pub fn get_unused(&self) -> u16 {
+            u16::from_be_bytes(self.buf.get_bytes_two(UNUSED_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_next_hop_mtu(&self) -> u16 {
+            u16::from_be_bytes(self.buf.get_bytes_two(NEXT_HOP_MTU_OFFSET))
+        }
 
         pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
@@ -1351,6 +1387,15 @@ pub mod icmp {
 
         pub fn set_checksum(&mut self, val: u16) {
             self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_unused(&mut self, val: u16) {
+            self.buf.set_bytes_two(UNUSED_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_next_hop_mtu(&mut self, val: u16) {
+            self.buf
+                .set_bytes_two(NEXT_HOP_MTU_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
