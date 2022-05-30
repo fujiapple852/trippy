@@ -97,14 +97,14 @@ pub mod ipv4 {
     /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
     /// data in host byte order, converting as necessary for the given architecture.
     pub struct Ipv4Packet<'a> {
-        buffer: Buffer<'a>,
+        buf: Buffer<'a>,
     }
 
     impl<'a> Ipv4Packet<'a> {
         pub fn new(packet: &mut [u8]) -> Option<Ipv4Packet<'_>> {
             if packet.len() >= Ipv4Packet::minimum_packet_size() {
                 Some(Ipv4Packet {
-                    buffer: Buffer::Mutable(packet),
+                    buf: Buffer::Mutable(packet),
                 })
             } else {
                 None
@@ -115,7 +115,7 @@ pub mod ipv4 {
         pub fn new_view(packet: &[u8]) -> Option<Ipv4Packet<'_>> {
             if packet.len() >= Ipv4Packet::minimum_packet_size() {
                 Some(Ipv4Packet {
-                    buffer: Buffer::Immutable(packet),
+                    buf: Buffer::Immutable(packet),
                 })
             } else {
                 None
@@ -129,55 +129,55 @@ pub mod ipv4 {
 
         #[must_use]
         pub fn get_version(&self) -> u8 {
-            (self.read(VERSION_OFFSET) & 0xf0) >> 4
+            (self.buf.read(VERSION_OFFSET) & 0xf0) >> 4
         }
 
         #[must_use]
         pub fn get_header_length(&self) -> u8 {
-            self.read(IHL_OFFSET) & 0xf
+            self.buf.read(IHL_OFFSET) & 0xf
         }
 
         #[must_use]
         pub fn get_dscp(&self) -> u8 {
-            (self.read(DSCP_OFFSET) & 0xfc) >> 2
+            (self.buf.read(DSCP_OFFSET) & 0xfc) >> 2
         }
 
         #[must_use]
         pub fn get_ecn(&self) -> u8 {
-            self.read(ECN_OFFSET) & 0x3
+            self.buf.read(ECN_OFFSET) & 0x3
         }
 
         #[must_use]
         pub fn get_total_length(&self) -> u16 {
-            u16::from_be_bytes(self.get_bytes_two(TOTAL_LENGTH_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes_two(TOTAL_LENGTH_OFFSET))
         }
 
         #[must_use]
         pub fn get_identification(&self) -> u16 {
-            u16::from_be_bytes(self.get_bytes_two(IDENTIFICATION_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes_two(IDENTIFICATION_OFFSET))
         }
 
         #[must_use]
         pub fn get_flags(&self) -> u8 {
-            (self.read(FLAGS_OFFSET) & 0xe0) >> 5
+            (self.buf.read(FLAGS_OFFSET) & 0xe0) >> 5
         }
 
         #[must_use]
         pub fn get_fragment_offset(&self) -> u16 {
             u16::from_be_bytes([
-                self.read(FRAGMENT_OFFSET_OFFSET) & 0x1f,
-                self.read(FRAGMENT_OFFSET_OFFSET + 1),
+                self.buf.read(FRAGMENT_OFFSET_OFFSET) & 0x1f,
+                self.buf.read(FRAGMENT_OFFSET_OFFSET + 1),
             ])
         }
 
         #[must_use]
         pub fn get_ttl(&self) -> u8 {
-            self.read(TIME_TO_LIVE_OFFSET)
+            self.buf.read(TIME_TO_LIVE_OFFSET)
         }
 
         #[must_use]
         pub fn get_protocol(&self) -> IpProtocol {
-            match self.read(PROTOCOL_OFFSET) {
+            match self.buf.read(PROTOCOL_OFFSET) {
                 1 => IpProtocol::Icmp,
                 58 => IpProtocol::IcmpV6,
                 17 => IpProtocol::Udp,
@@ -188,26 +188,26 @@ pub mod ipv4 {
 
         #[must_use]
         pub fn get_checksum(&self) -> u16 {
-            u16::from_be_bytes(self.get_bytes_two(CHECKSUM_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
         }
 
         #[must_use]
         pub fn get_source(&self) -> Ipv4Addr {
             Ipv4Addr::new(
-                self.read(SOURCE_OFFSET),
-                self.read(SOURCE_OFFSET + 1),
-                self.read(SOURCE_OFFSET + 2),
-                self.read(SOURCE_OFFSET + 3),
+                self.buf.read(SOURCE_OFFSET),
+                self.buf.read(SOURCE_OFFSET + 1),
+                self.buf.read(SOURCE_OFFSET + 2),
+                self.buf.read(SOURCE_OFFSET + 3),
             )
         }
 
         #[must_use]
         pub fn get_destination(&self) -> Ipv4Addr {
             Ipv4Addr::new(
-                self.read(DESTINATION_OFFSET),
-                self.read(DESTINATION_OFFSET + 1),
-                self.read(DESTINATION_OFFSET + 2),
-                self.read(DESTINATION_OFFSET + 3),
+                self.buf.read(DESTINATION_OFFSET),
+                self.buf.read(DESTINATION_OFFSET + 1),
+                self.buf.read(DESTINATION_OFFSET + 2),
+                self.buf.read(DESTINATION_OFFSET + 3),
             )
         }
 
@@ -215,8 +215,11 @@ pub mod ipv4 {
         pub fn get_options_raw(&self) -> &[u8] {
             use std::cmp::min;
             let current_offset = Self::minimum_packet_size();
-            let end = min(current_offset + ipv4_options_length(self), self.len());
-            &self.as_slice()[current_offset..end]
+            let end = min(
+                current_offset + ipv4_options_length(self),
+                self.buf.as_slice().len(),
+            );
+            &self.buf.as_slice()[current_offset..end]
         }
 
         // pub fn get_options(&self) -> Vec<Ipv4Option> {
@@ -235,73 +238,80 @@ pub mod ipv4 {
         // }
 
         pub fn set_version(&mut self, val: u8) {
-            *self.write(VERSION_OFFSET) = (self.read(VERSION_OFFSET) & 0xf) | ((val & 0xf) << 4);
+            *self.buf.write(VERSION_OFFSET) =
+                (self.buf.read(VERSION_OFFSET) & 0xf) | ((val & 0xf) << 4);
         }
 
         pub fn set_header_length(&mut self, val: u8) {
-            *self.write(IHL_OFFSET) = (self.read(IHL_OFFSET) & 0xf0) | (val & 0xf);
+            *self.buf.write(IHL_OFFSET) = (self.buf.read(IHL_OFFSET) & 0xf0) | (val & 0xf);
         }
 
         pub fn set_dscp(&mut self, val: u8) {
-            *self.write(DSCP_OFFSET) = (self.read(DSCP_OFFSET) & 0x3) | ((val & 0x3f) << 2);
+            *self.buf.write(DSCP_OFFSET) = (self.buf.read(DSCP_OFFSET) & 0x3) | ((val & 0x3f) << 2);
         }
 
         pub fn set_ecn(&mut self, val: u8) {
-            *self.write(ECN_OFFSET) = (self.read(ECN_OFFSET) & 0xfc) | (val & 0x3);
+            *self.buf.write(ECN_OFFSET) = (self.buf.read(ECN_OFFSET) & 0xfc) | (val & 0x3);
         }
 
         pub fn set_total_length(&mut self, val: u16) {
-            self.set_bytes_two(TOTAL_LENGTH_OFFSET, val.to_be_bytes());
+            self.buf
+                .set_bytes_two(TOTAL_LENGTH_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_identification(&mut self, val: u16) {
-            self.set_bytes_two(IDENTIFICATION_OFFSET, val.to_be_bytes());
+            self.buf
+                .set_bytes_two(IDENTIFICATION_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_flags(&mut self, val: u8) {
-            *self.write(FLAGS_OFFSET) = (self.read(FLAGS_OFFSET) & 0x1f) | ((val & 0x7) << 5);
+            *self.buf.write(FLAGS_OFFSET) =
+                (self.buf.read(FLAGS_OFFSET) & 0x1f) | ((val & 0x7) << 5);
         }
 
         pub fn set_fragment_offset(&mut self, val: u16) {
             let bytes = val.to_be_bytes();
-            let flags = self.read(FRAGMENT_OFFSET_OFFSET) & 0xe0;
-            *self.write(FRAGMENT_OFFSET_OFFSET) = flags | (bytes[0] & 0x1f);
-            *self.write(FRAGMENT_OFFSET_OFFSET + 1) = bytes[1];
+            let flags = self.buf.read(FRAGMENT_OFFSET_OFFSET) & 0xe0;
+            *self.buf.write(FRAGMENT_OFFSET_OFFSET) = flags | (bytes[0] & 0x1f);
+            *self.buf.write(FRAGMENT_OFFSET_OFFSET + 1) = bytes[1];
         }
 
         pub fn set_ttl(&mut self, val: u8) {
-            *self.write(TIME_TO_LIVE_OFFSET) = val;
+            *self.buf.write(TIME_TO_LIVE_OFFSET) = val;
         }
 
         pub fn set_protocol(&mut self, val: IpProtocol) {
-            *self.write(PROTOCOL_OFFSET) = val.id();
+            *self.buf.write(PROTOCOL_OFFSET) = val.id();
         }
 
         pub fn set_checksum(&mut self, val: u16) {
-            self.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_source(&mut self, val: Ipv4Addr) {
             let vals = val.octets();
-            *self.write(SOURCE_OFFSET) = vals[0];
-            *self.write(SOURCE_OFFSET + 1) = vals[1];
-            *self.write(SOURCE_OFFSET + 2) = vals[2];
-            *self.write(SOURCE_OFFSET + 3) = vals[3];
+            *self.buf.write(SOURCE_OFFSET) = vals[0];
+            *self.buf.write(SOURCE_OFFSET + 1) = vals[1];
+            *self.buf.write(SOURCE_OFFSET + 2) = vals[2];
+            *self.buf.write(SOURCE_OFFSET + 3) = vals[3];
         }
 
         pub fn set_destination(&mut self, val: Ipv4Addr) {
             let vals = val.octets();
-            *self.write(DESTINATION_OFFSET) = vals[0];
-            *self.write(DESTINATION_OFFSET + 1) = vals[1];
-            *self.write(DESTINATION_OFFSET + 2) = vals[2];
-            *self.write(DESTINATION_OFFSET + 3) = vals[3];
+            *self.buf.write(DESTINATION_OFFSET) = vals[0];
+            *self.buf.write(DESTINATION_OFFSET + 1) = vals[1];
+            *self.buf.write(DESTINATION_OFFSET + 2) = vals[2];
+            *self.buf.write(DESTINATION_OFFSET + 3) = vals[3];
         }
 
         pub fn get_options_raw_mut(&mut self) -> &mut [u8] {
             use std::cmp::min;
             let current_offset = Self::minimum_packet_size();
-            let end = min(current_offset + ipv4_options_length(self), self.len());
-            &mut self.as_slice_mut()[current_offset..end]
+            let end = min(
+                current_offset + ipv4_options_length(self),
+                self.buf.as_slice().len(),
+            );
+            &mut self.buf.as_slice_mut()[current_offset..end]
         }
 
         // pub fn set_options(&mut self, vals: &[Ipv4Option]) {
@@ -325,12 +335,13 @@ pub mod ipv4 {
                 (vals.len() <= ipv4_payload_length(self)),
                 "vals.len() <= len"
             );
-            self.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
+            self.buf.as_slice_mut()[current_offset..current_offset + vals.len()]
+                .copy_from_slice(vals);
         }
 
         #[must_use]
         pub fn packet(&self) -> &[u8] {
-            self.as_slice()
+            self.buf.as_slice()
         }
 
         #[must_use]
@@ -338,58 +349,12 @@ pub mod ipv4 {
             let start = Self::minimum_packet_size() + ipv4_options_length(self);
             let end = std::cmp::min(
                 Self::minimum_packet_size() + ipv4_options_length(self) + ipv4_payload_length(self),
-                self.len(),
+                self.buf.as_slice().len(),
             );
-            if self.len() <= start {
+            if self.buf.as_slice().len() <= start {
                 return &[];
             }
-            &self.as_slice()[start..end]
-        }
-
-        /// Get two bytes from the packet at a given byte offset.
-        fn get_bytes_two(&self, offset: usize) -> [u8; 2] {
-            [self.read(offset), self.read(offset + 1)]
-        }
-
-        /// Set two bytes in the packet at a given offset.
-        pub fn set_bytes_two(&mut self, offset: usize, bytes: [u8; 2]) {
-            *self.write(offset) = bytes[0];
-            *self.write(offset + 1) = bytes[1];
-        }
-
-        fn len(&self) -> usize {
-            match &self.buffer {
-                Buffer::Immutable(packet) => packet.len(),
-                Buffer::Mutable(packet) => packet.len(),
-            }
-        }
-
-        fn read(&self, offset: usize) -> u8 {
-            match &self.buffer {
-                Buffer::Immutable(packet) => packet[offset],
-                Buffer::Mutable(packet) => packet[offset],
-            }
-        }
-
-        fn as_slice(&self) -> &[u8] {
-            match &self.buffer {
-                Buffer::Immutable(packet) => packet,
-                Buffer::Mutable(packet) => packet,
-            }
-        }
-
-        fn write(&mut self, offset: usize) -> &mut u8 {
-            match &mut self.buffer {
-                Buffer::Immutable(_) => panic!("write operation called on readonly buffer"),
-                Buffer::Mutable(packet) => &mut packet[offset],
-            }
-        }
-
-        fn as_slice_mut(&mut self) -> &mut [u8] {
-            match &mut self.buffer {
-                Buffer::Immutable(_) => panic!("write operation called on readonly buffer"),
-                Buffer::Mutable(packet) => *packet,
-            }
+            &self.buf.as_slice()[start..end]
         }
     }
 
@@ -433,10 +398,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_version(4);
             assert_eq!(4, packet.get_version());
-            assert_eq!([0x40], packet.as_slice()[..1]);
+            assert_eq!([0x40], packet.packet()[..1]);
             packet.set_version(15);
             assert_eq!(15, packet.get_version());
-            assert_eq!([0xF0], packet.as_slice()[..1]);
+            assert_eq!([0xF0], packet.packet()[..1]);
         }
 
         #[test]
@@ -445,10 +410,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_header_length(5);
             assert_eq!(5, packet.get_header_length());
-            assert_eq!([0x05], packet.as_slice()[..1]);
+            assert_eq!([0x05], packet.packet()[..1]);
             packet.set_header_length(15);
             assert_eq!(15, packet.get_header_length());
-            assert_eq!([0x0F], packet.as_slice()[..1]);
+            assert_eq!([0x0F], packet.packet()[..1]);
         }
 
         #[test]
@@ -459,12 +424,12 @@ pub mod ipv4 {
             packet.set_header_length(5);
             assert_eq!(4, packet.get_version());
             assert_eq!(5, packet.get_header_length());
-            assert_eq!([0x45], packet.as_slice()[..1]);
+            assert_eq!([0x45], packet.packet()[..1]);
             packet.set_version(15);
             packet.set_header_length(15);
             assert_eq!(15, packet.get_version());
             assert_eq!(15, packet.get_header_length());
-            assert_eq!([0xFF], packet.as_slice()[..1]);
+            assert_eq!([0xFF], packet.packet()[..1]);
         }
 
         #[test]
@@ -473,7 +438,7 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_dscp(63);
             assert_eq!(63, packet.get_dscp());
-            assert_eq!([0x00, 0xFC], packet.as_slice()[..2]);
+            assert_eq!([0x00, 0xFC], packet.packet()[..2]);
         }
 
         #[test]
@@ -482,7 +447,7 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_ecn(3);
             assert_eq!(3, packet.get_ecn());
-            assert_eq!([0x00, 0x03], packet.as_slice()[..2]);
+            assert_eq!([0x00, 0x03], packet.packet()[..2]);
         }
 
         #[test]
@@ -493,7 +458,7 @@ pub mod ipv4 {
             packet.set_ecn(3);
             assert_eq!(63, packet.get_dscp());
             assert_eq!(3, packet.get_ecn());
-            assert_eq!([0x00, 0xFF], packet.as_slice()[..2]);
+            assert_eq!([0x00, 0xFF], packet.packet()[..2]);
         }
 
         #[test]
@@ -502,10 +467,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_total_length(84);
             assert_eq!(84, packet.get_total_length());
-            assert_eq!([0x00, 0x54], packet.as_slice()[2..=3]);
+            assert_eq!([0x00, 0x54], packet.packet()[2..=3]);
             packet.set_total_length(65535);
             assert_eq!(65535, packet.get_total_length());
-            assert_eq!([0xFF, 0xFF], packet.as_slice()[2..=3]);
+            assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
         }
 
         #[test]
@@ -514,10 +479,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_identification(32);
             assert_eq!(32, packet.get_identification());
-            assert_eq!([0x00, 0x20], packet.as_slice()[4..=5]);
+            assert_eq!([0x00, 0x20], packet.packet()[4..=5]);
             packet.set_identification(u16::MAX);
             assert_eq!(u16::MAX, packet.get_identification());
-            assert_eq!([0xFF, 0xFF], packet.as_slice()[4..=5]);
+            assert_eq!([0xFF, 0xFF], packet.packet()[4..=5]);
         }
 
         #[test]
@@ -526,10 +491,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_flags(2);
             assert_eq!(2, packet.get_flags());
-            assert_eq!([0x40], packet.as_slice()[6..7]);
+            assert_eq!([0x40], packet.packet()[6..7]);
             packet.set_flags(7);
             assert_eq!(7, packet.get_flags());
-            assert_eq!([0xE0], packet.as_slice()[6..7]);
+            assert_eq!([0xE0], packet.packet()[6..7]);
         }
 
         #[test]
@@ -538,13 +503,13 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_fragment_offset(0);
             assert_eq!(0, packet.get_fragment_offset());
-            assert_eq!([0x00, 0x00], packet.as_slice()[6..=7]);
+            assert_eq!([0x00, 0x00], packet.packet()[6..=7]);
             packet.set_fragment_offset(500);
             assert_eq!(500, packet.get_fragment_offset());
-            assert_eq!([0x01, 0xF4], packet.as_slice()[6..=7]);
+            assert_eq!([0x01, 0xF4], packet.packet()[6..=7]);
             packet.set_fragment_offset(8191);
             assert_eq!(8191, packet.get_fragment_offset());
-            assert_eq!([0x1F, 0xFF], packet.as_slice()[6..=7]);
+            assert_eq!([0x1F, 0xFF], packet.packet()[6..=7]);
         }
 
         #[test]
@@ -555,12 +520,12 @@ pub mod ipv4 {
             packet.set_fragment_offset(99);
             assert_eq!(3, packet.get_flags());
             assert_eq!(99, packet.get_fragment_offset());
-            assert_eq!([0x60, 0x63], packet.as_slice()[6..=7]);
+            assert_eq!([0x60, 0x63], packet.packet()[6..=7]);
             packet.set_flags(7);
             packet.set_fragment_offset(8191);
             assert_eq!(7, packet.get_flags());
             assert_eq!(8191, packet.get_fragment_offset());
-            assert_eq!([0xFF, 0xFF], packet.as_slice()[6..=7]);
+            assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
         }
 
         #[test]
@@ -569,10 +534,10 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_ttl(16);
             assert_eq!(16, packet.get_ttl());
-            assert_eq!([0x10], packet.as_slice()[8..9]);
+            assert_eq!([0x10], packet.packet()[8..9]);
             packet.set_ttl(u8::MAX);
             assert_eq!(u8::MAX, packet.get_ttl());
-            assert_eq!([0xFF], packet.as_slice()[8..9]);
+            assert_eq!([0xFF], packet.packet()[8..9]);
         }
 
         #[test]
@@ -581,22 +546,22 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_protocol(IpProtocol::Icmp);
             assert_eq!(IpProtocol::Icmp, packet.get_protocol());
-            assert_eq!([0x01], packet.as_slice()[9..10]);
+            assert_eq!([0x01], packet.packet()[9..10]);
             packet.set_protocol(IpProtocol::IcmpV6);
             assert_eq!(IpProtocol::IcmpV6, packet.get_protocol());
-            assert_eq!([0x3A], packet.as_slice()[9..10]);
+            assert_eq!([0x3A], packet.packet()[9..10]);
             packet.set_protocol(IpProtocol::Udp);
             assert_eq!(IpProtocol::Udp, packet.get_protocol());
-            assert_eq!([0x11], packet.as_slice()[9..10]);
+            assert_eq!([0x11], packet.packet()[9..10]);
             packet.set_protocol(IpProtocol::Tcp);
             assert_eq!(IpProtocol::Tcp, packet.get_protocol());
-            assert_eq!([0x06], packet.as_slice()[9..10]);
+            assert_eq!([0x06], packet.packet()[9..10]);
             packet.set_protocol(IpProtocol::Other(123));
             assert_eq!(IpProtocol::Other(123), packet.get_protocol());
-            assert_eq!([0x7B], packet.as_slice()[9..10]);
+            assert_eq!([0x7B], packet.packet()[9..10]);
             packet.set_protocol(IpProtocol::Other(255));
             assert_eq!(IpProtocol::Other(255), packet.get_protocol());
-            assert_eq!([0xFF], packet.as_slice()[9..10]);
+            assert_eq!([0xFF], packet.packet()[9..10]);
         }
 
         #[test]
@@ -605,13 +570,13 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_checksum(0);
             assert_eq!(0, packet.get_checksum());
-            assert_eq!([0x00, 0x00], packet.as_slice()[10..=11]);
+            assert_eq!([0x00, 0x00], packet.packet()[10..=11]);
             packet.set_checksum(12345);
             assert_eq!(12345, packet.get_checksum());
-            assert_eq!([0x30, 0x39], packet.as_slice()[10..=11]);
+            assert_eq!([0x30, 0x39], packet.packet()[10..=11]);
             packet.set_checksum(u16::MAX);
             assert_eq!(u16::MAX, packet.get_checksum());
-            assert_eq!([0x0FF, 0xFF], packet.as_slice()[10..=11]);
+            assert_eq!([0x0FF, 0xFF], packet.packet()[10..=11]);
         }
 
         #[test]
@@ -620,16 +585,16 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_source(Ipv4Addr::LOCALHOST);
             assert_eq!(Ipv4Addr::LOCALHOST, packet.get_source());
-            assert_eq!([0x07F, 0x00, 0x00, 0x01], packet.as_slice()[12..=15]);
+            assert_eq!([0x07F, 0x00, 0x00, 0x01], packet.packet()[12..=15]);
             packet.set_source(Ipv4Addr::UNSPECIFIED);
             assert_eq!(Ipv4Addr::UNSPECIFIED, packet.get_source());
-            assert_eq!([0x00, 0x00, 0x00, 0x00], packet.as_slice()[12..=15]);
+            assert_eq!([0x00, 0x00, 0x00, 0x00], packet.packet()[12..=15]);
             packet.set_source(Ipv4Addr::BROADCAST);
             assert_eq!(Ipv4Addr::BROADCAST, packet.get_source());
-            assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.as_slice()[12..=15]);
+            assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.packet()[12..=15]);
             packet.set_source(Ipv4Addr::new(0xDE, 0x9A, 0x56, 0x12));
             assert_eq!(Ipv4Addr::new(0xDE, 0x9A, 0x56, 0x12), packet.get_source());
-            assert_eq!([0xDE, 0x9A, 0x56, 0x12], packet.as_slice()[12..=15]);
+            assert_eq!([0xDE, 0x9A, 0x56, 0x12], packet.packet()[12..=15]);
         }
 
         #[test]
@@ -638,19 +603,19 @@ pub mod ipv4 {
             let mut packet = Ipv4Packet::new(&mut buf).unwrap();
             packet.set_destination(Ipv4Addr::LOCALHOST);
             assert_eq!(Ipv4Addr::LOCALHOST, packet.get_destination());
-            assert_eq!([0x07F, 0x00, 0x00, 0x01], packet.as_slice()[16..=19]);
+            assert_eq!([0x07F, 0x00, 0x00, 0x01], packet.packet()[16..=19]);
             packet.set_destination(Ipv4Addr::UNSPECIFIED);
             assert_eq!(Ipv4Addr::UNSPECIFIED, packet.get_destination());
-            assert_eq!([0x00, 0x00, 0x00, 0x00], packet.as_slice()[16..=19]);
+            assert_eq!([0x00, 0x00, 0x00, 0x00], packet.packet()[16..=19]);
             packet.set_destination(Ipv4Addr::BROADCAST);
             assert_eq!(Ipv4Addr::BROADCAST, packet.get_destination());
-            assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.as_slice()[16..=19]);
+            assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.packet()[16..=19]);
             packet.set_destination(Ipv4Addr::new(0xDE, 0x9A, 0x56, 0x12));
             assert_eq!(
                 Ipv4Addr::new(0xDE, 0x9A, 0x56, 0x12),
                 packet.get_destination()
             );
-            assert_eq!([0xDE, 0x9A, 0x56, 0x12], packet.as_slice()[16..=19]);
+            assert_eq!([0xDE, 0x9A, 0x56, 0x12], packet.packet()[16..=19]);
         }
 
         // #[test]
