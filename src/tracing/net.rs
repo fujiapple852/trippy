@@ -1,11 +1,9 @@
 use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::packet::ipv4::Ipv4Packet;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{
-    Ipv4Packet, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
-    UdpPacket,
-};
+use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -77,12 +75,6 @@ const MAX_TCP_PROBES: usize = 256;
 
 /// The maximum size of the IP packet we allow.
 const MAX_PACKET_SIZE: usize = 1024;
-
-/// The maximum size of UDP packet we allow.
-const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
-
-/// The maximum size of UDP payload we allow.
-const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_PACKET_BUF - UdpPacket::minimum_packet_size();
 
 /// The port used for local address discovery if not dest port is available.
 const DISCOVERY_PORT: Port = Port(80);
@@ -249,7 +241,7 @@ impl TracerChannel {
         let mut ipv4 = Ipv4Packet::new(&mut buf).req()?;
         ipv4.set_version(4);
         ipv4.set_header_length(5);
-        ipv4.set_protocol(crate::tracing::packet::ipv4::IpProtocol::Icmp);
+        ipv4.set_protocol(crate::tracing::packet::IpProtocol::Icmp);
         ipv4.set_ttl(255);
         ipv4.set_source(src_addr);
         ipv4.set_destination(std::net::Ipv4Addr::LOCALHOST);
@@ -296,8 +288,20 @@ impl Network for TracerChannel {
 
 impl TracerChannel {
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        match self.addr_family {
-            TracerAddrFamily::Ipv4 => ipv4::dispatch_icmp_probe(
+        match (self.addr_family, self.src_addr, self.dest_addr) {
+            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
+                ipv4::dispatch_icmp_probe(
+                    &mut self.send_socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.identifier,
+                    self.packet_size,
+                    self.payload_pattern,
+                    self.ipv4_length_order,
+                )
+            }
+            (TracerAddrFamily::Ipv6, _, _) => ipv6::dispatch_icmp_probe(
                 &mut self.icmp_tx,
                 probe,
                 self.dest_addr,
@@ -305,14 +309,7 @@ impl TracerChannel {
                 self.packet_size,
                 self.payload_pattern,
             ),
-            TracerAddrFamily::Ipv6 => ipv6::dispatch_icmp_probe(
-                &mut self.icmp_tx,
-                probe,
-                self.dest_addr,
-                self.identifier,
-                self.packet_size,
-                self.payload_pattern,
-            ),
+            _ => unimplemented!(),
         }
     }
 
@@ -323,7 +320,7 @@ impl TracerChannel {
         match (self.addr_family, self.src_addr, self.dest_addr) {
             (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
                 ipv4::dispatch_udp_probe(
-                    &mut self.udp_socket,
+                    &mut self.send_socket,
                     probe,
                     src_addr,
                     dest_addr,
@@ -383,12 +380,9 @@ impl TracerChannel {
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         match self.addr_family {
-            TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
-                &mut self.icmp_rx,
-                self.icmp_read_timeout,
-                self.protocol,
-                self.port_direction,
-            ),
+            TracerAddrFamily::Ipv4 => {
+                ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
+            }
             TracerAddrFamily::Ipv6 => ipv6::recv_icmp_probe(
                 &mut self.icmp_rx,
                 self.icmp_read_timeout,
@@ -444,35 +438,42 @@ mod ipv4 {
     use crate::tracing::error::{TraceResult, TracerError};
     use crate::tracing::net::{
         Ipv4TotalLengthByteOrder, ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE,
-        MAX_UDP_PACKET_BUF, MAX_UDP_PAYLOAD_BUF,
     };
-    use crate::tracing::packet::ipv4::IpProtocol;
+    use crate::tracing::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
+    use crate::tracing::packet::icmp::echo_reply::EchoReplyPacket;
+    use crate::tracing::packet::icmp::echo_request::EchoRequestPacket;
+    use crate::tracing::packet::icmp::time_exceeded::TimeExceededPacket;
+    use crate::tracing::packet::icmp::{IcmpCode, IcmpPacket, IcmpType};
+    use crate::tracing::packet::ipv4::Ipv4Packet;
+    use crate::tracing::packet::udp::UdpPacket;
+    use crate::tracing::packet::IpProtocol;
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
-    use crate::tracing::{Ipv4Packet, PortDirection, Probe, TracerProtocol, UdpPacket};
+    use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::libc::IPPROTO_RAW;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
-    use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
-    use pnet::packet::icmp::echo_reply::EchoReplyPacket;
-    use pnet::packet::icmp::echo_request::IcmpCodes;
-    use pnet::packet::icmp::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
-    use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
-    use pnet::packet::icmp::IcmpPacket;
-    use pnet::packet::icmp::IcmpTypes;
     use pnet::packet::ip::IpNextHeaderProtocols;
     use pnet::packet::tcp::TcpPacket;
-    use pnet::packet::util;
-    use pnet::packet::Packet;
     use pnet::transport::{
-        icmp_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
-        TransportReceiver, TransportSender,
+        transport_channel, TransportChannelType, TransportProtocol, TransportReceiver,
+        TransportSender,
     };
     use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+    use std::io::{ErrorKind, Read};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-    use std::time::{Duration, SystemTime};
+    use std::time::SystemTime;
 
-    const MAX_ICMP_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
-    const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_BUF - EchoRequestPacket::minimum_packet_size();
+    /// The maximum size of UDP packet we allow.
+    const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
+
+    /// The maximum size of UDP payload we allow.
+    const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_PACKET_BUF - UdpPacket::minimum_packet_size();
+
+    /// The maximum size of UDP packet we allow.
+    const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
+
+    /// The maximum size of ICMP payload we allow.
+    const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
     pub fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
         nix::ifaddrs::getifaddrs()
@@ -509,40 +510,61 @@ mod ipv4 {
         Ok(socket)
     }
 
+    // TODO refactor generic IPv4 sending for use by icmp and udp.
+    #[allow(clippy::too_many_arguments)]
     pub fn dispatch_icmp_probe(
-        icmp_tx: &mut TransportSender,
+        raw_send_socket: &mut Socket,
         probe: Probe,
-        dest_addr: IpAddr,
+        src_addr: Ipv4Addr,
+        dest_addr: Ipv4Addr,
         identifier: TraceId,
         packet_size: PacketSize,
         payload_pattern: PayloadPattern,
+        ipv4_length_order: Ipv4TotalLengthByteOrder,
     ) -> TraceResult<()> {
         let packet_size = usize::from(packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
-        let ip_header_size = Ipv4Packet::minimum_packet_size();
-        let icmp_header_size = EchoRequestPacket::minimum_packet_size();
-        let mut icmp_buf = [0_u8; MAX_ICMP_BUF];
-        let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
-        let icmp_buf_size = packet_size - ip_header_size;
-        let payload_size = packet_size - icmp_header_size - ip_header_size;
-        payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
-        let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
-        req.set_icmp_type(IcmpTypes::EchoRequest);
-        req.set_icmp_code(IcmpCodes::NoCode);
-        req.set_identifier(identifier.0);
-        req.set_payload(&payload_buf[..payload_size]);
-        req.set_sequence_number(probe.sequence.0);
-        req.set_checksum(util::checksum(req.packet(), 1));
-        icmp_tx.set_ttl(probe.ttl.0)?;
-        icmp_tx.send_to(req.to_immutable(), dest_addr)?;
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
+        let mut icmp_payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
+        let ipv4_packet_size = packet_size;
+        let icmp_payload_size = icmp_payload_size(ipv4_packet_size);
+        let icmp_packet_size = IcmpPacket::minimum_packet_size() + icmp_payload_size;
+        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + icmp_packet_size) as u16;
+        let ipv4_total_length_header = match ipv4_length_order {
+            #[cfg(all(unix, not(target_os = "linux")))]
+            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
+            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
+        };
+        icmp_payload_buf
+            .iter_mut()
+            .for_each(|x| *x = payload_pattern.0);
+        let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..icmp_packet_size]).req()?;
+        icmp.set_icmp_type(IcmpType::EchoRequest);
+        icmp.set_icmp_code(IcmpCode(0));
+        icmp.set_identifier(identifier.0);
+        icmp.set_payload(&icmp_payload_buf[..icmp_payload_size]);
+        icmp.set_sequence(probe.sequence.0);
+        icmp.set_checksum(pnet::util::checksum(icmp.packet(), 1));
+        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
+        ipv4.set_version(4);
+        ipv4.set_header_length(5);
+        ipv4.set_total_length(ipv4_total_length_header);
+        ipv4.set_ttl(probe.ttl.0);
+        ipv4.set_protocol(IpProtocol::Icmp);
+        ipv4.set_source(src_addr);
+        ipv4.set_destination(dest_addr);
+        ipv4.set_payload(icmp.packet());
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
+        raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
         Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn dispatch_udp_probe(
-        udp_socket: &mut Socket,
+        raw_send_socket: &mut Socket,
         probe: Probe,
         src_addr: Ipv4Addr,
         dest_addr: Ipv4Addr,
@@ -587,20 +609,32 @@ mod ipv4 {
         ipv4.set_destination(dest_addr);
         ipv4.set_payload(udp.packet());
         let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
-        udp_socket.send_to(ipv4.packet(), &remote_addr)?;
+        raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
         Ok(())
     }
 
     pub fn recv_icmp_probe(
-        icmp_rx: &mut TransportReceiver,
-        icmp_read_timeout: Duration,
+        recv_socket: &mut Socket,
         protocol: TracerProtocol,
         direction: PortDirection,
     ) -> TraceResult<Option<ProbeResponse>> {
-        match icmp_packet_iter(icmp_rx).next_with_timeout(icmp_read_timeout)? {
-            None => Ok(None),
-            Some((icmp, ip)) => Ok(extract_probe_resp_v4(protocol, direction, &icmp, ip)?),
+        let mut buf = [0_u8; MAX_PACKET_SIZE];
+        match recv_socket.read(&mut buf) {
+            Ok(_bytes_read) => {
+                let ipv4 = Ipv4Packet::new_view(&buf).req()?;
+                Ok(extract_probe_resp_v4(protocol, direction, &ipv4)?)
+            }
+            Err(err) => match err.kind() {
+                ErrorKind::WouldBlock => Ok(None),
+                _ => Err(TracerError::IoError(err)),
+            },
         }
+    }
+
+    fn icmp_payload_size(packet_size: usize) -> usize {
+        let ip_header_size = Ipv4Packet::minimum_packet_size();
+        let icmp_header_size = IcmpPacket::minimum_packet_size();
+        packet_size - icmp_header_size - ip_header_size
     }
 
     fn udp_payload_size(packet_size: usize) -> usize {
@@ -612,32 +646,33 @@ mod ipv4 {
     fn extract_probe_resp_v4(
         protocol: TracerProtocol,
         direction: PortDirection,
-        icmp_v4: &IcmpPacket<'_>,
-        ip: IpAddr,
+        ipv4: &Ipv4Packet<'_>,
     ) -> TraceResult<Option<ProbeResponse>> {
         let recv = SystemTime::now();
+        let src = IpAddr::V4(ipv4.get_source());
+        let icmp_v4 = IcmpPacket::new_view(ipv4.payload()).req()?;
         Ok(match icmp_v4.get_icmp_type() {
-            IcmpTypes::TimeExceeded => {
-                let packet = TimeExceededPacket::new(icmp_v4.packet()).req()?;
+            IcmpType::TimeExceeded => {
+                let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
                 let (id, seq) = extract_time_exceeded_v4(&packet, protocol, direction)?;
                 Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                    recv, ip, id, seq,
+                    recv, src, id, seq,
                 )))
             }
-            IcmpTypes::DestinationUnreachable => {
-                let packet = DestinationUnreachablePacket::new(icmp_v4.packet()).req()?;
+            IcmpType::DestinationUnreachable => {
+                let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
                 let (id, seq) = extract_dest_unreachable_v4(&packet, protocol, direction)?;
                 Some(ProbeResponse::DestinationUnreachable(
-                    ProbeResponseData::new(recv, ip, id, seq),
+                    ProbeResponseData::new(recv, src, id, seq),
                 ))
             }
-            IcmpTypes::EchoReply => match protocol {
+            IcmpType::EchoReply => match protocol {
                 TracerProtocol::Icmp => {
-                    let packet = EchoReplyPacket::new(icmp_v4.packet()).req()?;
+                    let packet = EchoReplyPacket::new_view(icmp_v4.packet()).req()?;
                     let id = packet.get_identifier();
-                    let seq = packet.get_sequence_number();
+                    let seq = packet.get_sequence();
                     Some(ProbeResponse::EchoReply(ProbeResponseData::new(
-                        recv, ip, id, seq,
+                        recv, src, id, seq,
                     )))
                 }
                 TracerProtocol::Udp | TracerProtocol::Tcp => None,
@@ -655,11 +690,11 @@ mod ipv4 {
             TracerProtocol::Icmp => {
                 let echo_request = extract_echo_request_v4(packet.payload())?;
                 let identifier = echo_request.get_identifier();
-                let sequence = echo_request.get_sequence_number();
+                let sequence = echo_request.get_sequence();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
-                let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
                 let (src, dest) = extract_udp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
@@ -668,7 +703,7 @@ mod ipv4 {
                 (0, sequence)
             }
             TracerProtocol::Tcp => {
-                let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
                 let (src, dest) = extract_tcp_packet_v4(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
@@ -688,7 +723,7 @@ mod ipv4 {
             TracerProtocol::Icmp => {
                 let echo_request = extract_echo_request_v4(packet.payload())?;
                 let identifier = echo_request.get_identifier();
-                let sequence = echo_request.get_sequence_number();
+                let sequence = echo_request.get_sequence();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
@@ -714,7 +749,7 @@ mod ipv4 {
         let ip4 = Ipv4Packet::new_view(payload).req()?;
         let header_len = usize::from(ip4.get_header_length() * 4);
         let nested_icmp = &payload[header_len..];
-        let nested_echo = EchoRequestPacket::new(nested_icmp).req()?;
+        let nested_echo = EchoRequestPacket::new_view(nested_icmp).req()?;
         Ok(nested_echo)
     }
 
@@ -771,9 +806,10 @@ mod ipv4 {
 mod ipv6 {
     use crate::tracing::error::{TraceResult, TracerError};
     use crate::tracing::net::{ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE};
+    use crate::tracing::packet::udp::UdpPacket;
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
-    use crate::tracing::{PortDirection, Probe, TracerProtocol, UdpPacket};
+    use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::sys::socket::{AddressFamily, SockaddrLike};
     use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
     use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
@@ -1046,7 +1082,7 @@ fn make_icmp_channel(
 /// Make a socket for sending raw `ICMP` & `UDP` packets.
 fn make_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::make_udp_socket(),
+        TracerAddrFamily::Ipv4 => ipv4::make_send_socket(),
         TracerAddrFamily::Ipv6 => ipv6::make_udp_socket(),
     }
 }
