@@ -14,5 +14,9 @@ pub use net::TracerChannel;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
 pub use tracer::{Tracer, TracerRound};
 
+pub use packet::icmp::{
+    DestinationUnreachablePacket, EchoReplyPacket, EchoRequestPacket, IcmpCode, IcmpPacket,
+    IcmpType, TimeExceededPacket,
+};
 pub use packet::ipv4::Ipv4Packet;
 pub use packet::udp::UdpPacket;
