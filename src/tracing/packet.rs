@@ -5,6 +5,47 @@ pub enum Buffer<'a> {
     Mutable(&'a mut [u8]),
 }
 
+impl<'a> Buffer<'a> {
+    fn as_slice(&self) -> &[u8] {
+        match &self {
+            Buffer::Immutable(packet) => packet,
+            Buffer::Mutable(packet) => packet,
+        }
+    }
+
+    /// Get two bytes from the packet at a given byte offset.
+    fn get_bytes_two(&self, offset: usize) -> [u8; 2] {
+        [self.read(offset), self.read(offset + 1)]
+    }
+
+    /// Set two bytes in the packet at a given offset.
+    pub fn set_bytes_two(&mut self, offset: usize, bytes: [u8; 2]) {
+        *self.write(offset) = bytes[0];
+        *self.write(offset + 1) = bytes[1];
+    }
+
+    pub fn read(&self, offset: usize) -> u8 {
+        match &self {
+            Buffer::Immutable(packet) => packet[offset],
+            Buffer::Mutable(packet) => packet[offset],
+        }
+    }
+
+    pub fn write(&mut self, offset: usize) -> &mut u8 {
+        match self {
+            Buffer::Immutable(_) => panic!("write operation called on readonly buffer"),
+            Buffer::Mutable(packet) => &mut packet[offset],
+        }
+    }
+
+    fn as_slice_mut(&mut self) -> &mut [u8] {
+        match self {
+            Buffer::Immutable(_) => panic!("write operation called on readonly buffer"),
+            Buffer::Mutable(packet) => *packet,
+        }
+    }
+}
+
 pub mod ipv4 {
     use crate::tracing::packet::Buffer;
     use std::net::Ipv4Addr;
@@ -844,6 +885,232 @@ pub mod udp {
             assert_eq!(64, packet.get_length());
             assert_eq!(44222, packet.get_checksum());
             assert!(packet.payload().is_empty());
+        }
+    }
+}
+
+pub mod icmp {
+    use crate::tracing::packet::Buffer;
+
+    /// TODO
+    #[derive(Debug, Copy, Clone)]
+    pub enum IcmpType {
+        EchoRequest,
+        EchoReply,
+        DestinationUnreachable,
+        TimeExceeded,
+        Other(u8),
+    }
+
+    impl IcmpType {
+        #[must_use]
+        pub fn id(&self) -> u8 {
+            match self {
+                IcmpType::EchoRequest => 8,
+                IcmpType::EchoReply => 0,
+                IcmpType::DestinationUnreachable => 3,
+                IcmpType::TimeExceeded => 11,
+                IcmpType::Other(id) => *id,
+            }
+        }
+    }
+
+    impl From<u8> for IcmpType {
+        fn from(val: u8) -> Self {
+            match val {
+                9 => Self::EchoRequest,
+                0 => Self::EchoReply,
+                3 => Self::DestinationUnreachable,
+                11 => Self::TimeExceeded,
+                id => Self::Other(id),
+            }
+        }
+    }
+
+    /// TODO
+    #[derive(Debug, Copy, Clone)]
+    pub struct IcmpCode(pub u8);
+
+    impl From<u8> for IcmpCode {
+        fn from(val: u8) -> Self {
+            Self(val)
+        }
+    }
+
+    const TYPE_OFFSET: usize = 0;
+    const CODE_OFFSET: usize = 1;
+    const CHECKSUM_OFFSET: usize = 2;
+    const IDENTIFIER_OFFSET: usize = 4;
+    const SEQUENCE_OFFSET: usize = 6;
+
+    /// Represents an ICMP packet.
+    ///
+    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
+    /// data in host byte order, converting as necessary for the given architecture.
+    #[derive(Debug)]
+    pub struct IcmpPacket<'a> {
+        buffer: Buffer<'a>,
+    }
+
+    impl<'a> IcmpPacket<'a> {
+        pub fn new(packet: &mut [u8]) -> Option<IcmpPacket<'_>> {
+            if packet.len() >= IcmpPacket::minimum_packet_size() {
+                Some(IcmpPacket {
+                    buffer: Buffer::Mutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub fn new_view(packet: &[u8]) -> Option<IcmpPacket<'_>> {
+            if packet.len() >= IcmpPacket::minimum_packet_size() {
+                Some(IcmpPacket {
+                    buffer: Buffer::Immutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub const fn minimum_packet_size() -> usize {
+            8
+        }
+
+        #[must_use]
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buffer.read(TYPE_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buffer.read(CODE_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_checksum(&self) -> u16 {
+            u16::from_be_bytes(self.buffer.get_bytes_two(CHECKSUM_OFFSET))
+        }
+
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
+            *self.buffer.write(TYPE_OFFSET) = val.id();
+        }
+
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
+            *self.buffer.write(CODE_OFFSET) = val.0;
+        }
+
+        pub fn set_checksum(&mut self, val: u16) {
+            self.buffer
+                .set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        }
+
+        #[must_use]
+        pub fn packet(&self) -> &[u8] {
+            self.buffer.as_slice()
+        }
+    }
+
+    /// Represents an ICMP `EchoRequest` packet.
+    ///
+    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
+    /// data in host byte order, converting as necessary for the given architecture.
+    #[derive(Debug)]
+    pub struct EchoRequestPacket<'a> {
+        buffer: Buffer<'a>,
+    }
+
+    impl<'a> EchoRequestPacket<'a> {
+        pub fn new(packet: &mut [u8]) -> Option<EchoRequestPacket<'_>> {
+            if packet.len() >= EchoRequestPacket::minimum_packet_size() {
+                Some(EchoRequestPacket {
+                    buffer: Buffer::Mutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub fn new_view(packet: &[u8]) -> Option<IcmpPacket<'_>> {
+            if packet.len() >= IcmpPacket::minimum_packet_size() {
+                Some(IcmpPacket {
+                    buffer: Buffer::Immutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub const fn minimum_packet_size() -> usize {
+            8
+        }
+
+        #[must_use]
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buffer.read(TYPE_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buffer.read(CODE_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_checksum(&self) -> u16 {
+            u16::from_be_bytes(self.buffer.get_bytes_two(CHECKSUM_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_identifier(&self) -> u16 {
+            u16::from_be_bytes(self.buffer.get_bytes_two(IDENTIFIER_OFFSET))
+        }
+
+        #[must_use]
+        pub fn get_sequence(&self) -> u16 {
+            u16::from_be_bytes(self.buffer.get_bytes_two(SEQUENCE_OFFSET))
+        }
+
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
+            *self.buffer.write(TYPE_OFFSET) = val.id();
+        }
+
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
+            *self.buffer.write(CODE_OFFSET) = val.0;
+        }
+
+        pub fn set_checksum(&mut self, val: u16) {
+            self.buffer
+                .set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_identifier(&mut self, val: u16) {
+            self.buffer
+                .set_bytes_two(IDENTIFIER_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_sequence(&mut self, val: u16) {
+            self.buffer
+                .set_bytes_two(SEQUENCE_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_payload(&mut self, vals: &[u8]) {
+            let current_offset = Self::minimum_packet_size();
+            self.buffer.as_slice_mut()[current_offset..current_offset + vals.len()]
+                .copy_from_slice(vals);
+        }
+
+        #[must_use]
+        pub fn packet(&self) -> &[u8] {
+            self.buffer.as_slice()
+        }
+
+        #[must_use]
+        pub fn payload(&self) -> &[u8] {
+            &self.buffer.as_slice()[Self::minimum_packet_size() as usize..]
         }
     }
 }
