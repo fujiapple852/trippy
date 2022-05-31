@@ -14,6 +14,28 @@ impl<'a> Buffer<'a> {
         }
     }
 
+    /// Get 16 bytes from the packet at a given byte offset.
+    pub fn get_bytes_16(&self, offset: usize) -> [u8; 16] {
+        [
+            self.read(offset),
+            self.read(offset + 1),
+            self.read(offset + 2),
+            self.read(offset + 3),
+            self.read(offset + 4),
+            self.read(offset + 5),
+            self.read(offset + 6),
+            self.read(offset + 7),
+            self.read(offset + 8),
+            self.read(offset + 9),
+            self.read(offset + 10),
+            self.read(offset + 11),
+            self.read(offset + 12),
+            self.read(offset + 13),
+            self.read(offset + 14),
+            self.read(offset + 15),
+        ]
+    }
+
     /// Get two bytes from the packet at a given byte offset.
     pub fn get_bytes_two(&self, offset: usize) -> [u8; 2] {
         [self.read(offset), self.read(offset + 1)]
