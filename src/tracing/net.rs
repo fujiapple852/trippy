@@ -514,10 +514,9 @@ mod ipv4 {
         Ok(socket)
     }
 
-    // TODO refactor generic IPv4 sending for use by icmp and udp.
     #[allow(clippy::too_many_arguments)]
     pub fn dispatch_icmp_probe(
-        raw_send_socket: &mut Socket,
+        icmp_send_socket: &mut Socket,
         probe: Probe,
         src_addr: Ipv4Addr,
         dest_addr: Ipv4Addr,
@@ -526,43 +525,30 @@ mod ipv4 {
         payload_pattern: PayloadPattern,
         ipv4_length_order: Ipv4TotalLengthByteOrder,
     ) -> TraceResult<()> {
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
         let packet_size = usize::from(packet_size.0);
         if packet_size > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(packet_size));
         }
-        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-        let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
-        let mut icmp_payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
-        let ipv4_packet_size = packet_size;
-        let icmp_payload_size = icmp_payload_size(ipv4_packet_size);
-        let icmp_packet_size = IcmpPacket::minimum_packet_size() + icmp_payload_size;
-        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + icmp_packet_size) as u16;
-        let ipv4_total_length_header = match ipv4_length_order {
-            #[cfg(all(unix, not(target_os = "linux")))]
-            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
-            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
-        };
-        icmp_payload_buf
-            .iter_mut()
-            .for_each(|x| *x = payload_pattern.0);
-        let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..icmp_packet_size]).req()?;
-        icmp.set_icmp_type(IcmpType::EchoRequest);
-        icmp.set_icmp_code(IcmpCode(0));
-        icmp.set_identifier(identifier.0);
-        icmp.set_payload(&icmp_payload_buf[..icmp_payload_size]);
-        icmp.set_sequence(probe.sequence.0);
-        icmp.set_checksum(pnet::util::checksum(icmp.packet(), 1));
-        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
-        ipv4.set_version(4);
-        ipv4.set_header_length(5);
-        ipv4.set_total_length(ipv4_total_length_header);
-        ipv4.set_ttl(probe.ttl.0);
-        ipv4.set_protocol(IpProtocol::Icmp);
-        ipv4.set_source(src_addr);
-        ipv4.set_destination(dest_addr);
-        ipv4.set_payload(icmp.packet());
+        let echo_request = make_echo_request_icmp_packet(
+            &mut icmp_buf,
+            identifier,
+            probe.sequence,
+            icmp_payload_size(packet_size),
+            payload_pattern,
+        )?;
+        let ipv4 = make_ipv4_packet(
+            &mut ipv4_buf,
+            ipv4_length_order,
+            IpProtocol::Icmp,
+            src_addr,
+            dest_addr,
+            probe.ttl.0,
+            echo_request.packet(),
+        )?;
         let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
-        raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+        icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
         Ok(())
     }
 
@@ -577,41 +563,35 @@ mod ipv4 {
         payload_pattern: PayloadPattern,
         ipv4_length_order: Ipv4TotalLengthByteOrder,
     ) -> TraceResult<()> {
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+        let packet_size = usize::from(packet_size.0);
+        if packet_size > MAX_PACKET_SIZE {
+            return Err(TracerError::InvalidPacketSize(packet_size));
+        }
         let (src_port, dest_port) = match port_direction {
             PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
             PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
             PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
         };
-        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-        let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
-        let mut udp_payload_buf = [0_u8; MAX_UDP_PAYLOAD_BUF];
-        let ipv4_packet_size = usize::from(packet_size.0);
-        let udp_payload_size = udp_payload_size(ipv4_packet_size);
-        let udp_packet_size = UdpPacket::minimum_packet_size() + udp_payload_size;
-        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + udp_packet_size) as u16;
-        let ipv4_total_length_header = match ipv4_length_order {
-            #[cfg(all(unix, not(target_os = "linux")))]
-            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
-            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
-        };
-        udp_payload_buf
-            .iter_mut()
-            .for_each(|x| *x = payload_pattern.0);
-        let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size as usize]).req()?;
-        udp.set_source(src_port);
-        udp.set_destination(dest_port);
-        udp.set_length(udp_packet_size as u16);
-        udp.set_payload(&udp_payload_buf[..udp_payload_size]);
-        udp.set_checksum(checksum_v4(udp.packet(), src_addr, dest_addr));
-        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
-        ipv4.set_version(4);
-        ipv4.set_header_length(5);
-        ipv4.set_total_length(ipv4_total_length_header);
-        ipv4.set_ttl(probe.ttl.0);
-        ipv4.set_protocol(IpProtocol::Udp);
-        ipv4.set_source(src_addr);
-        ipv4.set_destination(dest_addr);
-        ipv4.set_payload(udp.packet());
+        let udp = make_udp_packet(
+            &mut udp_buf,
+            src_addr,
+            dest_addr,
+            src_port,
+            dest_port,
+            udp_payload_size(packet_size),
+            payload_pattern,
+        )?;
+        let ipv4 = make_ipv4_packet(
+            &mut ipv4_buf,
+            ipv4_length_order,
+            IpProtocol::Udp,
+            src_addr,
+            dest_addr,
+            probe.ttl.0,
+            udp.packet(),
+        )?;
         let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
         raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
         Ok(())
@@ -640,6 +620,78 @@ mod ipv4 {
         socket.set_nonblocking(true)?;
         socket.set_header_included(true)?;
         Ok(socket)
+    }
+
+    /// Create an ICMP `EchoRequest` packet.
+    ///
+    /// TODO - can reuse for IPV6?
+    fn make_echo_request_icmp_packet(
+        icmp_buf: &mut [u8],
+        identifier: TraceId,
+        sequence: Sequence,
+        payload_size: usize,
+        payload_pattern: PayloadPattern,
+    ) -> TraceResult<EchoRequestPacket<'_>> {
+        let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
+        payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
+        let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
+        let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
+        icmp.set_icmp_type(IcmpType::EchoRequest);
+        icmp.set_icmp_code(IcmpCode(0));
+        icmp.set_identifier(identifier.0);
+        icmp.set_payload(&payload_buf[..payload_size]);
+        icmp.set_sequence(sequence.0);
+        icmp.set_checksum(pnet::util::checksum(icmp.packet(), 1));
+        Ok(icmp)
+    }
+
+    /// Create a `UdpPacket`
+    fn make_udp_packet(
+        udp_buf: &mut [u8],
+        src_addr: Ipv4Addr,
+        dest_addr: Ipv4Addr,
+        src_port: u16,
+        dest_port: u16,
+        payload_size: usize,
+        payload_pattern: PayloadPattern,
+    ) -> TraceResult<UdpPacket<'_>> {
+        let udp_payload_buf = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
+        let udp_packet_size = UdpPacket::minimum_packet_size() + payload_size;
+        let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size as usize]).req()?;
+        udp.set_source(src_port);
+        udp.set_destination(dest_port);
+        udp.set_length(udp_packet_size as u16);
+        udp.set_payload(&udp_payload_buf[..payload_size]);
+        udp.set_checksum(checksum_v4(udp.packet(), src_addr, dest_addr));
+        Ok(udp)
+    }
+
+    /// Create an `Ipv4Packet`.
+    fn make_ipv4_packet<'a>(
+        ipv4_buf: &'a mut [u8],
+        ipv4_length_order: Ipv4TotalLengthByteOrder,
+        protocol: IpProtocol,
+        src_addr: Ipv4Addr,
+        dest_addr: Ipv4Addr,
+        ttl: u8,
+        payload: &[u8],
+    ) -> TraceResult<Ipv4Packet<'a>> {
+        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
+        let ipv4_total_length_header = match ipv4_length_order {
+            #[cfg(all(unix, not(target_os = "linux")))]
+            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
+            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
+        };
+        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
+        ipv4.set_version(4);
+        ipv4.set_header_length(5);
+        ipv4.set_total_length(ipv4_total_length_header);
+        ipv4.set_ttl(ttl);
+        ipv4.set_protocol(protocol);
+        ipv4.set_source(src_addr);
+        ipv4.set_destination(dest_addr);
+        ipv4.set_payload(payload);
+        Ok(ipv4)
     }
 
     fn icmp_payload_size(packet_size: usize) -> usize {
