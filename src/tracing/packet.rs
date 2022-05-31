@@ -41,3 +41,15 @@ impl IpProtocol {
         Self::Other(value)
     }
 }
+
+impl From<u8> for IpProtocol {
+    fn from(id: u8) -> Self {
+        match id {
+            1 => Self::Icmp,
+            58 => Self::IcmpV6,
+            17 => Self::Udp,
+            6 => Self::Tcp,
+            p => Self::Other(p),
+        }
+    }
+}
