@@ -126,7 +126,8 @@ pub struct TracerChannel {
     tcp_connect_timeout: Duration,
     icmp_tx: TransportSender,
     icmp_rx: TransportReceiver,
-    send_socket: Socket,
+    icmp_send_socket: Socket,
+    udp_send_socket: Socket,
     recv_socket: Socket,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
@@ -144,7 +145,8 @@ impl TracerChannel {
         let src_addr = Self::make_src_addr(config)?;
         let ipv4_length_order = Self::discover_ip_length_byte_order(src_addr)?;
         let (icmp_tx, icmp_rx) = make_icmp_channel(config.addr_family)?;
-        let send_socket = make_send_socket(config.addr_family)?;
+        let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
+        let udp_send_socket = make_udp_send_socket(config.addr_family)?;
         let recv_socket = make_recv_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
@@ -161,7 +163,8 @@ impl TracerChannel {
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_tx,
             icmp_rx,
-            send_socket,
+            icmp_send_socket,
+            udp_send_socket,
             recv_socket,
             tcp_probes: ArrayVec::new(),
         })
@@ -291,7 +294,7 @@ impl TracerChannel {
         match (self.addr_family, self.src_addr, self.dest_addr) {
             (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
                 ipv4::dispatch_icmp_probe(
-                    &mut self.send_socket,
+                    &mut self.icmp_send_socket,
                     probe,
                     src_addr,
                     dest_addr,
@@ -320,7 +323,7 @@ impl TracerChannel {
         match (self.addr_family, self.src_addr, self.dest_addr) {
             (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
                 ipv4::dispatch_udp_probe(
-                    &mut self.send_socket,
+                    &mut self.udp_send_socket,
                     probe,
                     src_addr,
                     dest_addr,
@@ -496,11 +499,12 @@ mod ipv4 {
         Ok(transport_channel(1600, channel_type)?)
     }
 
-    pub fn make_send_socket() -> TraceResult<Socket> {
-        let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
-        socket.set_nonblocking(true)?;
-        socket.set_header_included(true)?;
-        Ok(socket)
+    pub fn make_icmp_send_socket() -> TraceResult<Socket> {
+        make_raw_socket()
+    }
+
+    pub fn make_udp_send_socket() -> TraceResult<Socket> {
+        make_raw_socket()
     }
 
     pub fn make_recv_socket() -> TraceResult<Socket> {
@@ -629,6 +633,13 @@ mod ipv4 {
                 _ => Err(TracerError::IoError(err)),
             },
         }
+    }
+
+    fn make_raw_socket() -> TraceResult<Socket> {
+        let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+        socket.set_nonblocking(true)?;
+        socket.set_header_included(true)?;
+        Ok(socket)
     }
 
     fn icmp_payload_size(packet_size: usize) -> usize {
@@ -851,11 +862,25 @@ mod ipv6 {
         Ok(transport_channel(1600, channel_type)?)
     }
 
-    pub fn make_udp_socket() -> TraceResult<Socket> {
+    pub fn make_icmp_send_socket() -> TraceResult<Socket> {
+        let udp_socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+        udp_socket.set_nonblocking(true)?;
+        udp_socket.set_header_included(true)?;
+        Ok(udp_socket)
+    }
+
+    pub fn make_udp_send_socket() -> TraceResult<Socket> {
         let udp_socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
         udp_socket.set_nonblocking(true)?;
         udp_socket.set_header_included(true)?;
         Ok(udp_socket)
+    }
+
+    pub fn make_recv_socket() -> TraceResult<Socket> {
+        let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+        socket.set_nonblocking(true)?;
+        socket.set_header_included(true)?;
+        Ok(socket)
     }
 
     pub fn dispatch_icmp_probe(
@@ -1079,11 +1104,19 @@ fn make_icmp_channel(
     }
 }
 
-/// Make a socket for sending raw `ICMP` & `UDP` packets.
-fn make_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+/// Make a socket for sending raw `ICMP` packets.
+fn make_icmp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::make_send_socket(),
-        TracerAddrFamily::Ipv6 => ipv6::make_udp_socket(),
+        TracerAddrFamily::Ipv4 => ipv4::make_icmp_send_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_icmp_send_socket(),
+    }
+}
+
+/// Make a socket for sending `UDP` packets.
+fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::make_udp_send_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_udp_send_socket(),
     }
 }
 
@@ -1091,7 +1124,7 @@ fn make_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
 fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
         TracerAddrFamily::Ipv4 => ipv4::make_recv_socket(),
-        TracerAddrFamily::Ipv6 => unimplemented!(),
+        TracerAddrFamily::Ipv6 => ipv6::make_recv_socket(),
     }
 }
 
