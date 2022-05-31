@@ -6,6 +6,9 @@ pub mod icmp;
 /// IPv4 packets.
 pub mod ipv4;
 
+/// IPv6 packets.
+pub mod ipv6;
+
 /// UDP packets.
 pub mod udp;
 
