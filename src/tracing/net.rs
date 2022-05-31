@@ -808,7 +808,7 @@ mod ipv4 {
             &[],
             &src_addr,
             &dest_addr,
-            pnet::packet::ip::IpNextHeaderProtocols::Udp,
+            IpNextHeaderProtocols::Udp,
         )
     }
 }
@@ -820,19 +820,17 @@ mod ipv6 {
     use crate::tracing::packet::udp::UdpPacket;
     use crate::tracing::types::{PacketSize, PayloadPattern, TraceId};
     use crate::tracing::util::Required;
+
+    use crate::tracing::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
+    use crate::tracing::packet::icmp::echo_reply::EchoReplyPacket;
+    use crate::tracing::packet::icmp::echo_request::EchoRequestPacket;
+    use crate::tracing::packet::icmp::time_exceeded::TimeExceededPacket;
+    use crate::tracing::packet::icmp::{IcmpCode, IcmpPacket, IcmpType};
+    use crate::tracing::packet::ipv6::Ipv6Packet;
     use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::sys::socket::{AddressFamily, SockaddrLike};
-    use pnet::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
-    use pnet::packet::icmp::time_exceeded::TimeExceededPacket;
-    use pnet::packet::icmpv6::echo_reply::EchoReplyPacket;
-    use pnet::packet::icmpv6::echo_request::Icmpv6Codes;
-    use pnet::packet::icmpv6::echo_request::{EchoRequestPacket, MutableEchoRequestPacket};
-    use pnet::packet::icmpv6::Icmpv6Packet;
-    use pnet::packet::icmpv6::Icmpv6Types;
     use pnet::packet::ip::IpNextHeaderProtocols;
-    use pnet::packet::ipv6::Ipv6Packet;
     use pnet::packet::util;
-    use pnet::packet::Packet;
     use pnet::transport::{
         icmpv6_packet_iter, transport_channel, TransportChannelType, TransportProtocol,
         TransportReceiver, TransportSender,
@@ -904,15 +902,18 @@ mod ipv6 {
         let icmp_buf_size = packet_size - ip_header_size;
         let payload_size = packet_size - icmp_header_size - ip_header_size;
         payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
-        let mut req = MutableEchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
-        req.set_icmpv6_type(Icmpv6Types::EchoRequest);
-        req.set_icmpv6_code(Icmpv6Codes::NoCode);
+        let mut req = EchoRequestPacket::new(&mut icmp_buf[..icmp_buf_size]).req()?;
+        req.set_icmp_type(IcmpType::EchoRequest);
+        req.set_icmp_code(IcmpCode(0));
         req.set_identifier(identifier.0);
         req.set_payload(&payload_buf[..payload_size]);
-        req.set_sequence_number(probe.sequence.0);
+        req.set_sequence(probe.sequence.0);
         req.set_checksum(util::checksum(req.packet(), 1));
         icmp_tx.set_ttl(probe.ttl.0)?;
-        icmp_tx.send_to(req.to_immutable(), dest_addr)?;
+        // TODO
+        let legacy =
+            pnet::packet::icmp::echo_request::EchoRequestPacket::new(req.packet()).unwrap();
+        icmp_tx.send_to(legacy, dest_addr)?;
         Ok(())
     }
 
@@ -924,37 +925,42 @@ mod ipv6 {
     ) -> TraceResult<Option<ProbeResponse>> {
         match icmpv6_packet_iter(icmp_rx).next_with_timeout(icmp_read_timeout)? {
             None => Ok(None),
-            Some((icmp, ip)) => Ok(extract_probe_resp_v6(protocol, direction, &icmp, ip)?),
+            Some((icmp, ip)) => {
+                // TODO just wrap the bytes from pnet for now
+                use pnet::packet::Packet;
+                let icmp = IcmpPacket::new_view(icmp.packet()).unwrap();
+                Ok(extract_probe_resp_v6(protocol, direction, &icmp, ip)?)
+            }
         }
     }
 
     fn extract_probe_resp_v6(
         protocol: TracerProtocol,
         direction: PortDirection,
-        icmp_v6: &Icmpv6Packet<'_>,
+        icmp_v6: &IcmpPacket<'_>,
         ip: IpAddr,
     ) -> TraceResult<Option<ProbeResponse>> {
         let recv = SystemTime::now();
-        Ok(match icmp_v6.get_icmpv6_type() {
-            Icmpv6Types::TimeExceeded => {
-                let packet = TimeExceededPacket::new(icmp_v6.packet()).req()?;
+        Ok(match icmp_v6.get_icmp_type() {
+            IcmpType::TimeExceeded => {
+                let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
                 let (id, seq) = extract_time_exceeded_v6(&packet, protocol, direction)?;
                 Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                     recv, ip, id, seq,
                 )))
             }
-            Icmpv6Types::DestinationUnreachable => {
-                let packet = DestinationUnreachablePacket::new(icmp_v6.packet()).req()?;
+            IcmpType::DestinationUnreachable => {
+                let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
                 let (id, seq) = extract_dest_unreachable_v6(&packet, protocol, direction)?;
                 Some(ProbeResponse::DestinationUnreachable(
                     ProbeResponseData::new(recv, ip, id, seq),
                 ))
             }
-            Icmpv6Types::EchoReply => match protocol {
+            IcmpType::EchoReply => match protocol {
                 TracerProtocol::Icmp => {
-                    let packet = EchoReplyPacket::new(icmp_v6.packet()).req()?;
+                    let packet = EchoReplyPacket::new_view(icmp_v6.packet()).req()?;
                     let id = packet.get_identifier();
-                    let seq = packet.get_sequence_number();
+                    let seq = packet.get_sequence();
                     Some(ProbeResponse::EchoReply(ProbeResponseData::new(
                         recv, ip, id, seq,
                     )))
@@ -974,11 +980,11 @@ mod ipv6 {
             TracerProtocol::Icmp => {
                 let echo_request = extract_echo_request_v6(packet.payload())?;
                 let identifier = echo_request.get_identifier();
-                let sequence = echo_request.get_sequence_number();
+                let sequence = echo_request.get_sequence();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
-                let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
                 let (src, dest) = extract_udp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedDest(_) => src,
@@ -987,7 +993,7 @@ mod ipv6 {
                 (0, sequence)
             }
             TracerProtocol::Tcp => {
-                let packet = TimeExceededPacket::new(packet.packet()).req()?;
+                let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
                 let (src, dest) = extract_tcp_packet_v6(packet.payload())?;
                 let sequence = match direction {
                     PortDirection::FixedSrc(_) => dest,
@@ -1007,7 +1013,7 @@ mod ipv6 {
             TracerProtocol::Icmp => {
                 let echo_request = extract_echo_request_v6(packet.payload())?;
                 let identifier = echo_request.get_identifier();
-                let sequence = echo_request.get_sequence_number();
+                let sequence = echo_request.get_sequence();
                 (identifier, sequence)
             }
             TracerProtocol::Udp => {
@@ -1030,17 +1036,17 @@ mod ipv6 {
     }
 
     fn extract_echo_request_v6(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
-        let ip6 = pnet::packet::ipv6::Ipv6Packet::new(payload).req()?;
+        let ip6 = Ipv6Packet::new_view(payload).req()?;
         let packet_size = payload.len();
         let payload_size = usize::from(ip6.get_payload_length());
         let header_size = packet_size - payload_size;
         let nested_icmp = &payload[header_size..];
-        let nested_echo = EchoRequestPacket::new(nested_icmp).req()?;
+        let nested_echo = EchoRequestPacket::new_view(nested_icmp).req()?;
         Ok(nested_echo)
     }
 
     fn extract_udp_packet_v6(payload: &[u8]) -> TraceResult<(u16, u16)> {
-        let ip6 = Ipv6Packet::new(payload).req()?;
+        let ip6 = Ipv6Packet::new_view(payload).req()?;
         let packet_size = payload.len();
         let payload_size = usize::from(ip6.get_payload_length());
         let header_size = packet_size - payload_size;
