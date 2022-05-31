@@ -102,13 +102,7 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn get_protocol(&self) -> IpProtocol {
-        match self.buf.read(PROTOCOL_OFFSET) {
-            1 => IpProtocol::Icmp,
-            58 => IpProtocol::IcmpV6,
-            17 => IpProtocol::Udp,
-            6 => IpProtocol::Tcp,
-            id => IpProtocol::Other(id),
-        }
+        IpProtocol::from(self.buf.read(PROTOCOL_OFFSET))
     }
 
     #[must_use]
