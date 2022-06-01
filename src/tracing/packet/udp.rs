@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::fmt_payload;
 use std::fmt::{Debug, Formatter};
 
 const SOURCE_PORT_OFFSET: usize = 0;
@@ -102,6 +103,7 @@ impl Debug for UdpPacket<'_> {
             .field("destination", &self.get_destination())
             .field("length", &self.get_length())
             .field("checksum", &self.get_checksum())
+            .field("payload", &fmt_payload(self.payload()))
             .finish()
     }
 }
