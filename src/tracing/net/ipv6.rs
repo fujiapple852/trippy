@@ -1,6 +1,6 @@
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::{ProbeResponse, ProbeResponseData, RecvFrom};
+use crate::tracing::net::{ProbeResponse, ProbeResponseData};
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
 use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
@@ -319,4 +319,23 @@ fn extract_udp_packet_v6(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
 // TODO
 fn extract_tcp_packet_v6(_payload: &[u8]) -> TraceResult<(u16, u16)> {
     unimplemented!()
+}
+
+/// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
+///
+/// This is required for `socket2::Socket` which [does not currently provide] this method.
+///
+/// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
+trait RecvFrom {
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)>;
+}
+
+impl RecvFrom for Socket {
+    // Safety: the `recv` implementation promises not to write uninitialised
+    // bytes to the `buf`fer, so this casting is safe.
+    #![allow(unsafe_code)]
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)> {
+        let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
+        self.recv_from(buf)
+    }
 }
