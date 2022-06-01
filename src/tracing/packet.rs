@@ -18,6 +18,9 @@ pub mod ipv6;
 /// `UDP` packets.
 pub mod udp;
 
+/// `TCP` packets.
+pub mod tcp;
+
 fn fmt_payload(bytes: &[u8]) -> String {
     use itertools::Itertools as _;
     format!("{:02x}", bytes.iter().format(" "))
