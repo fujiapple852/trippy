@@ -224,11 +224,7 @@ fn make_ipv4_packet<'a>(
     payload: &[u8],
 ) -> TraceResult<Ipv4Packet<'a>> {
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
-    let ipv4_total_length_header = match ipv4_length_order {
-        #[cfg(all(unix, not(target_os = "linux")))]
-        Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
-        Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
-    };
+    let ipv4_total_length_header = ipv4_length_order.adjust_length(ipv4_total_length);
     let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
