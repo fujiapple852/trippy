@@ -450,6 +450,7 @@ mod ipv4 {
     use crate::tracing::packet::icmpv4::time_exceeded::TimeExceededPacket;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpPacket, IcmpType};
     use crate::tracing::packet::ipv4::Ipv4Packet;
+    use crate::tracing::packet::tcp::TcpPacket;
     use crate::tracing::packet::udp::UdpPacket;
     use crate::tracing::packet::IpProtocol;
     use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
@@ -457,7 +458,6 @@ mod ipv4 {
     use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::libc::IPPROTO_RAW;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
-    use pnet::packet::tcp::TcpPacket;
     use socket2::{Domain, Protocol, SockAddr, Socket, Type};
     use std::io::{ErrorKind, Read};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -831,10 +831,10 @@ mod ipv4 {
         if nested_tcp.len() < TcpPacket::minimum_packet_size() {
             let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
             buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
-            let tcp_packet = TcpPacket::new(&buf).req()?;
+            let tcp_packet = TcpPacket::new_view(&buf).req()?;
             Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
         } else {
-            let tcp_packet = TcpPacket::new(nested_tcp).req()?;
+            let tcp_packet = TcpPacket::new_view(nested_tcp).req()?;
             Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
         }
     }
