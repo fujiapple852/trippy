@@ -443,6 +443,7 @@ mod ipv4 {
     use crate::tracing::net::{
         Ipv4TotalLengthByteOrder, ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE,
     };
+    use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
     use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
     use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
     use crate::tracing::packet::icmpv4::echo_request::EchoRequestPacket;
@@ -456,7 +457,6 @@ mod ipv4 {
     use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::libc::IPPROTO_RAW;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
-    use pnet::packet::ip::IpNextHeaderProtocols;
     use pnet::packet::tcp::TcpPacket;
     use socket2::{Domain, Protocol, SockAddr, Socket, Type};
     use std::io::{ErrorKind, Read};
@@ -630,7 +630,7 @@ mod ipv4 {
         icmp.set_identifier(identifier.0);
         icmp.set_payload(&payload_buf[..payload_size]);
         icmp.set_sequence(sequence.0);
-        icmp.set_checksum(pnet::util::checksum(icmp.packet(), 1));
+        icmp.set_checksum(icmp_ipv4_checksum(icmp.packet()));
         Ok(icmp)
     }
 
@@ -651,7 +651,7 @@ mod ipv4 {
         udp.set_destination(dest_port);
         udp.set_length(udp_packet_size as u16);
         udp.set_payload(&udp_payload_buf[..payload_size]);
-        udp.set_checksum(checksum_v4(udp.packet(), src_addr, dest_addr));
+        udp.set_checksum(udp_ipv4_checksum(udp.packet(), src_addr, dest_addr));
         Ok(udp)
     }
 
@@ -838,26 +838,13 @@ mod ipv4 {
             Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
         }
     }
-
-    /// Calculate the IPV4 checksum.
-    ///
-    /// TODO uses pnet
-    fn checksum_v4(bytes: &[u8], src_addr: Ipv4Addr, dest_addr: Ipv4Addr) -> u16 {
-        pnet::util::ipv4_checksum(
-            bytes,
-            3,
-            &[],
-            &src_addr,
-            &dest_addr,
-            IpNextHeaderProtocols::Udp,
-        )
-    }
 }
 
 /// IPv6 implementation.
 mod ipv6 {
     use crate::tracing::error::{TraceResult, TracerError};
     use crate::tracing::net::{ProbeResponse, ProbeResponseData, RecvFrom, MAX_PACKET_SIZE};
+    use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
     use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
     use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
     use crate::tracing::packet::icmpv6::echo_request::EchoRequestPacket;
@@ -869,7 +856,6 @@ mod ipv6 {
     use crate::tracing::util::Required;
     use crate::tracing::{PortDirection, Probe, TracerProtocol};
     use nix::sys::socket::{AddressFamily, SockaddrLike};
-    use pnet::packet::ip::IpNextHeaderProtocols;
     use socket2::{Domain, Protocol, SockAddr, Socket, Type};
     use std::io::ErrorKind;
     use std::net::{IpAddr, Ipv6Addr, SocketAddr};
@@ -1029,7 +1015,7 @@ mod ipv6 {
         udp.set_destination(dest_port);
         udp.set_length(udp_packet_size as u16);
         udp.set_payload(&udp_payload_buf[..payload_size]);
-        udp.set_checksum(checksum_v6(udp.packet(), src_addr, dest_addr));
+        udp.set_checksum(udp_ipv6_checksum(udp.packet(), src_addr, dest_addr));
         Ok(udp)
     }
 
@@ -1052,15 +1038,7 @@ mod ipv6 {
         icmp.set_identifier(identifier.0);
         icmp.set_payload(&payload_buf[..payload_size]);
         icmp.set_sequence(sequence.0);
-        let checksum = pnet::util::ipv6_checksum(
-            icmp.packet(),
-            1,
-            &[],
-            &src_addr,
-            &dest_addr,
-            IpNextHeaderProtocols::Icmpv6,
-        );
-        icmp.set_checksum(checksum);
+        icmp.set_checksum(icmp_ipv6_checksum(icmp.packet(), src_addr, dest_addr));
         Ok(icmp)
     }
 
@@ -1184,20 +1162,6 @@ mod ipv6 {
     // TODO
     fn extract_tcp_packet_v6(_payload: &[u8]) -> TraceResult<(u16, u16)> {
         unimplemented!()
-    }
-
-    /// Calculate the IPV6 checksum.
-    ///
-    /// TODO uses pnet
-    fn checksum_v6(bytes: &[u8], src_addr: Ipv6Addr, dest_addr: Ipv6Addr) -> u16 {
-        pnet::util::ipv6_checksum(
-            bytes,
-            3,
-            &[],
-            &src_addr,
-            &dest_addr,
-            IpNextHeaderProtocols::Udp,
-        )
     }
 }
 
