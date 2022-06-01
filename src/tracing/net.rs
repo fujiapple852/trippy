@@ -129,7 +129,13 @@ impl TracerChannel {
                 config.packet_size.0,
             )));
         }
-        let src_addr = Self::make_src_addr(config)?;
+        let src_addr = make_src_addr(
+            config.source_addr,
+            config.target_addr,
+            config.port_direction,
+            config.interface.as_deref(),
+            config.addr_family,
+        )?;
         let ipv4_length_order = discover_ip_length_byte_order(src_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
         let udp_send_socket = make_udp_send_socket(config.addr_family)?;
@@ -157,19 +163,6 @@ impl TracerChannel {
     #[must_use]
     pub fn src_addr(&self) -> IpAddr {
         self.src_addr
-    }
-
-    fn make_src_addr(config: &TracerChannelConfig) -> TraceResult<IpAddr> {
-        match (config.source_addr, config.interface.as_ref()) {
-            (Some(addr), None) => validate_local_addr(config.addr_family, addr),
-            (None, Some(interface)) => lookup_interface_addr(config.addr_family, interface),
-            (None, None) => discover_local_addr(
-                config.addr_family,
-                config.target_addr,
-                config.port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
-            ),
-            (Some(_), Some(_)) => unreachable!(),
-        }
     }
 }
 
@@ -344,6 +337,26 @@ impl TracerChannel {
             }
         }
         Ok(None)
+    }
+}
+
+/// Validate, Lookup or discover the source `IpAddr`.
+fn make_src_addr(
+    source_addr: Option<IpAddr>,
+    target_addr: IpAddr,
+    port_direction: PortDirection,
+    interface: Option<&str>,
+    addr_family: TracerAddrFamily,
+) -> TraceResult<IpAddr> {
+    match (source_addr, interface.as_ref()) {
+        (Some(addr), None) => validate_local_addr(addr_family, addr),
+        (None, Some(interface)) => lookup_interface_addr(addr_family, interface),
+        (None, None) => discover_local_addr(
+            addr_family,
+            target_addr,
+            port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
+        ),
+        (Some(_), Some(_)) => unreachable!(),
     }
 }
 
