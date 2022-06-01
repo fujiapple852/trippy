@@ -15,11 +15,11 @@ impl Icmpv6Type {
     #[must_use]
     pub fn id(&self) -> u8 {
         match self {
-            Icmpv6Type::EchoRequest => 128,
-            Icmpv6Type::EchoReply => 129,
-            Icmpv6Type::DestinationUnreachable => 1,
-            Icmpv6Type::TimeExceeded => 3,
-            Icmpv6Type::Other(id) => *id,
+            Self::EchoRequest => 128,
+            Self::EchoReply => 129,
+            Self::DestinationUnreachable => 1,
+            Self::TimeExceeded => 3,
+            Self::Other(id) => *id,
         }
     }
 }

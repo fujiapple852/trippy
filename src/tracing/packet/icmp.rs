@@ -15,11 +15,11 @@ impl IcmpType {
     #[must_use]
     pub fn id(&self) -> u8 {
         match self {
-            IcmpType::EchoRequest => 8,
-            IcmpType::EchoReply => 0,
-            IcmpType::DestinationUnreachable => 3,
-            IcmpType::TimeExceeded => 11,
-            IcmpType::Other(id) => *id,
+            Self::EchoRequest => 8,
+            Self::EchoReply => 0,
+            Self::DestinationUnreachable => 3,
+            Self::TimeExceeded => 11,
+            Self::Other(id) => *id,
         }
     }
 }
