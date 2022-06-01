@@ -22,6 +22,17 @@ pub enum Ipv4TotalLengthByteOrder {
     Network,
 }
 
+impl Ipv4TotalLengthByteOrder {
+    /// Adjust the IPv4 `total_length` header.
+    pub fn adjust_length(self, ipv4_total_length: u16) -> u16 {
+        match self {
+            #[cfg(all(unix, not(target_os = "linux")))]
+            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
+            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
+        }
+    }
+}
+
 /// Discover the required byte ordering for the IPv4 header field `total_length`.
 ///
 /// This is achieved by creating a raw socket and attempting to send an `IPv4` packet to localhost with the
