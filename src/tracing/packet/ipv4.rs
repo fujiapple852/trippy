@@ -132,9 +132,8 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn get_options_raw(&self) -> &[u8] {
-        use std::cmp::min;
         let current_offset = Self::minimum_packet_size();
-        let end = min(
+        let end = std::cmp::min(
             current_offset + ipv4_options_length(self),
             self.buf.as_slice().len(),
         );
