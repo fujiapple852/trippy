@@ -41,10 +41,28 @@ impl<'a> Buffer<'a> {
         [self.read(offset), self.read(offset + 1)]
     }
 
+    /// Get four bytes from the packet at a given byte offset.
+    pub fn get_bytes_four(&self, offset: usize) -> [u8; 4] {
+        [
+            self.read(offset),
+            self.read(offset + 1),
+            self.read(offset + 2),
+            self.read(offset + 3),
+        ]
+    }
+
     /// Set two bytes in the packet at a given offset.
     pub fn set_bytes_two(&mut self, offset: usize, bytes: [u8; 2]) {
         *self.write(offset) = bytes[0];
         *self.write(offset + 1) = bytes[1];
+    }
+
+    /// Set four bytes in the packet at a given offset.
+    pub fn set_bytes_four(&mut self, offset: usize, bytes: [u8; 4]) {
+        *self.write(offset) = bytes[0];
+        *self.write(offset + 1) = bytes[1];
+        *self.write(offset + 2) = bytes[2];
+        *self.write(offset + 3) = bytes[3];
     }
 
     /// Get the value at a given offset.
