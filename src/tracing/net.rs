@@ -443,11 +443,11 @@ mod ipv4 {
     use crate::tracing::net::{
         Ipv4TotalLengthByteOrder, ProbeResponse, ProbeResponseData, MAX_PACKET_SIZE,
     };
-    use crate::tracing::packet::icmp::destination_unreachable::DestinationUnreachablePacket;
-    use crate::tracing::packet::icmp::echo_reply::EchoReplyPacket;
-    use crate::tracing::packet::icmp::echo_request::EchoRequestPacket;
-    use crate::tracing::packet::icmp::time_exceeded::TimeExceededPacket;
-    use crate::tracing::packet::icmp::{IcmpCode, IcmpPacket, IcmpType};
+    use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
+    use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
+    use crate::tracing::packet::icmpv4::echo_request::EchoRequestPacket;
+    use crate::tracing::packet::icmpv4::time_exceeded::TimeExceededPacket;
+    use crate::tracing::packet::icmpv4::{IcmpCode, IcmpPacket, IcmpType};
     use crate::tracing::packet::ipv4::Ipv4Packet;
     use crate::tracing::packet::udp::UdpPacket;
     use crate::tracing::packet::IpProtocol;
