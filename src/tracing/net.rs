@@ -862,7 +862,7 @@ mod ipv6 {
     use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
     use crate::tracing::packet::icmpv6::echo_request::EchoRequestPacket;
     use crate::tracing::packet::icmpv6::time_exceeded::TimeExceededPacket;
-    use crate::tracing::packet::icmpv6::{Icmpv6Code, Icmpv6Packet, Icmpv6Type};
+    use crate::tracing::packet::icmpv6::{IcmpPacket, Icmpv6Code, Icmpv6Type};
     use crate::tracing::packet::ipv6::Ipv6Packet;
     use crate::tracing::packet::udp::UdpPacket;
     use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
@@ -885,7 +885,7 @@ mod ipv6 {
     const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_size();
 
     /// The maximum size of ICMP payload we allow.
-    const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - Icmpv6Packet::minimum_packet_size();
+    const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
     pub fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
         nix::ifaddrs::getifaddrs()
@@ -999,7 +999,7 @@ mod ipv6 {
         let mut buf = [0_u8; MAX_PACKET_SIZE];
         match recv_socket.recv_from_into_buf(&mut buf) {
             Ok((_bytes_read, addr)) => {
-                let icmp_v6 = Icmpv6Packet::new_view(&buf).req()?;
+                let icmp_v6 = IcmpPacket::new_view(&buf).req()?;
                 let src_addr = *addr.as_socket_ipv6().req()?.ip();
                 Ok(extract_probe_resp_v6(
                     protocol, direction, &icmp_v6, src_addr,
@@ -1045,7 +1045,7 @@ mod ipv6 {
     ) -> TraceResult<EchoRequestPacket<'_>> {
         let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
         payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
-        let packet_size = Icmpv6Packet::minimum_packet_size() + payload_size;
+        let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
         let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
         icmp.set_icmp_type(Icmpv6Type::EchoRequest);
         icmp.set_icmp_code(Icmpv6Code(0));
@@ -1066,7 +1066,7 @@ mod ipv6 {
 
     fn icmp_payload_size(packet_size: usize) -> usize {
         let ip_header_size = Ipv6Packet::minimum_packet_size();
-        let icmp_header_size = Icmpv6Packet::minimum_packet_size();
+        let icmp_header_size = IcmpPacket::minimum_packet_size();
         packet_size - icmp_header_size - ip_header_size
     }
 
@@ -1079,7 +1079,7 @@ mod ipv6 {
     fn extract_probe_resp_v6(
         protocol: TracerProtocol,
         direction: PortDirection,
-        icmp_v6: &Icmpv6Packet<'_>,
+        icmp_v6: &IcmpPacket<'_>,
         src: Ipv6Addr,
     ) -> TraceResult<Option<ProbeResponse>> {
         let recv = SystemTime::now();

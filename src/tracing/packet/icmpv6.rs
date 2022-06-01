@@ -54,12 +54,12 @@ const CHECKSUM_OFFSET: usize = 2;
 ///
 /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
 /// data in host byte order, converting as necessary for the given architecture.
-pub struct Icmpv6Packet<'a> {
+pub struct IcmpPacket<'a> {
     buf: Buffer<'a>,
 }
 
-impl<'a> Icmpv6Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Option<Icmpv6Packet<'_>> {
+impl<'a> IcmpPacket<'a> {
+    pub fn new(packet: &'a mut [u8]) -> Option<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
             Some(Self {
                 buf: Buffer::Mutable(packet),
@@ -70,7 +70,7 @@ impl<'a> Icmpv6Packet<'a> {
     }
 
     #[must_use]
-    pub fn new_view(packet: &'a [u8]) -> Option<Icmpv6Packet<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> Option<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
             Some(Self {
                 buf: Buffer::Immutable(packet),
@@ -118,9 +118,9 @@ impl<'a> Icmpv6Packet<'a> {
     }
 }
 
-impl Debug for Icmpv6Packet<'_> {
+impl Debug for IcmpPacket<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Icmpv6Packet")
+        f.debug_struct("IcmpPacket")
             .field("icmp_type", &self.get_icmp_type())
             .field("icmp_code", &self.get_icmp_code())
             .field("checksum", &self.get_checksum())
@@ -134,8 +134,8 @@ mod tests {
 
     #[test]
     fn test_icmp_type() {
-        let mut buf = [0_u8; Icmpv6Packet::minimum_packet_size()];
-        let mut packet = Icmpv6Packet::new(&mut buf).unwrap();
+        let mut buf = [0_u8; IcmpPacket::minimum_packet_size()];
+        let mut packet = IcmpPacket::new(&mut buf).unwrap();
         packet.set_icmp_type(Icmpv6Type::EchoRequest);
         assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
         assert_eq!([0x80], packet.packet()[0..1]);
@@ -155,8 +155,8 @@ mod tests {
 
     #[test]
     fn test_icmp_code() {
-        let mut buf = [0_u8; Icmpv6Packet::minimum_packet_size()];
-        let mut packet = Icmpv6Packet::new(&mut buf).unwrap();
+        let mut buf = [0_u8; IcmpPacket::minimum_packet_size()];
+        let mut packet = IcmpPacket::new(&mut buf).unwrap();
         packet.set_icmp_code(Icmpv6Code(0));
         assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
         assert_eq!([0x00], packet.packet()[1..2]);
@@ -170,8 +170,8 @@ mod tests {
 
     #[test]
     fn test_checksum() {
-        let mut buf = [0_u8; Icmpv6Packet::minimum_packet_size()];
-        let mut packet = Icmpv6Packet::new(&mut buf).unwrap();
+        let mut buf = [0_u8; IcmpPacket::minimum_packet_size()];
+        let mut packet = IcmpPacket::new(&mut buf).unwrap();
         packet.set_checksum(0);
         assert_eq!(0, packet.get_checksum());
         assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
