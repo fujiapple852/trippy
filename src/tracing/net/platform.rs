@@ -1,8 +1,5 @@
-use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::util::Required;
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::io::ErrorKind;
-use std::net::{IpAddr, SocketAddr};
+use crate::tracing::error::TraceResult;
+use std::net::IpAddr;
 
 /// The byte order to encode the `total length` field of the IPv4 header.
 ///
@@ -62,9 +59,10 @@ impl Ipv4TotalLengthByteOrder {
 /// TODO what do we do for IPv6?
 #[cfg(all(unix, not(target_os = "linux")))]
 pub fn discover_ip_length_byte_order(src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
+    use crate::tracing::error::TracerError;
     match test_send_local_ip4_packet(src_addr, 256_u16) {
         Ok(_) => Ok(Ipv4TotalLengthByteOrder::Network),
-        Err(TracerError::IoError(io)) if io.kind() == ErrorKind::InvalidInput => {
+        Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
             match test_send_local_ip4_packet(src_addr, 256_u16.swap_bytes()) {
                 Ok(_) => Ok(Ipv4TotalLengthByteOrder::Host),
                 Err(err) => Err(err),
@@ -80,6 +78,7 @@ pub fn discover_ip_length_byte_order(src_addr: IpAddr) -> TraceResult<Ipv4TotalL
 /// test if the OS rejects the attempt.
 #[cfg(all(unix, not(target_os = "linux")))]
 fn test_send_local_ip4_packet(src_addr: IpAddr, total_length: u16) -> TraceResult<usize> {
+    use crate::tracing::util::Required;
     let src_addr = match src_addr {
         IpAddr::V4(addr) => addr,
         IpAddr::V6(_) => unimplemented!(), // TODO
@@ -93,14 +92,14 @@ fn test_send_local_ip4_packet(src_addr: IpAddr, total_length: u16) -> TraceResul
     ipv4.set_source(src_addr);
     ipv4.set_destination(std::net::Ipv4Addr::LOCALHOST);
     ipv4.set_total_length(total_length);
-    let probe_socket = Socket::new(
-        Domain::IPV4,
-        Type::RAW,
-        Some(Protocol::from(nix::libc::IPPROTO_RAW)),
+    let probe_socket = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::RAW,
+        Some(socket2::Protocol::from(nix::libc::IPPROTO_RAW)),
     )?;
     probe_socket.set_header_included(true)?;
-    let remote_addr = SocketAddr::new(IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), 0);
-    Ok(probe_socket.send_to(ipv4.packet(), &SockAddr::from(remote_addr))?)
+    let remote_addr = std::net::SocketAddr::new(IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), 0);
+    Ok(probe_socket.send_to(ipv4.packet(), &socket2::SockAddr::from(remote_addr))?)
 }
 
 /// Discover the required byte ordering for the IPv4 header field `total_length`.
@@ -111,6 +110,6 @@ fn test_send_local_ip4_packet(src_addr: IpAddr, total_length: u16) -> TraceResul
 /// TODO move platform specifics into a separate module.
 #[cfg(target_os = "linux")]
 #[allow(clippy::unnecessary_wraps)]
-fn discover_ip_length_byte_order(_src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
+pub fn discover_ip_length_byte_order(_src_addr: IpAddr) -> TraceResult<Ipv4TotalLengthByteOrder> {
     Ok(Ipv4TotalLengthByteOrder::Network)
 }
