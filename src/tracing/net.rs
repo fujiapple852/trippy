@@ -177,22 +177,3 @@ fn is_writable(sock: &Socket) -> bool {
     .expect("select");
     writable == 1
 }
-
-/// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
-///
-/// This is required for `socket2::Socket` which [does not currently provide] this method.
-///
-/// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
-trait RecvFrom {
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)>;
-}
-
-impl RecvFrom for Socket {
-    // Safety: the `recv` implementation promises not to write uninitialised
-    // bytes to the `buf`fer, so this casting is safe.
-    #![allow(unsafe_code)]
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)> {
-        let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
-        self.recv_from(buf)
-    }
-}
