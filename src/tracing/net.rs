@@ -3,11 +3,8 @@ use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::types::Port;
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerAddrFamily};
-use nix::sys::select::FdSet;
-use nix::sys::time::{TimeVal, TimeValLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::net::{IpAddr, SocketAddr};
-use std::os::unix::io::AsRawFd;
 use std::time::SystemTime;
 
 /// IPv4 implementation.
@@ -161,19 +158,4 @@ fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
         TracerAddrFamily::Ipv4 => ipv4::make_recv_socket(),
         TracerAddrFamily::Ipv6 => ipv6::make_recv_socket(),
     }
-}
-
-/// Is the socket writable?
-fn is_writable(sock: &Socket) -> bool {
-    let mut write = FdSet::new();
-    write.insert(sock.as_raw_fd());
-    let writable = nix::sys::select::select(
-        None,
-        None,
-        Some(&mut write),
-        None,
-        Some(&mut TimeVal::zero()),
-    )
-    .expect("select");
-    writable == 1
 }
