@@ -1,5 +1,8 @@
 mod buffer;
 
+/// Functions for calculating network checksums.
+pub mod checksum;
+
 /// `ICMPv4` packets.
 pub mod icmpv4;
 
