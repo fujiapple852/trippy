@@ -9,9 +9,12 @@ use crate::tracing::{
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
+use nix::sys::select::FdSet;
+use nix::sys::time::{TimeVal, TimeValLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Shutdown, SocketAddr};
+use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
 /// The maximum size of the IP packet we allow.
@@ -228,7 +231,7 @@ impl TracerChannel {
         let found_index = self
             .tcp_probes
             .iter()
-            .find_position(|&probe| net::is_writable(&probe.socket))
+            .find_position(|&probe| is_writable(&probe.socket))
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
@@ -271,4 +274,19 @@ impl TcpProbe {
     pub fn new(socket: Socket, start: SystemTime) -> Self {
         Self { socket, start }
     }
+}
+
+/// Is the socket writable?
+fn is_writable(sock: &Socket) -> bool {
+    let mut write = FdSet::new();
+    write.insert(sock.as_raw_fd());
+    let writable = nix::sys::select::select(
+        None,
+        None,
+        Some(&mut write),
+        None,
+        Some(&mut TimeVal::zero()),
+    )
+    .expect("select");
+    writable == 1
 }
