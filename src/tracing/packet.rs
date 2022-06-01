@@ -1,7 +1,7 @@
 mod buffer;
 
 /// `ICMPv4` packets.
-pub mod icmp;
+pub mod icmpv4;
 
 /// `ICMPv6` packets.
 pub mod icmpv6;
