@@ -7,6 +7,6 @@
     clippy::cast_possible_truncation,
     clippy::missing_errors_doc
 )]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 
 pub mod tracing;
