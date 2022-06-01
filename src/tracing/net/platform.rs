@@ -24,8 +24,8 @@ impl Ipv4TotalLengthByteOrder {
     pub fn adjust_length(self, ipv4_total_length: u16) -> u16 {
         match self {
             #[cfg(all(unix, not(target_os = "linux")))]
-            Ipv4TotalLengthByteOrder::Host => ipv4_total_length.swap_bytes(),
-            Ipv4TotalLengthByteOrder::Network => ipv4_total_length,
+            Self::Host => ipv4_total_length.swap_bytes(),
+            Self::Network => ipv4_total_length,
         }
     }
 }
