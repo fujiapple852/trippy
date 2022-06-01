@@ -14,13 +14,13 @@ use std::io::ErrorKind;
 use std::net::{IpAddr, Shutdown, SocketAddr};
 use std::time::{Duration, SystemTime};
 
-/// The maximum number of TCP probes we allow.
-const MAX_TCP_PROBES: usize = 256;
-
 /// The maximum size of the IP packet we allow.
 pub const MAX_PACKET_SIZE: usize = 1024;
 
-/// A channel for sending and receiving `ICMP` packets.
+/// The maximum number of TCP probes we allow.
+const MAX_TCP_PROBES: usize = 256;
+
+/// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel {
     protocol: TracerProtocol,
     addr_family: TracerAddrFamily,
