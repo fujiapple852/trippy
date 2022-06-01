@@ -120,7 +120,6 @@ pub struct TracerChannel {
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
     port_direction: PortDirection,
-    // icmp_read_timeout: Duration, // TODO remove
     tcp_connect_timeout: Duration,
     icmp_send_socket: Socket,
     udp_send_socket: Socket,
@@ -947,7 +946,6 @@ mod ipv6 {
         let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
         icmp_send_socket.bind(&SockAddr::from(local_addr))?;
         icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
-        // icmp_send_socket.set_tos() // TODO should be setting `IPV6_TCLASS`
         let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
         icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
         Ok(())
