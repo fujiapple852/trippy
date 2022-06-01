@@ -12,6 +12,6 @@ pub mod packet;
 pub use config::{
     PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig, TracerProtocol,
 };
-pub use net::TracerChannel;
+pub use net::channel::TracerChannel;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
 pub use tracer::{Tracer, TracerRound};
