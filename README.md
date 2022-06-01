@@ -65,12 +65,28 @@ docker run -it fujiapple/trippy www.bitwizard.nl
 
 Trippy has been (lightly...) tested on the following platforms:
 
-| Platform       | Version        | Status | Notes                                                       |
-|----------------|----------------|--------|-------------------------------------------------------------|
-| Linux (Ubuntu) | 20.04          | ✅      |                                                             |
-| macOS          | 11.4 (Big Sur) | ✅      |                                                             |
-| NetBSD         | current        | ✅      |                                                             |
-| Windows        | 10             | ❌      | See [#98](https://github.com/fujiapple852/trippy/issues/98) |
+### IPv4
+
+| Platform | ICMP | UDP | TCP | Notes                                                       |
+|----------|------|-----|-----|-------------------------------------------------------------|
+| Linux    | ✅    | ✅   | ✅   |                                                             |
+| macOS    | ✅    | ✅   | ✅   |                                                             |
+| NetBSD   | ✅    | ✅   | ✅   |                                                             |
+| OpenBSD  | ⏳    | ⏳   | ⏳   | OpenBSD is untested                                         |
+| FreeBSD  | ⏳    | ⏳   | ⏳   | FreeBSD is untested                                         |
+| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98) |
+
+### IPv6
+
+| Platform | ICMP | UDP | TCP | Notes                                                                                          |
+|----------|------|-----|-----|------------------------------------------------------------------------------------------------|
+| Linux    | ✅    | ✅   | ❌   | IPv6/TCP is not yet implemented, see [#191](https://github.com/fujiapple852/trippy/issues/191) |
+| macOS    | ⏳    | ⏳   | ❌   | IPv6 on macOS requires testing                                                                 |
+| NetBSD   | ⏳    | ⏳   | ❌   | IPv6 on NetBSD requires testing                                                                |
+| OpenBSD  | ⏳    | ⏳   | ❌   | OpenBSD is untested                                                                            |
+| FreeBSD  | ⏳    | ⏳   | ❌   | FreeBSD is untested                                                                            |
+| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)                                    |
+
 
 ## Privileges
 
