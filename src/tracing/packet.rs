@@ -1,15 +1,18 @@
 mod buffer;
 
-/// ICMP packets.
+/// `ICMPv4` packets.
 pub mod icmp;
 
-/// IPv4 packets.
+/// `ICMPv6` packets.
+pub mod icmpv6;
+
+/// `IPv4` packets.
 pub mod ipv4;
 
-/// IPv6 packets.
+/// `IPv6` packets.
 pub mod ipv6;
 
-/// UDP packets.
+/// `UDP` packets.
 pub mod udp;
 
 fn fmt_payload(bytes: &[u8]) -> String {
