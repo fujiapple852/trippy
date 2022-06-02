@@ -16,6 +16,12 @@ const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
 /// The maximum TUI refresh rate.
 const TUI_MAX_REFRESH_RATE_MS: Duration = Duration::from_millis(1000);
 
+/// The minimum socket read timeout.
+const MIN_READ_TIMEOUT_MS: Duration = Duration::from_millis(10);
+
+/// The maximum socket read timeout.
+const MAX_READ_TIMEOUT_MS: Duration = Duration::from_millis(100);
+
 /// The minimum grace duration.
 const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
 
@@ -160,22 +166,26 @@ pub struct Args {
     #[clap(short = 'Q', long, default_value_t = 0, display_order = 16)]
     pub tos: u8,
 
+    /// The socket read timeout
+    #[clap(long, default_value = "10ms", display_order = 17)]
+    pub read_timeout: String,
+
     /// How to perform DNS queries.
     #[clap(
         arg_enum,
         short = 'r',
         long,
         default_value = "system",
-        display_order = 17
+        display_order = 18
     )]
     pub dns_resolve_method: DnsResolveMethod,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 18)]
+    #[clap(long, default_value = "5s", display_order = 19)]
     pub dns_timeout: String,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 19)]
+    #[clap(long, short = 'z', display_order = 20)]
     pub dns_lookup_as_info: bool,
 
     /// How to render addresses.
@@ -184,28 +194,28 @@ pub struct Args {
         short = 'a',
         long,
         default_value = "host",
-        display_order = 20
+        display_order = 21
     )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 21)]
+    #[clap(short = 'M', long, display_order = 22)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 22)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 23)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 23)]
+    #[clap(long, display_order = 24)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 24)]
+    #[clap(long, default_value = "100ms", display_order = 25)]
     pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 25)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 26)]
     pub report_cycles: usize,
 }
 
@@ -222,6 +232,7 @@ pub struct TrippyConfig {
     pub max_inflight: u8,
     pub initial_sequence: u16,
     pub tos: u8,
+    pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
@@ -250,6 +261,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             TraceProtocol::Udp => TracerProtocol::Udp,
             TraceProtocol::Tcp => TracerProtocol::Tcp,
         };
+        let read_timeout = humantime::parse_duration(&args.read_timeout)?;
         let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
         let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
         let grace_duration = humantime::parse_duration(&args.grace_duration)?;
@@ -292,6 +304,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         validate_multi(args.mode, args.protocol, &args.targets)?;
         validate_ttl(args.first_ttl, args.max_ttl)?;
         validate_max_inflight(args.max_inflight)?;
+        validate_read_timeout(read_timeout)?;
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
         validate_packet_size(args.packet_size)?;
@@ -309,6 +322,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             grace_duration,
             max_inflight: args.max_inflight,
             initial_sequence: args.initial_sequence,
+            read_timeout,
             packet_size: args.packet_size,
             payload_pattern: args.payload_pattern,
             tos: args.tos,
@@ -389,6 +403,20 @@ pub fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
         Err(anyhow!(
             "max_inflight ({}) must be greater than zero",
             max_inflight
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Validate `read_timeout`.
+pub fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
+    if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
+        Err(anyhow!(
+            "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
+            read_timeout,
+            MIN_READ_TIMEOUT_MS,
+            MAX_READ_TIMEOUT_MS
         ))
     } else {
         Ok(())
