@@ -390,6 +390,18 @@ pub mod echo_request {
             assert_eq!(u16::MAX, packet.get_sequence());
             assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
         }
+
+        #[test]
+        fn test_view() {
+            let buf = [0x08, 0x00, 0x16, 0x7c, 0x60, 0x9b, 0x80, 0xe8];
+            let packet = EchoRequestPacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
+            assert_eq!(5756, packet.get_checksum());
+            assert_eq!(24731, packet.get_identifier());
+            assert_eq!(33000, packet.get_sequence());
+            assert!(packet.payload().is_empty());
+        }
     }
 }
 
@@ -599,6 +611,18 @@ pub mod echo_reply {
             assert_eq!(u16::MAX, packet.get_sequence());
             assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
         }
+
+        #[test]
+        fn test_view() {
+            let buf = [0x00, 0x00, 0x1e, 0x70, 0x60, 0x9b, 0x80, 0xf4];
+            let packet = EchoReplyPacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
+            assert_eq!(7792, packet.get_checksum());
+            assert_eq!(24731, packet.get_identifier());
+            assert_eq!(33012, packet.get_sequence());
+            assert!(packet.payload().is_empty());
+        }
     }
 }
 
@@ -755,6 +779,16 @@ pub mod time_exceeded {
             packet.set_checksum(u16::MAX);
             assert_eq!(u16::MAX, packet.get_checksum());
             assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
+        }
+
+        #[test]
+        fn test_view() {
+            let buf = [0x0b, 0x00, 0xf4, 0xee, 0x00, 0x11, 0x00, 0x00];
+            let packet = TimeExceededPacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
+            assert_eq!(62702, packet.get_checksum());
+            assert!(packet.payload().is_empty());
         }
     }
 }
@@ -935,6 +969,16 @@ pub mod destination_unreachable {
             packet.set_checksum(u16::MAX);
             assert_eq!(u16::MAX, packet.get_checksum());
             assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
+        }
+
+        #[test]
+        fn test_view() {
+            let buf = [0x03, 0x03, 0xdf, 0xdc, 0x00, 0x00, 0x00, 0x00];
+            let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
+            assert_eq!(IcmpCode(3), packet.get_icmp_code());
+            assert_eq!(57308, packet.get_checksum());
+            assert!(packet.payload().is_empty());
         }
     }
 }
