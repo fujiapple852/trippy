@@ -1,6 +1,5 @@
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::{ProbeResponse, ProbeResponseData};
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
 use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
@@ -9,6 +8,7 @@ use crate::tracing::packet::icmpv6::time_exceeded::TimeExceededPacket;
 use crate::tracing::packet::icmpv6::{IcmpPacket, Icmpv6Code, Icmpv6Type};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::udp::UdpPacket;
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};

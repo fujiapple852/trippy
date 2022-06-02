@@ -1,7 +1,8 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
-use crate::tracing::net::{ipv4, ipv6, Network, ProbeResponse, TcpProbeResponseData};
+use crate::tracing::net::{ipv4, ipv6, Network};
+use crate::tracing::probe::{ProbeResponse, TcpProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{

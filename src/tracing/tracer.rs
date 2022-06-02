@@ -1,6 +1,7 @@
 use self::state::TracerState;
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::{Network, ProbeResponse};
+use crate::tracing::net::Network;
+use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::TracerProtocol;
