@@ -1,6 +1,6 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::platform::{discover_ip_length_byte_order, Ipv4TotalLengthByteOrder};
+use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
 use crate::tracing::net::{ipv4, ipv6, Network, ProbeResponse, TcpProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -59,7 +59,7 @@ impl TracerChannel {
             config.interface.as_deref(),
             config.addr_family,
         )?;
-        let ipv4_length_order = discover_ip_length_byte_order(src_addr)?;
+        let ipv4_length_order = Ipv4TotalLengthByteOrder::for_address(src_addr)?;
         let icmp_send_socket = net::make_icmp_send_socket(config.addr_family)?;
         let udp_send_socket = net::make_udp_send_socket(config.addr_family)?;
         let recv_socket = net::make_recv_socket(config.addr_family)?;
