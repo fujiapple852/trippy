@@ -15,6 +15,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Rewrite of network code to use RAW sockets ([#195](https://github.com/fujiapple852/trippy/issues/195), 
+ [#192](https://github.com/fujiapple852/trippy/issues/192))
+
 ### Fixed
 
 - Setting `-c` (`--report-cycles`) to 1 returns no traces ([#189](https://github.com/fujiapple852/trippy/issues/189))
