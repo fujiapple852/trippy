@@ -264,6 +264,9 @@ OPTIONS:
             The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default:
             0]
 
+        --read-timeout <READ_TIMEOUT>
+            The socket read timeout [default: 10ms]
+
     -r, --dns-resolve-method <DNS_RESOLVE_METHOD>
             How to perform DNS queries [default: system] [possible values:
             system, resolv, google, cloudflare]

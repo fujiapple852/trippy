@@ -113,6 +113,7 @@ pub struct TracerChannelConfig {
     pub payload_pattern: PayloadPattern,
     pub tos: TypeOfService,
     pub port_direction: PortDirection,
+    pub read_timeout: Duration,
     pub tcp_connect_timeout: Duration,
 }
 
@@ -130,6 +131,7 @@ impl TracerChannelConfig {
         payload_pattern: u8,
         tos: u8,
         port_direction: PortDirection,
+        read_timeout: Duration,
         tcp_connect_timeout: Duration,
     ) -> Self {
         Self {
@@ -143,6 +145,7 @@ impl TracerChannelConfig {
             payload_pattern: PayloadPattern(payload_pattern),
             tos: TypeOfService(tos),
             port_direction,
+            read_timeout,
             tcp_connect_timeout,
         }
     }
@@ -160,6 +163,7 @@ pub struct TracerConfig {
     pub grace_duration: Duration,
     pub max_inflight: MaxInflight,
     pub initial_sequence: Sequence,
+    pub read_timeout: Duration,
     pub min_round_duration: Duration,
     pub max_round_duration: Duration,
     pub packet_size: PacketSize,
@@ -178,6 +182,7 @@ impl TracerConfig {
         grace_duration: Duration,
         max_inflight: u8,
         initial_sequence: u16,
+        read_timeout: Duration,
         min_round_duration: Duration,
         max_round_duration: Duration,
         packet_size: u16,
@@ -211,6 +216,7 @@ impl TracerConfig {
             grace_duration,
             max_inflight: MaxInflight(max_inflight),
             initial_sequence: Sequence(initial_sequence),
+            read_timeout,
             min_round_duration,
             max_round_duration,
             packet_size: PacketSize(packet_size),

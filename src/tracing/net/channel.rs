@@ -37,6 +37,7 @@ pub struct TracerChannel {
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
     port_direction: PortDirection,
+    read_timeout: Duration,
     tcp_connect_timeout: Duration,
     icmp_send_socket: Socket,
     udp_send_socket: Socket,
@@ -76,6 +77,7 @@ impl TracerChannel {
             payload_pattern: config.payload_pattern,
             tos: config.tos,
             port_direction: config.port_direction,
+            read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_send_socket,
             udp_send_socket,
@@ -214,7 +216,7 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if is_readable(&self.recv_socket, Duration::from_millis(10))? {
+        if is_readable(&self.recv_socket, self.read_timeout)? {
             match self.addr_family {
                 TracerAddrFamily::Ipv4 => {
                     ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)

@@ -146,6 +146,7 @@ fn make_tracer_config(
         args.grace_duration,
         args.max_inflight,
         args.initial_sequence,
+        args.read_timeout,
         args.min_round_duration,
         args.max_round_duration,
         args.packet_size,
@@ -170,6 +171,7 @@ fn make_channel_config(
         args.payload_pattern,
         args.tos,
         args.port_direction,
+        args.read_timeout,
         args.min_round_duration,
     )
 }
