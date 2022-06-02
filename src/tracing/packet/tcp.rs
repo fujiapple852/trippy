@@ -314,6 +314,52 @@ mod tests {
     }
 
     #[test]
+    fn test_data_offset_and_reserved() {
+        let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
+        let mut packet = TcpPacket::new(&mut buf).unwrap();
+        packet.set_data_offset(0);
+        packet.set_reserved(0);
+        assert_eq!(0, packet.get_data_offset());
+        assert_eq!(0, packet.get_reserved());
+        assert_eq!([0x00], packet.packet()[12..13]);
+        packet.set_data_offset(15);
+        packet.set_reserved(7);
+        assert_eq!(15, packet.get_data_offset());
+        assert_eq!(7, packet.get_reserved());
+        assert_eq!([0xfe], packet.packet()[12..13]);
+    }
+
+    #[test]
+    fn test_reserved_and_flags() {
+        let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
+        let mut packet = TcpPacket::new(&mut buf).unwrap();
+        packet.set_reserved(0);
+        packet.set_flags(0);
+        assert_eq!(0, packet.get_flags());
+        assert_eq!([0x00, 0x00], packet.packet()[12..=13]);
+        packet.set_reserved(7);
+        packet.set_flags(511);
+        assert_eq!(511, packet.get_flags());
+        assert_eq!([0x0f, 0xff], packet.packet()[12..=13]);
+    }
+
+    #[test]
+    fn test_data_offset_and_reserved_and_flags() {
+        let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
+        let mut packet = TcpPacket::new(&mut buf).unwrap();
+        packet.set_data_offset(0);
+        packet.set_reserved(0);
+        packet.set_flags(0);
+        assert_eq!(0, packet.get_flags());
+        assert_eq!([0x00, 0x00], packet.packet()[12..=13]);
+        packet.set_data_offset(15);
+        packet.set_reserved(7);
+        packet.set_flags(511);
+        assert_eq!(511, packet.get_flags());
+        assert_eq!([0xff, 0xff], packet.packet()[12..=13]);
+    }
+
+    #[test]
     fn test_window_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
