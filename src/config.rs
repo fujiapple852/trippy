@@ -53,7 +53,7 @@ pub enum Mode {
 
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone, ArgEnum)]
-pub enum TraceProtocol {
+pub enum Protocol {
     /// Internet Control Message Protocol
     Icmp,
     /// User Datagram Protocol
@@ -100,7 +100,7 @@ pub struct Args {
 
     /// Tracing protocol
     #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
-    pub protocol: TraceProtocol,
+    pub protocol: Protocol,
 
     /// Trace using the UDP protocol
     #[clap(
@@ -275,9 +275,9 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
         let protocol = match (args.udp, args.tcp, args.protocol) {
-            (false, false, TraceProtocol::Icmp) => TracerProtocol::Icmp,
-            (false, false, TraceProtocol::Udp) | (true, _, _) => TracerProtocol::Udp,
-            (false, false, TraceProtocol::Tcp) | (_, true, _) => TracerProtocol::Tcp,
+            (false, false, Protocol::Icmp) => TracerProtocol::Icmp,
+            (false, false, Protocol::Udp) | (true, _, _) => TracerProtocol::Udp,
+            (false, false, Protocol::Tcp) | (_, true, _) => TracerProtocol::Tcp,
         };
         let read_timeout = humantime::parse_duration(&args.read_timeout)?;
         let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
