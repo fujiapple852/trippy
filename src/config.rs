@@ -98,76 +98,94 @@ pub struct Args {
     #[clap(arg_enum, short = 'm', long, default_value = "tui", display_order = 1)]
     pub mode: Mode,
 
-    /// Tracing protocol.
+    /// Tracing protocol
     #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
     pub protocol: TraceProtocol,
 
+    /// Trace using the UDP protocol
+    #[clap(
+        long,
+        display_order = 3,
+        conflicts_with = "protocol",
+        conflicts_with = "tcp"
+    )]
+    pub udp: bool,
+
+    /// Trace using the TCP protocol
+    #[clap(
+        long,
+        display_order = 4,
+        conflicts_with = "protocol",
+        conflicts_with = "udp"
+    )]
+    pub tcp: bool,
+
     /// use IPv4 only
-    #[clap(short = '4', long, display_order = 2, conflicts_with = "ipv6")]
+    #[clap(short = '4', long, display_order = 5, conflicts_with = "ipv6")]
     pub ipv4: bool,
 
     /// Use IPv6 only
-    #[clap(short = '6', long, display_order = 2, conflicts_with = "ipv4")]
+    #[clap(short = '6', long, display_order = 6, conflicts_with = "ipv4")]
     pub ipv6: bool,
 
     /// The target port (TCP & UDP only) [default: 80]
-    #[clap(long, short = 'P', display_order = 3)]
+    #[clap(long, short = 'P', display_order = 7)]
     pub target_port: Option<u16>,
 
     /// The source port (TCP & UDP only) [default: auto]
-    #[clap(long, short = 'S', display_order = 4)]
+    #[clap(long, short = 'S', display_order = 8)]
     pub source_port: Option<u16>,
 
     /// The source IP address [default: auto]
-    #[clap(short = 'A', long, display_order = 5, conflicts_with = "interface")]
+    #[clap(short = 'A', long, display_order = 9, conflicts_with = "interface")]
     pub source_address: Option<String>,
 
     /// The network interface [default: auto]
-    #[clap(short = 'I', long, display_order = 6)]
+    #[clap(short = 'I', long, display_order = 10)]
     pub interface: Option<String>,
 
     /// The minimum duration of every round
-    #[clap(short = 'i', long, default_value = "1s", display_order = 7)]
+    #[clap(short = 'i', long, default_value = "1s", display_order = 11)]
     pub min_round_duration: String,
 
     /// The maximum duration of every round
-    #[clap(short = 'T', long, default_value = "1s", display_order = 8)]
+    #[clap(short = 'T', long, default_value = "1s", display_order = 12)]
     pub max_round_duration: String,
 
     /// The initial sequence number
-    #[clap(long, default_value_t = 33000, display_order = 9)]
+    #[clap(long, default_value_t = 33000, display_order = 13)]
     pub initial_sequence: u16,
 
     /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short = 'g', long, default_value = "100ms", display_order = 10)]
+    #[clap(short = 'g', long, default_value = "100ms", display_order = 14)]
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 24, display_order = 11)]
+    #[clap(short = 'U', long, default_value_t = 24, display_order = 15)]
     pub max_inflight: u8,
 
     /// The TTL to start from
-    #[clap(short = 'f', long, default_value_t = 1, display_order = 12)]
+    #[clap(short = 'f', long, default_value_t = 1, display_order = 16)]
     pub first_ttl: u8,
 
     /// The maximum number of TTL hops
-    #[clap(short = 't', long, default_value_t = 64, display_order = 13)]
+    #[clap(short = 't', long, default_value_t = 64, display_order = 17)]
     pub max_ttl: u8,
 
     /// The size of IP packet to send (IP header + ICMP header + payload)
-    #[clap(long, default_value_t = 84, display_order = 14)]
+    #[clap(long, default_value_t = 84, display_order = 18)]
     pub packet_size: u16,
 
     /// The repeating pattern in the payload of the ICMP packet
-    #[clap(long, default_value_t = 0, display_order = 15)]
+    #[clap(long, default_value_t = 0, display_order = 19)]
     pub payload_pattern: u8,
 
     /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only)
-    #[clap(short = 'Q', long, default_value_t = 0, display_order = 16)]
+    #[clap(short = 'Q', long, default_value_t = 0, display_order = 20)]
     pub tos: u8,
 
     /// The socket read timeout
-    #[clap(long, default_value = "10ms", display_order = 17)]
+    #[clap(long, default_value = "10ms", display_order = 21)]
     pub read_timeout: String,
 
     /// How to perform DNS queries.
@@ -176,16 +194,16 @@ pub struct Args {
         short = 'r',
         long,
         default_value = "system",
-        display_order = 18
+        display_order = 22
     )]
     pub dns_resolve_method: DnsResolveMethod,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 19)]
+    #[clap(long, default_value = "5s", display_order = 23)]
     pub dns_timeout: String,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 20)]
+    #[clap(long, short = 'z', display_order = 24)]
     pub dns_lookup_as_info: bool,
 
     /// How to render addresses.
@@ -194,28 +212,28 @@ pub struct Args {
         short = 'a',
         long,
         default_value = "host",
-        display_order = 21
+        display_order = 25
     )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 22)]
+    #[clap(short = 'M', long, display_order = 26)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 23)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 27)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 24)]
+    #[clap(long, display_order = 28)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 25)]
+    #[clap(long, default_value = "100ms", display_order = 29)]
     pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 26)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 30)]
     pub report_cycles: usize,
 }
 
@@ -256,10 +274,10 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
 
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
-        let protocol = match args.protocol {
-            TraceProtocol::Icmp => TracerProtocol::Icmp,
-            TraceProtocol::Udp => TracerProtocol::Udp,
-            TraceProtocol::Tcp => TracerProtocol::Tcp,
+        let protocol = match (args.udp, args.tcp, args.protocol) {
+            (false, false, TraceProtocol::Icmp) => TracerProtocol::Icmp,
+            (false, false, TraceProtocol::Udp) | (true, _, _) => TracerProtocol::Udp,
+            (false, false, TraceProtocol::Tcp) | (_, true, _) => TracerProtocol::Tcp,
         };
         let read_timeout = humantime::parse_duration(&args.read_timeout)?;
         let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
@@ -273,15 +291,15 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let port_direction = match (args.protocol, args.source_port, args.target_port) {
-            (TraceProtocol::Icmp, _, _) => PortDirection::None,
-            (TraceProtocol::Udp, None, None) => PortDirection::new_fixed_src(pid.max(1024)),
-            (TraceProtocol::Udp, Some(src), None) => {
+        let port_direction = match (protocol, args.source_port, args.target_port) {
+            (TracerProtocol::Icmp, _, _) => PortDirection::None,
+            (TracerProtocol::Udp, None, None) => PortDirection::new_fixed_src(pid.max(1024)),
+            (TracerProtocol::Udp, Some(src), None) => {
                 validate_source_port(src)?;
                 PortDirection::new_fixed_src(src)
             }
-            (TraceProtocol::Tcp, None, None) => PortDirection::new_fixed_dest(80),
-            (TraceProtocol::Tcp, Some(src), None) => PortDirection::new_fixed_src(src),
+            (TracerProtocol::Tcp, None, None) => PortDirection::new_fixed_dest(80),
+            (TracerProtocol::Tcp, Some(src), None) => PortDirection::new_fixed_src(src),
             (_, None, Some(dest)) => PortDirection::new_fixed_dest(dest),
             (_, Some(_), Some(_)) => {
                 return Err(anyhow!(
@@ -300,8 +318,8 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             Mode::Stream | Mode::Tui => None,
             Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(args.report_cycles),
         };
-        validate_addr_family(args.protocol, addr_family)?;
-        validate_multi(args.mode, args.protocol, &args.targets)?;
+        validate_addr_family(protocol, addr_family)?;
+        validate_multi(args.mode, protocol, &args.targets)?;
         validate_ttl(args.first_ttl, args.max_ttl)?;
         validate_max_inflight(args.max_inflight)?;
         validate_read_timeout(read_timeout)?;
@@ -346,11 +364,11 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
 
 /// Validate that the protocol and address family are supported.
 pub fn validate_addr_family(
-    protocol: TraceProtocol,
+    protocol: TracerProtocol,
     addr_family: TracerAddrFamily,
 ) -> anyhow::Result<()> {
     match (addr_family, protocol) {
-        (TracerAddrFamily::Ipv6, TraceProtocol::Tcp) => {
+        (TracerAddrFamily::Ipv6, TracerProtocol::Tcp) => {
             Err(anyhow!("Tracing using TCP over IPv6 is not yet supported"))
         }
         _ => Ok(()),
@@ -360,7 +378,7 @@ pub fn validate_addr_family(
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
 pub fn validate_multi(
     mode: Mode,
-    protocol: TraceProtocol,
+    protocol: TracerProtocol,
     targets: &[String],
 ) -> anyhow::Result<()> {
     match (mode, protocol) {
@@ -371,7 +389,7 @@ pub fn validate_multi(
                 "only a single target may be specified for this mode"
             ))
         }
-        (_, TraceProtocol::Tcp | TraceProtocol::Udp) if targets.len() > 1 => Err(anyhow!(
+        (_, TracerProtocol::Tcp | TracerProtocol::Udp) if targets.len() > 1 => Err(anyhow!(
             "only a single target may be specified for TCP and UDP tracing"
         )),
         _ => Ok(()),
