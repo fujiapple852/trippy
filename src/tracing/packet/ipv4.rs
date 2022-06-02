@@ -140,21 +140,6 @@ impl<'a> Ipv4Packet<'a> {
         &self.buf.as_slice()[current_offset..end]
     }
 
-    // pub fn get_options(&self) -> Vec<Ipv4Option> {
-    //     use std::cmp::min;
-    //     let _self = self;
-    //     let current_offset = Ipv4Packet::minimum_packet_size();
-    //     let end = min(
-    //         current_offset + ipv4_options_length(&_self.to_immutable()),
-    //         _self.packet.len(),
-    //     );
-    //     Ipv4OptionIterable {
-    //         buf: &_self.packet[current_offset..end],
-    //     }
-    //         .map(|packet| packet.from_packet())
-    //         .collect::<Vec<_>>()
-    // }
-
     pub fn set_version(&mut self, val: u8) {
         *self.buf.write(VERSION_OFFSET) =
             (self.buf.read(VERSION_OFFSET) & 0xf) | ((val & 0xf) << 4);
@@ -230,21 +215,6 @@ impl<'a> Ipv4Packet<'a> {
         );
         &mut self.buf.as_slice_mut()[current_offset..end]
     }
-
-    // pub fn set_options(&mut self, vals: &[Ipv4Option]) {
-    //     let _self = self;
-    //     let mut current_offset = Ipv4Packet::minimum_packet_size();
-    //     let end = current_offset + ipv4_options_length(&_self.to_immutable());
-    //     for val in vals.into_iter() {
-    //         let mut packet =
-    //             MutableIpv4OptionPacket::new(&mut _self.packet[current_offset..]).unwrap();
-    //         packet.populate(val);
-    //         current_offset += packet.packet_size();
-    //         if !(current_offset <= end) {
-    //             ::core::panicking::panic("assertion failed: current_offset <= end")
-    //         };
-    //     }
-    // }
 
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size() + ipv4_options_length(self);
@@ -533,13 +503,6 @@ mod tests {
         );
         assert_eq!([0xDE, 0x9A, 0x56, 0x12], packet.packet()[16..=19]);
     }
-
-    // #[test]
-    // fn test_options() {
-    //     let mut buf = [0_u8; Ipv4Packet2::minimum_packet_size()];
-    //     let mut packet = Ipv4Packet2::new(&mut buf).unwrap();
-    //     assert!(false)
-    // }
 
     #[test]
     fn test_view() {
