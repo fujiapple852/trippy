@@ -5,7 +5,7 @@ use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreacha
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
 use crate::tracing::packet::icmpv6::echo_request::EchoRequestPacket;
 use crate::tracing::packet::icmpv6::time_exceeded::TimeExceededPacket;
-use crate::tracing::packet::icmpv6::{IcmpPacket, Icmpv6Code, Icmpv6Type};
+use crate::tracing::packet::icmpv6::{IcmpPacket, IcmpType, Icmpv6Code};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
@@ -190,7 +190,7 @@ fn make_echo_request_icmp_packet(
     payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
     let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
-    icmp.set_icmp_type(Icmpv6Type::EchoRequest);
+    icmp.set_icmp_type(IcmpType::EchoRequest);
     icmp.set_icmp_code(Icmpv6Code(0));
     icmp.set_identifier(identifier.0);
     icmp.set_payload(&payload_buf[..payload_size]);
@@ -220,21 +220,21 @@ fn extract_probe_resp_v6(
     let recv = SystemTime::now();
     let ip = IpAddr::V6(src);
     Ok(match icmp_v6.get_icmp_type() {
-        Icmpv6Type::TimeExceeded => {
+        IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
             let (id, seq) = extract_time_exceeded_v6(&packet, protocol, direction)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                 recv, ip, id, seq,
             )))
         }
-        Icmpv6Type::DestinationUnreachable => {
+        IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
             let (id, seq) = extract_dest_unreachable_v6(&packet, protocol, direction)?;
             Some(ProbeResponse::DestinationUnreachable(
                 ProbeResponseData::new(recv, ip, id, seq),
             ))
         }
-        Icmpv6Type::EchoReply => match protocol {
+        IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
                 let packet = EchoReplyPacket::new_view(icmp_v6.packet()).req()?;
                 let id = packet.get_identifier();
