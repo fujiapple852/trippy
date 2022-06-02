@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.5.0] - 2022-06-02
+
+### Added
+
 - Added support for tracing using `IPv6` for `icmp` and `udp` ([#35](https://github.com/fujiapple852/trippy/issues/35))
 - Added BSOD error reporting to Tui ([#179](https://github.com/fujiapple852/trippy/issues/179))
 - Added Ctrl-C keyboard command to quit the Tui ([#91](https://github.com/fujiapple852/trippy/issues/91))
@@ -133,6 +141,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.5.0]: https://github.com/fujiapple852/trippy/compare/0.4.0...0.5.0
 
 [0.4.0]: https://github.com/fujiapple852/trippy/compare/0.3.1...0.4.0
 
