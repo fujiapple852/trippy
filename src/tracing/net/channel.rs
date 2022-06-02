@@ -278,6 +278,21 @@ impl TcpProbe {
     }
 }
 
+/// Returns true if the socket becomes readable before the timeout, false otherwise.
+fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
+    let mut read = FdSet::new();
+    read.insert(sock.as_raw_fd());
+    let readable = nix::sys::select::select(
+        None,
+        Some(&mut read),
+        None,
+        None,
+        Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
+    )
+    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
+    Ok(readable == 1)
+}
+
 /// Is the socket writable?
 fn is_writable(sock: &Socket) -> bool {
     let mut write = FdSet::new();
