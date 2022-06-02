@@ -342,4 +342,29 @@ mod tests {
             packet.packet()[24..=39]
         );
     }
+
+    #[test]
+    fn test_view() {
+        let buf = [
+            0x60, 0x06, 0x05, 0x00, 0x00, 0x20, 0x06, 0x40, 0xfe, 0x80, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x1c, 0x8d, 0x7d, 0x69, 0xd0, 0xb6, 0x81, 0x82, 0xfe, 0x80, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x08, 0x11, 0x03, 0xf6, 0x76, 0x01, 0x6c, 0x3f,
+        ];
+        let packet = Ipv6Packet::new_view(&buf).unwrap();
+        assert_eq!(6, packet.get_version());
+        assert_eq!(0, packet.get_traffic_class());
+        assert_eq!(394_496, packet.get_flow_label());
+        assert_eq!(32, packet.get_payload_length());
+        assert_eq!(IpProtocol::Tcp, packet.get_next_header());
+        assert_eq!(64, packet.get_hop_limit());
+        assert_eq!(
+            Ipv6Addr::from_str("fe80::1c8d:7d69:d0b6:8182").unwrap(),
+            packet.get_source_address()
+        );
+        assert_eq!(
+            Ipv6Addr::from_str("fe80::811:3f6:7601:6c3f").unwrap(),
+            packet.get_destination_address()
+        );
+        assert!(packet.payload().is_empty());
+    }
 }
