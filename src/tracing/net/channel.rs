@@ -1,13 +1,11 @@
-use crate::tracing::error::TracerError::AddressNotAvailable;
+use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
 use crate::tracing::net::{ipv4, ipv6, Network};
 use crate::tracing::probe::{ProbeResponse, TcpProbeResponseData};
-use crate::tracing::types::{PacketSize, PayloadPattern, TraceId, TypeOfService};
+use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{
-    net, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
-};
+use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -23,6 +21,9 @@ pub const MAX_PACKET_SIZE: usize = 1024;
 
 /// The maximum number of TCP probes we allow.
 const MAX_TCP_PROBES: usize = 256;
+
+/// The port used for local address discovery if not dest port is available.
+const DISCOVERY_PORT: Port = Port(80);
 
 /// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel {
@@ -53,7 +54,7 @@ impl TracerChannel {
                 config.packet_size.0,
             )));
         }
-        let src_addr = net::make_src_addr(
+        let src_addr = make_src_addr(
             config.source_addr,
             config.target_addr,
             config.port_direction,
@@ -61,9 +62,9 @@ impl TracerChannel {
             config.addr_family,
         )?;
         let ipv4_length_order = Ipv4TotalLengthByteOrder::for_address(src_addr)?;
-        let icmp_send_socket = net::make_icmp_send_socket(config.addr_family)?;
-        let udp_send_socket = net::make_udp_send_socket(config.addr_family)?;
-        let recv_socket = net::make_recv_socket(config.addr_family)?;
+        let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
+        let udp_send_socket = make_udp_send_socket(config.addr_family)?;
+        let recv_socket = make_recv_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
@@ -290,4 +291,87 @@ fn is_writable(sock: &Socket) -> bool {
     )
     .expect("select");
     writable == 1
+}
+
+/// Validate, Lookup or discover the source `IpAddr`.
+fn make_src_addr(
+    source_addr: Option<IpAddr>,
+    target_addr: IpAddr,
+    port_direction: PortDirection,
+    interface: Option<&str>,
+    addr_family: TracerAddrFamily,
+) -> TraceResult<IpAddr> {
+    match (source_addr, interface.as_ref()) {
+        (Some(addr), None) => validate_local_addr(addr_family, addr),
+        (None, Some(interface)) => lookup_interface_addr(addr_family, interface),
+        (None, None) => discover_local_addr(
+            addr_family,
+            target_addr,
+            port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
+        ),
+        (Some(_), Some(_)) => unreachable!(),
+    }
+}
+
+/// Lookup the address for a named interface.
+fn lookup_interface_addr(addr_family: TracerAddrFamily, name: &str) -> TraceResult<IpAddr> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::lookup_interface_addr(name),
+        TracerAddrFamily::Ipv6 => ipv6::lookup_interface_addr(name),
+    }
+}
+
+/// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
+///
+/// Note that no packets are transmitted by this method.
+fn discover_local_addr(
+    addr_family: TracerAddrFamily,
+    target: IpAddr,
+    port: u16,
+) -> TraceResult<IpAddr> {
+    let socket = udp_socket_for_addr_family(addr_family)?;
+    socket.connect(&SockAddr::from(SocketAddr::new(target, port)))?;
+    Ok(socket.local_addr()?.as_socket().req()?.ip())
+}
+
+/// Validate that we can bind to the source address.
+fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
+    let socket = udp_socket_for_addr_family(addr_family)?;
+    let addr = SocketAddr::new(source_addr, 0);
+    match socket.bind(&SockAddr::from(addr)) {
+        Ok(_) => Ok(source_addr),
+        Err(_) => Err(InvalidSourceAddr(addr.ip())),
+    }
+}
+
+/// Create a socket suitable for a given address.
+fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    Ok(match addr_family {
+        TracerAddrFamily::Ipv4 => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?,
+        TracerAddrFamily::Ipv6 => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?,
+    })
+}
+
+/// Make a socket for sending raw `ICMP` packets.
+fn make_icmp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::make_icmp_send_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_icmp_send_socket(),
+    }
+}
+
+/// Make a socket for sending `UDP` packets.
+fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::make_udp_send_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_udp_send_socket(),
+    }
+}
+
+/// Make a socket for receiving raw `ICMP` packets.
+fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => ipv4::make_recv_socket(),
+        TracerAddrFamily::Ipv6 => ipv6::make_recv_socket(),
+    }
 }
