@@ -214,13 +214,17 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        match self.addr_family {
-            TracerAddrFamily::Ipv4 => {
-                ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
+        if is_readable(&self.recv_socket, Duration::from_millis(10))? {
+            match self.addr_family {
+                TracerAddrFamily::Ipv4 => {
+                    ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
+                }
+                TracerAddrFamily::Ipv6 => {
+                    ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
+                }
             }
-            TracerAddrFamily::Ipv6 => {
-                ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
-            }
+        } else {
+            Ok(None)
         }
     }
 
