@@ -1,5 +1,5 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.4.0)
+[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.5.0)
 [![Status](https://img.shields.io/badge/status-alpha-blue)](https://github.com/fujiapple852/trippy)
 [![Gitter](https://badges.gitter.im/trippy-rs/community.svg)](https://gitter.im/trippy-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -82,7 +82,7 @@ Trippy has been (lightly...) tested on the following platforms:
 |----------|------|-----|-----|------------------------------------------------------------------------------------------------|
 | Linux    | ✅    | ✅   | ❌   | IPv6/TCP is not yet implemented, see [#191](https://github.com/fujiapple852/trippy/issues/191) |
 | macOS    | ⏳    | ⏳   | ❌   | IPv6 on macOS requires testing                                                                 |
-| NetBSD   | ⏳    | ⏳   | ❌   | IPv6 on NetBSD requires testing                                                                |
+| NetBSD   | ✅    | ✅   | ❌   | IPv6 on NetBSD requires testing                                                                |
 | OpenBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
 | FreeBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
 | Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)                                    |
