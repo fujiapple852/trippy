@@ -160,11 +160,6 @@ impl<'a> TcpPacket<'a> {
             .set_bytes_two(URGENT_POINTER_OFFSET, val.to_be_bytes());
     }
 
-    // TODO
-    // pub fn set_options(&mut self) {
-    //     unimplemented!()
-    // }
-
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size() + self.tcp_options_length();
         self.buf.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
