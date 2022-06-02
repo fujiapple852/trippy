@@ -237,7 +237,7 @@ impl TracerChannel {
         let found_index = self
             .tcp_probes
             .iter()
-            .find_position(|&probe| is_writable(&probe.socket))
+            .find_position(|&probe| is_writable(&probe.socket).unwrap_or_default())
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
@@ -297,8 +297,8 @@ fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     Ok(readable == 1)
 }
 
-/// Is the socket writable?
-fn is_writable(sock: &Socket) -> bool {
+/// Returns true if the socket is currently writeable, false otherwise.
+fn is_writable(sock: &Socket) -> TraceResult<bool> {
     let mut write = FdSet::new();
     write.insert(sock.as_raw_fd());
     let writable = nix::sys::select::select(
@@ -308,8 +308,8 @@ fn is_writable(sock: &Socket) -> bool {
         None,
         Some(&mut TimeVal::zero()),
     )
-    .expect("select");
-    writable == 1
+    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
+    Ok(writable == 1)
 }
 
 /// Validate, Lookup or discover the source `IpAddr`.
