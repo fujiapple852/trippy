@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 /// The type of `ICMPv6` packet.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum Icmpv6Type {
+pub enum IcmpType {
     EchoRequest,
     EchoReply,
     DestinationUnreachable,
@@ -11,7 +11,7 @@ pub enum Icmpv6Type {
     Other(u8),
 }
 
-impl Icmpv6Type {
+impl IcmpType {
     #[must_use]
     pub fn id(&self) -> u8 {
         match self {
@@ -24,7 +24,7 @@ impl Icmpv6Type {
     }
 }
 
-impl From<u8> for Icmpv6Type {
+impl From<u8> for IcmpType {
     fn from(val: u8) -> Self {
         match val {
             128 => Self::EchoRequest,
@@ -86,8 +86,8 @@ impl<'a> IcmpPacket<'a> {
     }
 
     #[must_use]
-    pub fn get_icmp_type(&self) -> Icmpv6Type {
-        Icmpv6Type::from(self.buf.read(TYPE_OFFSET))
+    pub fn get_icmp_type(&self) -> IcmpType {
+        IcmpType::from(self.buf.read(TYPE_OFFSET))
     }
 
     #[must_use]
@@ -100,7 +100,7 @@ impl<'a> IcmpPacket<'a> {
         u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
     }
 
-    pub fn set_icmp_type(&mut self, val: Icmpv6Type) {
+    pub fn set_icmp_type(&mut self, val: IcmpType) {
         *self.buf.write(TYPE_OFFSET) = val.id();
     }
 
@@ -136,20 +136,20 @@ mod tests {
     fn test_icmp_type() {
         let mut buf = [0_u8; IcmpPacket::minimum_packet_size()];
         let mut packet = IcmpPacket::new(&mut buf).unwrap();
-        packet.set_icmp_type(Icmpv6Type::EchoRequest);
-        assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+        packet.set_icmp_type(IcmpType::EchoRequest);
+        assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
         assert_eq!([0x80], packet.packet()[0..1]);
-        packet.set_icmp_type(Icmpv6Type::EchoReply);
-        assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+        packet.set_icmp_type(IcmpType::EchoReply);
+        assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
         assert_eq!([0x81], packet.packet()[0..1]);
-        packet.set_icmp_type(Icmpv6Type::DestinationUnreachable);
-        assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+        packet.set_icmp_type(IcmpType::DestinationUnreachable);
+        assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
         assert_eq!([0x01], packet.packet()[0..1]);
-        packet.set_icmp_type(Icmpv6Type::TimeExceeded);
-        assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+        packet.set_icmp_type(IcmpType::TimeExceeded);
+        assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
         assert_eq!([0x03], packet.packet()[0..1]);
-        packet.set_icmp_type(Icmpv6Type::Other(255));
-        assert_eq!(Icmpv6Type::Other(255), packet.get_icmp_type());
+        packet.set_icmp_type(IcmpType::Other(255));
+        assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
         assert_eq!([0xFF], packet.packet()[0..1]);
     }
 
@@ -187,7 +187,7 @@ mod tests {
 pub mod echo_request {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{Icmpv6Code, Icmpv6Type};
+    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -232,8 +232,8 @@ pub mod echo_request {
         }
 
         #[must_use]
-        pub fn get_icmp_type(&self) -> Icmpv6Type {
-            Icmpv6Type::from(self.buf.read(TYPE_OFFSET))
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buf.read(TYPE_OFFSET))
         }
 
         #[must_use]
@@ -256,7 +256,7 @@ pub mod echo_request {
             u16::from_be_bytes(self.buf.get_bytes_two(SEQUENCE_OFFSET))
         }
 
-        pub fn set_icmp_type(&mut self, val: Icmpv6Type) {
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
@@ -314,20 +314,20 @@ pub mod echo_request {
         fn test_icmp_type() {
             let mut buf = [0_u8; EchoRequestPacket::minimum_packet_size()];
             let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
-            packet.set_icmp_type(Icmpv6Type::EchoRequest);
-            assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoRequest);
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!([0x80], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::EchoReply);
-            assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoReply);
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
             assert_eq!([0x81], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::DestinationUnreachable);
-            assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::DestinationUnreachable);
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!([0x01], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::TimeExceeded);
-            assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::TimeExceeded);
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!([0x03], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::Other(255));
-            assert_eq!(Icmpv6Type::Other(255), packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::Other(255));
+            assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
             assert_eq!([0xFF], packet.packet()[0..1]);
         }
 
@@ -395,7 +395,7 @@ pub mod echo_request {
         fn test_view() {
             let buf = [0x80, 0x00, 0x16, 0x7c, 0x60, 0x9b, 0x80, 0xe8];
             let packet = EchoRequestPacket::new_view(&buf).unwrap();
-            assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
             assert_eq!(5756, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
@@ -408,7 +408,7 @@ pub mod echo_request {
 pub mod echo_reply {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{Icmpv6Code, Icmpv6Type};
+    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -453,8 +453,8 @@ pub mod echo_reply {
         }
 
         #[must_use]
-        pub fn get_icmp_type(&self) -> Icmpv6Type {
-            Icmpv6Type::from(self.buf.read(TYPE_OFFSET))
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buf.read(TYPE_OFFSET))
         }
 
         #[must_use]
@@ -477,7 +477,7 @@ pub mod echo_reply {
             u16::from_be_bytes(self.buf.get_bytes_two(SEQUENCE_OFFSET))
         }
 
-        pub fn set_icmp_type(&mut self, val: Icmpv6Type) {
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
@@ -535,20 +535,20 @@ pub mod echo_reply {
         fn test_icmp_type() {
             let mut buf = [0_u8; EchoReplyPacket::minimum_packet_size()];
             let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
-            packet.set_icmp_type(Icmpv6Type::EchoRequest);
-            assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoRequest);
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!([0x80], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::EchoReply);
-            assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoReply);
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
             assert_eq!([0x81], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::DestinationUnreachable);
-            assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::DestinationUnreachable);
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!([0x01], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::TimeExceeded);
-            assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::TimeExceeded);
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!([0x03], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::Other(255));
-            assert_eq!(Icmpv6Type::Other(255), packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::Other(255));
+            assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
             assert_eq!([0xFF], packet.packet()[0..1]);
         }
 
@@ -616,7 +616,7 @@ pub mod echo_reply {
         fn test_view() {
             let buf = [0x81, 0x00, 0x1e, 0x70, 0x60, 0x9b, 0x80, 0xf4];
             let packet = EchoReplyPacket::new_view(&buf).unwrap();
-            assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
             assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
             assert_eq!(7792, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
@@ -629,7 +629,7 @@ pub mod echo_reply {
 pub mod time_exceeded {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{Icmpv6Code, Icmpv6Type};
+    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -672,8 +672,8 @@ pub mod time_exceeded {
         }
 
         #[must_use]
-        pub fn get_icmp_type(&self) -> Icmpv6Type {
-            Icmpv6Type::from(self.buf.read(TYPE_OFFSET))
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buf.read(TYPE_OFFSET))
         }
 
         #[must_use]
@@ -686,7 +686,7 @@ pub mod time_exceeded {
             u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
         }
 
-        pub fn set_icmp_type(&mut self, val: Icmpv6Type) {
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
@@ -734,20 +734,20 @@ pub mod time_exceeded {
         fn test_icmp_type() {
             let mut buf = [0_u8; TimeExceededPacket::minimum_packet_size()];
             let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
-            packet.set_icmp_type(Icmpv6Type::EchoRequest);
-            assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoRequest);
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!([0x80], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::EchoReply);
-            assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoReply);
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
             assert_eq!([0x81], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::DestinationUnreachable);
-            assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::DestinationUnreachable);
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!([0x01], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::TimeExceeded);
-            assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::TimeExceeded);
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!([0x03], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::Other(255));
-            assert_eq!(Icmpv6Type::Other(255), packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::Other(255));
+            assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
             assert_eq!([0xFF], packet.packet()[0..1]);
         }
 
@@ -785,7 +785,7 @@ pub mod time_exceeded {
         fn test_view() {
             let buf = [0x03, 0x00, 0xf4, 0xee, 0x00, 0x11, 0x00, 0x00];
             let packet = TimeExceededPacket::new_view(&buf).unwrap();
-            assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
             assert_eq!(62702, packet.get_checksum());
             assert!(packet.payload().is_empty());
@@ -796,7 +796,7 @@ pub mod time_exceeded {
 pub mod destination_unreachable {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{Icmpv6Code, Icmpv6Type};
+    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -841,8 +841,8 @@ pub mod destination_unreachable {
         }
 
         #[must_use]
-        pub fn get_icmp_type(&self) -> Icmpv6Type {
-            Icmpv6Type::from(self.buf.read(TYPE_OFFSET))
+        pub fn get_icmp_type(&self) -> IcmpType {
+            IcmpType::from(self.buf.read(TYPE_OFFSET))
         }
 
         #[must_use]
@@ -865,7 +865,7 @@ pub mod destination_unreachable {
             u16::from_be_bytes(self.buf.get_bytes_two(NEXT_HOP_MTU_OFFSET))
         }
 
-        pub fn set_icmp_type(&mut self, val: Icmpv6Type) {
+        pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
@@ -924,20 +924,20 @@ pub mod destination_unreachable {
         fn test_icmp_type() {
             let mut buf = [0_u8; DestinationUnreachablePacket::minimum_packet_size()];
             let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
-            packet.set_icmp_type(Icmpv6Type::EchoRequest);
-            assert_eq!(Icmpv6Type::EchoRequest, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoRequest);
+            assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!([0x80], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::EchoReply);
-            assert_eq!(Icmpv6Type::EchoReply, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::EchoReply);
+            assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
             assert_eq!([0x81], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::DestinationUnreachable);
-            assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::DestinationUnreachable);
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!([0x01], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::TimeExceeded);
-            assert_eq!(Icmpv6Type::TimeExceeded, packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::TimeExceeded);
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!([0x03], packet.packet()[0..1]);
-            packet.set_icmp_type(Icmpv6Type::Other(255));
-            assert_eq!(Icmpv6Type::Other(255), packet.get_icmp_type());
+            packet.set_icmp_type(IcmpType::Other(255));
+            assert_eq!(IcmpType::Other(255), packet.get_icmp_type());
             assert_eq!([0xFF], packet.packet()[0..1]);
         }
 
@@ -975,7 +975,7 @@ pub mod destination_unreachable {
         fn test_view() {
             let buf = [0x01, 0x03, 0xdf, 0xdc, 0x00, 0x00, 0x00, 0x00];
             let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
-            assert_eq!(Icmpv6Type::DestinationUnreachable, packet.get_icmp_type());
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!(Icmpv6Code(3), packet.get_icmp_code());
             assert_eq!(57308, packet.get_checksum());
             assert!(packet.payload().is_empty());
