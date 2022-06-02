@@ -366,4 +366,30 @@ mod tests {
         assert_eq!(u16::MAX, packet.get_urgent_pointer());
         assert_eq!([0xFF, 0xFF], packet.packet()[18..=19]);
     }
+
+    #[test]
+    fn test_view() {
+        let buf = [
+            0x01, 0xbb, 0xe5, 0xd7, 0x60, 0xb0, 0x76, 0x50, 0x8e, 0x03, 0x46, 0xa2, 0x80, 0x10,
+            0x00, 0x80, 0x3e, 0xdc, 0x00, 0x00, 0x01, 0x01, 0x08, 0x0a, 0x10, 0x52, 0xf6, 0xd4,
+            0xea, 0x3a, 0x2a, 0x51,
+        ];
+        let packet = TcpPacket::new_view(&buf).unwrap();
+        assert_eq!(443, packet.get_source());
+        assert_eq!(58839, packet.get_destination());
+        assert_eq!(1_622_177_360, packet.get_sequence());
+        assert_eq!(2_382_579_362, packet.get_acknowledgement());
+        assert_eq!(8, packet.get_data_offset());
+        assert_eq!(0, packet.get_reserved());
+        assert_eq!(0x10, packet.get_flags());
+        assert_eq!(128, packet.get_window_size());
+        assert_eq!(0x3edc, packet.get_checksum());
+        assert_eq!(0, packet.get_urgent_pointer());
+        assert_eq!(12, packet.tcp_options_length());
+        assert_eq!(
+            &[0x01, 0x01, 0x08, 0x0a, 0x10, 0x52, 0xf6, 0xd4, 0xea, 0x3a, 0x2a, 0x51],
+            packet.get_options_raw()
+        );
+        assert!(packet.payload().is_empty());
+    }
 }
