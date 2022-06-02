@@ -5,7 +5,7 @@ use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreacha
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
 use crate::tracing::packet::icmpv6::echo_request::EchoRequestPacket;
 use crate::tracing::packet::icmpv6::time_exceeded::TimeExceededPacket;
-use crate::tracing::packet::icmpv6::{IcmpPacket, IcmpType, Icmpv6Code};
+use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
@@ -191,7 +191,7 @@ fn make_echo_request_icmp_packet(
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
     let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
-    icmp.set_icmp_code(Icmpv6Code(0));
+    icmp.set_icmp_code(IcmpCode(0));
     icmp.set_identifier(identifier.0);
     icmp.set_payload(&payload_buf[..payload_size]);
     icmp.set_sequence(sequence.0);

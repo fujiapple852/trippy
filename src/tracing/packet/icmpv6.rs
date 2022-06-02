@@ -38,9 +38,9 @@ impl From<u8> for IcmpType {
 
 /// The `ICMPv6` code.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Icmpv6Code(pub u8);
+pub struct IcmpCode(pub u8);
 
-impl From<u8> for Icmpv6Code {
+impl From<u8> for IcmpCode {
     fn from(val: u8) -> Self {
         Self(val)
     }
@@ -91,8 +91,8 @@ impl<'a> IcmpPacket<'a> {
     }
 
     #[must_use]
-    pub fn get_icmp_code(&self) -> Icmpv6Code {
-        Icmpv6Code::from(self.buf.read(CODE_OFFSET))
+    pub fn get_icmp_code(&self) -> IcmpCode {
+        IcmpCode::from(self.buf.read(CODE_OFFSET))
     }
 
     #[must_use]
@@ -104,7 +104,7 @@ impl<'a> IcmpPacket<'a> {
         *self.buf.write(TYPE_OFFSET) = val.id();
     }
 
-    pub fn set_icmp_code(&mut self, val: Icmpv6Code) {
+    pub fn set_icmp_code(&mut self, val: IcmpCode) {
         *self.buf.write(CODE_OFFSET) = val.0;
     }
 
@@ -157,14 +157,14 @@ mod tests {
     fn test_icmp_code() {
         let mut buf = [0_u8; IcmpPacket::minimum_packet_size()];
         let mut packet = IcmpPacket::new(&mut buf).unwrap();
-        packet.set_icmp_code(Icmpv6Code(0));
-        assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+        packet.set_icmp_code(IcmpCode(0));
+        assert_eq!(IcmpCode(0), packet.get_icmp_code());
         assert_eq!([0x00], packet.packet()[1..2]);
-        packet.set_icmp_code(Icmpv6Code(5));
-        assert_eq!(Icmpv6Code(5), packet.get_icmp_code());
+        packet.set_icmp_code(IcmpCode(5));
+        assert_eq!(IcmpCode(5), packet.get_icmp_code());
         assert_eq!([0x05], packet.packet()[1..2]);
-        packet.set_icmp_code(Icmpv6Code(255));
-        assert_eq!(Icmpv6Code(255), packet.get_icmp_code());
+        packet.set_icmp_code(IcmpCode(255));
+        assert_eq!(IcmpCode(255), packet.get_icmp_code());
         assert_eq!([0xFF], packet.packet()[1..2]);
     }
 
@@ -187,7 +187,7 @@ mod tests {
 pub mod echo_request {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
+    use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -237,8 +237,8 @@ pub mod echo_request {
         }
 
         #[must_use]
-        pub fn get_icmp_code(&self) -> Icmpv6Code {
-            Icmpv6Code::from(self.buf.read(CODE_OFFSET))
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buf.read(CODE_OFFSET))
         }
 
         #[must_use]
@@ -260,7 +260,7 @@ pub mod echo_request {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
-        pub fn set_icmp_code(&mut self, val: Icmpv6Code) {
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
             *self.buf.write(CODE_OFFSET) = val.0;
         }
 
@@ -335,14 +335,14 @@ pub mod echo_request {
         fn test_icmp_code() {
             let mut buf = [0_u8; EchoRequestPacket::minimum_packet_size()];
             let mut packet = EchoRequestPacket::new(&mut buf).unwrap();
-            packet.set_icmp_code(Icmpv6Code(0));
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(0));
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!([0x00], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(5));
-            assert_eq!(Icmpv6Code(5), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(5));
+            assert_eq!(IcmpCode(5), packet.get_icmp_code());
             assert_eq!([0x05], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(255));
-            assert_eq!(Icmpv6Code(255), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(255));
+            assert_eq!(IcmpCode(255), packet.get_icmp_code());
             assert_eq!([0xFF], packet.packet()[1..2]);
         }
 
@@ -396,7 +396,7 @@ pub mod echo_request {
             let buf = [0x80, 0x00, 0x16, 0x7c, 0x60, 0x9b, 0x80, 0xe8];
             let packet = EchoRequestPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(5756, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
             assert_eq!(33000, packet.get_sequence());
@@ -408,7 +408,7 @@ pub mod echo_request {
 pub mod echo_reply {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
+    use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -458,8 +458,8 @@ pub mod echo_reply {
         }
 
         #[must_use]
-        pub fn get_icmp_code(&self) -> Icmpv6Code {
-            Icmpv6Code::from(self.buf.read(CODE_OFFSET))
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buf.read(CODE_OFFSET))
         }
 
         #[must_use]
@@ -481,7 +481,7 @@ pub mod echo_reply {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
-        pub fn set_icmp_code(&mut self, val: Icmpv6Code) {
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
             *self.buf.write(CODE_OFFSET) = val.0;
         }
 
@@ -556,14 +556,14 @@ pub mod echo_reply {
         fn test_icmp_code() {
             let mut buf = [0_u8; EchoReplyPacket::minimum_packet_size()];
             let mut packet = EchoReplyPacket::new(&mut buf).unwrap();
-            packet.set_icmp_code(Icmpv6Code(0));
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(0));
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!([0x00], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(5));
-            assert_eq!(Icmpv6Code(5), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(5));
+            assert_eq!(IcmpCode(5), packet.get_icmp_code());
             assert_eq!([0x05], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(255));
-            assert_eq!(Icmpv6Code(255), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(255));
+            assert_eq!(IcmpCode(255), packet.get_icmp_code());
             assert_eq!([0xFF], packet.packet()[1..2]);
         }
 
@@ -617,7 +617,7 @@ pub mod echo_reply {
             let buf = [0x81, 0x00, 0x1e, 0x70, 0x60, 0x9b, 0x80, 0xf4];
             let packet = EchoReplyPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::EchoReply, packet.get_icmp_type());
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(7792, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
             assert_eq!(33012, packet.get_sequence());
@@ -629,7 +629,7 @@ pub mod echo_reply {
 pub mod time_exceeded {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
+    use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -677,8 +677,8 @@ pub mod time_exceeded {
         }
 
         #[must_use]
-        pub fn get_icmp_code(&self) -> Icmpv6Code {
-            Icmpv6Code::from(self.buf.read(CODE_OFFSET))
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buf.read(CODE_OFFSET))
         }
 
         #[must_use]
@@ -690,7 +690,7 @@ pub mod time_exceeded {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
-        pub fn set_icmp_code(&mut self, val: Icmpv6Code) {
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
             *self.buf.write(CODE_OFFSET) = val.0;
         }
 
@@ -755,14 +755,14 @@ pub mod time_exceeded {
         fn test_icmp_code() {
             let mut buf = [0_u8; TimeExceededPacket::minimum_packet_size()];
             let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
-            packet.set_icmp_code(Icmpv6Code(0));
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(0));
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!([0x00], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(5));
-            assert_eq!(Icmpv6Code(5), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(5));
+            assert_eq!(IcmpCode(5), packet.get_icmp_code());
             assert_eq!([0x05], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(255));
-            assert_eq!(Icmpv6Code(255), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(255));
+            assert_eq!(IcmpCode(255), packet.get_icmp_code());
             assert_eq!([0xFF], packet.packet()[1..2]);
         }
 
@@ -786,7 +786,7 @@ pub mod time_exceeded {
             let buf = [0x03, 0x00, 0xf4, 0xee, 0x00, 0x11, 0x00, 0x00];
             let packet = TimeExceededPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(62702, packet.get_checksum());
             assert!(packet.payload().is_empty());
         }
@@ -796,7 +796,7 @@ pub mod time_exceeded {
 pub mod destination_unreachable {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
-    use crate::tracing::packet::icmpv6::{IcmpType, Icmpv6Code};
+    use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -846,8 +846,8 @@ pub mod destination_unreachable {
         }
 
         #[must_use]
-        pub fn get_icmp_code(&self) -> Icmpv6Code {
-            Icmpv6Code::from(self.buf.read(CODE_OFFSET))
+        pub fn get_icmp_code(&self) -> IcmpCode {
+            IcmpCode::from(self.buf.read(CODE_OFFSET))
         }
 
         #[must_use]
@@ -869,7 +869,7 @@ pub mod destination_unreachable {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
 
-        pub fn set_icmp_code(&mut self, val: Icmpv6Code) {
+        pub fn set_icmp_code(&mut self, val: IcmpCode) {
             *self.buf.write(CODE_OFFSET) = val.0;
         }
 
@@ -945,14 +945,14 @@ pub mod destination_unreachable {
         fn test_icmp_code() {
             let mut buf = [0_u8; DestinationUnreachablePacket::minimum_packet_size()];
             let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
-            packet.set_icmp_code(Icmpv6Code(0));
-            assert_eq!(Icmpv6Code(0), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(0));
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!([0x00], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(5));
-            assert_eq!(Icmpv6Code(5), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(5));
+            assert_eq!(IcmpCode(5), packet.get_icmp_code());
             assert_eq!([0x05], packet.packet()[1..2]);
-            packet.set_icmp_code(Icmpv6Code(255));
-            assert_eq!(Icmpv6Code(255), packet.get_icmp_code());
+            packet.set_icmp_code(IcmpCode(255));
+            assert_eq!(IcmpCode(255), packet.get_icmp_code());
             assert_eq!([0xFF], packet.packet()[1..2]);
         }
 
@@ -976,7 +976,7 @@ pub mod destination_unreachable {
             let buf = [0x01, 0x03, 0xdf, 0xdc, 0x00, 0x00, 0x00, 0x00];
             let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
-            assert_eq!(Icmpv6Code(3), packet.get_icmp_code());
+            assert_eq!(IcmpCode(3), packet.get_icmp_code());
             assert_eq!(57308, packet.get_checksum());
             assert!(packet.payload().is_empty());
         }
