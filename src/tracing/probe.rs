@@ -108,3 +108,47 @@ pub enum IcmpPacketType {
     /// Non-ICMP response (i.e. for some `UDP` & `TCP` probes).
     NotApplicable,
 }
+
+/// The response to a probe.
+#[derive(Debug, Copy, Clone)]
+pub enum ProbeResponse {
+    TimeExceeded(ProbeResponseData),
+    DestinationUnreachable(ProbeResponseData),
+    EchoReply(ProbeResponseData),
+    TcpReply(TcpProbeResponseData),
+    TcpRefused(TcpProbeResponseData),
+}
+
+/// The data in the probe response.
+#[derive(Debug, Copy, Clone)]
+pub struct ProbeResponseData {
+    pub recv: SystemTime,
+    pub addr: IpAddr,
+    pub identifier: u16,
+    pub sequence: u16,
+}
+
+impl ProbeResponseData {
+    pub fn new(recv: SystemTime, addr: IpAddr, identifier: u16, sequence: u16) -> Self {
+        Self {
+            recv,
+            addr,
+            identifier,
+            sequence,
+        }
+    }
+}
+
+/// The data in the TCP probe response.
+#[derive(Debug, Copy, Clone)]
+pub struct TcpProbeResponseData {
+    pub recv: SystemTime,
+    pub addr: IpAddr,
+    pub ttl: u8,
+}
+
+impl TcpProbeResponseData {
+    pub fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
+        Self { recv, addr, ttl }
+    }
+}

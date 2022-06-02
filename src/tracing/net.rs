@@ -1,11 +1,11 @@
 use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
+use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::Port;
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerAddrFamily};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::net::{IpAddr, SocketAddr};
-use std::time::SystemTime;
 
 /// IPv4 implementation.
 mod ipv4;
@@ -28,50 +28,6 @@ pub trait Network {
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>>;
-}
-
-/// The response to a probe.
-#[derive(Debug, Copy, Clone)]
-pub enum ProbeResponse {
-    TimeExceeded(ProbeResponseData),
-    DestinationUnreachable(ProbeResponseData),
-    EchoReply(ProbeResponseData),
-    TcpReply(TcpProbeResponseData),
-    TcpRefused(TcpProbeResponseData),
-}
-
-/// The data in the probe response.
-#[derive(Debug, Copy, Clone)]
-pub struct ProbeResponseData {
-    pub recv: SystemTime,
-    pub addr: IpAddr,
-    pub identifier: u16,
-    pub sequence: u16,
-}
-
-impl ProbeResponseData {
-    fn new(recv: SystemTime, addr: IpAddr, identifier: u16, sequence: u16) -> Self {
-        Self {
-            recv,
-            addr,
-            identifier,
-            sequence,
-        }
-    }
-}
-
-/// The data in the TCP probe response.
-#[derive(Debug, Copy, Clone)]
-pub struct TcpProbeResponseData {
-    pub recv: SystemTime,
-    pub addr: IpAddr,
-    pub ttl: u8,
-}
-
-impl TcpProbeResponseData {
-    fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
-        Self { recv, addr, ttl }
-    }
 }
 
 /// The port used for local address discovery if not dest port is available.
