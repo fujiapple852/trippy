@@ -16,8 +16,12 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::{PortDirection, TracerAddrFamily};
 use tui::layout::{Alignment, Direction, Rect};
+use tui::symbols::Marker;
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
+use tui::widgets::{
+    Axis, BarChart, BorderType, Chart, Clear, Dataset, GraphType, Paragraph, Sparkline, TableState,
+    Tabs,
+};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -57,10 +61,13 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
     Constraint::Length(6),
 ];
 
-const HELP_LINES: [&str; 14] = [
+const MAX_ZOOM_FACTOR: usize = 16;
+
+const HELP_LINES: [&str; 16] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
     "[esc]            - clear selection",
+    "c                - toggle chart",
     "f                - toggle freeze display",
     "Ctrl+r           - reset statistics",
     "Ctrl+k           - flush DNS cache",
@@ -69,6 +76,7 @@ const HELP_LINES: [&str; 14] = [
     "b                - show both IP and hostname",
     "[ & ]            - expand & collapse hosts",
     "{ & }            - expand & collapse hosts to max and min",
+    "+ & -            - zoom chart in and out",
     "z                - toggle AS information (if available)",
     "h                - toggle help",
     "q                - quit",
@@ -119,7 +127,9 @@ struct TuiApp {
     trace_selected: usize,
     resolver: DnsResolver,
     show_help: bool,
+    show_chart: bool,
     frozen_start: Option<SystemTime>,
+    zoom_factor: usize,
 }
 
 impl TuiApp {
@@ -132,7 +142,9 @@ impl TuiApp {
             trace_selected: 0,
             resolver,
             show_help: false,
+            show_chart: false,
             frozen_start: None,
+            zoom_factor: 1,
         }
     }
 
@@ -226,6 +238,10 @@ impl TuiApp {
         };
     }
 
+    fn toggle_chart(&mut self) {
+        self.show_chart = !self.show_chart;
+    }
+
     fn toggle_asinfo(&mut self) {
         self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
     }
@@ -242,6 +258,18 @@ impl TuiApp {
         self.tui_config.max_addrs = match self.tui_config.max_addrs {
             Some(i) if i > 1 => Some(i - 1),
             _ => None,
+        }
+    }
+
+    fn zoom_in(&mut self) {
+        if self.zoom_factor < MAX_ZOOM_FACTOR {
+            self.zoom_factor += 1;
+        }
+    }
+
+    fn zoom_out(&mut self) {
+        if self.zoom_factor > 1 {
+            self.zoom_factor -= 1;
         }
     }
 
@@ -316,6 +344,7 @@ fn run_app<B: Backend>(
                             return Ok(())
                         }
                         (KeyCode::Char('f'), _) => app.toggle_freeze(),
+                        (KeyCode::Char('c'), _) => app.toggle_chart(),
                         (KeyCode::Char('r'), KeyModifiers::CONTROL) => {
                             app.clear();
                             app.clear_trace_data();
@@ -356,6 +385,8 @@ fn run_app<B: Backend>(
                         (KeyCode::Char('}'), _) => app.expand_hosts_max(),
                         (KeyCode::Char('['), _) => app.contract_hosts(),
                         (KeyCode::Char(']'), _) => app.expand_hosts(),
+                        (KeyCode::Char('+' | '='), _) => app.zoom_in(),
+                        (KeyCode::Char('-'), _) => app.zoom_out(),
                         _ => {}
                     }
                 }
@@ -585,9 +616,98 @@ fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
         render_bsod(f, rec, err);
     } else if app.tracer_data().hops().is_empty() {
         render_splash(f, rec);
+    } else if app.show_chart {
+        render_chart(f, app, rec);
     } else {
         render_table(f, app, rec);
     }
+}
+
+/// Render the ping history for all hops as a chart.
+fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let target_hop = app.table_state.selected().map_or_else(
+        || app.tracer_data().target_hop(),
+        |s| &app.tracer_data().hops()[s],
+    );
+    let samples = app.tui_config.max_samples / app.zoom_factor;
+    let series_data = app
+        .selected_tracer_data
+        .hops()
+        .iter()
+        .map(|hop| {
+            hop.samples()
+                .iter()
+                .enumerate()
+                .take(samples)
+                .map(|(i, s)| (i as f64, (s.as_secs_f64() * 1000_f64) as f64))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let max_sample = series_data
+        .iter()
+        .flatten()
+        .map(|&(_, s)| s)
+        .max_by_key(|&c| c as u64)
+        .unwrap_or_default();
+    let sets = series_data
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            Dataset::default()
+                .name(format!("Hop {}", i + 1))
+                .data(s)
+                .graph_type(GraphType::Line)
+                .marker(Marker::Braille)
+                .style(Style::default().fg({
+                    match i {
+                        i if i + 1 == target_hop.ttl() as usize => Color::Green,
+                        _ => Color::Gray,
+                    }
+                }))
+        })
+        .collect::<Vec<_>>();
+    let constraints = (Constraint::Ratio(1, 1), Constraint::Ratio(1, 1));
+    let chart = Chart::new(sets)
+        .x_axis(
+            Axis::default()
+                .title("Samples")
+                .bounds([0_f64, samples as f64])
+                .labels_alignment(Alignment::Right)
+                .labels(
+                    [
+                        "0".to_string(),
+                        format!("{} ({}x)", samples, app.zoom_factor),
+                    ]
+                    .into_iter()
+                    .map(Span::from)
+                    .collect(),
+                )
+                .style(Style::default().fg(Color::DarkGray)),
+        )
+        .y_axis(
+            Axis::default()
+                .title("RTT")
+                .bounds([0_f64, max_sample])
+                .labels(
+                    [
+                        String::from("0.0"),
+                        format!("{:.1}", max_sample / 2_f64),
+                        format!("{:.1}", max_sample),
+                    ]
+                    .into_iter()
+                    .map(Span::from)
+                    .collect(),
+                )
+                .style(Style::default().fg(Color::DarkGray)),
+        )
+        .hidden_legend_constraints(constraints)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title("Hops"),
+        );
+    f.render_widget(chart, rect);
 }
 
 /// Render a blue screen of death.
@@ -972,7 +1092,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .style(Style::default())
         .block(block.clone())
         .alignment(Alignment::Left);
-    let area = centered_rect(50, 40, f.size());
+    let area = centered_rect(50, 50, f.size());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
     f.render_widget(control, area);
