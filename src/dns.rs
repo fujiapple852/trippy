@@ -33,14 +33,14 @@ impl Display for DnsEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_same_arms)]
         match self {
-            DnsEntry::Resolved(Resolved::Normal(_, hosts)) => write!(f, "{}", hosts.join(" ")),
-            DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
+            Self::Resolved(Resolved::Normal(_, hosts)) => write!(f, "{}", hosts.join(" ")),
+            Self::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
                 write!(f, "AS{} {}", asinfo.asn, hosts.join(" "))
             }
-            DnsEntry::Pending(ip) => write!(f, "{}", ip),
-            DnsEntry::NotFound(ip) => write!(f, "{}", ip),
-            DnsEntry::Failed(ip) => write!(f, "Failed: {}", ip),
-            DnsEntry::Timeout(ip) => write!(f, "Timeout: {}", ip),
+            Self::Pending(ip) => write!(f, "{}", ip),
+            Self::NotFound(ip) => write!(f, "{}", ip),
+            Self::Failed(ip) => write!(f, "Failed: {}", ip),
+            Self::Timeout(ip) => write!(f, "Timeout: {}", ip),
         }
     }
 }
