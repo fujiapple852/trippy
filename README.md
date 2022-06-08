@@ -81,8 +81,8 @@ Trippy has been (lightly...) tested on the following platforms:
 | Platform | ICMP | UDP | TCP | Notes                                                                                          |
 |----------|------|-----|-----|------------------------------------------------------------------------------------------------|
 | Linux    | ✅    | ✅   | ❌   | IPv6/TCP is not yet implemented, see [#191](https://github.com/fujiapple852/trippy/issues/191) |
-| macOS    | ⏳    | ⏳   | ❌   | IPv6 on macOS requires testing                                                                 |
-| NetBSD   | ✅    | ✅   | ❌   | IPv6 on NetBSD requires testing                                                                |
+| macOS    | ✅    | ✅   | ❌   |                                                                                                |
+| NetBSD   | ✅    | ✅   | ❌   |                                                                                                |
 | OpenBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
 | FreeBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
 | Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)                                    |
