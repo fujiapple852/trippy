@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for tracing using `IPv6` for `tcp` ([#191](https://github.com/fujiapple852/trippy/issues/191))
+
 ### Changed
 
 ### Fixed
