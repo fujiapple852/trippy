@@ -12,6 +12,7 @@ pub struct Trace {
     max_samples: usize,
     lowest_ttl: u8,
     highest_ttl: u8,
+    highest_ttl_for_round: u8,
     round: Option<usize>,
     hops: Vec<Hop>,
     error: Option<String>,
@@ -23,6 +24,7 @@ impl Trace {
             max_samples,
             lowest_ttl: 0,
             highest_ttl: 0,
+            highest_ttl_for_round: 0,
             round: None,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
             error: None,
@@ -55,6 +57,11 @@ impl Trace {
         self.highest_ttl == hop.ttl
     }
 
+    /// Is a given `Hop` in the current round?
+    pub fn is_in_round(&self, hop: &Hop) -> bool {
+        hop.ttl <= self.highest_ttl_for_round
+    }
+
     /// Return the target `Hop`.
     ///
     /// TODO Do we guarantee there is always a target hop?
@@ -72,7 +79,8 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
-        self.highest_ttl = round.largest_ttl.0;
+        self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
+        self.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
             self.update_from_probe(probe);
         }
@@ -255,9 +263,6 @@ impl Default for Hop {
 ///
 /// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI will delay the
 /// next round of the started.
-///
-/// Note that currently each `Probe` is published individually at the end of a round and so the lock is taken multiple
-/// times per round.
 pub fn run_backend(config: &TracerConfig, channel: TracerChannel, trace_data: Arc<RwLock<Trace>>) {
     let td = trace_data.clone();
     let tracer = Tracer::new(config, move |round| {
