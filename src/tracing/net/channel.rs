@@ -1,8 +1,8 @@
-use crate::tracing::error::TracerError::{AddressNotAvailable, InvalidSourceAddr};
+use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
 use crate::tracing::net::{ipv4, ipv6, Network};
-use crate::tracing::probe::{ProbeResponse, TcpProbeResponseData};
+use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
@@ -11,8 +11,7 @@ use itertools::Itertools;
 use nix::sys::select::FdSet;
 use nix::sys::time::{TimeVal, TimeValLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::io::ErrorKind;
-use std::net::{IpAddr, Shutdown, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
@@ -111,6 +110,7 @@ impl Network for TracerChannel {
 }
 
 impl TracerChannel {
+    /// Dispatch a ICMP probe.
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.addr_family, self.src_addr, self.dest_addr) {
             (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
@@ -141,8 +141,6 @@ impl TracerChannel {
     }
 
     /// Dispatch a UDP probe.
-    ///
-    /// This covers both the IPv4 and IPv6 cases.
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.addr_family, self.src_addr, self.dest_addr) {
             (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
@@ -173,42 +171,16 @@ impl TracerChannel {
     }
 
     /// Dispatch a TCP probe.
-    ///
-    /// This covers both the IPv4 and IPv6 cases.
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let (src_port, dest_port) = match self.port_direction {
-            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
-            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
-            PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
-        };
-        let socket = match self.addr_family {
-            TracerAddrFamily::Ipv4 => Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP)),
-            TracerAddrFamily::Ipv6 => Socket::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP)),
-        }?;
-        socket.set_nonblocking(true)?;
-        socket.set_reuse_port(true)?;
-        let local_addr = SocketAddr::new(self.src_addr, src_port);
-        socket.bind(&SockAddr::from(local_addr))?;
-        socket.set_ttl(u32::from(probe.ttl.0))?;
-        socket.set_tos(u32::from(self.tos.0))?;
-        let remote_addr = SocketAddr::new(self.dest_addr, dest_port);
-        match socket.connect(&SockAddr::from(remote_addr)) {
-            Ok(_) => {}
-            Err(err) => {
-                if let Some(code) = err.raw_os_error() {
-                    if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
-                        return match err.kind() {
-                            ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                                Err(AddressNotAvailable(local_addr))
-                            }
-                            _ => Err(TracerError::IoError(err)),
-                        };
-                    }
-                } else {
-                    return Err(TracerError::IoError(err));
-                }
+        let socket = match (self.addr_family, self.src_addr, self.dest_addr) {
+            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
+                ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction, self.tos)
             }
-        }
+            (TracerAddrFamily::Ipv6, IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
+                ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction)
+            }
+            _ => unreachable!(),
+        }?;
         self.tcp_probes
             .push(TcpProbe::new(socket, SystemTime::now()));
         Ok(())
@@ -243,31 +215,13 @@ impl TracerChannel {
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
-            let ttl = probe.socket.ttl()? as u8;
-            match probe.socket.take_error()? {
-                None => {
-                    let addr = probe.socket.peer_addr()?.as_socket().req()?.ip();
-                    probe.socket.shutdown(Shutdown::Both)?;
-                    return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
-                        SystemTime::now(),
-                        addr,
-                        ttl,
-                    ))));
-                }
-                Some(err) => {
-                    if let Some(code) = err.raw_os_error() {
-                        if nix::Error::from_i32(code) == nix::Error::ECONNREFUSED {
-                            return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
-                                SystemTime::now(),
-                                self.dest_addr,
-                                ttl,
-                            ))));
-                        }
-                    }
-                }
+            match self.addr_family {
+                TracerAddrFamily::Ipv4 => ipv4::recv_tcp_socket(&probe.socket, self.dest_addr),
+                TracerAddrFamily::Ipv6 => ipv6::recv_tcp_socket(&probe.socket, self.dest_addr),
             }
+        } else {
+            Ok(None)
         }
-        Ok(None)
     }
 }
 
