@@ -29,7 +29,7 @@ const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_s
 /// The maximum size of UDP payload we allow.
 const MAX_UDP_PAYLOAD_BUF: usize = MAX_UDP_PACKET_BUF - UdpPacket::minimum_packet_size();
 
-/// The maximum size of UDP packet we allow.
+/// The maximum size of ICMP packet we allow.
 const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
 
 /// The maximum size of ICMP payload we allow.
