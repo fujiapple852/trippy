@@ -15,6 +15,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Gray out hops which did not update in the current round ([#216](https://github.com/fujiapple852/trippy/issues/216))
+
 ### Fixed
 
 ## [0.5.0] - 2022-06-02
