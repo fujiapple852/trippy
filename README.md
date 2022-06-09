@@ -67,26 +67,25 @@ Trippy has been (lightly...) tested on the following platforms:
 
 ### IPv4
 
-| Platform | ICMP | UDP | TCP | Notes                                                       |
-|----------|------|-----|-----|-------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ✅   |                                                             |
-| macOS    | ✅    | ✅   | ✅   |                                                             |
-| NetBSD   | ✅    | ✅   | ✅   |                                                             |
-| OpenBSD  | ⏳    | ⏳   | ⏳   | Untested                                                    |
-| FreeBSD  | ⏳    | ⏳   | ⏳   | Untested                                                    |
-| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98) |
+| Platform | ICMP | UDP | TCP | Notes                                                         |
+|----------|------|-----|-----|---------------------------------------------------------------|
+| Linux    | ✅    | ✅   | ✅   |                                                               |
+| macOS    | ✅    | ✅   | ✅   |                                                               |
+| NetBSD   | ✅    | ✅   | ✅   |                                                               |
+| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
+| FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
+| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ### IPv6
 
-| Platform | ICMP | UDP | TCP | Notes                                                                                          |
-|----------|------|-----|-----|------------------------------------------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ❌   | IPv6/TCP is not yet implemented, see [#191](https://github.com/fujiapple852/trippy/issues/191) |
-| macOS    | ✅    | ✅   | ❌   |                                                                                                |
-| NetBSD   | ✅    | ✅   | ❌   |                                                                                                |
-| OpenBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
-| FreeBSD  | ⏳    | ⏳   | ❌   | Untested                                                                                       |
-| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)                                    |
-
+| Platform | ICMP | UDP | TCP | Notes                                                         |
+|----------|------|-----|-----|---------------------------------------------------------------|
+| Linux    | ✅    | ✅   | ✅   |                                                               |
+| macOS    | ✅    | ✅   | ✅   |                                                               |
+| NetBSD   | ✅    | ✅   | ✅   |                                                               |
+| OpenBSD  | ⏳    | ⏳   | ❌   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
+| FreeBSD  | ⏳    | ⏳   | ❌   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
+| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ## Privileges
 
