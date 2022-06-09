@@ -788,6 +788,7 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
             hop,
             &app.resolver,
             app.tracer_data().is_target(hop),
+            app.tracer_data().is_in_round(hop),
             app.tui_config.address_mode,
             app.tui_config.lookup_as_info,
             app.tui_config.max_addrs,
@@ -822,6 +823,7 @@ fn render_table_row(
     hop: &Hop,
     dns: &DnsResolver,
     is_target: bool,
+    is_in_round: bool,
     address_mode: AddressMode,
     lookup_as_info: bool,
     max_addr: Option<u8>,
@@ -854,7 +856,15 @@ fn render_table_row(
         .addr_count()
         .min(max_addr.unwrap_or(u8::MAX) as usize)
         .max(1) as u16;
-    Row::new(cells).height(row_height).bottom_margin(0)
+    let row_color = if is_in_round {
+        Color::Gray
+    } else {
+        Color::DarkGray
+    };
+    Row::new(cells)
+        .height(row_height)
+        .bottom_margin(0)
+        .style(Style::default().fg(row_color))
 }
 
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
