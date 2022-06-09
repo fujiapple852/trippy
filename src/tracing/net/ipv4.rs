@@ -1,3 +1,4 @@
+use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
@@ -11,15 +12,15 @@ use crate::tracing::packet::ipv4::Ipv4Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
-use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
+use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 use nix::libc::IPPROTO_RAW;
 use nix::sys::socket::{AddressFamily, SockaddrLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::{ErrorKind, Read};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
 /// The maximum size of UDP packet we allow.
@@ -147,6 +148,46 @@ pub fn dispatch_udp_probe(
     Ok(())
 }
 
+pub fn dispatch_tcp_probe(
+    probe: Probe,
+    src_addr: Ipv4Addr,
+    dest_addr: Ipv4Addr,
+    port_direction: PortDirection,
+    tos: TypeOfService,
+) -> TraceResult<Socket> {
+    let (src_port, dest_port) = match port_direction {
+        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+        PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
+        PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+    };
+    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_nonblocking(true)?;
+    socket.set_reuse_port(true)?;
+    let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
+    socket.bind(&SockAddr::from(local_addr))?;
+    socket.set_ttl(u32::from(probe.ttl.0))?;
+    socket.set_tos(u32::from(tos.0))?;
+    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
+    match socket.connect(&SockAddr::from(remote_addr)) {
+        Ok(_) => {}
+        Err(err) => {
+            if let Some(code) = err.raw_os_error() {
+                if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
+                    return match err.kind() {
+                        ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                            Err(AddressNotAvailable(local_addr))
+                        }
+                        _ => Err(TracerError::IoError(err)),
+                    };
+                }
+            } else {
+                return Err(TracerError::IoError(err));
+            }
+        }
+    }
+    Ok(socket)
+}
+
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -163,6 +204,36 @@ pub fn recv_icmp_probe(
             _ => Err(TracerError::IoError(err)),
         },
     }
+}
+
+pub fn recv_tcp_socket(
+    tcp_socket: &Socket,
+    dest_addr: IpAddr,
+) -> TraceResult<Option<ProbeResponse>> {
+    let ttl = tcp_socket.ttl()? as u8;
+    match tcp_socket.take_error()? {
+        None => {
+            let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            tcp_socket.shutdown(Shutdown::Both)?;
+            return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
+                SystemTime::now(),
+                addr,
+                ttl,
+            ))));
+        }
+        Some(err) => {
+            if let Some(code) = err.raw_os_error() {
+                if nix::Error::from_i32(code) == nix::Error::ECONNREFUSED {
+                    return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
+                        SystemTime::now(),
+                        dest_addr,
+                        ttl,
+                    ))));
+                }
+            }
+        }
+    };
+    Ok(None)
 }
 
 fn make_raw_socket() -> TraceResult<Socket> {

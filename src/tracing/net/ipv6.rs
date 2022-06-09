@@ -1,3 +1,4 @@
+use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
@@ -7,15 +8,16 @@ use crate::tracing::packet::icmpv6::echo_request::EchoRequestPacket;
 use crate::tracing::packet::icmpv6::time_exceeded::TimeExceededPacket;
 use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
+use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 use nix::sys::socket::{AddressFamily, SockaddrLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::ErrorKind;
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
 /// The maximum size of UDP packet we allow.
@@ -134,6 +136,44 @@ pub fn dispatch_udp_probe(
     Ok(())
 }
 
+pub fn dispatch_tcp_probe(
+    probe: Probe,
+    src_addr: Ipv6Addr,
+    dest_addr: Ipv6Addr,
+    port_direction: PortDirection,
+) -> TraceResult<Socket> {
+    let (src_port, dest_port) = match port_direction {
+        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+        PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
+        PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+    };
+    let socket = Socket::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_nonblocking(true)?;
+    socket.set_reuse_port(true)?;
+    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
+    socket.bind(&SockAddr::from(local_addr))?;
+    socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
+    match socket.connect(&SockAddr::from(remote_addr)) {
+        Ok(_) => {}
+        Err(err) => {
+            if let Some(code) = err.raw_os_error() {
+                if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
+                    return match err.kind() {
+                        ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                            Err(AddressNotAvailable(local_addr))
+                        }
+                        _ => Err(TracerError::IoError(err)),
+                    };
+                }
+            } else {
+                return Err(TracerError::IoError(err));
+            }
+        }
+    }
+    Ok(socket)
+}
+
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -151,6 +191,36 @@ pub fn recv_icmp_probe(
             _ => Err(TracerError::IoError(err)),
         },
     }
+}
+
+pub fn recv_tcp_socket(
+    tcp_socket: &Socket,
+    dest_addr: IpAddr,
+) -> TraceResult<Option<ProbeResponse>> {
+    let ttl = tcp_socket.unicast_hops_v6()? as u8;
+    match tcp_socket.take_error()? {
+        None => {
+            let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            tcp_socket.shutdown(Shutdown::Both)?;
+            return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
+                SystemTime::now(),
+                addr,
+                ttl,
+            ))));
+        }
+        Some(err) => {
+            if let Some(code) = err.raw_os_error() {
+                if nix::Error::from_i32(code) == nix::Error::ECONNREFUSED {
+                    return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
+                        SystemTime::now(),
+                        dest_addr,
+                        ttl,
+                    ))));
+                }
+            }
+        }
+    };
+    Ok(None)
 }
 
 /// Create a `UdpPacket`
@@ -314,9 +384,24 @@ fn extract_udp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
     Ok((udp_packet.get_source(), udp_packet.get_destination()))
 }
 
-// TODO
-fn extract_tcp_packet(_payload: &[u8]) -> TraceResult<(u16, u16)> {
-    unimplemented!()
+fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
+    // let ip6 = Ipv6Packet::new_view(payload).req()?;
+    // let header_len = usize::from(ip6.get_payload_length() * 4);
+    // let nested_tcp = &payload[header_len..];
+
+    let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
+    let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
+    Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
+
+    // if nested_tcp.len() < TcpPacket::minimum_packet_size() {
+    //     let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
+    //     buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
+    //     let tcp_packet = TcpPacket::new_view(&buf).req()?;
+    //     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
+    // } else {
+    //     let tcp_packet = TcpPacket::new_view(nested_tcp).req()?;
+    //     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
+    // }
 }
 
 /// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
