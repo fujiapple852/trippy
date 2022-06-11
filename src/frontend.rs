@@ -16,8 +16,12 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::{PortDirection, TracerAddrFamily};
 use tui::layout::{Alignment, Direction, Rect};
+use tui::symbols::Marker;
 use tui::text::{Span, Spans};
-use tui::widgets::{BarChart, BorderType, Clear, Paragraph, Sparkline, TableState, Tabs};
+use tui::widgets::{
+    Axis, BarChart, BorderType, Chart, Clear, Dataset, GraphType, Paragraph, Sparkline, TableState,
+    Tabs,
+};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Layout},
@@ -57,10 +61,11 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
     Constraint::Length(6),
 ];
 
-const HELP_LINES: [&str; 14] = [
+const HELP_LINES: [&str; 15] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
     "[esc]            - clear selection",
+    "c                - toggle chart",
     "f                - toggle freeze display",
     "Ctrl+r           - reset statistics",
     "Ctrl+k           - flush DNS cache",
@@ -119,6 +124,7 @@ struct TuiApp {
     trace_selected: usize,
     resolver: DnsResolver,
     show_help: bool,
+    show_chart: bool,
     frozen_start: Option<SystemTime>,
 }
 
@@ -132,6 +138,7 @@ impl TuiApp {
             trace_selected: 0,
             resolver,
             show_help: false,
+            show_chart: false,
             frozen_start: None,
         }
     }
@@ -226,6 +233,10 @@ impl TuiApp {
         };
     }
 
+    fn toggle_chart(&mut self) {
+        self.show_chart = !self.show_chart;
+    }
+
     fn toggle_asinfo(&mut self) {
         self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
     }
@@ -310,6 +321,7 @@ fn run_app<B: Backend>(
                     (KeyCode::Char('q'), _) if app.show_help => app.toggle_help(),
                     (KeyCode::Char('h'), _) => app.toggle_help(),
                     (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
+                    (KeyCode::Char('c'), _) if !app.show_help => app.toggle_chart(),
                     (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
                         app.clear();
                         app.clear_trace_data();
@@ -581,9 +593,96 @@ fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
         render_bsod(f, rec, err);
     } else if app.tracer_data().hops().is_empty() {
         render_splash(f, rec);
+    } else if app.show_chart {
+        render_chart(f, app, rec);
     } else {
         render_table(f, app, rec);
     }
+}
+
+/// Render the ping history for all hops as a chart.
+///
+/// TODO compute max sample for series bounds
+/// TODO compute lables for x and y axis
+/// need to increase default max samples
+fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let target_hop = app.table_state.selected().map_or_else(
+        || app.tracer_data().target_hop(),
+        |s| &app.tracer_data().hops()[s],
+    );
+    let series_data = app
+        .selected_tracer_data
+        .hops()
+        .iter()
+        .map(|hop| {
+            hop.samples()
+                .iter()
+                .enumerate()
+                .take(rect.width as usize)
+                .map(|(i, s)| (i as f64, (s.as_secs_f64() * 1000_f64) as f64))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let sets = series_data
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            Dataset::default()
+                .name(format!("Hop {}", i + 1))
+                .data(s)
+                .graph_type(GraphType::Line)
+                .marker({
+                    if i + 1 == target_hop.ttl() as usize {
+                        Marker::Dot
+                    } else {
+                        Marker::Braille
+                    }
+                })
+                .style(Style::default().fg({
+                    match i {
+                        i if i + 1 == target_hop.ttl() as usize => Color::Green,
+                        _ => Color::Gray,
+                    }
+                }))
+        })
+        .collect::<Vec<_>>();
+    let constraints = (Constraint::Ratio(1, 1), Constraint::Ratio(1, 1));
+    let chart = Chart::new(sets)
+        .x_axis(
+            Axis::default()
+                .title("Time")
+                .bounds([0_f64, 300_f64])
+                .labels_alignment(Alignment::Right)
+                .labels(
+                    ["0.0", "5.0", "10.0"]
+                        .iter()
+                        .copied()
+                        .map(Span::from)
+                        .collect(),
+                )
+                .style(Style::default().fg(Color::Cyan)),
+        )
+        .y_axis(
+            Axis::default()
+                .title("Round Trip Time")
+                .bounds([0_f64, 50_f64])
+                // .labels_alignment(Alignment::Center)
+                .labels(
+                    ["0.0", "5.0", "10.0"]
+                        .iter()
+                        .copied()
+                        .map(Span::from)
+                        .collect(),
+                )
+                .style(Style::default().fg(Color::Cyan)),
+        )
+        .hidden_legend_constraints(constraints)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Black)),
+        );
+    f.render_widget(chart, rect);
 }
 
 /// Render a blue screen of death.
@@ -968,7 +1067,7 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
         .style(Style::default())
         .block(block.clone())
         .alignment(Alignment::Left);
-    let area = centered_rect(50, 40, f.size());
+    let area = centered_rect(50, 50, f.size());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
     f.render_widget(control, area);
