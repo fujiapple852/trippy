@@ -11,7 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust: [ stable, beta, nightly, 1.60.0 ]
+        build:
+          - linux-pinned
+          - linux-stable
+          - linux-beta
+          - linux-nightly
+          - macos-nightly
+        include:
+          - build: linux-pinned
+            os: ubuntu-20.04
+            rust: 1.60.0
+          - build: linux-stable
+            os: ubuntu-20.04
+            rust: stable
+          - build: linux-beta
+            os: ubuntu-latest
+            rust: beta
+          - build: linux-nightly
+            os: ubuntu-latest
+            rust: nightly
+          - build: macos-nightly
+            os: macos-latest
+            rust: nightly
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
