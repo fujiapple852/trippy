@@ -8,6 +8,7 @@ homepage = "https://github.com/fujiapple852/trippy"
 repository = "https://github.com/fujiapple852/trippy"
 keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
 categories = ["command-line-utilities", "network-programming"]
+readme = "README.md"
 license = "Apache-2.0"
 edition = "2021"
 
