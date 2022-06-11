@@ -384,24 +384,29 @@ fn extract_udp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
     Ok((udp_packet.get_source(), udp_packet.get_destination()))
 }
 
+/// From [rfc4443] (section 2.4, point c):
+///
+///    "Every ICMPv6 error message (type < 128) MUST include as much of
+///    the IPv6 offending (invoking) packet (the packet that caused the
+///    error) as possible without making the error message packet exceed
+///    the minimum IPv6 MTU"
+///
+/// From [rfc2460] (section 5):
+///
+///    "IPv6 requires that every link in the internet have an MTU of 1280
+///    octets or greater.  On any link that cannot convey a 1280-octet
+///    packet in one piece, link-specific fragmentation and reassembly must
+///    be provided at a layer below IPv6."
+///
+/// The maximum packet size we allow is 1024 and so we can safely assume that the originating IPv6 packet
+/// being extracted will be at least as large as the minimum IPv6 packet size.
+///
+/// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
+/// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
 fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
-    // let ip6 = Ipv6Packet::new_view(payload).req()?;
-    // let header_len = usize::from(ip6.get_payload_length() * 4);
-    // let nested_tcp = &payload[header_len..];
-
     let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
     let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
-
-    // if nested_tcp.len() < TcpPacket::minimum_packet_size() {
-    //     let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
-    //     buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
-    //     let tcp_packet = TcpPacket::new_view(&buf).req()?;
-    //     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
-    // } else {
-    //     let tcp_packet = TcpPacket::new_view(nested_tcp).req()?;
-    //     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
-    // }
 }
 
 /// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
