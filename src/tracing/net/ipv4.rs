@@ -121,19 +121,29 @@ pub fn dispatch_udp_probe(
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let (src_port, dest_port) = match port_direction {
-        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
+        PortDirection::FixedSrc(src_port) => (src_port.0, 33000),
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let udp = make_udp_packet(
+
+    // TODO
+    // set the sequence as they UDP payload
+    let mut udp = make_udp_packet(
         &mut udp_buf,
         src_addr,
         dest_addr,
         src_port,
         dest_port,
         udp_payload_size(packet_size),
-        payload_pattern,
+        probe.sequence
     )?;
+
+    // TODO
+    // switch the checksum and the payload
+    let checksum = udp.get_checksum();
+    udp.set_checksum(probe.sequence.0);
+    udp.set_payload(&checksum.to_be_bytes());
+
     let ipv4 = make_ipv4_packet(
         &mut ipv4_buf,
         ipv4_length_order,
@@ -264,6 +274,7 @@ fn make_echo_request_icmp_packet(
     Ok(icmp)
 }
 
+// TODO modified fofr paris checksums only, needs to worh for both
 /// Create a `UdpPacket`
 fn make_udp_packet(
     udp_buf: &mut [u8],
@@ -272,15 +283,15 @@ fn make_udp_packet(
     src_port: u16,
     dest_port: u16,
     payload_size: usize,
-    payload_pattern: PayloadPattern,
+    payload_pattern: Sequence,
 ) -> TraceResult<UdpPacket<'_>> {
-    let udp_payload_buf = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
+    let udp_payload_buf = payload_pattern.0.to_be_bytes();
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload_size;
     let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size as usize]).req()?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
-    udp.set_payload(&udp_payload_buf[..payload_size]);
+    udp.set_payload(&udp_payload_buf[..2]);
     udp.set_checksum(udp_ipv4_checksum(udp.packet(), src_addr, dest_addr));
     Ok(udp)
 }
@@ -373,10 +384,11 @@ fn extract_time_exceeded(
         }
         TracerProtocol::Udp => {
             let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
-            let (src, dest) = extract_udp_packet(packet.payload())?;
+            // TODO
+            let (src, _dest, chksum) = extract_udp_packet(packet.payload())?;
             let sequence = match direction {
                 PortDirection::FixedDest(_) => src,
-                _ => dest,
+                _ => chksum,
             };
             (0, sequence)
         }
@@ -405,10 +417,11 @@ fn extract_dest_unreachable(
             (identifier, sequence)
         }
         TracerProtocol::Udp => {
-            let (src, dest) = extract_udp_packet(packet.payload())?;
+            // TODO
+            let (src, dest, chksum) = extract_udp_packet(packet.payload())?;
             let sequence = match direction {
                 PortDirection::FixedDest(_) => src,
-                _ => dest,
+                _ => chksum,
             };
             (0, sequence)
         }
@@ -432,12 +445,12 @@ fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
-fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
+fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16)> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_udp = &payload[header_len..];
     let nested = UdpPacket::new_view(nested_udp).req()?;
-    Ok((nested.get_source(), nested.get_destination()))
+    Ok((nested.get_source(), nested.get_destination(), nested.get_checksum()))
 }
 
 /// Get the src and dest ports from the original `TcpPacket` packet embedded in the payload.
