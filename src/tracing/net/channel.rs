@@ -3,9 +3,11 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::net::{ipv4, ipv6, Network};
 use crate::tracing::probe::ProbeResponse;
-use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
+use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol};
+use crate::tracing::{
+    MultipathStrategy, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
+};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nix::sys::select::FdSet;
@@ -35,6 +37,8 @@ pub struct TracerChannel {
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
+    initial_sequence: Sequence,
+    multipath_strategy: MultipathStrategy,
     port_direction: PortDirection,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
@@ -75,6 +79,8 @@ impl TracerChannel {
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
             tos: config.tos,
+            initial_sequence: config.initial_sequence,
+            multipath_strategy: config.multipath_strategy,
             port_direction: config.port_direction,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
@@ -149,6 +155,8 @@ impl TracerChannel {
                     probe,
                     src_addr,
                     dest_addr,
+                    self.initial_sequence,
+                    self.multipath_strategy,
                     self.port_direction,
                     self.packet_size,
                     self.payload_pattern,
@@ -190,9 +198,12 @@ impl TracerChannel {
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         if is_readable(&self.recv_socket, self.read_timeout)? {
             match self.addr_family {
-                TracerAddrFamily::Ipv4 => {
-                    ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
-                }
+                TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
+                    &mut self.recv_socket,
+                    self.protocol,
+                    self.multipath_strategy,
+                    self.port_direction,
+                ),
                 TracerAddrFamily::Ipv6 => {
                     ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
                 }

@@ -15,7 +15,7 @@ use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{PortDirection, Probe, TracerProtocol};
+use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use nix::libc::IPPROTO_RAW;
 use nix::sys::socket::{AddressFamily, SockaddrLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
@@ -101,6 +101,7 @@ pub fn dispatch_icmp_probe(
         src_addr,
         dest_addr,
         probe.ttl.0,
+        0,
         echo_request.packet(),
     )?;
     let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
@@ -114,6 +115,8 @@ pub fn dispatch_udp_probe(
     probe: Probe,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
+    initial_sequence: Sequence,
+    multipath_strategy: MultipathStrategy,
     port_direction: PortDirection,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
@@ -125,10 +128,27 @@ pub fn dispatch_udp_probe(
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
-    let (src_port, dest_port) = match port_direction {
-        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
-        PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
-        PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+    let (src_port, dest_port, identifier) = match multipath_strategy {
+        MultipathStrategy::Classic => match port_direction {
+            PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0, 0),
+            PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0, 0),
+            PortDirection::FixedBoth(_, _) | PortDirection::None => {
+                unimplemented!()
+            }
+        },
+        MultipathStrategy::Paris => unimplemented!(),
+        MultipathStrategy::Dublin => {
+            let round_port =
+                ((initial_sequence.0 as usize + probe.round.0) % usize::from(u16::MAX)) as u16;
+            match port_direction {
+                PortDirection::FixedSrc(src_port) => (src_port.0, round_port, probe.sequence.0),
+                PortDirection::FixedDest(dest_port) => (round_port, dest_port.0, probe.sequence.0),
+                PortDirection::FixedBoth(src_port, dest_port) => {
+                    (src_port.0, dest_port.0, probe.sequence.0)
+                }
+                PortDirection::None => unimplemented!(),
+            }
+        }
     };
     let udp = make_udp_packet(
         &mut udp_buf,
@@ -146,6 +166,7 @@ pub fn dispatch_udp_probe(
         src_addr,
         dest_addr,
         probe.ttl.0,
+        identifier,
         udp.packet(),
     )?;
     let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
@@ -196,13 +217,19 @@ pub fn dispatch_tcp_probe(
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
+    multipath_strategy: MultipathStrategy,
     direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(_bytes_read) => {
             let ipv4 = Ipv4Packet::new_view(&buf).req()?;
-            Ok(extract_probe_resp(protocol, direction, &ipv4)?)
+            Ok(extract_probe_resp(
+                protocol,
+                multipath_strategy,
+                direction,
+                &ipv4,
+            )?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -291,6 +318,7 @@ fn make_udp_packet(
 }
 
 /// Create an `Ipv4Packet`.
+#[allow(clippy::too_many_arguments)]
 fn make_ipv4_packet<'a>(
     ipv4_buf: &'a mut [u8],
     ipv4_byte_order: PlatformIpv4FieldByteOrder,
@@ -298,6 +326,7 @@ fn make_ipv4_packet<'a>(
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     ttl: u8,
+    identification: u16,
     payload: &[u8],
 ) -> TraceResult<Ipv4Packet<'a>> {
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
@@ -331,6 +360,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    multipath_strategy: MultipathStrategy,
     direction: PortDirection,
     ipv4: &Ipv4Packet<'_>,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -340,14 +370,16 @@ fn extract_probe_resp(
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
-            let (id, seq) = extract_time_exceeded(&packet, protocol, direction)?;
+            let (id, seq) =
+                extract_time_exceeded(&packet, protocol, multipath_strategy, direction)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                 recv, src, id, seq,
             )))
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
-            let (id, seq) = extract_dest_unreachable(&packet, protocol, direction)?;
+            let (id, seq) =
+                extract_dest_unreachable(&packet, protocol, multipath_strategy, direction)?;
             Some(ProbeResponse::DestinationUnreachable(
                 ProbeResponseData::new(recv, src, id, seq),
             ))
@@ -370,6 +402,7 @@ fn extract_probe_resp(
 fn extract_time_exceeded(
     packet: &TimeExceededPacket<'_>,
     protocol: TracerProtocol,
+    multipath_strategy: MultipathStrategy,
     direction: PortDirection,
 ) -> TraceResult<(u16, u16)> {
     Ok(match protocol {
@@ -381,10 +414,12 @@ fn extract_time_exceeded(
         }
         TracerProtocol::Udp => {
             let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
-            let (src, dest) = extract_udp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedDest(_) => src,
-                _ => dest,
+            let (src, dest, checksum, id) = extract_udp_packet(packet.payload())?;
+            let sequence = match (multipath_strategy, direction) {
+                (MultipathStrategy::Classic, PortDirection::FixedDest(_)) => src,
+                (MultipathStrategy::Classic, _) => dest,
+                (MultipathStrategy::Paris, _) => checksum,
+                (MultipathStrategy::Dublin, _) => id,
             };
             (0, sequence)
         }
@@ -403,6 +438,7 @@ fn extract_time_exceeded(
 fn extract_dest_unreachable(
     packet: &DestinationUnreachablePacket<'_>,
     protocol: TracerProtocol,
+    multipath_strategy: MultipathStrategy,
     direction: PortDirection,
 ) -> TraceResult<(u16, u16)> {
     Ok(match protocol {
@@ -413,10 +449,12 @@ fn extract_dest_unreachable(
             (identifier, sequence)
         }
         TracerProtocol::Udp => {
-            let (src, dest) = extract_udp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedDest(_) => src,
-                _ => dest,
+            let (src, dest, checksum, id) = extract_udp_packet(packet.payload())?;
+            let sequence = match (multipath_strategy, direction) {
+                (MultipathStrategy::Classic, PortDirection::FixedDest(_)) => src,
+                (MultipathStrategy::Classic, _) => dest,
+                (MultipathStrategy::Paris, _) => checksum,
+                (MultipathStrategy::Dublin, _) => id,
             };
             (0, sequence)
         }
@@ -440,12 +478,17 @@ fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
-fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
+fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
     let nested_udp = &payload[header_len..];
     let nested = UdpPacket::new_view(nested_udp).req()?;
-    Ok((nested.get_source(), nested.get_destination()))
+    Ok((
+        nested.get_source(),
+        nested.get_destination(),
+        nested.get_checksum(),
+        ip4.get_identification(),
+    ))
 }
 
 /// Get the src and dest ports from the original `TcpPacket` packet embedded in the payload.

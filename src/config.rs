@@ -3,7 +3,7 @@ use clap::{ArgEnum, Parser};
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::tracing::{PortDirection, TracerAddrFamily, TracerProtocol};
+use trippy::tracing::{MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol};
 
 /// The maximum number of hops we allow.
 ///
@@ -60,6 +60,17 @@ pub enum Protocol {
     Udp,
     /// Transmission Control Protocol
     Tcp,
+}
+
+/// The strategy Equal-cost Multi-Path routing strategy.
+#[derive(Debug, Copy, Clone, ArgEnum)]
+pub enum MultipathStrategyConfig {
+    /// The src or dest port is used to store the sequence number.
+    Classic,
+    /// The UDP `checksum` field is used to store the sequence number.
+    Paris,
+    /// The IP `identifier` field is used to store the sequence number.
+    Dublin,
 }
 
 /// How to render the addresses.
@@ -156,36 +167,46 @@ pub struct Args {
     #[clap(long, default_value_t = 33000, display_order = 13)]
     pub initial_sequence: u16,
 
+    /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only).
+    #[clap(
+        arg_enum,
+        short = 'R',
+        long,
+        default_value = "classic",
+        display_order = 14
+    )]
+    pub multipath_strategy: MultipathStrategyConfig,
+
     /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short = 'g', long, default_value = "100ms", display_order = 14)]
+    #[clap(short = 'g', long, default_value = "100ms", display_order = 15)]
     pub grace_duration: String,
 
     /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 24, display_order = 15)]
+    #[clap(short = 'U', long, default_value_t = 24, display_order = 16)]
     pub max_inflight: u8,
 
     /// The TTL to start from
-    #[clap(short = 'f', long, default_value_t = 1, display_order = 16)]
+    #[clap(short = 'f', long, default_value_t = 1, display_order = 17)]
     pub first_ttl: u8,
 
     /// The maximum number of TTL hops
-    #[clap(short = 't', long, default_value_t = 64, display_order = 17)]
+    #[clap(short = 't', long, default_value_t = 64, display_order = 18)]
     pub max_ttl: u8,
 
     /// The size of IP packet to send (IP header + ICMP header + payload)
-    #[clap(long, default_value_t = 84, display_order = 18)]
+    #[clap(long, default_value_t = 84, display_order = 19)]
     pub packet_size: u16,
 
     /// The repeating pattern in the payload of the ICMP packet
-    #[clap(long, default_value_t = 0, display_order = 19)]
+    #[clap(long, default_value_t = 0, display_order = 20)]
     pub payload_pattern: u8,
 
     /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only)
-    #[clap(short = 'Q', long, default_value_t = 0, display_order = 20)]
+    #[clap(short = 'Q', long, default_value_t = 0, display_order = 21)]
     pub tos: u8,
 
     /// The socket read timeout
-    #[clap(long, default_value = "10ms", display_order = 21)]
+    #[clap(long, default_value = "10ms", display_order = 22)]
     pub read_timeout: String,
 
     /// How to perform DNS queries.
@@ -194,16 +215,16 @@ pub struct Args {
         short = 'r',
         long,
         default_value = "system",
-        display_order = 22
+        display_order = 23
     )]
     pub dns_resolve_method: DnsResolveMethod,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 23)]
+    #[clap(long, default_value = "5s", display_order = 24)]
     pub dns_timeout: String,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 24)]
+    #[clap(long, short = 'z', display_order = 25)]
     pub dns_lookup_as_info: bool,
 
     /// How to render addresses.
@@ -212,28 +233,28 @@ pub struct Args {
         short = 'a',
         long,
         default_value = "host",
-        display_order = 25
+        display_order = 26
     )]
     pub tui_address_mode: AddressMode,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 26)]
+    #[clap(short = 'M', long, display_order = 27)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 27)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 28)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 28)]
+    #[clap(long, display_order = 289)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 29)]
+    #[clap(long, default_value = "100ms", display_order = 30)]
     pub tui_refresh_rate: String,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 30)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 31)]
     pub report_cycles: usize,
 }
 
@@ -255,6 +276,7 @@ pub struct TrippyConfig {
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
     pub interface: Option<String>,
+    pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub dns_timeout: Duration,
     pub dns_resolve_method: DnsResolveMethod,
@@ -272,6 +294,7 @@ pub struct TrippyConfig {
 impl TryFrom<(Args, u16)> for TrippyConfig {
     type Error = anyhow::Error;
 
+    #[allow(clippy::too_many_lines)]
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
         let protocol = match (args.udp, args.tcp, args.protocol) {
@@ -291,26 +314,47 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let port_direction = match (protocol, args.source_port, args.target_port) {
-            (TracerProtocol::Icmp, _, _) => PortDirection::None,
-            (TracerProtocol::Udp, None, None) => PortDirection::new_fixed_src(pid.max(1024)),
-            (TracerProtocol::Udp, Some(src), None) => {
-                validate_source_port(src)?;
-                PortDirection::new_fixed_src(src)
-            }
-            (TracerProtocol::Tcp, None, None) => PortDirection::new_fixed_dest(80),
-            (TracerProtocol::Tcp, Some(src), None) => PortDirection::new_fixed_src(src),
-            (_, None, Some(dest)) => PortDirection::new_fixed_dest(dest),
-            (_, Some(_), Some(_)) => {
-                return Err(anyhow!(
-                    "only one of source-port and target-port may be fixed"
-                ));
-            }
-        };
         let addr_family = if args.ipv6 {
             TracerAddrFamily::Ipv6
         } else {
             TracerAddrFamily::Ipv4
+        };
+        let multipath_strategy = match (args.multipath_strategy, addr_family) {
+            (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
+            (MultipathStrategyConfig::Paris, _) => {
+                Err(anyhow!("Paris multipath strategy not implemented yet!"))
+            }
+            (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv4) => {
+                Ok(MultipathStrategy::Dublin)
+            }
+            (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv6) => Err(anyhow!(
+                "Dublin multipath strategy not implemented for IPv6 yet!"
+            )),
+        }?;
+        let port_direction = match (
+            protocol,
+            args.source_port,
+            args.target_port,
+            args.multipath_strategy,
+        ) {
+            (TracerProtocol::Icmp, _, _, _) => PortDirection::None,
+            (TracerProtocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),
+            (TracerProtocol::Udp, Some(src), None, _) => {
+                validate_source_port(src)?;
+                PortDirection::new_fixed_src(src)
+            }
+            (TracerProtocol::Tcp, None, None, _) => PortDirection::new_fixed_dest(80),
+            (TracerProtocol::Tcp, Some(src), None, _) => PortDirection::new_fixed_src(src),
+            (_, None, Some(dest), _) => PortDirection::new_fixed_dest(dest),
+            (TracerProtocol::Udp, Some(src), Some(dest), MultipathStrategyConfig::Dublin) => {
+                validate_source_port(src)?;
+                PortDirection::new_fixed_both(src, dest)
+            }
+            (_, Some(_), Some(_), _) => {
+                return Err(anyhow!(
+                    "only one of source-port and target-port may be fixed (except IPv6/udp protocol with dublin strategy)"
+                ));
+            }
         };
         let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
         let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
@@ -339,6 +383,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             grace_duration,
             max_inflight: args.max_inflight,
             initial_sequence: args.initial_sequence,
+            multipath_strategy,
             read_timeout,
             packet_size: args.packet_size,
             payload_pattern: args.payload_pattern,
