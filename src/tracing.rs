@@ -10,7 +10,8 @@ mod util;
 pub mod packet;
 
 pub use config::{
-    PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig, TracerProtocol,
+    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
+    TracerProtocol,
 };
 pub use net::channel::TracerChannel;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};

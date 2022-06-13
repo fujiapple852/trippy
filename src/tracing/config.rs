@@ -24,6 +24,15 @@ pub enum TracerAddrFamily {
     Ipv6,
 }
 
+impl Display for TracerAddrFamily {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ipv4 => write!(f, "v4"),
+            Self::Ipv6 => write!(f, "v6"),
+        }
+    }
+}
+
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone)]
 pub enum TracerProtocol {
@@ -41,6 +50,47 @@ impl Display for TracerProtocol {
             Self::Icmp => write!(f, "icmp"),
             Self::Udp => write!(f, "udp"),
             Self::Tcp => write!(f, "tcp"),
+        }
+    }
+}
+
+/// The [Equal-cost Multi-Path](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing) routing strategy.
+#[derive(Debug, Copy, Clone)]
+pub enum MultipathStrategy {
+    /// The src or dest port is used to store the sequence number.
+    ///
+    /// This does _not_ allow fixing both the src and dest port and so `PortDirection::Both` and `SequenceField::Port`
+    /// are mutually exclusive.
+    Classic,
+    /// The UDP `checksum` field is used to store the sequence number.
+    ///
+    /// a.k.a [`paris`](https://github.com/libparistraceroute/libparistraceroute/wiki/Checksum) traceroute approach.
+    ///
+    /// This requires that the UDP payload contains a well chosen value to ensure the UDP checksum remains valid for
+    /// the packet and therefore this cannot be used along with a custom payload pattern.
+    Paris,
+    /// The IP `identifier` field is used to store the sequence number.
+    ///
+    /// a.k.a [`dublin](https://dublin-traceroute.net/) traceroute approach.
+    ///
+    /// The allow either the src or dest or both ports to be fixed.
+    ///
+    /// If either of the src or dest port may vary (i.e. `PortDirection::FixedSrc` or `PortDirection::FixedDest`) then
+    /// the port number is set to be the `initial_sequence` plus the round number to ensure that there is a fixed
+    /// `flowid` (protocol, src ip/port, dest ip/port) for all packets in a given tracing round.  Each round may
+    /// therefore discover different paths.
+    ///
+    /// If both src and dest ports are fixed (i.e. `PortDirection::FixedBoth`) then every packet in every round will
+    /// share the same `flowid` and thus only a single path will be discovered.
+    Dublin,
+}
+
+impl Display for MultipathStrategy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Classic => write!(f, "classic"),
+            Self::Paris => write!(f, "paris"),
+            Self::Dublin => write!(f, "dublin"),
         }
     }
 }
@@ -112,6 +162,8 @@ pub struct TracerChannelConfig {
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
     pub tos: TypeOfService,
+    pub initial_sequence: Sequence,
+    pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub read_timeout: Duration,
     pub tcp_connect_timeout: Duration,
@@ -130,6 +182,8 @@ impl TracerChannelConfig {
         packet_size: u16,
         payload_pattern: u8,
         tos: u8,
+        initial_sequence: u16,
+        multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
         read_timeout: Duration,
         tcp_connect_timeout: Duration,
@@ -144,6 +198,8 @@ impl TracerChannelConfig {
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
             tos: TypeOfService(tos),
+            initial_sequence: Sequence(initial_sequence),
+            multipath_strategy,
             port_direction,
             read_timeout,
             tcp_connect_timeout,

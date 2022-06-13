@@ -24,8 +24,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use trippy::tracing::{
-    PortDirection, TracerAddrFamily, TracerChannel, TracerChannelConfig, TracerConfig,
-    TracerProtocol,
+    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannel, TracerChannelConfig,
+    TracerConfig, TracerProtocol,
 };
 
 mod backend;
@@ -170,6 +170,8 @@ fn make_channel_config(
         args.packet_size,
         args.payload_pattern,
         args.tos,
+        args.initial_sequence,
+        args.multipath_strategy,
         args.port_direction,
         args.read_timeout,
         args.min_round_duration,
@@ -189,6 +191,7 @@ fn make_trace_info(
         source_addr,
         target,
         target_addr,
+        args.multipath_strategy,
         args.port_direction,
         args.protocol,
         args.addr_family,
@@ -218,6 +221,7 @@ pub struct TraceInfo {
     pub source_addr: IpAddr,
     pub target_hostname: String,
     pub target_addr: IpAddr,
+    pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub protocol: TracerProtocol,
     pub addr_family: TracerAddrFamily,
@@ -235,6 +239,7 @@ impl TraceInfo {
         source_addr: IpAddr,
         target_hostname: String,
         target_addr: IpAddr,
+        multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
         protocol: TracerProtocol,
         addr_family: TracerAddrFamily,
@@ -248,6 +253,7 @@ impl TraceInfo {
             source_addr,
             target_hostname,
             target_addr,
+            multipath_strategy,
             port_direction,
             protocol,
             addr_family,
