@@ -142,7 +142,7 @@ version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "121d8a5b0346092c18a4b2fd6f620d7a06f0eb7ac0a45860939a0884bc579c56"
 dependencies = [
- "crossterm",
+ "crossterm 0.23.2",
  "strum",
  "strum_macros",
  "unicode-width",
@@ -228,6 +228,22 @@ name = "crossterm"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2102ea4f781910f8a5b98dd061f4c2023f479ce7bb1236330099ceb5a93cf17"
+dependencies = [
+ "bitflags",
+ "crossterm_winapi",
+ "libc",
+ "mio",
+ "parking_lot",
+ "signal-hook",
+ "signal-hook-mio",
+ "winapi",
+]
+
+[[package]]
+name = "crossterm"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab9f7409c70a38a56216480fba371ee460207dd8926ccf5b4160591759559170"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -1007,7 +1023,7 @@ dependencies = [
  "clap",
  "comfy-table",
  "crossbeam",
- "crossterm",
+ "crossterm 0.24.0",
  "derive_more",
  "dns-lookup",
  "humantime",
@@ -1076,7 +1092,7 @@ checksum = "96fe69244ec2af261bced1d9046a6fee6c8c2a6b0228e59e5ba39bc8ba4ed729"
 dependencies = [
  "bitflags",
  "cassowary",
- "crossterm",
+ "crossterm 0.23.2",
  "unicode-segmentation",
  "unicode-width",
 ]
