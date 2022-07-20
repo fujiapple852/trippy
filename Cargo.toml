@@ -31,7 +31,7 @@ anyhow = "1.0.57"
 dns-lookup = "1.0.8"
 trust-dns-resolver = "0.21.2"
 crossbeam = "0.8.1"
-clap = { version = "3.2.8", features = [ "derive", "wrap_help", "cargo" ] }
+clap = { version = "3.2.13", features = [ "derive", "wrap_help", "cargo" ] }
 humantime = "2.1.0"
 parking_lot = "0.12.1"
 tui = "0.18.0"
