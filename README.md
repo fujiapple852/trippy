@@ -84,8 +84,8 @@ Trippy has been (lightly...) tested on the following platforms:
 | Linux    | ✅    | ✅   | ✅   |                                                               |
 | macOS    | ✅    | ✅   | ✅   |                                                               |
 | NetBSD   | ✅    | ✅   | ✅   |                                                               |
-| OpenBSD  | ⏳    | ⏳   | ❌   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ⏳    | ⏳   | ❌   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
+| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
+| FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
 | Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ## Privileges
