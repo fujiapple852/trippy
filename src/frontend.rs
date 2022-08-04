@@ -304,42 +304,46 @@ fn run_app<B: Backend>(
         terminal.draw(|f| render_app(f, &mut app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
-                match (key.code, key.modifiers) {
-                    (KeyCode::Char('q'), _) if !app.show_help => return Ok(()),
-                    (KeyCode::Char('c'), KeyModifiers::CONTROL) if !app.show_help => return Ok(()),
-                    (KeyCode::Char('q'), _) if app.show_help => app.toggle_help(),
-                    (KeyCode::Char('h'), _) => app.toggle_help(),
-                    (KeyCode::Char('f'), _) if !app.show_help => app.toggle_freeze(),
-                    (KeyCode::Char('r'), KeyModifiers::CONTROL) if !app.show_help => {
-                        app.clear();
-                        app.clear_trace_data();
+                if app.show_help {
+                    match key.code {
+                        KeyCode::Char('q' | 'h') | KeyCode::Esc => app.toggle_help(),
+                        _ => {}
                     }
-                    (KeyCode::Char('k'), KeyModifiers::CONTROL) if !app.show_help => {
-                        app.resolver.flush();
-                    }
-                    (KeyCode::Down, _) if !app.show_help => app.next_hop(),
-                    (KeyCode::Up, _) if !app.show_help => app.previous_hop(),
-                    (KeyCode::Esc, _) if !app.show_help => app.clear(),
-                    (KeyCode::Esc, _) if app.show_help => app.toggle_help(),
-                    (KeyCode::Left, _) if !app.show_help => {
-                        app.previous_trace();
-                        app.clear();
-                    }
-                    (KeyCode::Right, _) if !app.show_help => {
-                        app.next_trace();
-                        app.clear();
-                    }
-                    (KeyCode::Char('i'), _) if !app.show_help => {
-                        app.tui_config.address_mode = AddressMode::IP;
-                    }
-                    (KeyCode::Char('n'), _) if !app.show_help => {
-                        app.tui_config.address_mode = AddressMode::Host;
-                    }
-                    (KeyCode::Char('b'), _) if !app.show_help => {
-                        app.tui_config.address_mode = AddressMode::Both;
-                    }
-                    (KeyCode::Char('z'), _) if !app.show_help => {
-                        match app.resolver.config().resolve_method {
+                } else {
+                    match (key.code, key.modifiers) {
+                        (KeyCode::Char('h'), _) => app.toggle_help(),
+                        (KeyCode::Char('q'), _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+                            return Ok(())
+                        }
+                        (KeyCode::Char('f'), _) => app.toggle_freeze(),
+                        (KeyCode::Char('r'), KeyModifiers::CONTROL) => {
+                            app.clear();
+                            app.clear_trace_data();
+                        }
+                        (KeyCode::Char('k'), KeyModifiers::CONTROL) => {
+                            app.resolver.flush();
+                        }
+                        (KeyCode::Down, _) => app.next_hop(),
+                        (KeyCode::Up, _) => app.previous_hop(),
+                        (KeyCode::Esc, _) => app.clear(),
+                        (KeyCode::Left, _) => {
+                            app.previous_trace();
+                            app.clear();
+                        }
+                        (KeyCode::Right, _) => {
+                            app.next_trace();
+                            app.clear();
+                        }
+                        (KeyCode::Char('i'), _) => {
+                            app.tui_config.address_mode = AddressMode::IP;
+                        }
+                        (KeyCode::Char('n'), _) => {
+                            app.tui_config.address_mode = AddressMode::Host;
+                        }
+                        (KeyCode::Char('b'), _) => {
+                            app.tui_config.address_mode = AddressMode::Both;
+                        }
+                        (KeyCode::Char('z'), _) => match app.resolver.config().resolve_method {
                             DnsResolveMethod::Resolv
                             | DnsResolveMethod::Google
                             | DnsResolveMethod::Cloudflare => {
@@ -347,13 +351,13 @@ fn run_app<B: Backend>(
                                 app.resolver.flush();
                             }
                             DnsResolveMethod::System => {}
-                        }
+                        },
+                        (KeyCode::Char('{'), _) => app.contract_hosts_min(),
+                        (KeyCode::Char('}'), _) => app.expand_hosts_max(),
+                        (KeyCode::Char('['), _) => app.contract_hosts(),
+                        (KeyCode::Char(']'), _) => app.expand_hosts(),
+                        _ => {}
                     }
-                    (KeyCode::Char('{'), _) if !app.show_help => app.contract_hosts_min(),
-                    (KeyCode::Char('}'), _) if !app.show_help => app.expand_hosts_max(),
-                    (KeyCode::Char('['), _) if !app.show_help => app.contract_hosts(),
-                    (KeyCode::Char(']'), _) if !app.show_help => app.expand_hosts(),
-                    _ => {}
                 }
             }
         }
