@@ -85,7 +85,7 @@ impl<'a> Buffer<'a> {
     pub fn as_slice_mut(&mut self) -> &mut [u8] {
         match self {
             Buffer::Immutable(_) => panic!("write operation called on readonly buffer"),
-            Buffer::Mutable(packet) => *packet,
+            Buffer::Mutable(packet) => packet,
         }
     }
 }
