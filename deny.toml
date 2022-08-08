@@ -15,5 +15,5 @@ unmaintained = "deny"
 yanked = "warn"
 notice = "warn"
 
-# ignores RUSTSEC-2020-0159 (chrono) and RUSTSEC-2020-0071 (time) until fixes are available
-ignore = ["RUSTSEC-2020-0071", "RUSTSEC-2020-0159"]
+# ignores RUSTSEC-2020-0159 (chrono) until fixes are available
+ignore = ["RUSTSEC-2020-0071"]
