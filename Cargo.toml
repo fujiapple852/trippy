@@ -44,7 +44,7 @@ comfy-table = "6.0.0"
 
 # Library dependancies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
-caps = "0.5.3"
+caps = "0.5.4"
 
 [dev-dependencies]
 rand = "0.8.5"
