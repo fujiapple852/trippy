@@ -14,6 +14,3 @@ vulnerability = "deny"
 unmaintained = "deny"
 yanked = "warn"
 notice = "warn"
-
-# ignores RUSTSEC-2020-0159 (chrono) until fixes are available
-ignore = ["RUSTSEC-2020-0071"]
