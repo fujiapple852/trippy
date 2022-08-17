@@ -297,7 +297,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut app = TuiApp::new(tui_config, resolver, trace_info);
     loop {
-        if app.frozen_start == None {
+        if app.frozen_start.is_none() {
             app.snapshot_trace_data();
             app.clamp_selected_hop();
         };
