@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added support for tracing using `IPv6` for `tcp` ([#191](https://github.com/fujiapple852/trippy/issues/191))
+- Added zoom-able chart showing round trip times for all hops in a
+  trace ([#209](https://github.com/fujiapple852/trippy/issues/209))
 
 ### Changed
 
@@ -25,8 +27,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Rewrite of network code to use RAW sockets ([#195](https://github.com/fujiapple852/trippy/issues/195), 
- [#192](https://github.com/fujiapple852/trippy/issues/192))
+- Rewrite of network code to use RAW sockets ([#195](https://github.com/fujiapple852/trippy/issues/195),
+  [#192](https://github.com/fujiapple852/trippy/issues/192))
 
 ### Fixed
 
