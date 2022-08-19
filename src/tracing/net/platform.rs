@@ -5,7 +5,7 @@ use std::net::IpAddr;
 #[cfg(all(unix, not(target_os = "linux")))]
 const TEST_PACKET_LENGTH: u16 = 256;
 
-/// The byte order to encode the `total length` field of the IPv4 header.
+/// The byte order to encode the `total_length`, `flags` and `fragment_offset` fields of the IPv4 header.
 ///
 /// To quote directly from the `mtr` source code (from `check_length_order` in `probe_unix.c`):
 ///
@@ -24,7 +24,7 @@ pub enum PlatformIpv4FieldByteOrder {
 }
 
 impl PlatformIpv4FieldByteOrder {
-    /// Discover the required byte ordering for the IPv4 header field `total_length`.
+    /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and `fragment_offset`.
     ///
     /// This is achieved by creating a raw socket and attempting to send an `IPv4` packet to localhost with the
     /// `total_length` set in either host byte order or network byte order. The OS will return an `InvalidInput` error
@@ -67,7 +67,7 @@ impl PlatformIpv4FieldByteOrder {
         }
     }
 
-    /// Discover the required byte ordering for the IPv4 header field `total_length`.
+    /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and `fragment_offset`.
     ///
     /// Linux accepts either network byte order or host byte order for the `total_length` field and so we skip the
     /// check and return network bye order unconditionally.
