@@ -10,8 +10,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added support for tracing using `IPv6` for `tcp` ([#191](https://github.com/fujiapple852/trippy/issues/191))
+- Added `-R` (`--multipath-strategy`) flag to allow setting
+  the [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing) strategy and added
+  support for the [dublin](https://github.com/insomniacslk/dublin-traceroute)
+  traceroute strategies for `IPv4/udp` ([#158](https://github.com/fujiapple852/trippy/issues/158))
 - Added zoom-able chart showing round trip times for all hops in a
   trace ([#209](https://github.com/fujiapple852/trippy/issues/209))
+- Added `--udp` and `--tcp` flags as shortcuts to `-p udp` and `-p tcp`
+  respectively ([#205](https://github.com/fujiapple852/trippy/issues/205))
 
 ### Changed
 
