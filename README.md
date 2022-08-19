@@ -226,14 +226,20 @@ OPTIONS:
             Output mode [default: tui] [possible values: tui, stream, pretty,
             markdown, csv, json]
 
+    -p, --protocol <PROTOCOL>
+            Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
+
+        --udp
+            Trace using the UDP protocol
+
+        --tcp
+            Trace using the TCP protocol
+
     -4, --ipv4
             use IPv4 only
 
     -6, --ipv6
             Use IPv6 only
-
-    -p, --protocol <PROTOCOL>
-            Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
 
     -P, --target-port <TARGET_PORT>
             The target port (TCP & UDP only) [default: 80]
@@ -255,6 +261,10 @@ OPTIONS:
 
         --initial-sequence <INITIAL_SEQUENCE>
             The initial sequence number [default: 33000]
+
+    -R, --multipath-strategy <MULTIPATH_STRATEGY>
+            The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default:
+            classic] [possible values: classic, paris, dublin]
 
     -g, --grace-duration <GRACE_DURATION>
             The period of time to wait for additional ICMP responses after the
