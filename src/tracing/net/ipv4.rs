@@ -1,7 +1,7 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
+use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -74,7 +74,7 @@ pub fn dispatch_icmp_probe(
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_length_order: Ipv4TotalLengthByteOrder,
+    ipv4_length_order: PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
@@ -112,7 +112,7 @@ pub fn dispatch_udp_probe(
     port_direction: PortDirection,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_length_order: Ipv4TotalLengthByteOrder,
+    ipv4_length_order: PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
@@ -288,7 +288,7 @@ fn make_udp_packet(
 /// Create an `Ipv4Packet`.
 fn make_ipv4_packet<'a>(
     ipv4_buf: &'a mut [u8],
-    ipv4_length_order: Ipv4TotalLengthByteOrder,
+    ipv4_length_order: PlatformIpv4FieldByteOrder,
     protocol: IpProtocol,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
