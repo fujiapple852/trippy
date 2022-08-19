@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.6.0] - 2022-08-19
+
+### Added
+
 - Added support for tracing using `IPv6` for `tcp` ([#191](https://github.com/fujiapple852/trippy/issues/191))
 - Added `-R` (`--multipath-strategy`) flag to allow setting
   the [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing) strategy and added
@@ -22,8 +30,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Gray out hops which did not update in the current round ([#216](https://github.com/fujiapple852/trippy/issues/216))
-
-### Fixed
 
 ## [0.5.0] - 2022-06-02
 
@@ -153,6 +159,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.6.0]: https://github.com/fujiapple852/trippy/compare/0.5.0...0.6.0
 
 [0.5.0]: https://github.com/fujiapple852/trippy/compare/0.4.0...0.5.0
 
