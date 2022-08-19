@@ -17,13 +17,13 @@ const TEST_PACKET_LENGTH: u16 = 256;
 /// require host byte order.  OS X requires the length field in host
 /// byte order.  Linux will accept either byte order."
 #[derive(Debug, Copy, Clone)]
-pub enum Ipv4TotalLengthByteOrder {
+pub enum PlatformIpv4FieldByteOrder {
     #[cfg(all(unix, not(target_os = "linux")))]
     Host,
     Network,
 }
 
-impl Ipv4TotalLengthByteOrder {
+impl PlatformIpv4FieldByteOrder {
     /// Discover the required byte ordering for the IPv4 header field `total_length`.
     ///
     /// This is achieved by creating a raw socket and attempting to send an `IPv4` packet to localhost with the
@@ -40,8 +40,8 @@ impl Ipv4TotalLengthByteOrder {
     /// For a little-endian architecture:
     ///
     /// Try        Host (LE)    Wire (BE)   Order (if succeeds)
-    /// normal     34 12        12 34       `Ipv4TotalLengthByteOrder::Network`
-    /// swapped    12 34        34 12       `Ipv4TotalLengthByteOrder::Host`
+    /// normal     34 12        12 34       `PlatformIpv4FieldByteOrder::Network`
+    /// swapped    12 34        34 12       `PlatformIpv4FieldByteOrder::Host`
     ///
     /// For a big-endian architecture:
     ///

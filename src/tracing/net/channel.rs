@@ -1,6 +1,6 @@
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::platform::Ipv4TotalLengthByteOrder;
+use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::net::{ipv4, ipv6, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, TraceId, TypeOfService};
@@ -29,7 +29,7 @@ pub struct TracerChannel {
     protocol: TracerProtocol,
     addr_family: TracerAddrFamily,
     src_addr: IpAddr,
-    ipv4_length_order: Ipv4TotalLengthByteOrder,
+    ipv4_length_order: PlatformIpv4FieldByteOrder,
     dest_addr: IpAddr,
     identifier: TraceId,
     packet_size: PacketSize,
@@ -61,7 +61,7 @@ impl TracerChannel {
             config.interface.as_deref(),
             config.addr_family,
         )?;
-        let ipv4_length_order = Ipv4TotalLengthByteOrder::for_address(src_addr)?;
+        let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(src_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
         let udp_send_socket = make_udp_send_socket(config.addr_family)?;
         let recv_socket = make_recv_socket(config.addr_family)?;
