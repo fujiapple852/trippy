@@ -246,7 +246,7 @@ pub struct Args {
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 289)]
+    #[clap(long, display_order = 29)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
