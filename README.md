@@ -138,7 +138,7 @@ Basic usage with default parameters:
 trip www.bitwizard.nl
 ```
 
-Trace using the `udp` (or `tcp` or `icmp`) protocol:
+Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--udp` & `--tcp`):
 
 ```shell
 trip www.bitwizard.nl -p udp
