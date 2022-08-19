@@ -74,7 +74,7 @@ pub fn dispatch_icmp_probe(
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_length_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
@@ -91,7 +91,7 @@ pub fn dispatch_icmp_probe(
     )?;
     let ipv4 = make_ipv4_packet(
         &mut ipv4_buf,
-        ipv4_length_order,
+        ipv4_byte_order,
         IpProtocol::Icmp,
         src_addr,
         dest_addr,
@@ -112,7 +112,7 @@ pub fn dispatch_udp_probe(
     port_direction: PortDirection,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_length_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
@@ -136,7 +136,7 @@ pub fn dispatch_udp_probe(
     )?;
     let ipv4 = make_ipv4_packet(
         &mut ipv4_buf,
-        ipv4_length_order,
+        ipv4_byte_order,
         IpProtocol::Udp,
         src_addr,
         dest_addr,
@@ -288,7 +288,7 @@ fn make_udp_packet(
 /// Create an `Ipv4Packet`.
 fn make_ipv4_packet<'a>(
     ipv4_buf: &'a mut [u8],
-    ipv4_length_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: PlatformIpv4FieldByteOrder,
     protocol: IpProtocol,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
@@ -296,7 +296,7 @@ fn make_ipv4_packet<'a>(
     payload: &[u8],
 ) -> TraceResult<Ipv4Packet<'a>> {
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
-    let ipv4_total_length_header = ipv4_length_order.adjust_length(ipv4_total_length);
+    let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
     let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
