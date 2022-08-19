@@ -23,6 +23,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - minimum and maximum round duration
     - round end grace period & maximum number of unknown hops
     - source & destination port (`TCP` & `UDP`)
+    - Equal Cost Multi-path Routing strategies (`classic`, `paris` and `dublin`)
     - source address and source interface
     - `TOS` (aka `DSCP + ECN`)
 - Tui interface:
@@ -42,6 +43,20 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD)
 - Capabilities aware application (Linux only)
+
+### Equal Cost Multi-path Routing
+
+Support for [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
+strategies are shown in the following table (see
+the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
+
+| Strategy | Family      | Protocol  | Status |
+|----------|-------------|-----------|--------|
+| Classic  | IPv4 / IPv6 | UDP / TCP | ✅      |
+| Paris    | IPv4 / IPv6 | UDP / TCP | ❌      |
+| Dublin   | IPv4        | UDP       | ✅      |
+| Dublin   | IPv4        | TCP       | ❌      |
+| Dublin   | IPv6        | UDP / TCP | ❌      |
 
 ## Distributions
 
