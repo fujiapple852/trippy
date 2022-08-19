@@ -338,8 +338,15 @@ OPTIONS:
 ## Acknowledgements
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
-, [crossterm](https://github.com/crossterm-rs/crossterm) & [pnet](https://github.com/libpnet/libpnet) as well as several
-common foundational Rust libraries. It also draws heavily from [mtr](https://github.com/traviscross/mtr).
+, [crossterm](https://github.com/crossterm-rs/crossterm) as well
+as [several](https://github.com/fujiapple852/trippy/blob/master/Cargo.toml) foundational Rust libraries.
+
+Trippy draws heavily from [mtr](https://github.com/traviscross/mtr) and also incorporates ideas
+from both [libparistraceroute](https://github.com/libparistraceroute/libparistraceroute)
+& [Dublin Traceroute](https://github.com/insomniacslk/dublin-traceroute).
+
+The Trippy networking code is inspired by [pnet](https://github.com/libpnet/libpnet) and some elements of that codebase
+are incorporated in Trippy.
 
 The [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) data is retrieved from
 the [IP to ASN Mapping Service](https://team-cymru.com/community-services/ip-asn-mapping/#dns) provided
