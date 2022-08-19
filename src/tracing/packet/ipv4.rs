@@ -9,8 +9,7 @@ const DSCP_OFFSET: usize = 1;
 const ECN_OFFSET: usize = 1;
 const TOTAL_LENGTH_OFFSET: usize = 2;
 const IDENTIFICATION_OFFSET: usize = 4;
-const FLAGS_OFFSET: usize = 6;
-const FRAGMENT_OFFSET_OFFSET: usize = 6;
+const FLAGS_AND_FRAGMENT_OFFSET_OFFSET: usize = 6;
 const TIME_TO_LIVE_OFFSET: usize = 8;
 const PROTOCOL_OFFSET: usize = 9;
 const CHECKSUM_OFFSET: usize = 10;
@@ -83,16 +82,8 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     #[must_use]
-    pub fn get_flags(&self) -> u8 {
-        (self.buf.read(FLAGS_OFFSET) & 0xe0) >> 5
-    }
-
-    #[must_use]
-    pub fn get_fragment_offset(&self) -> u16 {
-        u16::from_be_bytes([
-            self.buf.read(FRAGMENT_OFFSET_OFFSET) & 0x1f,
-            self.buf.read(FRAGMENT_OFFSET_OFFSET + 1),
-        ])
+    pub fn get_flags_and_fragment_offset(&self) -> u16 {
+        u16::from_be_bytes(self.buf.get_bytes_two(FLAGS_AND_FRAGMENT_OFFSET_OFFSET))
     }
 
     #[must_use]
@@ -167,15 +158,9 @@ impl<'a> Ipv4Packet<'a> {
             .set_bytes_two(IDENTIFICATION_OFFSET, val.to_be_bytes());
     }
 
-    pub fn set_flags(&mut self, val: u8) {
-        *self.buf.write(FLAGS_OFFSET) = (self.buf.read(FLAGS_OFFSET) & 0x1f) | ((val & 0x7) << 5);
-    }
-
-    pub fn set_fragment_offset(&mut self, val: u16) {
-        let bytes = val.to_be_bytes();
-        let flags = self.buf.read(FRAGMENT_OFFSET_OFFSET) & 0xe0;
-        *self.buf.write(FRAGMENT_OFFSET_OFFSET) = flags | (bytes[0] & 0x1f);
-        *self.buf.write(FRAGMENT_OFFSET_OFFSET + 1) = bytes[1];
+    pub fn set_flags_and_fragment_offset(&mut self, val: u16) {
+        self.buf
+            .set_bytes_two(FLAGS_AND_FRAGMENT_OFFSET_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_ttl(&mut self, val: u8) {
@@ -261,8 +246,10 @@ impl Debug for Ipv4Packet<'_> {
             .field("ecn", &self.get_ecn())
             .field("total_length", &self.get_total_length())
             .field("identification", &self.get_identification())
-            .field("flags", &self.get_flags())
-            .field("fragment_offset", &self.get_fragment_offset())
+            .field(
+                "flags_and_fragment_offset",
+                &self.get_flags_and_fragment_offset(),
+            )
             .field("ttl", &self.get_ttl())
             .field("protocol", &self.get_protocol())
             .field("checksum", &self.get_checksum())
@@ -375,43 +362,13 @@ mod tests {
     fn test_flags() {
         let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
         let mut packet = Ipv4Packet::new(&mut buf).unwrap();
-        packet.set_flags(2);
-        assert_eq!(2, packet.get_flags());
-        assert_eq!([0x40], packet.packet()[6..7]);
-        packet.set_flags(7);
-        assert_eq!(7, packet.get_flags());
-        assert_eq!([0xE0], packet.packet()[6..7]);
-    }
-
-    #[test]
-    fn test_fragment_offset() {
-        let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
-        let mut packet = Ipv4Packet::new(&mut buf).unwrap();
-        packet.set_fragment_offset(0);
-        assert_eq!(0, packet.get_fragment_offset());
+        packet.set_flags_and_fragment_offset(0);
+        assert_eq!(0, packet.get_flags_and_fragment_offset());
         assert_eq!([0x00, 0x00], packet.packet()[6..=7]);
-        packet.set_fragment_offset(500);
-        assert_eq!(500, packet.get_fragment_offset());
-        assert_eq!([0x01, 0xF4], packet.packet()[6..=7]);
-        packet.set_fragment_offset(8191);
-        assert_eq!(8191, packet.get_fragment_offset());
-        assert_eq!([0x1F, 0xFF], packet.packet()[6..=7]);
-    }
-
-    #[test]
-    fn test_flags_and_fragment_offset() {
-        let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
-        let mut packet = Ipv4Packet::new(&mut buf).unwrap();
-        packet.set_flags(3);
-        packet.set_fragment_offset(99);
-        assert_eq!(3, packet.get_flags());
-        assert_eq!(99, packet.get_fragment_offset());
-        assert_eq!([0x60, 0x63], packet.packet()[6..=7]);
-        packet.set_flags(7);
-        packet.set_fragment_offset(8191);
-        assert_eq!(7, packet.get_flags());
-        assert_eq!(8191, packet.get_fragment_offset());
-        assert_eq!([0xFF, 0xFF], packet.packet()[6..=7]);
+        // The Don't Fragment (DF) bit set:
+        packet.set_flags_and_fragment_offset(0x4000);
+        assert_eq!(0x4000, packet.get_flags_and_fragment_offset());
+        assert_eq!([0x40, 0x00], packet.packet()[6..=7]);
     }
 
     #[test]
@@ -517,8 +474,7 @@ mod tests {
         assert_eq!(0, packet.get_ecn());
         assert_eq!(84, packet.get_total_length());
         assert_eq!(41585, packet.get_identification());
-        assert_eq!(0, packet.get_flags());
-        assert_eq!(0, packet.get_fragment_offset());
+        assert_eq!(0, packet.get_flags_and_fragment_offset());
         assert_eq!(21, packet.get_ttl());
         assert_eq!(IpProtocol::Udp, packet.get_protocol());
         assert_eq!(39662, packet.get_checksum());
