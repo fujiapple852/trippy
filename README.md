@@ -175,6 +175,12 @@ Use custom source port `5000` for `udp` tracing:
 trip www.bitwizard.nl -p udp -S 5000
 ```
 
+Use the `dublin` Equal Cost Multi-path Routing strategy for `udp` with fixed source and destination ports:
+
+```shell
+trip www.bitwizard.nl -p udp -R dublin -S 5000 -P 3500
+```
+
 Trace with a custom source address:
 
 ```shell
