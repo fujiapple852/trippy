@@ -66,13 +66,19 @@ the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
 cargo install trippy
 ```
 
+### Homebrew
+
+```shell
+brew tap fujiapple852/trippy && brew install trippy
+```
+
 ### NetBSD
 
 ```shell
 pkgin install trippy
 ```
 
-### Docker (Linux only)
+### Docker
 
 ```shell
 docker run -it fujiapple/trippy www.bitwizard.nl
