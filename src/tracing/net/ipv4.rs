@@ -35,6 +35,11 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
+/// The value for the IPv4 `flags_and_fragment_offset` field to set the `Don't fragment` bit.
+///
+/// 0100 0000 0000 0000
+const DONT_FRAGMENT: u16 = 0x4000;
+
 pub fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
     nix::ifaddrs::getifaddrs()
         .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
@@ -297,6 +302,7 @@ fn make_ipv4_packet<'a>(
 ) -> TraceResult<Ipv4Packet<'a>> {
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
     let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
+    let ipv4_flags_and_fragment_offset_header = ipv4_byte_order.adjust_length(DONT_FRAGMENT);
     let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
@@ -306,6 +312,8 @@ fn make_ipv4_packet<'a>(
     ipv4.set_source(src_addr);
     ipv4.set_destination(dest_addr);
     ipv4.set_payload(payload);
+    ipv4.set_identification(identification);
+    ipv4.set_flags_and_fragment_offset(ipv4_flags_and_fragment_offset_header);
     Ok(ipv4)
 }
 
