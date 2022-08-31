@@ -22,7 +22,7 @@ name = "trip"
 # Library dependencies
 socket2 = { version = "0.4.4", features = [ "all" ] }
 nix = { version = "0.25.0", default-features = false, features = [ "user", "poll", "net" ] }
-thiserror = "1.0.32"
+thiserror = "1.0.33"
 derive_more = "0.99.17"
 arrayvec = "0.7.2"
 
