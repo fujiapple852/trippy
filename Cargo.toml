@@ -27,7 +27,7 @@ derive_more = "0.99.17"
 arrayvec = "0.7.2"
 
 # TUI dependancies
-anyhow = "1.0.62"
+anyhow = "1.0.65"
 dns-lookup = "1.0.8"
 trust-dns-resolver = "0.21.2"
 crossbeam = "0.8.2"
