@@ -1,9 +1,9 @@
 name: trippy
 version: 'git'
 summary: A network diagnostic tool
-description: A network diagnostic tool, inspired by MTR
+description: Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
 base: core18
-confinement: devmode
+confinement: strict
 parts:
   trippy:
     plugin: rust
@@ -11,3 +11,6 @@ parts:
 apps:
   trippy:
     command: bin/trip
+    plugs:
+      - network-bind
+      - network
