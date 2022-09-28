@@ -1,7 +1,12 @@
 name: trippy
-version: 'git'
+version: '0.6.0'
 summary: A network diagnostic tool
 description: Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
+contact: fujiapple852@gmail.com
+issues: https://github.com/fujiapple852/trippy/issues
+license: Apache-2.0
+source-code: https://github.com/fujiapple852/trippy
+website: https://trippy.cli.rs
 base: core18
 confinement: strict
 parts:
