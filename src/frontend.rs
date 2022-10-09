@@ -312,7 +312,7 @@ pub fn run_frontend(
     }
     terminal.show_cursor()?;
     if let Err(err) = res {
-        println!("{:?}", err);
+        println!("{err:?}");
     }
     Ok(())
 }
@@ -495,7 +495,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .map_or_else(|| String::from("auto"), |m| m.to_string());
     let source = render_source(app);
     let dest = render_destination(app);
-    let target = format!("{} -> {}", source, dest);
+    let target = format!("{source} -> {dest}");
     let left_spans = vec![
         Spans::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -529,13 +529,13 @@ fn render_source(app: &mut TuiApp) -> String {
     let src_addr = app.tracer_config().source_addr;
     match app.tracer_config().port_direction {
         PortDirection::None => {
-            format!("{} ({})", src_hostname, src_addr)
+            format!("{src_hostname} ({src_addr})")
         }
         PortDirection::FixedDest(_) => {
-            format!("{}:* ({}:*)", src_hostname, src_addr)
+            format!("{src_hostname}:* ({src_addr}:*)")
         }
         PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
-            format!("{}:{} ({}:{})", src_hostname, src.0, src_addr, src.0)
+            format!("{src_hostname}:{} ({src_addr}:{})", src.0, src.0)
         }
     }
 }
@@ -546,13 +546,13 @@ fn render_destination(app: &mut TuiApp) -> String {
     let dest_addr = app.tracer_config().target_addr;
     match app.tracer_config().port_direction {
         PortDirection::None => {
-            format!("{} ({})", dest_hostname, dest_addr)
+            format!("{dest_hostname} ({dest_addr})")
         }
         PortDirection::FixedSrc(_) => {
-            format!("{}:* ({}:*)", dest_hostname, dest_addr)
+            format!("{dest_hostname}:* ({dest_addr}:*)")
         }
         PortDirection::FixedDest(dest) | PortDirection::FixedBoth(_, dest) => {
-            format!("{}:{} ({}:{})", dest_hostname, dest.0, dest_addr, dest.0)
+            format!("{dest_hostname}:{} ({dest_addr}:{})", dest.0, dest.0)
         }
     }
 }
@@ -644,7 +644,7 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                 .iter()
                 .enumerate()
                 .take(samples)
-                .map(|(i, s)| (i as f64, (s.as_secs_f64() * 1000_f64) as f64))
+                .map(|(i, s)| (i as f64, (s.as_secs_f64() * 1000_f64)))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -679,13 +679,10 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                 .bounds([0_f64, samples as f64])
                 .labels_alignment(Alignment::Right)
                 .labels(
-                    [
-                        "0".to_string(),
-                        format!("{} ({}x)", samples, app.zoom_factor),
-                    ]
-                    .into_iter()
-                    .map(Span::from)
-                    .collect(),
+                    ["0".to_string(), format!("{samples} ({}x)", app.zoom_factor)]
+                        .into_iter()
+                        .map(Span::from)
+                        .collect(),
                 )
                 .style(Style::default().fg(Color::DarkGray)),
         )
@@ -697,7 +694,7 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                     [
                         String::from("0.0"),
                         format!("{:.1}", max_sample / 2_f64),
-                        format!("{:.1}", max_sample),
+                        format!("{max_sample:.1}"),
                     ]
                     .into_iter()
                     .map(Span::from)
@@ -859,8 +856,7 @@ fn render_table_row(
     ];
     let row_height = hop
         .addr_count()
-        .min(max_addr.unwrap_or(u8::MAX) as usize)
-        .max(1) as u16;
+        .clamp(1, max_addr.unwrap_or(u8::MAX) as usize) as u16;
     let row_color = if is_in_round {
         Color::Gray
     } else {
@@ -914,9 +910,9 @@ fn render_hostname_cell(
                     hosts.join(" ")
                 }
             }
-            DnsEntry::Pending(ip) | DnsEntry::NotFound(ip) => format!("{}", ip),
-            DnsEntry::Failed(ip) => format!("Failed: {}", ip),
-            DnsEntry::Timeout(ip) => format!("Timeout: {}", ip),
+            DnsEntry::Pending(ip) | DnsEntry::NotFound(ip) => format!("{ip}"),
+            DnsEntry::Failed(ip) => format!("Failed: {ip}"),
+            DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
         }
     }
     /// Perform a reverse DNS lookup for an address and format the result.
@@ -947,7 +943,7 @@ fn render_hostname_cell(
                     let entry = dns.reverse_lookup(*addr);
                     format_dns_entry(entry, false)
                 };
-                format!("{} ({})", hostname, addr)
+                format!("{hostname} ({addr})")
             }
         };
 
@@ -988,7 +984,7 @@ fn render_hostname_cell(
 fn render_last_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
         hop.last_ms()
-            .map(|last| format!("{:.1}", last))
+            .map(|last| format!("{last:.1}"))
             .unwrap_or_default(),
     )
 }
@@ -996,7 +992,7 @@ fn render_last_cell(hop: &Hop) -> Cell<'static> {
 fn render_best_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
         hop.best_ms()
-            .map(|best| format!("{:.1}", best))
+            .map(|best| format!("{best:.1}"))
             .unwrap_or_default(),
     )
 }
@@ -1004,7 +1000,7 @@ fn render_best_cell(hop: &Hop) -> Cell<'static> {
 fn render_worst_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(
         hop.worst_ms()
-            .map(|worst| format!("{:.1}", worst))
+            .map(|worst| format!("{worst:.1}"))
             .unwrap_or_default(),
     )
 }
@@ -1151,7 +1147,7 @@ fn sample_frequency(samples: &[Duration]) -> Vec<(String, u64)> {
     count_by_duration
         .iter()
         .map(|(ping, count)| {
-            let ping = format!("{}", ping);
+            let ping = format!("{ping}");
             let freq_pct = ((*count as f64 / sample_count as f64) * 100_f64) as u64;
             (ping, freq_pct)
         })

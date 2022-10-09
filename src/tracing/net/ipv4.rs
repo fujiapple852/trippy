@@ -308,7 +308,7 @@ fn make_udp_packet(
 ) -> TraceResult<UdpPacket<'_>> {
     let udp_payload_buf = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload_size;
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size as usize]).req()?;
+    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);

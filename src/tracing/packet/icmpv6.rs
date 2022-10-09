@@ -289,7 +289,7 @@ pub mod echo_request {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
         }
     }
 
@@ -510,7 +510,7 @@ pub mod echo_reply {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
         }
     }
 
@@ -711,7 +711,7 @@ pub mod time_exceeded {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
         }
     }
 
@@ -899,7 +899,7 @@ pub mod destination_unreachable {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
         }
     }
 
