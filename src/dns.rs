@@ -37,10 +37,10 @@ impl Display for DnsEntry {
             Self::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
                 write!(f, "AS{} {}", asinfo.asn, hosts.join(" "))
             }
-            Self::Pending(ip) => write!(f, "{}", ip),
-            Self::NotFound(ip) => write!(f, "{}", ip),
-            Self::Failed(ip) => write!(f, "Failed: {}", ip),
-            Self::Timeout(ip) => write!(f, "Timeout: {}", ip),
+            Self::Pending(ip) => write!(f, "{ip}"),
+            Self::NotFound(ip) => write!(f, "{ip}"),
+            Self::Failed(ip) => write!(f, "Failed: {ip}"),
+            Self::Timeout(ip) => write!(f, "Timeout: {ip}"),
         }
     }
 }
@@ -401,7 +401,7 @@ mod inner {
 
     /// Perform the `asn` query.
     fn query_asn_name(resolver: &Arc<Resolver>, asn: &str) -> anyhow::Result<String> {
-        let query = format!("AS{}.asn.cymru.com.", asn);
+        let query = format!("AS{asn}.asn.cymru.com.");
         let name = Name::from_str(query.as_str())?;
         let response = resolver.lookup(name, RecordType::TXT)?;
         let data = response.iter().next().ok_or_else(|| anyhow!("asn query"))?;

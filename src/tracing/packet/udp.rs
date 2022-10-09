@@ -92,7 +92,7 @@ impl<'a> UdpPacket<'a> {
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        &self.buf.as_slice()[Self::minimum_packet_size() as usize..]
+        &self.buf.as_slice()[Self::minimum_packet_size()..]
     }
 }
 

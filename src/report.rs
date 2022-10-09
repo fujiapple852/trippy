@@ -29,13 +29,13 @@ pub fn run_report_csv(
         let recv = hop.total_recv();
         let last = hop
             .last_ms()
-            .map_or_else(|| String::from("???"), |last| format!("{:.1}", last));
+            .map_or_else(|| String::from("???"), |last| format!("{last:.1}"));
         let best = hop
             .best_ms()
-            .map_or_else(|| String::from("???"), |best| format!("{:.1}", best));
+            .map_or_else(|| String::from("???"), |best| format!("{best:.1}"));
         let worst = hop
             .worst_ms()
-            .map_or_else(|| String::from("???"), |worst| format!("{:.1}", worst));
+            .map_or_else(|| String::from("???"), |worst| format!("{worst:.1}"));
         let stddev = hop.stddev_ms();
         let avg = hop.avg_ms();
         let loss_pct = hop.loss_pct();
@@ -100,7 +100,7 @@ fn fixed_width<S>(val: &f64, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(&format!("{:.2}", val))
+    serializer.serialize_str(&format!("{val:.2}"))
 }
 
 /// Generate a CSV report of trace data.
@@ -197,13 +197,13 @@ fn run_report_table(
         let recv = hop.total_recv().to_string();
         let last = hop
             .last_ms()
-            .map_or_else(|| String::from("???"), |last| format!("{:.1}", last));
+            .map_or_else(|| String::from("???"), |last| format!("{last:.1}"));
         let best = hop
             .best_ms()
-            .map_or_else(|| String::from("???"), |best| format!("{:.1}", best));
+            .map_or_else(|| String::from("???"), |best| format!("{best:.1}"));
         let worst = hop
             .worst_ms()
-            .map_or_else(|| String::from("???"), |worst| format!("{:.1}", worst));
+            .map_or_else(|| String::from("???"), |worst| format!("{worst:.1}"));
         let stddev = format!("{:.1}", hop.stddev_ms());
         let avg = format!("{:.1}", hop.avg_ms());
         let loss_pct = format!("{:.1}", hop.loss_pct());
@@ -230,15 +230,15 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
             let recv = hop.total_recv();
             let last = hop
                 .last_ms()
-                .map(|last| format!("{:.1}", last))
+                .map(|last| format!("{last:.1}"))
                 .unwrap_or_default();
             let best = hop
                 .best_ms()
-                .map(|best| format!("{:.1}", best))
+                .map(|best| format!("{best:.1}"))
                 .unwrap_or_default();
             let worst = hop
                 .worst_ms()
-                .map(|worst| format!("{:.1}", worst))
+                .map(|worst| format!("{worst:.1}"))
                 .unwrap_or_default();
             let stddev = hop.stddev_ms();
             let avg = hop.avg_ms();
