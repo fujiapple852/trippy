@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
@@ -35,7 +35,7 @@ pub const MIN_PACKET_SIZE: u16 = 28;
 pub const MAX_PACKET_SIZE: u16 = 1024;
 
 /// The tool mode.
-#[derive(Debug, Copy, Clone, ArgEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Mode {
     /// Display interactive TUI.
     Tui,
@@ -52,7 +52,7 @@ pub enum Mode {
 }
 
 /// The tracing protocol.
-#[derive(Debug, Copy, Clone, ArgEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Protocol {
     /// Internet Control Message Protocol
     Icmp,
@@ -63,7 +63,7 @@ pub enum Protocol {
 }
 
 /// The strategy Equal-cost Multi-Path routing strategy.
-#[derive(Debug, Copy, Clone, ArgEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum MultipathStrategyConfig {
     /// The src or dest port is used to store the sequence number.
     Classic,
@@ -74,7 +74,7 @@ pub enum MultipathStrategyConfig {
 }
 
 /// How to render the addresses.
-#[derive(Debug, Copy, Clone, ArgEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum AddressMode {
     /// Show IP address only.
     IP,
@@ -85,7 +85,7 @@ pub enum AddressMode {
 }
 
 /// How DNS queries wil be resolved.
-#[derive(Debug, Copy, Clone, ArgEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum DnsResolveMethod {
     /// Resolve using the OS resolver.
     System,
@@ -106,11 +106,23 @@ pub struct Args {
     pub targets: Vec<String>,
 
     /// Output mode
-    #[clap(arg_enum, short = 'm', long, default_value = "tui", display_order = 1)]
+    #[clap(
+        value_enum,
+        short = 'm',
+        long,
+        default_value = "tui",
+        display_order = 1
+    )]
     pub mode: Mode,
 
     /// Tracing protocol
-    #[clap(arg_enum, short = 'p', long, default_value = "icmp", display_order = 2)]
+    #[clap(
+        value_enum,
+        short = 'p',
+        long,
+        default_value = "icmp",
+        display_order = 2
+    )]
     pub protocol: Protocol,
 
     /// Trace using the UDP protocol
@@ -169,7 +181,7 @@ pub struct Args {
 
     /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only).
     #[clap(
-        arg_enum,
+        value_enum,
         short = 'R',
         long,
         default_value = "classic",
@@ -211,7 +223,7 @@ pub struct Args {
 
     /// How to perform DNS queries.
     #[clap(
-        arg_enum,
+        value_enum,
         short = 'r',
         long,
         default_value = "system",
@@ -229,7 +241,7 @@ pub struct Args {
 
     /// How to render addresses.
     #[clap(
-        arg_enum,
+        value_enum,
         short = 'a',
         long,
         default_value = "host",
