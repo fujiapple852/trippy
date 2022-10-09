@@ -1,5 +1,5 @@
 name: trippy
-version: '0.6.0'
+version: '0.7.0-dev'
 summary: A network diagnostic tool
 description: Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
 contact: fujiapple852@gmail.com
