@@ -1,8 +1,48 @@
 name: trippy
 version: '0.7.0-dev'
 summary: A network diagnostic tool
-description: Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
-contact: fujiapple852@gmail.com
+description: |
+  Trippy combines the functionality of traceroute and ping and is designed to 
+  assist with the diagnosis of network issues.
+    
+  Features:
+  
+    - Trace using multiple protocols:
+        - `ICMP`, `UDP` & `TCP`
+        - `IPv4` & `IPv6`
+    - Customizable tracing options:
+        - packet size & payload pattern
+        - start and maximum time-to-live (TTL)
+        - minimum and maximum round duration
+        - round end grace period & maximum number of unknown hops
+        - source & destination port (`TCP` & `UDP`)
+        - Equal Cost Multi-path Routing strategies (`classic`, `paris` and `dublin`)
+        - source address and source interface
+        - `TOS` (aka `DSCP + ECN`)
+    - Tui interface:
+        - Trace multiple targets simultaneously from a single instance of Trippy
+        - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
+        - Per hop round-trip-time (RTT) history and frequency distributing charts
+        - Zoom-able chart of RTT for all hops in a trace
+        - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
+        - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
+        - Responsive UI with adjustable refresh rate
+    - DNS:
+        - use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
+        - Lazy reverse DNS queries
+        - Lookup autonomous system number (ASN) and name
+    - Generate tracing reports:
+        - `json`, `csv` & tabular (pretty-printed and markdown)
+        - configurable reporting cycles
+    - Runs on multiple platform (macOS, Linux, NetBSD)
+    - Capabilities aware application (Linux only)
+  
+  This package auto-connects to the following snap interfaces:
+  
+    - `network`: to allow general outgoing network access
+    - `network-bind`: to allow binding to local ports
+    - `network-observe`: to allow enabling `CAP_NET_RAW` for using raw sockets
+contact: mailto:fujiapple852@gmail.com
 issues: https://github.com/fujiapple852/trippy/issues
 license: Apache-2.0
 source-code: https://github.com/fujiapple852/trippy
