@@ -81,7 +81,15 @@ pkgin install trippy
 ### Docker
 
 ```shell
-docker run -it fujiapple/trippy www.bitwizard.nl
+docker run -it fujiapple/trippy
+```
+
+### Snap
+
+[![trippy](https://snapcraft.io/trippy/badge.svg)](https://snapcraft.io/trippy)
+
+```shell
+snap install trippy
 ```
 
 ## Platforms
