@@ -97,7 +97,7 @@ impl<'a> IcmpPacket<'a> {
 
     #[must_use]
     pub fn get_checksum(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
     }
 
     pub fn set_icmp_type(&mut self, val: IcmpType) {
@@ -109,7 +109,7 @@ impl<'a> IcmpPacket<'a> {
     }
 
     pub fn set_checksum(&mut self, val: u16) {
-        self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
     }
 
     #[must_use]
@@ -243,17 +243,17 @@ pub mod echo_request {
 
         #[must_use]
         pub fn get_checksum(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
         #[must_use]
         pub fn get_identifier(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(IDENTIFIER_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(IDENTIFIER_OFFSET))
         }
 
         #[must_use]
         pub fn get_sequence(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(SEQUENCE_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(SEQUENCE_OFFSET))
         }
 
         pub fn set_icmp_type(&mut self, val: IcmpType) {
@@ -265,15 +265,15 @@ pub mod echo_request {
         }
 
         pub fn set_checksum(&mut self, val: u16) {
-            self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_identifier(&mut self, val: u16) {
-            self.buf.set_bytes_two(IDENTIFIER_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(IDENTIFIER_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_sequence(&mut self, val: u16) {
-            self.buf.set_bytes_two(SEQUENCE_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(SEQUENCE_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
@@ -464,17 +464,17 @@ pub mod echo_reply {
 
         #[must_use]
         pub fn get_checksum(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
         #[must_use]
         pub fn get_identifier(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(IDENTIFIER_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(IDENTIFIER_OFFSET))
         }
 
         #[must_use]
         pub fn get_sequence(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(SEQUENCE_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(SEQUENCE_OFFSET))
         }
 
         pub fn set_icmp_type(&mut self, val: IcmpType) {
@@ -486,15 +486,15 @@ pub mod echo_reply {
         }
 
         pub fn set_checksum(&mut self, val: u16) {
-            self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_identifier(&mut self, val: u16) {
-            self.buf.set_bytes_two(IDENTIFIER_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(IDENTIFIER_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_sequence(&mut self, val: u16) {
-            self.buf.set_bytes_two(SEQUENCE_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(SEQUENCE_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
@@ -683,7 +683,7 @@ pub mod time_exceeded {
 
         #[must_use]
         pub fn get_checksum(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
         pub fn set_icmp_type(&mut self, val: IcmpType) {
@@ -695,7 +695,7 @@ pub mod time_exceeded {
         }
 
         pub fn set_checksum(&mut self, val: u16) {
-            self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
@@ -852,17 +852,17 @@ pub mod destination_unreachable {
 
         #[must_use]
         pub fn get_checksum(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
         #[must_use]
         pub fn get_unused(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(UNUSED_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(UNUSED_OFFSET))
         }
 
         #[must_use]
         pub fn get_next_hop_mtu(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes_two(NEXT_HOP_MTU_OFFSET))
+            u16::from_be_bytes(self.buf.get_bytes(NEXT_HOP_MTU_OFFSET))
         }
 
         pub fn set_icmp_type(&mut self, val: IcmpType) {
@@ -874,16 +874,15 @@ pub mod destination_unreachable {
         }
 
         pub fn set_checksum(&mut self, val: u16) {
-            self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_unused(&mut self, val: u16) {
-            self.buf.set_bytes_two(UNUSED_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(UNUSED_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_next_hop_mtu(&mut self, val: u16) {
-            self.buf
-                .set_bytes_two(NEXT_HOP_MTU_OFFSET, val.to_be_bytes());
+            self.buf.set_bytes(NEXT_HOP_MTU_OFFSET, val.to_be_bytes());
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {

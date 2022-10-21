@@ -69,7 +69,7 @@ impl<'a> Ipv6Packet<'a> {
 
     #[must_use]
     pub fn get_payload_length(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(PAYLOAD_LENGTH_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(PAYLOAD_LENGTH_OFFSET))
     }
 
     #[must_use]
@@ -84,12 +84,12 @@ impl<'a> Ipv6Packet<'a> {
 
     #[must_use]
     pub fn get_source_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from(self.buf.get_bytes_16(SOURCE_ADDRESS_OFFSET))
+        Ipv6Addr::from(self.buf.get_bytes(SOURCE_ADDRESS_OFFSET))
     }
 
     #[must_use]
     pub fn get_destination_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from(self.buf.get_bytes_16(DESTINATION_ADDRESS_OFFSET))
+        Ipv6Addr::from(self.buf.get_bytes(DESTINATION_ADDRESS_OFFSET))
     }
 
     pub fn set_version(&mut self, val: u8) {
@@ -112,8 +112,7 @@ impl<'a> Ipv6Packet<'a> {
     }
 
     pub fn set_payload_length(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(PAYLOAD_LENGTH_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(PAYLOAD_LENGTH_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_next_header(&mut self, val: IpProtocol) {
