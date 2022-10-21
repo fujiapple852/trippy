@@ -3,7 +3,6 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::Network;
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
-use crate::tracing::util::Required;
 use crate::tracing::TracerProtocol;
 use crate::tracing::{Probe, TracerConfig};
 use std::net::IpAddr;
@@ -185,11 +184,14 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let ttl = TimeToLive(data.ttl);
                 let received = data.recv;
                 let host = data.addr;
-                let probe = st.probe_for_ttl(ttl).req()?;
-                let sequence = probe.sequence;
-                if st.in_round(sequence) {
-                    st.complete_probe_other(sequence, host, received);
-                }
+                // If we received a delayed TCP probe response after the round had ended we will not be able to find the
+                // probe by ttl and so must ignore it.
+                if let Some(probe) = st.probe_for_ttl(ttl) {
+                    let sequence = probe.sequence;
+                    if st.in_round(sequence) {
+                        st.complete_probe_other(sequence, host, received);
+                    }
+                };
             }
             None => {}
         }
@@ -511,13 +513,23 @@ mod state {
 
             // If this `Probe` found the target then we set the `target_tll` if not already set, being careful to
             // account for `Probes` being received out-of-order.
-            if is_target {
-                self.target_ttl = match self.target_ttl {
+            //
+            // If this `Probe` did not find the target but has a ttl that is greater or equal to the target ttl (if
+            // known) then we reset the target ttl to None.  This is to support Equal Cost Multi-path Routing (ECMP)
+            // cases where the number of hops to the target will vary over the lifetime of the trace.
+            self.target_ttl = if is_target {
+                match self.target_ttl {
                     None => Some(probe.ttl),
-                    Some(ttl) if probe.ttl < ttl => Some(probe.ttl),
-                    Some(ttl) => Some(ttl),
-                };
-            }
+                    Some(target_ttl) if probe.ttl < target_ttl => Some(probe.ttl),
+                    Some(target_ttl) => Some(target_ttl),
+                }
+            } else {
+                match self.target_ttl {
+                    Some(target_ttl) if probe.ttl >= target_ttl => None,
+                    Some(target_ttl) => Some(target_ttl),
+                    None => None,
+                }
+            };
 
             self.max_received_ttl = match self.max_received_ttl {
                 None => Some(probe.ttl),
