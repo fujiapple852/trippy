@@ -1175,7 +1175,7 @@ dependencies = [
  "clap",
  "comfy-table",
  "crossbeam",
- "crossterm 0.23.2",
+ "crossterm 0.25.0",
  "derive_more",
  "dns-lookup",
  "humantime",
