@@ -62,11 +62,15 @@ the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
 
 ### Cargo
 
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.6.0)
+
 ```shell
 cargo install trippy
 ```
 
 ### Homebrew
+
+[![homebrew version](https://img.shields.io/badge/homebrew-0.6.0-blue)](https://github.com/fujiapple852/homebrew-trippy)
 
 ```shell
 brew tap fujiapple852/trippy && brew install trippy
@@ -74,14 +78,18 @@ brew tap fujiapple852/trippy && brew install trippy
 
 ### NetBSD
 
+[![pkgsrc current package](https://repology.org/badge/version-for-repo/pkgsrc_current/trippy.svg)](https://repology.org/project/trippy/versions)
+
 ```shell
 pkgin install trippy
 ```
 
-### Docker
+### Pacman (Arch Linux)
+
+[![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://repology.org/project/trippy/versions)
 
 ```shell
-docker run -it fujiapple/trippy
+pacman -S trippy
 ```
 
 ### Snap
@@ -90,6 +98,14 @@ docker run -it fujiapple/trippy
 
 ```shell
 snap install trippy
+```
+
+### Docker
+
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/fujiapple/trippy)](https://hub.docker.com/r/fujiapple/trippy/)
+
+```shell
+docker run -it fujiapple/trippy
 ```
 
 ## Platforms
