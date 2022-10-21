@@ -44,40 +44,39 @@ impl<'a> UdpPacket<'a> {
 
     #[must_use]
     pub fn get_source(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(SOURCE_PORT_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(SOURCE_PORT_OFFSET))
     }
 
     #[must_use]
     pub fn get_destination(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(DESTINATION_PORT_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(DESTINATION_PORT_OFFSET))
     }
 
     #[must_use]
     pub fn get_length(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(LENGTH_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(LENGTH_OFFSET))
     }
 
     #[must_use]
     pub fn get_checksum(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
     }
 
     pub fn set_source(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(SOURCE_PORT_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(SOURCE_PORT_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_destination(&mut self, val: u16) {
         self.buf
-            .set_bytes_two(DESTINATION_PORT_OFFSET, val.to_be_bytes());
+            .set_bytes(DESTINATION_PORT_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_length(&mut self, val: u16) {
-        self.buf.set_bytes_two(LENGTH_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(LENGTH_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_checksum(&mut self, val: u16) {
-        self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_payload(&mut self, vals: &[u8]) {

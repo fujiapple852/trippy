@@ -14,55 +14,16 @@ impl<'a> Buffer<'a> {
         }
     }
 
-    /// Get 16 bytes from the packet at a given byte offset.
-    pub fn get_bytes_16(&self, offset: usize) -> [u8; 16] {
-        [
-            self.read(offset),
-            self.read(offset + 1),
-            self.read(offset + 2),
-            self.read(offset + 3),
-            self.read(offset + 4),
-            self.read(offset + 5),
-            self.read(offset + 6),
-            self.read(offset + 7),
-            self.read(offset + 8),
-            self.read(offset + 9),
-            self.read(offset + 10),
-            self.read(offset + 11),
-            self.read(offset + 12),
-            self.read(offset + 13),
-            self.read(offset + 14),
-            self.read(offset + 15),
-        ]
+    /// Get N bytes from the packet at a given byte offset.
+    pub fn get_bytes<const N: usize>(&self, offset: usize) -> [u8; N] {
+        core::array::from_fn(|i| self.read(offset + i))
     }
 
-    /// Get two bytes from the packet at a given byte offset.
-    pub fn get_bytes_two(&self, offset: usize) -> [u8; 2] {
-        [self.read(offset), self.read(offset + 1)]
-    }
-
-    /// Get four bytes from the packet at a given byte offset.
-    pub fn get_bytes_four(&self, offset: usize) -> [u8; 4] {
-        [
-            self.read(offset),
-            self.read(offset + 1),
-            self.read(offset + 2),
-            self.read(offset + 3),
-        ]
-    }
-
-    /// Set two bytes in the packet at a given offset.
-    pub fn set_bytes_two(&mut self, offset: usize, bytes: [u8; 2]) {
-        *self.write(offset) = bytes[0];
-        *self.write(offset + 1) = bytes[1];
-    }
-
-    /// Set four bytes in the packet at a given offset.
-    pub fn set_bytes_four(&mut self, offset: usize, bytes: [u8; 4]) {
-        *self.write(offset) = bytes[0];
-        *self.write(offset + 1) = bytes[1];
-        *self.write(offset + 2) = bytes[2];
-        *self.write(offset + 3) = bytes[3];
+    /// Set N bytes in the packet at a given offset.
+    pub fn set_bytes<const N: usize>(&mut self, offset: usize, bytes: [u8; N]) {
+        for (i, b) in bytes.into_iter().enumerate() {
+            *self.write(offset + i) = b;
+        }
     }
 
     /// Get the value at a given offset.

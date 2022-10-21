@@ -73,17 +73,17 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn get_total_length(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(TOTAL_LENGTH_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(TOTAL_LENGTH_OFFSET))
     }
 
     #[must_use]
     pub fn get_identification(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(IDENTIFICATION_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(IDENTIFICATION_OFFSET))
     }
 
     #[must_use]
     pub fn get_flags_and_fragment_offset(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(FLAGS_AND_FRAGMENT_OFFSET_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(FLAGS_AND_FRAGMENT_OFFSET_OFFSET))
     }
 
     #[must_use]
@@ -98,7 +98,7 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn get_checksum(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
     }
 
     #[must_use]
@@ -149,18 +149,16 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     pub fn set_total_length(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(TOTAL_LENGTH_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(TOTAL_LENGTH_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_identification(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(IDENTIFICATION_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(IDENTIFICATION_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_flags_and_fragment_offset(&mut self, val: u16) {
         self.buf
-            .set_bytes_two(FLAGS_AND_FRAGMENT_OFFSET_OFFSET, val.to_be_bytes());
+            .set_bytes(FLAGS_AND_FRAGMENT_OFFSET_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_ttl(&mut self, val: u8) {
@@ -172,7 +170,7 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     pub fn set_checksum(&mut self, val: u16) {
-        self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_source(&mut self, val: Ipv4Addr) {

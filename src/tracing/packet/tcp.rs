@@ -50,22 +50,22 @@ impl<'a> TcpPacket<'a> {
 
     #[must_use]
     pub fn get_source(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(SOURCE_PORT_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(SOURCE_PORT_OFFSET))
     }
 
     #[must_use]
     pub fn get_destination(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(DESTINATION_PORT_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(DESTINATION_PORT_OFFSET))
     }
 
     #[must_use]
     pub fn get_sequence(&self) -> u32 {
-        u32::from_be_bytes(self.buf.get_bytes_four(SEQUENCE_OFFSET))
+        u32::from_be_bytes(self.buf.get_bytes(SEQUENCE_OFFSET))
     }
 
     #[must_use]
     pub fn get_acknowledgement(&self) -> u32 {
-        u32::from_be_bytes(self.buf.get_bytes_four(ACKNOWLEDGEMENT_OFFSET))
+        u32::from_be_bytes(self.buf.get_bytes(ACKNOWLEDGEMENT_OFFSET))
     }
 
     #[must_use]
@@ -88,17 +88,17 @@ impl<'a> TcpPacket<'a> {
 
     #[must_use]
     pub fn get_window_size(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(WINDOW_SIZE_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(WINDOW_SIZE_OFFSET))
     }
 
     #[must_use]
     pub fn get_checksum(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(CHECKSUM_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
     }
 
     #[must_use]
     pub fn get_urgent_pointer(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes_two(URGENT_POINTER_OFFSET))
+        u16::from_be_bytes(self.buf.get_bytes(URGENT_POINTER_OFFSET))
     }
 
     #[must_use]
@@ -112,22 +112,21 @@ impl<'a> TcpPacket<'a> {
     }
 
     pub fn set_source(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(SOURCE_PORT_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(SOURCE_PORT_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_destination(&mut self, val: u16) {
         self.buf
-            .set_bytes_two(DESTINATION_PORT_OFFSET, val.to_be_bytes());
+            .set_bytes(DESTINATION_PORT_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_sequence(&mut self, val: u32) {
-        self.buf.set_bytes_four(SEQUENCE_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(SEQUENCE_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_acknowledgement(&mut self, val: u32) {
         self.buf
-            .set_bytes_four(ACKNOWLEDGEMENT_OFFSET, val.to_be_bytes());
+            .set_bytes(ACKNOWLEDGEMENT_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_data_offset(&mut self, val: u8) {
@@ -147,17 +146,15 @@ impl<'a> TcpPacket<'a> {
     }
 
     pub fn set_window_size(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(WINDOW_SIZE_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(WINDOW_SIZE_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_checksum(&mut self, val: u16) {
-        self.buf.set_bytes_two(CHECKSUM_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_urgent_pointer(&mut self, val: u16) {
-        self.buf
-            .set_bytes_two(URGENT_POINTER_OFFSET, val.to_be_bytes());
+        self.buf.set_bytes(URGENT_POINTER_OFFSET, val.to_be_bytes());
     }
 
     pub fn set_payload(&mut self, vals: &[u8]) {
