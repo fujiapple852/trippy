@@ -1,6 +1,7 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
+use crate::tracing::net::platform;
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
@@ -16,9 +17,7 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseDa
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
-use nix::libc::IPPROTO_RAW;
-use nix::sys::socket::{AddressFamily, SockaddrLike};
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use socket2::{SockAddr, Socket};
 use std::io::{ErrorKind, Read};
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
@@ -39,36 +38,6 @@ const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_pa
 ///
 /// 0100 0000 0000 0000
 const DONT_FRAGMENT: u16 = 0x4000;
-
-pub fn lookup_interface_addr(name: &str) -> TraceResult<IpAddr> {
-    nix::ifaddrs::getifaddrs()
-        .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
-        .into_iter()
-        .find_map(|ia| {
-            ia.address.and_then(|addr| match addr.family() {
-                Some(AddressFamily::Inet) if ia.interface_name == name => addr
-                    .as_sockaddr_in()
-                    .map(|sock_addr| IpAddr::V4(Ipv4Addr::from(sock_addr.ip()))),
-                _ => None,
-            })
-        })
-        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
-}
-
-pub fn make_icmp_send_socket() -> TraceResult<Socket> {
-    make_raw_socket()
-}
-
-pub fn make_udp_send_socket() -> TraceResult<Socket> {
-    make_raw_socket()
-}
-
-pub fn make_recv_socket() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
-    socket.set_nonblocking(true)?;
-    socket.set_header_included(true)?;
-    Ok(socket)
-}
 
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_icmp_probe(
@@ -186,9 +155,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
-    socket.set_nonblocking(true)?;
-    socket.set_reuse_port(true)?;
+    let socket = platform::make_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
     socket.bind(&SockAddr::from(local_addr))?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
@@ -198,7 +165,7 @@ pub fn dispatch_tcp_probe(
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if nix::Error::from_i32(code) != nix::Error::EINPROGRESS {
+                if platform::is_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
@@ -255,7 +222,7 @@ pub fn recv_tcp_socket(
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
-                if nix::Error::from_i32(code) == nix::Error::ECONNREFUSED {
+                if platform::is_conn_refused_error(code) {
                     return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
@@ -266,13 +233,6 @@ pub fn recv_tcp_socket(
         }
     };
     Ok(None)
-}
-
-fn make_raw_socket() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
-    socket.set_nonblocking(true)?;
-    socket.set_header_included(true)?;
-    Ok(socket)
 }
 
 /// Create an ICMP `EchoRequest` packet.

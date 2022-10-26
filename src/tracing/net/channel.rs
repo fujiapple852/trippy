@@ -1,7 +1,7 @@
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
-use crate::tracing::net::{ipv4, ipv6, Network};
+use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -10,11 +10,8 @@ use crate::tracing::{
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
-use nix::sys::select::FdSet;
-use nix::sys::time::{TimeVal, TimeValLike};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::net::{IpAddr, SocketAddr};
-use std::os::unix::io::AsRawFd;
 use std::time::{Duration, SystemTime};
 
 /// The maximum size of the IP packet we allow.
@@ -196,7 +193,7 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if is_readable(&self.recv_socket, self.read_timeout)? {
+        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
             match self.addr_family {
                 TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
@@ -222,7 +219,7 @@ impl TracerChannel {
         let found_index = self
             .tcp_probes
             .iter()
-            .find_position(|&probe| is_writable(&probe.socket).unwrap_or_default())
+            .find_position(|&probe| platform::is_writable(&probe.socket).unwrap_or_default())
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
@@ -249,36 +246,6 @@ impl TcpProbe {
     }
 }
 
-/// Returns true if the socket becomes readable before the timeout, false otherwise.
-fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
-    let mut read = FdSet::new();
-    read.insert(sock.as_raw_fd());
-    let readable = nix::sys::select::select(
-        None,
-        Some(&mut read),
-        None,
-        None,
-        Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
-    )
-    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
-    Ok(readable == 1)
-}
-
-/// Returns true if the socket is currently writeable, false otherwise.
-fn is_writable(sock: &Socket) -> TraceResult<bool> {
-    let mut write = FdSet::new();
-    write.insert(sock.as_raw_fd());
-    let writable = nix::sys::select::select(
-        None,
-        None,
-        Some(&mut write),
-        None,
-        Some(&mut TimeVal::zero()),
-    )
-    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
-    Ok(writable == 1)
-}
-
 /// Validate, Lookup or discover the source `IpAddr`.
 fn make_src_addr(
     source_addr: Option<IpAddr>,
@@ -302,8 +269,8 @@ fn make_src_addr(
 /// Lookup the address for a named interface.
 fn lookup_interface_addr(addr_family: TracerAddrFamily, name: &str) -> TraceResult<IpAddr> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::lookup_interface_addr(name),
-        TracerAddrFamily::Ipv6 => ipv6::lookup_interface_addr(name),
+        TracerAddrFamily::Ipv4 => platform::lookup_interface_addr_ipv4(name),
+        TracerAddrFamily::Ipv6 => platform::lookup_interface_addr_ipv6(name),
     }
 }
 
@@ -341,23 +308,23 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
 /// Make a socket for sending raw `ICMP` packets.
 fn make_icmp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::make_icmp_send_socket(),
-        TracerAddrFamily::Ipv6 => ipv6::make_icmp_send_socket(),
+        TracerAddrFamily::Ipv4 => platform::make_icmp_send_socket_ipv4(),
+        TracerAddrFamily::Ipv6 => platform::make_icmp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for sending `UDP` packets.
 fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::make_udp_send_socket(),
-        TracerAddrFamily::Ipv6 => ipv6::make_udp_send_socket(),
+        TracerAddrFamily::Ipv4 => platform::make_udp_send_socket_ipv4(),
+        TracerAddrFamily::Ipv6 => platform::make_udp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
 fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
-        TracerAddrFamily::Ipv4 => ipv4::make_recv_socket(),
-        TracerAddrFamily::Ipv6 => ipv6::make_recv_socket(),
+        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
+        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
     }
 }
