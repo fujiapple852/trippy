@@ -21,7 +21,6 @@ name = "trip"
 
 # Library dependencies
 socket2 = { version = "0.4.7", features = [ "all" ] }
-nix = { version = "0.25.0", default-features = false, features = [ "user", "poll", "net" ] }
 thiserror = "1.0.32"
 derive_more = "0.99.17"
 arrayvec = "0.7.2"
@@ -45,6 +44,10 @@ comfy-table = "6.1.1"
 # Library dependancies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
 caps = "0.5.4"
+
+# Library dependancies (Unix)
+[target.'cfg(target_family = "unix")'.dependencies]
+nix = { version = "0.25.0", default-features = false, features = [ "user", "poll", "net" ] }
 
 [dev-dependencies]
 rand = "0.8.5"
