@@ -43,7 +43,7 @@ comfy-table = "6.1.1"
 
 # Library dependancies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
-caps = "0.5.4"
+caps = "0.5.5"
 
 # Library dependancies (Unix)
 [target.'cfg(target_family = "unix")'.dependencies]
