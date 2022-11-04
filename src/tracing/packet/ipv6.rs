@@ -124,15 +124,11 @@ impl<'a> Ipv6Packet<'a> {
     }
 
     pub fn set_source_address(&mut self, val: Ipv6Addr) {
-        val.octets().iter().enumerate().for_each(|(i, v)| {
-            *self.buf.write(SOURCE_ADDRESS_OFFSET + i) = *v;
-        });
+        self.buf.set_bytes(SOURCE_ADDRESS_OFFSET, val.octets());
     }
 
     pub fn set_destination_address(&mut self, val: Ipv6Addr) {
-        val.octets().iter().enumerate().for_each(|(i, v)| {
-            *self.buf.write(DESTINATION_ADDRESS_OFFSET + i) = *v;
-        });
+        self.buf.set_bytes(DESTINATION_ADDRESS_OFFSET, val.octets());
     }
 
     pub fn set_payload(&mut self, vals: &[u8]) {

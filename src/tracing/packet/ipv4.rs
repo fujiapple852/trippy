@@ -103,22 +103,12 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn get_source(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buf.read(SOURCE_OFFSET),
-            self.buf.read(SOURCE_OFFSET + 1),
-            self.buf.read(SOURCE_OFFSET + 2),
-            self.buf.read(SOURCE_OFFSET + 3),
-        )
+        Ipv4Addr::from(self.buf.get_bytes(SOURCE_OFFSET))
     }
 
     #[must_use]
     pub fn get_destination(&self) -> Ipv4Addr {
-        Ipv4Addr::new(
-            self.buf.read(DESTINATION_OFFSET),
-            self.buf.read(DESTINATION_OFFSET + 1),
-            self.buf.read(DESTINATION_OFFSET + 2),
-            self.buf.read(DESTINATION_OFFSET + 3),
-        )
+        Ipv4Addr::from(self.buf.get_bytes(DESTINATION_OFFSET))
     }
 
     #[must_use]
@@ -174,19 +164,11 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     pub fn set_source(&mut self, val: Ipv4Addr) {
-        let vals = val.octets();
-        *self.buf.write(SOURCE_OFFSET) = vals[0];
-        *self.buf.write(SOURCE_OFFSET + 1) = vals[1];
-        *self.buf.write(SOURCE_OFFSET + 2) = vals[2];
-        *self.buf.write(SOURCE_OFFSET + 3) = vals[3];
+        self.buf.set_bytes(SOURCE_OFFSET, val.octets());
     }
 
     pub fn set_destination(&mut self, val: Ipv4Addr) {
-        let vals = val.octets();
-        *self.buf.write(DESTINATION_OFFSET) = vals[0];
-        *self.buf.write(DESTINATION_OFFSET + 1) = vals[1];
-        *self.buf.write(DESTINATION_OFFSET + 2) = vals[2];
-        *self.buf.write(DESTINATION_OFFSET + 3) = vals[3];
+        self.buf.set_bytes(DESTINATION_OFFSET, val.octets());
     }
 
     pub fn get_options_raw_mut(&mut self) -> &mut [u8] {
