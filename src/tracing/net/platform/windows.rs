@@ -1,14 +1,13 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
 use socket2::Socket;
-use core::slice;
-use std::alloc::{Layout, System, GlobalAlloc};
+use windows::Win32::Foundation::{ERROR_SUCCESS, ERROR_BUFFER_OVERFLOW};
+use std::alloc::{alloc, dealloc, Layout};
 use std::mem;
 use std::net::{IpAddr, Ipv4Addr};
-use std::ptr::addr_of;
 use std::time::Duration;
-use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
-use windows::Win32::NetworkManagement::IpHelper::{GetInterfaceInfo, IP_INTERFACE_INFO, IP_ADAPTER_INDEX_MAP};
+use windows::Win32::NetworkManagement::IpHelper;
+use windows::Win32::Networking::WinSock::{AF_INET};
 
 /// TODO
 #[allow(clippy::unnecessary_wraps)]
@@ -17,46 +16,49 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
 }
 
 /// TODO
-/// Inspired by <https://stackoverflow.com/questions/73693265/how-do-i-allocate-space-to-call-getinterfaceinfo-using-the-windows-crate>
-/// Ignore <https://users.rust-lang.org/t/windows-crate-best-way-to-create-buffers-to-pass-to-windows-api/57290>
+/// inspired by <https://github.com/EstebanBorai/network-interface/blob/main/src/target/windows.rs>
 #[allow(unsafe_code)]
 pub fn lookup_interface_addr_ipv4(_name: &str) -> TraceResult<IpAddr> {
-    let mut raw_buf_len: u32 = 0;
-    let mut ip_interface_info: *mut IP_INTERFACE_INFO = std::ptr::null_mut();
+    /// Max tries allowed to call `GetAdaptersAddresses` on a loop basis
+    const MAX_TRIES: usize = 3;
+    // Initial buffer size is 15k per <https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses>
+    let mut buf_len: u32 = 15000;
+    let mut i = 0;
+    let flags = IpHelper::GAA_FLAG_SKIP_ANYCAST|IpHelper::GAA_FLAG_SKIP_MULTICAST|IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
+    let mut ip_adapter_address = std::ptr::null_mut();
 
-    // Perform the first call to know how many bytes to allocate
-    unsafe {
-        let ret_val = GetInterfaceInfo(Some(ip_interface_info), &mut raw_buf_len);
-        if ret_val != ERROR_INSUFFICIENT_BUFFER.0 {
-            return Err(TracerError::SystemError(format!("GetInterfaceInfo returned: {0}", ret_val)));
+    let mut res = ERROR_BUFFER_OVERFLOW.0;
+    while res == ERROR_BUFFER_OVERFLOW.0 && i < MAX_TRIES {
+        let layout = Layout::from_size_align(buf_len as usize, mem::align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>()).expect("Could not compute layout for buffer size");
+        let base_ptr = unsafe { alloc(layout) };
+        if base_ptr.is_null() {
+            return Err(TracerError::SystemError(format!("Could not allocate for layout {:?} of size {} words", layout, buf_len)));
         }
+
+        ip_adapter_address = base_ptr.cast();
+        res = unsafe { IpHelper::GetAdaptersAddresses(AF_INET, flags, Some(std::ptr::null_mut()), Some(ip_adapter_address), &mut buf_len) };
+    
+        if res == ERROR_BUFFER_OVERFLOW.0 { // buf_len too small, enlarge
+            unsafe { dealloc(base_ptr, layout) };
+            ip_adapter_address = std::ptr::null_mut();
+        }
+        else {
+            break;
+        }
+
+        i += 1;
     }
 
-    let buf_len = match raw_buf_len.try_into() {
-        Ok(buf_len) => buf_len,
-        Err(e) => return Err(TracerError::SystemError(format!("Invalid {0} buffer length: {1}", raw_buf_len, e))),
-    };
-    let layout = match Layout::from_size_align(buf_len, mem::align_of::<IP_INTERFACE_INFO>()) {
-        Ok(layout) => layout,
-        Err(e) => return Err(TracerError::SystemError(format!("Could not align IP_INTERFACE_INFO to {0} bytes length: {1}", buf_len, e))),
-    };
+    if res != ERROR_SUCCESS.0 {
+        return Err(TracerError::SystemError(format!("GetAdaptersAddresses returned error: {}", res)));
+    }
+
     unsafe {
-        let base_ptr = System.alloc(layout); // TODO avoid memory leak in case of errors
-        let ip_interface_info = base_ptr.cast();
-
-        // Perform the second call to get the data
-        let ret_val = GetInterfaceInfo(Some(ip_interface_info), &mut raw_buf_len);
-        if ret_val != NO_ERROR.0 {
-            return Err(TracerError::SystemError(format!("GetInterfaceInfo returned: {0}", ret_val)));
+        while ! ip_adapter_address.is_null() {
+           let name = (*ip_adapter_address).FriendlyName.to_string().unwrap();
+           println!("{}", name);
+           ip_adapter_address = (*ip_adapter_address).Next;
         }
-
-        let adapter_ptr = addr_of!((*ip_interface_info).Adapter).cast::<IP_ADAPTER_INDEX_MAP>();
-        let n_adapters = match (*ip_interface_info).NumAdapters.try_into() {
-            Ok(n_adapters) => n_adapters,
-            Err(e) => return Err(TracerError::SystemError(format!("Invalid adapter count: {0}", e))),
-        };
-        let adapters = slice::from_raw_parts(adapter_ptr, n_adapters);
-        println!("Num adapters: {}", adapters.len());
     }
 
     Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
