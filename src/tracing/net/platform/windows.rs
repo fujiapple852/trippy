@@ -1,11 +1,11 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
-use socket2::{Socket, SockAddr};
-use windows::Win32::Foundation::{NO_ERROR, ERROR_BUFFER_OVERFLOW};
+use socket2::{SockAddr, Socket};
 use std::alloc::{alloc, dealloc, Layout};
 use std::mem;
-use std::net::{IpAddr};
+use std::net::IpAddr;
 use std::time::Duration;
+use windows::Win32::Foundation::{NO_ERROR, ERROR_BUFFER_OVERFLOW};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKET_ADDRESS};
 
@@ -21,7 +21,9 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
 fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAddr> {
     // Max tries allowed to call `GetAdaptersAddresses` on a loop basis
     const MAX_TRIES: usize = 3;
-    let flags = IpHelper::GAA_FLAG_SKIP_ANYCAST|IpHelper::GAA_FLAG_SKIP_MULTICAST|IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
+    let flags = IpHelper::GAA_FLAG_SKIP_ANYCAST
+        | IpHelper::GAA_FLAG_SKIP_MULTICAST
+        | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
     // Initial buffer size is 15k per <https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses>
     let mut buf_len: u32 = 15000;
     let mut layout;
@@ -32,19 +34,35 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
 
     loop {
         layout = match Layout::from_size_align(
-                buf_len as usize,
-                mem::align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>()
-            ) {
-                Ok(layout) => layout,
-                Err(e) =>  return Err(TracerError::SystemError(format!("Could not compute layout for {} words: {}", buf_len, e))),
-            };
+            buf_len as usize,
+            mem::align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>()
+        ) {
+            Ok(layout) => layout,
+            Err(e) => {
+                return Err(TracerError::SystemError(format!(
+                    "Could not compute layout for {} words: {}",
+                    buf_len, e
+                )))
+            }
+        };
         list_ptr = unsafe { alloc(layout) };
         if list_ptr.is_null() {
-            return Err(TracerError::SystemError(format!("Could not allocate {} words for layout {:?}", buf_len, layout)));
+            return Err(TracerError::SystemError(format!(
+                "Could not allocate {} words for layout {:?}",
+                buf_len, layout
+            )));
         }
         ip_adapter_address = list_ptr.cast();
 
-        res = unsafe { IpHelper::GetAdaptersAddresses(family, flags, Some(std::ptr::null_mut()), Some(ip_adapter_address), &mut buf_len) };   
+        res = unsafe {
+            IpHelper::GetAdaptersAddresses(
+                family,
+                flags,
+                Some(std::ptr::null_mut()),
+                Some(ip_adapter_address),
+                &mut buf_len,
+            )
+        };   
         i += 1;
 
         if res != ERROR_BUFFER_OVERFLOW.0 || i > MAX_TRIES {
@@ -55,12 +73,15 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     }
 
     if res != NO_ERROR.0 {
-        return Err(TracerError::SystemError(format!("GetAdaptersAddresses returned error: {}", res)));
+        return Err(TracerError::SystemError(format!(
+            "GetAdaptersAddresses returned error: {}", 
+            res
+        )));
     }
 
-    while ! ip_adapter_address.is_null() {
+    while !ip_adapter_address.is_null() {
         let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
-        if name ==  friendly_name {
+        if name == friendly_name {
             // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
             // however, this is not supported by our function signature
             let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
@@ -76,9 +97,14 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         ip_adapter_address = unsafe { (*ip_adapter_address).Next };
     }
 
-    unsafe { dealloc(list_ptr, layout); }
+    unsafe {
+        dealloc(list_ptr, layout);
+    }
 
-    Err(TracerError::UnknownInterface(format!("could not find address for {}", name)))
+    Err(TracerError::UnknownInterface(format!(
+        "could not find address for {}", 
+        name
+    )))
 }
 
 #[allow(unsafe_code)]
@@ -92,8 +118,14 @@ unsafe fn socket_address_to_ipaddr(socket_address: &SOCKET_ADDRESS) -> TraceResu
         dst.copy_from_nonoverlapping(src, sockaddr_len);
         *len = socket_address.iSockaddrLength;
         Ok(())
-    }).unwrap();
-    sockaddr.as_socket().map(|s| s.ip()).ok_or_else(|| TracerError::SystemError(format!("could not extract address from socket_address {:?}", socket_address)))
+    })
+    .unwrap();
+    sockaddr.as_socket().map(|s| s.ip()).ok_or_else(|| {
+        TracerError::SystemError(format!(
+            "could not extract address from socket_address {:?}", 
+            socket_address
+        ))
+    })
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
