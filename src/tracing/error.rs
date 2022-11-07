@@ -24,4 +24,6 @@ pub enum TracerError {
     AddressNotAvailable(SocketAddr),
     #[error("invalid source IP address: {0}")]
     InvalidSourceAddr(IpAddr),
+    #[error("system error: {0}")]
+    SystemError(String),
 }
