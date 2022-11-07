@@ -1,14 +1,13 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
-use socket2::Socket;
+use socket2::{Socket, SockAddr};
 use windows::Win32::Foundation::{NO_ERROR, ERROR_BUFFER_OVERFLOW};
 use std::alloc::{alloc, dealloc, Layout};
 use std::mem;
 use std::net::{IpAddr};
 use std::time::Duration;
-use windows::core::PSTR;
 use windows::Win32::NetworkManagement::IpHelper;
-use windows::Win32::Networking::WinSock::{AF_INET, ADDRESS_FAMILY, AF_INET6, WSAAddressToStringA, WSAGetLastError, WSADATA, WSAStartup, WSACleanup};
+use windows::Win32::Networking::WinSock::{ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKET_ADDRESS};
 
 /// TODO
 #[allow(clippy::unnecessary_wraps)]
@@ -59,14 +58,6 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         return Err(TracerError::SystemError(format!("GetAdaptersAddresses returned error: {}", res)));
     }
 
-    unsafe {
-        let mut lpwsadata: WSADATA = mem::zeroed();
-        let res = WSAStartup(0x202, &mut lpwsadata);
-        if res != 0 {
-            return Err(TracerError::SystemError(format!("WSAStartup error: {}", WSAGetLastError().0 )))
-        }
-    }
-
     while ! ip_adapter_address.is_null() {
         let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
         if name ==  friendly_name {
@@ -74,26 +65,10 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             // however, this is not supported by our function signature
             let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
             // while !current_unicast.is_null() {
-                let lpsaaddress = unsafe { (*current_unicast).Address.lpSockaddr };
-                let dwaddresslength = unsafe { (*current_unicast).Address.iSockaddrLength };
-                let lpprotocolinfo = None;
-                let mut addressstringlength: u32 = match family {
-                    AF_INET => 16,
-                    AF_INET6 => 46,
-                    _ => return Err(TracerError::SystemError(format!("unsupported family: {}", family.0))),
-                };
-                let lpdwaddressstringlength = &mut addressstringlength as *mut u32;
-                let lpszaddressstring = PSTR::from_raw(vec![0u8; addressstringlength as usize].as_mut_ptr());
                 unsafe {
-                    let res = WSAAddressToStringA(lpsaaddress, dwaddresslength as u32, lpprotocolinfo, lpszaddressstring, lpdwaddressstringlength);
-                    if res != 0 {
-                        WSACleanup();
-                        return Err(TracerError::SystemError(format!("WSAAddressToStringA error: {}", WSAGetLastError().0)))
-                    }
-                    let address = lpszaddressstring.to_string().unwrap();
+                    let socket_address = (*current_unicast).Address;
                     dealloc(list_ptr, layout);
-                    WSACleanup();
-                    return Ok(address.parse().unwrap());
+                    return socket_address_to_ipaddr(&socket_address);
                 }
                 // current_unicast = unsafe { (*current_unicast).Next };
             // }
@@ -101,12 +76,24 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         ip_adapter_address = unsafe { (*ip_adapter_address).Next };
     }
 
-    unsafe {
-        dealloc(list_ptr, layout);
-        WSACleanup();
-    }
+    unsafe { dealloc(list_ptr, layout); }
 
     Err(TracerError::UnknownInterface(format!("could not find address for {}", name)))
+}
+
+#[allow(unsafe_code)]
+// Thank you <https://github.com/liranringel/ipconfig/blob/master/src/adapter.rs>
+unsafe fn socket_address_to_ipaddr(socket_address: &SOCKET_ADDRESS) -> TraceResult<IpAddr> {
+    let (_, sockaddr) = SockAddr::init(|storage, len| {
+        #[allow(clippy::cast_sign_loss)]
+        let sockaddr_len = socket_address.iSockaddrLength as usize;
+        let dst: *mut u8 = storage.cast();
+        let src: *const u8 = socket_address.lpSockaddr.cast();
+        dst.copy_from_nonoverlapping(src, sockaddr_len);
+        *len = socket_address.iSockaddrLength;
+        Ok(())
+    }).unwrap();
+    sockaddr.as_socket().map(|s| s.ip()).ok_or_else(|| TracerError::SystemError(format!("could not extract address from socket_address {:?}", socket_address)))
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
@@ -114,8 +101,8 @@ pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
 }
 
 /// TODO
-pub fn lookup_interface_addr_ipv6(_name: &str) -> TraceResult<IpAddr> {
-    unimplemented!()
+pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+    lookup_interface_addr(AF_INET6, name)
 }
 
 /// TODO
@@ -181,10 +168,19 @@ pub fn is_conn_refused_error(_code: i32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{IpAddr, Ipv4Addr};
+    use std::net::IpAddr;
 
     #[test]
     fn test_ipv4_interface_lookup() {
-        assert_eq!(lookup_interface_addr_ipv4("Ethernet 3").unwrap(), IpAddr::V4(Ipv4Addr::new(192,168,2,2)));
+        let res = lookup_interface_addr_ipv4("Ethernet 3").unwrap();
+        let addr: IpAddr = "192.168.2.2".parse().unwrap();
+        assert_eq!(res, addr);
+    }
+
+    #[test]
+    fn test_ipv6_interface_lookup() {
+        let res = lookup_interface_addr_ipv6("Ethernet 3").unwrap();
+        let addr: IpAddr = "fe80::4460:bf4c:7f3d:6a12".parse().unwrap();
+        assert_eq!(res, addr);
     }
 }
