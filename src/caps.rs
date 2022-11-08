@@ -51,6 +51,7 @@ pub fn ensure_caps() -> anyhow::Result<()> {
 }
 
 #[cfg(not(unix))]
+#[allow(clippy::unnecessary_wraps)]
 /// Drop all capabilities.
 ///
 /// This is a no-op on non-Linux systems.

@@ -1,15 +1,19 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
-use socket2::{SockAddr, Socket};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::alloc::{alloc, dealloc, Layout};
+use std::cmp::Ordering;
 use std::mem;
 use std::net::IpAddr;
+// use std::os::windows::io::{FromRawSocket, IntoRawSocket};
+use std::os::windows::prelude::AsRawSocket;
 use std::time::Duration;
 use widestring::WideCString;
 use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
 use windows_sys::Win32::NetworkManagement::IpHelper;
 use windows_sys::Win32::Networking::WinSock::{
-    ADDRESS_FAMILY, AF_INET, AF_INET6, IPPROTO_RAW, SOCKET_ADDRESS,
+    select, WSAGetLastError, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET, IPPROTO_RAW,
+    SOCKET_ADDRESS, TIMEVAL, WSAEINPROGRESS, WSAEREFUSED,
 };
 
 /// TODO
@@ -144,64 +148,137 @@ pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
     lookup_interface_addr(AF_INET6, name)
 }
 
-/// TODO
+/// TOTEST
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+    socket.set_nonblocking(true)?;
+    socket.set_header_included(true)?;
+    Ok(socket)
 }
 
-/// TODO
+/// TOTEST
 pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+    socket.set_nonblocking(true)?;
+    socket.set_header_included(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
+    socket.set_nonblocking(true)?;
+    socket.set_header_included(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+    socket.set_nonblocking(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
+    socket.set_nonblocking(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+    socket.set_nonblocking(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_nonblocking(true)?;
+    // see <https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ> for
+    // discussion about SO_REUSEPORT & SO_REUSEADDR on various OS
+    socket.set_reuse_address(true)?;
+    Ok(socket)
 }
 
 /// TODO
 pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
+    let socket = Socket::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_nonblocking(true)?;
+    // see <https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ> for
+    // discussion about SO_REUSEPORT & SO_REUSEADDR on various OS
+    socket.set_reuse_address(true)?;
+    Ok(socket)
 }
 
 /// TODO
-pub fn is_readable(_sock: &Socket, _timeout: Duration) -> TraceResult<bool> {
-    unimplemented!()
+#[allow(unsafe_code,clippy::cast_possible_wrap)]
+pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
+    let mut timeval: TIMEVAL = unsafe { mem::zeroed::<TIMEVAL>() };
+    timeval.tv_sec = timeout.as_secs() as i32;
+    timeval.tv_usec = timeout.subsec_micros() as i32;
+    let mut fds: FD_SET = unsafe { mem::zeroed::<FD_SET>() };
+    fds.fd_count = 1;
+    fds.fd_array[0] = sock.as_raw_socket() as usize;
+    let readable = unsafe {
+        select(
+            1,
+            &mut fds,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &timeval,
+        )
+    };
+    match 0.cmp(&readable) {
+        Ordering::Less => Err(TracerError::SystemError(format!(
+            "select error: {}",
+            unsafe { WSAGetLastError() }
+        ))),
+        Ordering::Equal => Err(TracerError::SystemError(
+            "select: timeout expired".to_string(),
+        )),
+        Ordering::Greater => Ok(readable == 1),
+    }
 }
 
 /// TODO
-pub fn is_writable(_sock: &Socket) -> TraceResult<bool> {
-    unimplemented!()
+#[allow(unsafe_code)]
+pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
+    let timeval: TIMEVAL = unsafe { mem::zeroed::<TIMEVAL>() };
+    let mut fds: FD_SET = unsafe { mem::zeroed::<FD_SET>() };
+    fds.fd_count = 1;
+    fds.fd_array[0] = sock.as_raw_socket() as usize;
+    let writable = unsafe {
+        select(
+            1,
+            std::ptr::null_mut(),
+            &mut fds,
+            std::ptr::null_mut(),
+            &timeval,
+        )
+    };
+    match 0.cmp(&writable) {
+        Ordering::Less => Err(TracerError::SystemError(format!(
+            "select error: {}",
+            unsafe { WSAGetLastError() }
+        ))),
+        Ordering::Equal => Err(TracerError::SystemError(
+            "select: timeout expired".to_string(),
+        )),
+        Ordering::Greater => Ok(writable == 1),
+    }
 }
 
 /// TODO
-pub fn is_in_progress_error(_code: i32) -> bool {
-    unimplemented!()
+pub fn is_in_progress_error(code: i32) -> bool {
+    code == WSAEINPROGRESS
 }
 
 /// TODO
-pub fn is_conn_refused_error(_code: i32) -> bool {
-    unimplemented!()
+pub fn is_conn_refused_error(code: i32) -> bool {
+    code == WSAEREFUSED
 }
 
 #[cfg(test)]
