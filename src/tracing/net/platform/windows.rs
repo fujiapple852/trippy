@@ -5,9 +5,12 @@ use std::alloc::{alloc, dealloc, Layout};
 use std::mem;
 use std::net::IpAddr;
 use std::time::Duration;
-use windows::Win32::Foundation::{NO_ERROR, ERROR_BUFFER_OVERFLOW};
-use windows::Win32::NetworkManagement::IpHelper;
-use windows::Win32::Networking::WinSock::{ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKET_ADDRESS};
+use widestring::WideCString;
+use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
+use windows_sys::Win32::NetworkManagement::IpHelper;
+use windows_sys::Win32::Networking::WinSock::{
+    ADDRESS_FAMILY, AF_INET, AF_INET6, IPPROTO_RAW, SOCKET_ADDRESS,
+};
 
 /// TODO
 #[allow(clippy::unnecessary_wraps)]
@@ -15,7 +18,6 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
-/// TODO
 // inspired by <https://github.com/EstebanBorai/network-interface/blob/main/src/target/windows.rs>
 #[allow(unsafe_code)]
 fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAddr> {
@@ -35,7 +37,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     loop {
         layout = match Layout::from_size_align(
             buf_len as usize,
-            mem::align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>()
+            mem::align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>(),
         ) {
             Ok(layout) => layout,
             Err(e) => {
@@ -58,40 +60,46 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             IpHelper::GetAdaptersAddresses(
                 family,
                 flags,
-                Some(std::ptr::null_mut()),
-                Some(ip_adapter_address),
+                std::ptr::null_mut(),
+                ip_adapter_address,
                 &mut buf_len,
             )
-        };   
+        };
         i += 1;
 
-        if res != ERROR_BUFFER_OVERFLOW.0 || i > MAX_TRIES {
+        if res != ERROR_BUFFER_OVERFLOW || i > MAX_TRIES {
             break;
         }
 
         unsafe { dealloc(list_ptr, layout) };
     }
 
-    if res != NO_ERROR.0 {
+    if res != NO_ERROR {
         return Err(TracerError::SystemError(format!(
-            "GetAdaptersAddresses returned error: {}", 
+            "GetAdaptersAddresses returned error: {}",
             res
         )));
     }
 
     while !ip_adapter_address.is_null() {
-        let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
-        if name == friendly_name {
+        let friendly_name = unsafe { (*ip_adapter_address).FriendlyName };
+        let friendly_name_string = unsafe {
+            WideCString::from_ptr_str(friendly_name)
+                .to_string()
+                .unwrap()
+        };
+        if name == friendly_name_string {
             // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
             // however, this is not supported by our function signature
             let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
             // while !current_unicast.is_null() {
-                unsafe {
-                    let socket_address = (*current_unicast).Address;
-                    dealloc(list_ptr, layout);
-                    return socket_address_to_ipaddr(&socket_address);
-                }
-                // current_unicast = unsafe { (*current_unicast).Next };
+            unsafe {
+                let socket_address = (*current_unicast).Address;
+                let ip_addr = socket_address_to_ipaddr(&socket_address);
+                dealloc(list_ptr, layout);
+                return ip_addr;
+            }
+            // current_unicast = unsafe { (*current_unicast).Next };
             // }
         }
         ip_adapter_address = unsafe { (*ip_adapter_address).Next };
@@ -102,7 +110,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     }
 
     Err(TracerError::UnknownInterface(format!(
-        "could not find address for {}", 
+        "could not find address for {}",
         name
     )))
 }
@@ -122,8 +130,8 @@ unsafe fn socket_address_to_ipaddr(socket_address: &SOCKET_ADDRESS) -> TraceResu
     .unwrap();
     sockaddr.as_socket().map(|s| s.ip()).ok_or_else(|| {
         TracerError::SystemError(format!(
-            "could not extract address from socket_address {:?}", 
-            socket_address
+            "could not extract address from socket_address {:?}",
+            socket_address.lpSockaddr
         ))
     })
 }
@@ -132,7 +140,6 @@ pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
     lookup_interface_addr(AF_INET, name)
 }
 
-/// TODO
 pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
     lookup_interface_addr(AF_INET6, name)
 }
