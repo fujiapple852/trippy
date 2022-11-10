@@ -219,7 +219,7 @@ impl TracerChannel {
                 return Err(TracerError::IoError(std::io::Error::last_os_error()));
             }
         }
-        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
+        if platform::is_readable(&self.recv_socket, self.read_timeout, &mut recv_ol)? {
             match self.addr_family {
                 TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,

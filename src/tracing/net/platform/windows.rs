@@ -9,12 +9,14 @@ use std::net::IpAddr;
 use std::os::windows::prelude::AsRawSocket;
 use std::time::Duration;
 use widestring::WideCString;
-use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
+use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::NetworkManagement::IpHelper;
 use windows_sys::Win32::Networking::WinSock::{
-    select, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET, IPPROTO_RAW, SOCKET_ADDRESS, TIMEVAL,
-    WSAEINPROGRESS, WSAEREFUSED,
+    select, WSAGetOverlappedResult, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET, IPPROTO_RAW,
+    SOCKET_ADDRESS, TIMEVAL, WSAEINPROGRESS, WSAEREFUSED,
 };
+use windows_sys::Win32::System::Threading::WaitForSingleObject;
+use windows_sys::Win32::System::IO::OVERLAPPED;
 
 /// TODO
 #[allow(clippy::unnecessary_wraps)]
@@ -215,28 +217,28 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 
 /// TODO
 #[allow(unsafe_code, clippy::cast_possible_wrap)]
-pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
-    let mut timeval: TIMEVAL = unsafe { mem::zeroed::<TIMEVAL>() };
-    timeval.tv_sec = timeout.as_secs() as i32;
-    timeval.tv_usec = timeout.subsec_micros() as i32;
-    let mut fds: FD_SET = unsafe { mem::zeroed::<FD_SET>() };
-    fds.fd_count = 1;
-    fds.fd_array[0] = sock.as_raw_socket() as usize;
-    let readable = unsafe {
-        select(
-            1,
-            &mut fds,
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            &timeval,
-        )
-    };
-    match 0.cmp(&readable) {
-        Ordering::Less => Err(TracerError::IoError(Error::last_os_error())),
-        Ordering::Equal => Err(TracerError::SystemError(
-            "select: timeout expired".to_string(),
-        )),
-        Ordering::Greater => Ok(readable == 1),
+pub fn is_readable(
+    sock: &Socket,
+    timeout: Duration,
+    recv_ol: &mut OVERLAPPED,
+) -> TraceResult<bool> {
+    unsafe {
+        match WaitForSingleObject(recv_ol.hEvent, timeout.as_millis() as u32) {
+            WAIT_FAILED => Err(TracerError::IoError(std::io::Error::last_os_error())),
+            WAIT_TIMEOUT => Ok(false),
+            _ => {
+                let lpcbtransfer = 0;
+                let lpdwflags = 0;
+                let readable = WSAGetOverlappedResult(
+                    sock.as_raw_socket() as usize,
+                    recv_ol,
+                    lpcbtransfer as *mut _,
+                    1,
+                    lpdwflags as *mut _,
+                );
+                Ok(readable == 0)
+            }
+        }
     }
 }
 
