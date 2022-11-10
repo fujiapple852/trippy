@@ -3,17 +3,17 @@ use crate::tracing::error::{TraceResult, TracerError};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::alloc::{alloc, dealloc, Layout};
 use std::cmp::Ordering;
+use std::io::Error;
 use std::mem;
 use std::net::IpAddr;
-// use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::os::windows::prelude::AsRawSocket;
 use std::time::Duration;
 use widestring::WideCString;
 use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
 use windows_sys::Win32::NetworkManagement::IpHelper;
 use windows_sys::Win32::Networking::WinSock::{
-    select, WSAGetLastError, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET, IPPROTO_RAW,
-    SOCKET_ADDRESS, TIMEVAL, WSAEINPROGRESS, WSAEREFUSED,
+    select, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET, IPPROTO_RAW, SOCKET_ADDRESS, TIMEVAL,
+    WSAEINPROGRESS, WSAEREFUSED,
 };
 
 /// TODO
@@ -214,7 +214,7 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 }
 
 /// TODO
-#[allow(unsafe_code,clippy::cast_possible_wrap)]
+#[allow(unsafe_code, clippy::cast_possible_wrap)]
 pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     let mut timeval: TIMEVAL = unsafe { mem::zeroed::<TIMEVAL>() };
     timeval.tv_sec = timeout.as_secs() as i32;
@@ -232,10 +232,7 @@ pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
         )
     };
     match 0.cmp(&readable) {
-        Ordering::Less => Err(TracerError::SystemError(format!(
-            "select error: {}",
-            unsafe { WSAGetLastError() }
-        ))),
+        Ordering::Less => Err(TracerError::IoError(Error::last_os_error())),
         Ordering::Equal => Err(TracerError::SystemError(
             "select: timeout expired".to_string(),
         )),
@@ -260,10 +257,7 @@ pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
         )
     };
     match 0.cmp(&writable) {
-        Ordering::Less => Err(TracerError::SystemError(format!(
-            "select error: {}",
-            unsafe { WSAGetLastError() }
-        ))),
+        Ordering::Less => Err(TracerError::IoError(Error::last_os_error())),
         Ordering::Equal => Err(TracerError::SystemError(
             "select: timeout expired".to_string(),
         )),
@@ -273,7 +267,7 @@ pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
 
 /// TODO
 pub fn is_in_progress_error(code: i32) -> bool {
-    code == WSAEINPROGRESS
+    code != WSAEINPROGRESS
 }
 
 /// TODO

@@ -50,6 +50,18 @@ impl TracerChannel {
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
     pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
+        use std::mem;
+        use windows_sys::Win32::Networking::WinSock::{WSAStartup, WSADATA};
+        const WINSOCK_VERSION: u16 = 0x202; // 2.2
+
+        unsafe {
+            let mut wsadata: WSADATA = mem::zeroed();
+            let lpwsadata: *mut WSADATA = &mut wsadata;
+            if WSAStartup(WINSOCK_VERSION, lpwsadata) != 0 {
+                return Err(TracerError::IoError(std::io::Error::last_os_error()));
+            }
+        }
+
         if usize::from(config.packet_size.0) > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(usize::from(
                 config.packet_size.0,
@@ -193,6 +205,20 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        use windows_sys::Win32::Foundation::HANDLE;
+        use windows_sys::Win32::Networking::WinSock::WSACreateEvent;
+        use windows_sys::Win32::System::IO::OVERLAPPED;
+
+        const WSA_INVALID_EVENT: HANDLE = 0;
+
+        let mut recv_ol: OVERLAPPED;
+        unsafe {
+            recv_ol = std::mem::zeroed();
+            recv_ol.hEvent = WSACreateEvent();
+            if recv_ol.hEvent == WSA_INVALID_EVENT {
+                return Err(TracerError::IoError(std::io::Error::last_os_error()));
+            }
+        }
         if platform::is_readable(&self.recv_socket, self.read_timeout)? {
             match self.addr_family {
                 TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
@@ -200,6 +226,7 @@ impl TracerChannel {
                     self.protocol,
                     self.multipath_strategy,
                     self.port_direction,
+                    &mut recv_ol,
                 ),
                 TracerAddrFamily::Ipv6 => {
                     ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)

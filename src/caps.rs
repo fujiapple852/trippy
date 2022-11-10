@@ -43,18 +43,27 @@ pub fn drop_caps() -> anyhow::Result<()> {
 
 // Windows
 
-#[cfg(not(unix))]
+#[cfg(windows)]
 #[allow(clippy::unnecessary_wraps)]
 /// Ensure the effective user is `root`.
 pub fn ensure_caps() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
 #[allow(clippy::unnecessary_wraps)]
 /// Drop all capabilities.
 ///
 /// This is a no-op on non-Linux systems.
 pub fn drop_caps() -> anyhow::Result<()> {
+    /*
+    use windows_sys::Win32::Networking::WinSock::WSACleanup;
+
+    unsafe {
+        if WSACleanup() != 0 {
+            return Err(anyhow::anyhow!(std::io::Error::last_os_error()));
+        }
+    }
+     */
     Ok(())
 }

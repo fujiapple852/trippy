@@ -18,9 +18,11 @@ use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeO
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use socket2::{SockAddr, Socket};
-use std::io::{ErrorKind, Read};
+use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
+use std::os::windows::prelude::AsRawSocket;
 use std::time::SystemTime;
+use windows_sys::Win32::Networking::WinSock::WSARecvFrom;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
@@ -181,13 +183,16 @@ pub fn dispatch_tcp_probe(
     Ok(socket)
 }
 
+use windows_sys::Win32::System::IO::OVERLAPPED;
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
     multipath_strategy: MultipathStrategy,
     direction: PortDirection,
+    recv_ol: &mut OVERLAPPED,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
+    #[cfg(not(windows))]
     match recv_socket.read(&mut buf) {
         Ok(_bytes_read) => {
             let ipv4 = Ipv4Packet::new_view(&buf).req()?;
@@ -203,6 +208,56 @@ pub fn recv_icmp_probe(
             _ => Err(TracerError::IoError(err)),
         },
     }
+    #[cfg(windows)]
+    match unsafe { windows_read(recv_socket, &mut buf, recv_ol) } {
+        Ok(_bytes_read) => {
+            let ipv4 = Ipv4Packet::new_view(&buf).req()?;
+            Ok(extract_probe_resp(
+                protocol,
+                multipath_strategy,
+                direction,
+                &ipv4,
+            )?)
+        }
+        Err(err) => match err.kind() {
+            ErrorKind::WouldBlock => Ok(None),
+            _ => Err(TracerError::IoError(err)),
+        },
+    }
+}
+
+unsafe fn windows_read(
+    sock: &mut Socket,
+    buf: &mut [u8],
+    recv_ol: &mut OVERLAPPED,
+) -> std::io::Result<usize> {
+    use std::cmp::min;
+    use std::ffi::c_int;
+    use windows_sys::Win32::Networking::WinSock::{SOCKADDR, SOCKET, SOCKET_ERROR};
+
+    const MAX_BUF_LEN: usize = <c_int>::max_value() as usize;
+
+    let mut nread = 0;
+    let mut flags = 0;
+    let mut from = std::mem::zeroed();
+    #[allow(clippy::cast_possible_wrap)]
+    let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
+    let ret = WSARecvFrom(
+        sock.as_raw_socket() as SOCKET,
+        buf.as_mut_ptr().cast(),
+        min(buf.len(), MAX_BUF_LEN) as u32,
+        &mut nread,
+        &mut flags,
+        &mut from,
+        &mut fromlen,
+        recv_ol,
+        None,
+    );
+    if ret == SOCKET_ERROR {
+        return Err(std::io::Error::last_os_error());
+    };
+
+    Ok(nread as usize)
 }
 
 pub fn recv_tcp_socket(
