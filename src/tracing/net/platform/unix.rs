@@ -191,7 +191,7 @@ pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
     Ok(writable == 1)
 }
 
-pub fn is_in_progress_error(code: i32) -> bool {
+pub fn is_not_in_progress_error(code: i32) -> bool {
     nix::Error::from_i32(code) != nix::Error::EINPROGRESS
 }
 

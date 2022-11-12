@@ -123,7 +123,7 @@ pub fn dispatch_tcp_probe(
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if platform::is_in_progress_error(code) {
+                if platform::is_not_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
