@@ -71,7 +71,7 @@ pub fn is_writable(_sock: &Socket) -> TraceResult<bool> {
 }
 
 /// TODO
-pub fn is_in_progress_error(_code: i32) -> bool {
+pub fn is_not_in_progress_error(_code: i32) -> bool {
     unimplemented!()
 }
 
