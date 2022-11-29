@@ -371,23 +371,7 @@ fn discover_local_addr(
     <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     TBD We choose the first one arbitrarily.
      */
-    unsafe {
-        let af = u32::from((*(src.cast::<SOCKADDR>())).sa_family);
-        if af == AF_INET.0 {
-            Ok(IpAddr::V4(Ipv4Addr::from(
-                (*(src.cast::<SOCKADDR_IN>())).sin_addr.S_un.S_addr,
-            )))
-        } else if af == AF_INET6.0 {
-            Ok(IpAddr::V6(Ipv6Addr::from(
-                (*(src.cast::<SOCKADDR_IN6>())).sin6_addr.u.Byte,
-            )))
-        } else {
-            Err(TracerError::IoError(Error::new(
-                ErrorKind::Unsupported,
-                format!("Unsupported address family: {}", af),
-            )))
-        }
-    }
+    unsafe { platform::sockaddrptr_to_ipaddr(src.cast()) }
 }
 
 #[cfg(unix)]

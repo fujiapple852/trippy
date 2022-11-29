@@ -1,8 +1,16 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
-use crate::tracing::error::TraceResult;
-use std::net::IpAddr;
+use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::net::ipv6;
+use std::alloc::{alloc, dealloc, Layout};
+use std::io::{Error, ErrorKind};
+use std::mem::align_of;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::time::Duration;
-use windows::Win32::Networking::WinSock::SOCKET;
+use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
+use windows::Win32::NetworkManagement::IpHelper;
+use windows::Win32::Networking::WinSock::{
+    ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET,
+};
 
 type Socket = SOCKET;
 
@@ -12,14 +20,123 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
-/// TODO
-pub fn lookup_interface_addr_ipv4(_name: &str) -> TraceResult<IpAddr> {
-    unimplemented!()
+// inspired by <https://github.com/EstebanBorai/network-interface/blob/main/src/target/windows.rs>
+#[allow(unsafe_code)]
+fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAddr> {
+    // Max tries allowed to call `GetAdaptersAddresses` on a loop basis
+    const MAX_TRIES: usize = 3;
+    let flags = IpHelper::GAA_FLAG_SKIP_ANYCAST
+        | IpHelper::GAA_FLAG_SKIP_MULTICAST
+        | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
+    // Initial buffer size is 15k per <https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses>
+    let mut buf_len: u32 = 15000;
+    let mut layout;
+    let mut list_ptr;
+    let mut ip_adapter_address;
+    let mut res;
+    let mut i = 0;
+
+    loop {
+        layout = match Layout::from_size_align(
+            buf_len as usize,
+            align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>(),
+        ) {
+            Ok(layout) => layout,
+            Err(e) => {
+                return Err(TracerError::ErrorString(format!(
+                    "Could not compute layout for {} words: {}",
+                    buf_len, e
+                )))
+            }
+        };
+        list_ptr = unsafe { alloc(layout) };
+        if list_ptr.is_null() {
+            return Err(TracerError::ErrorString(format!(
+                "Could not allocate {} words for layout {:?}",
+                buf_len, layout
+            )));
+        }
+        ip_adapter_address = list_ptr.cast();
+
+        res = unsafe {
+            IpHelper::GetAdaptersAddresses(
+                family,
+                flags,
+                None,
+                Some(ip_adapter_address),
+                &mut buf_len,
+            )
+        };
+        i += 1;
+
+        if res != ERROR_BUFFER_OVERFLOW.0 || i > MAX_TRIES {
+            break;
+        }
+
+        unsafe { dealloc(list_ptr, layout) };
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    if res != NO_ERROR.0 {
+        return Err(TracerError::ErrorString(format!(
+            "GetAdaptersAddresses returned error: {}",
+            Error::from_raw_os_error(res as i32)
+        )));
+    }
+
+    while !ip_adapter_address.is_null() {
+        let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
+        if name == friendly_name {
+            // PANIC should not occur as GetAdaptersAddress should return valid PWSTR
+            // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
+            // however, this is not supported by our function signature
+            let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
+            // while !current_unicast.is_null() {
+            unsafe {
+                let socket_address = (*current_unicast).Address;
+                let ip_addr = sockaddrptr_to_ipaddr(socket_address.lpSockaddr);
+                dealloc(list_ptr, layout);
+                return ip_addr;
+            }
+            // current_unicast = unsafe { (*current_unicast).Next };
+            // }
+        }
+        ip_adapter_address = unsafe { (*ip_adapter_address).Next };
+    }
+
+    unsafe {
+        dealloc(list_ptr, layout);
+    }
+
+    Err(TracerError::UnknownInterface(format!(
+        "could not find address for {}",
+        name
+    )))
 }
 
-/// TODO
-pub fn lookup_interface_addr_ipv6(_name: &str) -> TraceResult<IpAddr> {
-    unimplemented!()
+#[allow(unsafe_code)]
+pub unsafe fn sockaddrptr_to_ipaddr(ptr: *mut SOCKADDR) -> TraceResult<IpAddr> {
+    let af = u32::from((*ptr).sa_family);
+    if af == AF_INET.0 {
+        let ipv4addr = (*(ptr.cast::<SOCKADDR_IN>())).sin_addr;
+        Ok(IpAddr::V4(Ipv4Addr::from(ipv4addr)))
+    } else if af == AF_INET6.0 {
+        let ipv6addr = (*(ptr.cast::<SOCKADDR_IN6>())).sin6_addr;
+        Ok(IpAddr::V6(Ipv6Addr::from(ipv6addr)))
+    } else {
+        Err(TracerError::IoError(Error::new(
+            ErrorKind::Unsupported,
+            format!("Unsupported address family: {}", af),
+        )))
+    }
+}
+
+pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
+    lookup_interface_addr(AF_INET, name)
+}
+
+pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+    lookup_interface_addr(AF_INET6, name)
 }
 
 /// TODO
@@ -80,4 +197,24 @@ pub fn is_not_in_progress_error(_code: i32) -> bool {
 /// TODO
 pub fn is_conn_refused_error(_code: i32) -> bool {
     unimplemented!()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::IpAddr;
+
+    #[test]
+    fn test_ipv4_interface_lookup() {
+        let res = lookup_interface_addr_ipv4("vEthernet (External Switch)").unwrap();
+        let addr: IpAddr = "192.168.2.2".parse().unwrap();
+        assert_eq!(res, addr);
+    }
+
+    #[test]
+    fn test_ipv6_interface_lookup() {
+        let res = lookup_interface_addr_ipv6("vEthernet (External Switch)").unwrap();
+        let addr: IpAddr = "fe80::f31a:9c2f:4f14:105b".parse().unwrap();
+        assert_eq!(res, addr);
+    }
 }
