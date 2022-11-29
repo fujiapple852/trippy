@@ -2,6 +2,7 @@ use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
+use crate::tracing::net::{ipv4, ipv6};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -130,7 +131,6 @@ impl Network for TracerChannel {
 }
 
 impl TracerChannel {
-    #[cfg(unix)]
     /// Dispatch a ICMP probe.
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.addr_family, self.src_addr, self.dest_addr) {

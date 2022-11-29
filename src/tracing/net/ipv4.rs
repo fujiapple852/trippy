@@ -19,11 +19,11 @@ use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::{ErrorKind, Read};
+use std::io::{Error, ErrorKind, Read};
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 #[cfg(windows)]
-use windows::Win32::Networking::WinSock::SOCKET;
+use windows::Win32::Networking::WinSock::{sendto, SOCKET};
 
 #[cfg(windows)]
 type Socket = SOCKET;
@@ -82,6 +82,61 @@ pub fn dispatch_icmp_probe(
     )?;
     let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
     icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    Ok(())
+}
+
+#[cfg(windows)]
+#[allow(clippy::too_many_arguments)]
+#[allow(unsafe_code)]
+pub fn dispatch_icmp_probe(
+    icmp_send_socket: &mut Socket,
+    probe: Probe,
+    src_addr: Ipv4Addr,
+    dest_addr: Ipv4Addr,
+    identifier: TraceId,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
+    ipv4_byte_order: PlatformIpv4FieldByteOrder,
+) -> TraceResult<()> {
+    use windows::Win32::Networking::WinSock::SOCKET_ERROR;
+
+    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+    let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
+    let packet_size = usize::from(packet_size.0);
+    if packet_size > MAX_PACKET_SIZE {
+        return Err(TracerError::InvalidPacketSize(packet_size));
+    }
+    let echo_request = make_echo_request_icmp_packet(
+        &mut icmp_buf,
+        identifier,
+        probe.sequence,
+        icmp_payload_size(packet_size),
+        payload_pattern,
+    )?;
+    let ipv4 = make_ipv4_packet(
+        &mut ipv4_buf,
+        ipv4_byte_order,
+        IpProtocol::Icmp,
+        src_addr,
+        dest_addr,
+        probe.ttl.0,
+        0,
+        echo_request.packet(),
+    )?;
+    // let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
+    let (addr, addrlen) = platform::ipaddr_to_sockaddr(IpAddr::V4(dest_addr));
+    let rc = unsafe {
+        sendto(
+            *icmp_send_socket,
+            ipv4.packet(),
+            packet_size as i32,
+            std::ptr::addr_of!(addr).cast(),
+            addrlen as i32,
+        )
+    };
+    if rc == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
     Ok(())
 }
 
