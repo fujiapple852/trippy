@@ -1,16 +1,23 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::ipv6;
 use std::alloc::{alloc, dealloc, Layout};
 use std::io::{Error, ErrorKind};
+use std::mem::MaybeUninit;
 use std::mem::{align_of, size_of};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+use std::ptr::addr_of_mut;
 use std::time::Duration;
+use windows::core::PSTR;
 use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
-    ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET,
+    socket, WSACreateEvent, WSARecvFrom, ADDRESS_FAMILY, AF_INET, AF_INET6, INVALID_SOCKET,
+    IPPROTO_ICMP, IPPROTO_ICMPV6, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR,
+    SOCK_RAW, WSABUF,
 };
+use windows::Win32::System::IO::OVERLAPPED;
 
 type Socket = SOCKET;
 
@@ -121,6 +128,7 @@ pub unsafe fn sockaddrptr_to_ipaddr(ptr: *mut SOCKADDR) -> TraceResult<IpAddr> {
         let ipv4addr = (*(ptr.cast::<SOCKADDR_IN>())).sin_addr;
         Ok(IpAddr::V4(Ipv4Addr::from(ipv4addr)))
     } else if af == AF_INET6.0 {
+        #[allow(clippy::cast_ptr_alignment)]
         let ipv6addr = (*(ptr.cast::<SOCKADDR_IN6>())).sin6_addr;
         Ok(IpAddr::V6(Ipv6Addr::from(ipv6addr)))
     } else {
@@ -171,8 +179,56 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
 }
 
 /// TODO
-pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
+#[allow(unsafe_code)]
+pub fn make_recv_socket_ipv4() -> TraceResult<(Socket, OVERLAPPED)> {
+    #[allow(clippy::cast_possible_wrap)]
+    let s = unsafe { socket(AF_INET.0 as i32, i32::from(SOCK_RAW), IPPROTO_ICMP.0) };
+    if s == INVALID_SOCKET {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+
+    let mut uninit = MaybeUninit::<OVERLAPPED>::zeroed();
+    let ptr = uninit.as_mut_ptr();
+    let mut recv_ol = unsafe {
+        let ev = WSACreateEvent();
+        if ev.is_invalid() {
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        addr_of_mut!((*ptr).hEvent).write(ev);
+        uninit.assume_init()
+    };
+
+    let mut nread = 0;
+    let mut flags = 0;
+    let mut from = MaybeUninit::<SOCKADDR>::zeroed();
+    #[allow(clippy::cast_possible_wrap)]
+    let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
+
+    let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
+    let ptr = unsafe { std::alloc::alloc(layout) };
+
+    let wbuf = WSABUF {
+        len: MAX_PACKET_SIZE as u32,
+        buf: PSTR::from_raw(ptr),
+    };
+
+    let ret = unsafe {
+        WSARecvFrom(
+            s,
+            &[wbuf],
+            Some(&mut nread),
+            &mut flags,
+            Some(from.as_mut_ptr()),
+            Some(&mut fromlen),
+            Some(&mut recv_ol),
+            None,
+        )
+    };
+
+    if ret == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
+    Ok((s, recv_ol))
 }
 
 /// TODO
@@ -185,9 +241,57 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
     unimplemented!()
 }
 
-/// TODO
-pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
+#[allow(unsafe_code)]
+pub fn make_recv_socket_ipv6() -> TraceResult<(Socket, OVERLAPPED)> {
+    #[allow(clippy::cast_possible_wrap)]
+    let s = unsafe { socket(AF_INET6.0 as i32, i32::from(SOCK_RAW), IPPROTO_ICMPV6.0) };
+    if s == INVALID_SOCKET {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+
+    let mut uninit = MaybeUninit::<OVERLAPPED>::zeroed();
+    let ptr = uninit.as_mut_ptr();
+    let mut recv_ol = unsafe {
+        let ev = WSACreateEvent();
+        if ev.is_invalid() {
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        addr_of_mut!((*ptr).hEvent).write(ev);
+        uninit.assume_init()
+    };
+
+    let mut nread = 0;
+    let mut flags = 0;
+    let mut from = MaybeUninit::<SOCKADDR>::zeroed();
+    #[allow(clippy::cast_possible_wrap)]
+    let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
+
+    let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
+    let ptr = unsafe { std::alloc::alloc(layout) };
+
+    let wbuf = WSABUF {
+        len: MAX_PACKET_SIZE as u32,
+        buf: PSTR::from_raw(ptr),
+    };
+
+    let ret = unsafe {
+        WSARecvFrom(
+            s,
+            &[wbuf],
+            Some(&mut nread),
+            &mut flags,
+            Some(from.as_mut_ptr()),
+            Some(&mut fromlen),
+            Some(&mut recv_ol),
+            None,
+        )
+    };
+
+    if ret == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
+
+    Ok((s, recv_ol))
 }
 
 /// TODO

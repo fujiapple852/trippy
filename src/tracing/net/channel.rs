@@ -20,9 +20,10 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 #[cfg(windows)]
 use windows::Win32::Networking::WinSock::{
-    bind, socket, WSAIoctl, AF_INET, AF_INET6, IPPROTO_UDP, SIO_ROUTING_INTERFACE_QUERY, SOCKET,
-    SOCKET_ERROR, SOCK_DGRAM,
+    bind, socket, WSAIoctl, AF_INET, AF_INET6, INVALID_SOCKET, IPPROTO_UDP,
+    SIO_ROUTING_INTERFACE_QUERY, SOCKET, SOCKET_ERROR, SOCK_DGRAM,
 };
+use windows::Win32::System::IO::OVERLAPPED;
 
 #[cfg(windows)]
 type Socket = SOCKET;
@@ -55,6 +56,8 @@ pub struct TracerChannel {
     icmp_send_socket: Socket,
     udp_send_socket: Socket,
     recv_socket: Socket,
+    #[cfg(windows)]
+    recv_ol: OVERLAPPED,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
@@ -71,7 +74,10 @@ impl TracerChannel {
         let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
         let udp_send_socket = make_udp_send_socket(config.addr_family)?;
+        #[cfg(unix)]
         let recv_socket = make_recv_socket(config.addr_family)?;
+        #[cfg(windows)]
+        let (recv_socket, recv_ol) = make_recv_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
@@ -90,6 +96,8 @@ impl TracerChannel {
             icmp_send_socket,
             udp_send_socket,
             recv_socket,
+            #[cfg(windows)]
+            recv_ol,
             tcp_probes: ArrayVec::new(),
         })
     }
@@ -392,8 +400,6 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    use windows::Win32::Networking::WinSock::INVALID_SOCKET;
-
     #[allow(clippy::cast_possible_wrap)]
     let res = match addr_family {
         TracerAddrFamily::Ipv4 => unsafe {
@@ -427,7 +433,16 @@ fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
+#[cfg(unix)]
 fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
+        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
+    }
+}
+
+#[cfg(windows)]
+fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<(Socket, OVERLAPPED)> {
     match addr_family {
         TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
         TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),

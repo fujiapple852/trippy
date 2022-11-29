@@ -125,6 +125,7 @@ pub fn dispatch_icmp_probe(
     )?;
     // let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
     let (addr, addrlen) = platform::ipaddr_to_sockaddr(IpAddr::V4(dest_addr));
+    #[allow(clippy::cast_possible_wrap)]
     let rc = unsafe {
         sendto(
             *icmp_send_socket,
