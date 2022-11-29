@@ -35,6 +35,7 @@ mod dns;
 mod frontend;
 mod report;
 
+#[cfg(unix)]
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
@@ -51,6 +52,11 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(windows)]
+fn main() {
+    println!("Hello workld!");
+}
+
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     Ok(match cfg.addr_family {
@@ -65,6 +71,7 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     })
 }
 
+#[cfg(unix)]
 /// Start a tracer to a given target.
 fn start_tracer(
     cfg: &TrippyConfig,

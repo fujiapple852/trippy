@@ -11,4 +11,4 @@ pub use unix::*;
 pub mod windows;
 
 #[cfg(windows)]
-pub use windows::*;
+pub use self::windows::*;

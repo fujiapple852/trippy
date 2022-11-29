@@ -15,10 +15,16 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseDa
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
+#[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
+#[cfg(windows)]
+use windows::Win32::Networking::WinSock::SOCKET;
+
+#[cfg(windows)]
+type Socket = SOCKET;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_size();
@@ -32,6 +38,7 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
+#[cfg(unix)]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
     probe: Probe,
@@ -63,6 +70,7 @@ pub fn dispatch_icmp_probe(
     Ok(())
 }
 
+#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_udp_probe(
     udp_send_socket: &mut Socket,
@@ -103,6 +111,7 @@ pub fn dispatch_udp_probe(
     Ok(())
 }
 
+#[cfg(unix)]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
@@ -139,6 +148,7 @@ pub fn dispatch_tcp_probe(
     Ok(socket)
 }
 
+#[cfg(unix)]
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -158,6 +168,7 @@ pub fn recv_icmp_probe(
     }
 }
 
+#[cfg(unix)]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     dest_addr: IpAddr,
@@ -374,6 +385,7 @@ fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
 }
 
+#[cfg(unix)]
 /// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
 ///
 /// This is required for `socket2::Socket` which [does not currently provide] this method.
@@ -383,6 +395,7 @@ trait RecvFrom {
     fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)>;
 }
 
+#[cfg(unix)]
 impl RecvFrom for Socket {
     // Safety: the `recv` implementation promises not to write uninitialised
     // bytes to the `buf`fer, so this casting is safe.

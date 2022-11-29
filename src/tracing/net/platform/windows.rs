@@ -1,8 +1,10 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::TraceResult;
-use socket2::Socket;
 use std::net::IpAddr;
 use std::time::Duration;
+use windows::Win32::Networking::WinSock::SOCKET;
+
+type Socket = SOCKET;
 
 /// TODO
 #[allow(clippy::unnecessary_wraps)]

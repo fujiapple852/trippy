@@ -17,10 +17,16 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseDa
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
+#[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
 use std::io::{ErrorKind, Read};
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
+#[cfg(windows)]
+use windows::Win32::Networking::WinSock::SOCKET;
+
+#[cfg(windows)]
+type Socket = SOCKET;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
@@ -39,6 +45,7 @@ const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_pa
 /// 0100 0000 0000 0000
 const DONT_FRAGMENT: u16 = 0x4000;
 
+#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
@@ -78,6 +85,7 @@ pub fn dispatch_icmp_probe(
     Ok(())
 }
 
+#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_udp_probe(
     raw_send_socket: &mut Socket,
@@ -143,6 +151,7 @@ pub fn dispatch_udp_probe(
     Ok(())
 }
 
+#[cfg(unix)]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv4Addr,
@@ -181,6 +190,7 @@ pub fn dispatch_tcp_probe(
     Ok(socket)
 }
 
+#[cfg(unix)]
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -205,6 +215,7 @@ pub fn recv_icmp_probe(
     }
 }
 
+#[cfg(unix)]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     dest_addr: IpAddr,
