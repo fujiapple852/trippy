@@ -70,6 +70,38 @@ pub fn dispatch_icmp_probe(
     Ok(())
 }
 
+#[cfg(windows)]
+pub fn dispatch_icmp_probe(
+    icmp_send_socket: &mut Socket,
+    probe: Probe,
+    src_addr: Ipv6Addr,
+    dest_addr: Ipv6Addr,
+    identifier: TraceId,
+    packet_size: PacketSize,
+    payload_pattern: PayloadPattern,
+) -> TraceResult<()> {
+    let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
+    let packet_size = usize::from(packet_size.0);
+    if packet_size > MAX_PACKET_SIZE {
+        return Err(TracerError::InvalidPacketSize(packet_size));
+    }
+    let echo_request = make_echo_request_icmp_packet(
+        &mut icmp_buf,
+        src_addr,
+        dest_addr,
+        identifier,
+        probe.sequence,
+        icmp_payload_size(packet_size),
+        payload_pattern,
+    )?;
+    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
+    // icmp_send_socket.bind(&SockAddr::from(local_addr))?;
+    // icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    // let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
+    // icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
+    Ok(())
+}
+
 #[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_udp_probe(
