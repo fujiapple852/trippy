@@ -19,7 +19,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 use std::time::{Duration, SystemTime};
 #[cfg(windows)]
 use windows::Win32::Networking::WinSock::{
-    socket, WSAIoctl, AF_INET, AF_INET6, IPPROTO_UDP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR,
+    bind, socket, WSAIoctl, AF_INET, AF_INET6, IPPROTO_UDP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR,
     SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM,
 };
 
@@ -313,7 +313,7 @@ fn discover_local_addr(
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn discover_local_addr(
-    _addr_family: TracerAddrFamily, // I don't think we need this arg, since IpAddr embeds it
+    addr_family: TracerAddrFamily,
     target: IpAddr,
     port: u16,
 ) -> TraceResult<IpAddr> {
@@ -344,7 +344,7 @@ fn discover_local_addr(
     };
 
     #[allow(clippy::cast_possible_wrap)]
-    let s = unsafe { socket(AF_INET.0 as i32, i32::from(SOCK_DGRAM), IPPROTO_UDP.0) };
+    let s = udp_socket_for_addr_family(addr_family)?;
     let rc = unsafe {
         WSAIoctl(
             s,
@@ -404,7 +404,28 @@ fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> Tr
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
-    Ok(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))
+    let s = udp_socket_for_addr_family(addr_family)?;
+    let (addr, addrlen) = match source_addr {
+        IpAddr::V4(ipv4addr) => {
+            let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
+            (
+                std::ptr::addr_of!(sa).cast(),
+                size_of::<SOCKADDR_IN>() as u32,
+            )
+        }
+        IpAddr::V6(ipv6addr) => {
+            let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, 0, 0, 0).into();
+            (
+                std::ptr::addr_of!(sa).cast(),
+                size_of::<SOCKADDR_IN6>() as u32,
+            )
+        }
+    };
+    #[allow(clippy::cast_possible_wrap)]
+    if unsafe { bind(s, addr, addrlen as i32) } == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+    Ok(source_addr)
 }
 
 #[cfg(unix)]
@@ -414,6 +435,27 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
         TracerAddrFamily::Ipv4 => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?,
         TracerAddrFamily::Ipv6 => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?,
     })
+}
+
+#[cfg(windows)]
+#[allow(unsafe_code)]
+fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    use windows::Win32::Networking::WinSock::INVALID_SOCKET;
+
+    #[allow(clippy::cast_possible_wrap)]
+    let res = match addr_family {
+        TracerAddrFamily::Ipv4 => unsafe {
+            socket(AF_INET.0 as i32, i32::from(SOCK_DGRAM), IPPROTO_UDP.0)
+        },
+        TracerAddrFamily::Ipv6 => unsafe {
+            socket(AF_INET6.0 as i32, i32::from(SOCK_DGRAM), IPPROTO_UDP.0)
+        },
+    };
+    if res == INVALID_SOCKET {
+        Err(TracerError::IoError(Error::last_os_error()))
+    } else {
+        Ok(res)
+    }
 }
 
 /// Make a socket for sending raw `ICMP` packets.
@@ -443,29 +485,43 @@ fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
 #[cfg(test)]
 #[allow(unsafe_code)]
 mod tests {
+    use super::*;
+    use std::sync::Once;
     use windows::Win32::Networking::WinSock::{WSAStartup, WSADATA};
 
-    use super::*;
+    static INIT: Once = Once::new();
 
     fn startup() {
         const WINSOCK_VERSION: u16 = 0x202; // 2.2
 
-        let mut wsadata = MaybeUninit::<WSADATA>::zeroed();
-        unsafe {
-            if WSAStartup(WINSOCK_VERSION, wsadata.as_mut_ptr()) != 0 {
-                eprintln!("WSAStartup failed: {}", Error::last_os_error());
+        INIT.call_once(|| {
+            let mut wsadata = MaybeUninit::<WSADATA>::zeroed();
+            unsafe {
+                if WSAStartup(WINSOCK_VERSION, wsadata.as_mut_ptr()) != 0 {
+                    eprintln!("WSAStartup failed: {}", Error::last_os_error());
+                }
+                wsadata.assume_init(); // extracts the WSADATA to ensure it gets dropped (as we don't need it ATM)
             }
-            wsadata.assume_init(); // extracts the WSADATA to ensure it gets dropped (as we don't need it ATM)
-        }
+        });
     }
 
     #[test]
-    fn discover_local_addr_ipv4() {
+    fn test_discover_local_addr() {
         startup();
         let res = discover_local_addr(
             TracerAddrFamily::Ipv4,
             IpAddr::V4("212.82.100.150".parse().unwrap()),
             443,
+        );
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_local_addr() {
+        startup();
+        let res = validate_local_addr(
+            TracerAddrFamily::Ipv4,
+            IpAddr::V4("192.168.2.2".parse().unwrap()),
         );
         assert!(res.is_ok());
     }
