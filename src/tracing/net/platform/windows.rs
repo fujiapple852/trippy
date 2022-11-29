@@ -3,8 +3,8 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::ipv6;
 use std::alloc::{alloc, dealloc, Layout};
 use std::io::{Error, ErrorKind};
-use std::mem::align_of;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::mem::{align_of, size_of};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::time::Duration;
 use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
 use windows::Win32::NetworkManagement::IpHelper;
@@ -129,6 +129,27 @@ pub unsafe fn sockaddrptr_to_ipaddr(ptr: *mut SOCKADDR) -> TraceResult<IpAddr> {
             format!("Unsupported address family: {}", af),
         )))
     }
+}
+
+#[allow(unsafe_code)]
+pub fn ipaddr_to_sockaddr(source_addr: IpAddr) -> (SOCKADDR, u32) {
+    let (paddr, addrlen): (*const SOCKADDR, u32) = match source_addr {
+        IpAddr::V4(ipv4addr) => {
+            let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
+            (
+                std::ptr::addr_of!(sa).cast(),
+                size_of::<SOCKADDR_IN>() as u32,
+            )
+        }
+        IpAddr::V6(ipv6addr) => {
+            let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, 0, 0, 0).into();
+            (
+                std::ptr::addr_of!(sa).cast(),
+                size_of::<SOCKADDR_IN6>() as u32,
+            )
+        }
+    };
+    unsafe { (*paddr, addrlen) }
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
