@@ -1,7 +1,7 @@
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::net::platform;
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
-use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -13,14 +13,14 @@ use itertools::Itertools;
 #[cfg(not(windows))]
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::ffi::c_void;
-use std::io::{Error, ErrorKind};
-use std::mem::{size_of, MaybeUninit};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::io::Error;
+use std::mem::MaybeUninit;
+use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 #[cfg(windows)]
 use windows::Win32::Networking::WinSock::{
-    bind, socket, WSAIoctl, AF_INET, AF_INET6, IPPROTO_UDP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR,
-    SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM,
+    bind, socket, WSAIoctl, AF_INET, AF_INET6, IPPROTO_UDP, SIO_ROUTING_INTERFACE_QUERY, SOCKET,
+    SOCKET_ERROR, SOCK_DGRAM,
 };
 
 #[cfg(windows)]
@@ -315,7 +315,7 @@ fn discover_local_addr(
 fn discover_local_addr(
     addr_family: TracerAddrFamily,
     target: IpAddr,
-    port: u16,
+    _port: u16,
 ) -> TraceResult<IpAddr> {
     /*
     NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
@@ -326,30 +326,13 @@ fn discover_local_addr(
 
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let bytes = MaybeUninit::<u32>::uninit().as_mut_ptr();
-    let (dest, destlen) = match target {
-        IpAddr::V4(ipv4addr) => {
-            let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, port).into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN>() as u32,
-            )
-        }
-        IpAddr::V6(ipv6addr) => {
-            let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, port, 0, 0).into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN6>() as u32,
-            )
-        }
-    };
-
-    #[allow(clippy::cast_possible_wrap)]
     let s = udp_socket_for_addr_family(addr_family)?;
+    let (dest, destlen) = platform::ipaddr_to_sockaddr(target);
     let rc = unsafe {
         WSAIoctl(
             s,
             SIO_ROUTING_INTERFACE_QUERY,
-            Some(dest),
+            Some(std::ptr::addr_of!(dest).cast()),
             destlen,
             Some(src),
             1024,
@@ -389,24 +372,9 @@ fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> Tr
 #[allow(unsafe_code)]
 fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
     let s = udp_socket_for_addr_family(addr_family)?;
-    let (addr, addrlen) = match source_addr {
-        IpAddr::V4(ipv4addr) => {
-            let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN>() as u32,
-            )
-        }
-        IpAddr::V6(ipv6addr) => {
-            let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, 0, 0, 0).into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN6>() as u32,
-            )
-        }
-    };
+    let (addr, addrlen) = platform::ipaddr_to_sockaddr(source_addr);
     #[allow(clippy::cast_possible_wrap)]
-    if unsafe { bind(s, addr, addrlen as i32) } == SOCKET_ERROR {
+    if unsafe { bind(s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR {
         return Err(TracerError::IoError(Error::last_os_error()));
     }
     Ok(source_addr)
