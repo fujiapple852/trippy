@@ -20,12 +20,11 @@ name = "trip"
 [dependencies]
 
 # Library dependencies
-socket2 = { version = "0.4.7", features = [ "all" ] }
 thiserror = "1.0.32"
 derive_more = "0.99.17"
 arrayvec = "0.7.2"
 
-# TUI dependancies
+# TUI dependencies
 anyhow = "1.0.66"
 dns-lookup = "1.0.8"
 trust-dns-resolver = "0.22.0"
@@ -41,13 +40,25 @@ serde = { version = "1.0.149", features = [ "derive" ] }
 serde_json = "1.0.89"
 comfy-table = "6.1.3"
 
-# Library dependancies (Linux)
+# Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
 caps = "0.5.5"
 
-# Library dependancies (Unix)
-[target.'cfg(target_family = "unix")'.dependencies]
+# Library dependencies (Unix)
+[target.'cfg(unix)'.dependencies]
 nix = { version = "0.26.1", default-features = false, features = [ "user", "poll", "net" ] }
+
+# We don't use Socket2 on Windows
+[target.'cfg(not(windows))'.dependencies]
+socket2 = { version = "0.4.7", features = [ "all" ] }
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.43.0"
+features = [
+    "Win32_Foundation",
+    "Win32_Networking_WinSock",
+    "Win32_System_IO",
+]
 
 [dev-dependencies]
 rand = "0.8.5"
