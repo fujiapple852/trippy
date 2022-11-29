@@ -60,6 +60,7 @@ features = [
     "Win32_System_IO",
     "Win32_NetworkManagement_IpHelper",
     "Win32_NetworkManagement_Ndis",
+    "Win32_System_IO",
 ]
 
 [dev-dependencies]
