@@ -83,11 +83,10 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         unsafe { dealloc(list_ptr, layout) };
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     if res != NO_ERROR.0 {
         return Err(TracerError::ErrorString(format!(
             "GetAdaptersAddresses returned error: {}",
-            Error::from_raw_os_error(res as i32)
+            Error::from_raw_os_error(res.try_into().unwrap())
         )));
     }
 
@@ -181,8 +180,13 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
 /// TODO
 #[allow(unsafe_code)]
 pub fn make_recv_socket_ipv4() -> TraceResult<(Socket, OVERLAPPED)> {
-    #[allow(clippy::cast_possible_wrap)]
-    let s = unsafe { socket(AF_INET.0 as i32, i32::from(SOCK_RAW), IPPROTO_ICMP.0) };
+    let s = unsafe {
+        socket(
+            AF_INET.0.try_into().unwrap(),
+            i32::from(SOCK_RAW),
+            IPPROTO_ICMP.0,
+        )
+    };
     if s == INVALID_SOCKET {
         return Err(TracerError::IoError(Error::last_os_error()));
     }
@@ -201,8 +205,7 @@ pub fn make_recv_socket_ipv4() -> TraceResult<(Socket, OVERLAPPED)> {
     let mut nread = 0;
     let mut flags = 0;
     let mut from = MaybeUninit::<SOCKADDR>::zeroed();
-    #[allow(clippy::cast_possible_wrap)]
-    let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
+    let mut fromlen = std::mem::size_of::<SOCKADDR>().try_into().unwrap();
 
     let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
     let ptr = unsafe { std::alloc::alloc(layout) };
@@ -243,8 +246,13 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
 
 #[allow(unsafe_code)]
 pub fn make_recv_socket_ipv6() -> TraceResult<(Socket, OVERLAPPED)> {
-    #[allow(clippy::cast_possible_wrap)]
-    let s = unsafe { socket(AF_INET6.0 as i32, i32::from(SOCK_RAW), IPPROTO_ICMPV6.0) };
+    let s = unsafe {
+        socket(
+            AF_INET6.0.try_into().unwrap(),
+            i32::from(SOCK_RAW),
+            IPPROTO_ICMPV6.0,
+        )
+    };
     if s == INVALID_SOCKET {
         return Err(TracerError::IoError(Error::last_os_error()));
     }
@@ -263,8 +271,7 @@ pub fn make_recv_socket_ipv6() -> TraceResult<(Socket, OVERLAPPED)> {
     let mut nread = 0;
     let mut flags = 0;
     let mut from = MaybeUninit::<SOCKADDR>::zeroed();
-    #[allow(clippy::cast_possible_wrap)]
-    let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
+    let mut fromlen = std::mem::size_of::<SOCKADDR>().try_into().unwrap();
 
     let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
     let ptr = unsafe { std::alloc::alloc(layout) };
