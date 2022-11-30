@@ -47,7 +47,7 @@ caps = "0.5.5"
 
 # Library dependancies (Unix)
 [target.'cfg(target_family = "unix")'.dependencies]
-nix = { version = "0.25.0", default-features = false, features = [ "user", "poll", "net" ] }
+nix = { version = "0.26.1", default-features = false, features = [ "user", "poll", "net" ] }
 
 [dev-dependencies]
 rand = "0.8.5"
