@@ -123,16 +123,14 @@ pub fn dispatch_icmp_probe(
         0,
         echo_request.packet(),
     )?;
-    // let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
     let (addr, addrlen) = platform::ipaddr_to_sockaddr(IpAddr::V4(dest_addr));
-    #[allow(clippy::cast_possible_wrap)]
     let rc = unsafe {
         sendto(
             *icmp_send_socket,
             ipv4.packet(),
-            packet_size as i32,
+            packet_size.try_into().unwrap(),
             std::ptr::addr_of!(addr).cast(),
-            addrlen as i32,
+            addrlen.try_into().unwrap(),
         )
     };
     if rc == SOCKET_ERROR {

@@ -377,8 +377,14 @@ fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> Tr
 fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
     let s = udp_socket_for_addr_family(addr_family)?;
     let (addr, addrlen) = platform::ipaddr_to_sockaddr(source_addr);
-    #[allow(clippy::cast_possible_wrap)]
-    if unsafe { bind(s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR {
+    if unsafe {
+        bind(
+            s,
+            std::ptr::addr_of!(addr).cast(),
+            addrlen.try_into().unwrap(),
+        )
+    } == SOCKET_ERROR
+    {
         return Err(TracerError::IoError(Error::last_os_error()));
     }
     Ok(source_addr)
@@ -396,13 +402,20 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    #[allow(clippy::cast_possible_wrap)]
     let res = match addr_family {
         TracerAddrFamily::Ipv4 => unsafe {
-            socket(AF_INET.0 as i32, i32::from(SOCK_DGRAM), IPPROTO_UDP.0)
+            socket(
+                AF_INET.0.try_into().unwrap(),
+                i32::from(SOCK_DGRAM),
+                IPPROTO_UDP.0,
+            )
         },
         TracerAddrFamily::Ipv6 => unsafe {
-            socket(AF_INET6.0 as i32, i32::from(SOCK_DGRAM), IPPROTO_UDP.0)
+            socket(
+                AF_INET6.0.try_into().unwrap(),
+                i32::from(SOCK_DGRAM),
+                IPPROTO_UDP.0,
+            )
         },
     };
     if res == INVALID_SOCKET {
