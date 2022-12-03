@@ -261,7 +261,6 @@ impl Default for Hop {
     }
 }
 
-#[cfg(unix)]
 /// Run the tracing backend.
 ///
 /// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI will delay the
