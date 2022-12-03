@@ -31,6 +31,7 @@ use windows::core::PSTR;
 #[cfg(windows)]
 use windows::Win32::Networking::WinSock::{
     sendto, WSAGetOverlappedResult, WSARecvFrom, SOCKADDR, SOCKET, SOCKET_ERROR, WSABUF,
+    WSA_IO_INCOMPLETE,
 };
 #[cfg(windows)]
 use windows::Win32::System::IO::OVERLAPPED;
@@ -318,7 +319,7 @@ pub fn recv_icmp_probe(
 
     let mut bytes = 0;
     let mut flags = 0;
-    match unsafe {
+    if unsafe {
         WSAGetOverlappedResult(
             *recv_socket,
             std::ptr::addr_of!(*recv_ol),
@@ -329,19 +330,21 @@ pub fn recv_icmp_probe(
     }
     .as_bool()
     {
-        false => match Error::last_os_error().raw_os_error() {
-            Some(WSA_IO_INCOMPLETE) => Ok(None),
-            _ => Err(TracerError::IoError(Error::last_os_error())),
-        },
-        true => {
-            let ipv4 = Ipv4Packet::new_view(unsafe { wbuf.buf.as_bytes() }).req()?;
-            Ok(extract_probe_resp(
-                protocol,
-                multipath_strategy,
-                direction,
-                &ipv4,
-            )?)
+        let ipv4 = Ipv4Packet::new_view(unsafe { wbuf.buf.as_bytes() }).req()?;
+        Ok(extract_probe_resp(
+            protocol,
+            multipath_strategy,
+            direction,
+            &ipv4,
+        )?)
+    } else if let Some(os_err) = Error::last_os_error().raw_os_error() {
+        if os_err == WSA_IO_INCOMPLETE.0 {
+            Ok(None)
+        } else {
+            Err(TracerError::IoError(Error::last_os_error()))
         }
+    } else {
+        Err(TracerError::IoError(Error::last_os_error()))
     }
 }
 

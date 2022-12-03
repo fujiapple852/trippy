@@ -202,6 +202,12 @@ impl TracerChannel {
         }
     }
 
+    #[cfg(windows)]
+    #[allow(clippy::unused_self)]
+    fn dispatch_udp_probe(&mut self, _probe: Probe) -> TraceResult<()> {
+        unimplemented!()
+    }
+
     #[cfg(unix)]
     /// Dispatch a TCP probe.
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
@@ -217,6 +223,12 @@ impl TracerChannel {
         self.tcp_probes
             .push(TcpProbe::new(socket, SystemTime::now()));
         Ok(())
+    }
+
+    #[cfg(windows)]
+    #[allow(clippy::unused_self)]
+    fn dispatch_tcp_probe(&mut self, _probe: Probe) -> TraceResult<()> {
+        unimplemented!()
     }
 
     #[cfg(unix)]
@@ -283,6 +295,12 @@ impl TracerChannel {
         } else {
             Ok(None)
         }
+    }
+
+    #[cfg(windows)]
+    #[allow(clippy::unused_self)]
+    fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        unimplemented!()
     }
 }
 
