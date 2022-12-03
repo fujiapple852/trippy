@@ -19,11 +19,21 @@ use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
+#[cfg(windows)]
+use std::alloc::{alloc, Layout};
 use std::io::{Error, ErrorKind, Read};
+#[cfg(windows)]
+use std::mem::MaybeUninit;
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 #[cfg(windows)]
-use windows::Win32::Networking::WinSock::{sendto, SOCKET};
+use windows::core::PSTR;
+#[cfg(windows)]
+use windows::Win32::Networking::WinSock::{
+    sendto, WSAGetOverlappedResult, WSARecvFrom, SOCKADDR, SOCKET, SOCKET_ERROR, WSABUF,
+};
+#[cfg(windows)]
+use windows::Win32::System::IO::OVERLAPPED;
 
 #[cfg(windows)]
 type Socket = SOCKET;
@@ -98,8 +108,6 @@ pub fn dispatch_icmp_probe(
     payload_pattern: PayloadPattern,
     ipv4_byte_order: PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
-    use windows::Win32::Networking::WinSock::SOCKET_ERROR;
-
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
@@ -266,6 +274,74 @@ pub fn recv_icmp_probe(
             ErrorKind::WouldBlock => Ok(None),
             _ => Err(TracerError::IoError(err)),
         },
+    }
+}
+
+#[cfg(windows)]
+#[allow(unsafe_code)]
+pub fn recv_icmp_probe(
+    recv_socket: &mut Socket,
+    recv_ol: &mut OVERLAPPED,
+    protocol: TracerProtocol,
+    multipath_strategy: MultipathStrategy,
+    direction: PortDirection,
+) -> TraceResult<Option<ProbeResponse>> {
+    let mut nread = 0;
+    let mut flags = 0;
+    let mut from = MaybeUninit::<SOCKADDR>::zeroed();
+    let mut fromlen = std::mem::size_of::<SOCKADDR>().try_into().unwrap();
+
+    let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
+    let ptr = unsafe { alloc(layout) };
+
+    let wbuf = WSABUF {
+        len: MAX_PACKET_SIZE as u32,
+        buf: PSTR::from_raw(ptr),
+    };
+
+    let ret = unsafe {
+        WSARecvFrom(
+            *recv_socket,
+            &[wbuf],
+            Some(&mut nread),
+            &mut flags,
+            Some(from.as_mut_ptr()),
+            Some(&mut fromlen),
+            Some(std::ptr::addr_of_mut!(*recv_ol)),
+            None,
+        )
+    };
+
+    if ret == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
+
+    let mut bytes = 0;
+    let mut flags = 0;
+    match unsafe {
+        WSAGetOverlappedResult(
+            *recv_socket,
+            std::ptr::addr_of!(*recv_ol),
+            &mut bytes,
+            false,
+            &mut flags,
+        )
+    }
+    .as_bool()
+    {
+        false => match Error::last_os_error().raw_os_error() {
+            Some(WSA_IO_INCOMPLETE) => Ok(None),
+            _ => Err(TracerError::IoError(Error::last_os_error())),
+        },
+        true => {
+            let ipv4 = Ipv4Packet::new_view(unsafe { wbuf.buf.as_bytes() }).req()?;
+            Ok(extract_probe_resp(
+                protocol,
+                multipath_strategy,
+                direction,
+                &ipv4,
+            )?)
+        }
     }
 }
 

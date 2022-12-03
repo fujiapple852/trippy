@@ -17,11 +17,22 @@ use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::ErrorKind;
+#[cfg(windows)]
+use std::alloc::{alloc, Layout};
+use std::io::{Error, ErrorKind};
+#[cfg(windows)]
+use std::mem::MaybeUninit;
 use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 #[cfg(windows)]
-use windows::Win32::Networking::WinSock::SOCKET;
+use windows::core::PSTR;
+#[cfg(windows)]
+use windows::Win32::Networking::WinSock::{
+    bind, sendto, setsockopt, WSAGetOverlappedResult, WSARecvFrom, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+    SOCKADDR, SOCKET, SOCKET_ERROR, WSABUF,
+};
+#[cfg(windows)]
+use windows::Win32::System::IO::OVERLAPPED;
 
 #[cfg(windows)]
 type Socket = SOCKET;
@@ -71,6 +82,7 @@ pub fn dispatch_icmp_probe(
 }
 
 #[cfg(windows)]
+#[allow(unsafe_code)]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
     probe: Probe,
@@ -94,11 +106,41 @@ pub fn dispatch_icmp_probe(
         icmp_payload_size(packet_size),
         payload_pattern,
     )?;
-    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
-    // icmp_send_socket.bind(&SockAddr::from(local_addr))?;
-    // icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
-    // let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
-    // icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
+    let (src_sockaddr, src_sockaddrlen) = platform::ipaddr_to_sockaddr(IpAddr::V6(src_addr));
+    if unsafe {
+        bind(
+            Some(*icmp_send_socket),
+            std::ptr::addr_of!(src_sockaddr).cast(),
+            src_sockaddrlen.try_into().unwrap(),
+        )
+    } == SOCKET_ERROR
+    {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+    if unsafe {
+        setsockopt(
+            *icmp_send_socket,
+            IPPROTO_IPV6.0,
+            IPV6_UNICAST_HOPS.try_into().unwrap(),
+            Some(&[probe.ttl.0]),
+        )
+    } == SOCKET_ERROR
+    {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+    let (dest_sockaddr, dest_sockaddrlen) = platform::ipaddr_to_sockaddr(IpAddr::V6(dest_addr));
+    let rc = unsafe {
+        sendto(
+            Some(*icmp_send_socket),
+            echo_request.packet(),
+            packet_size.try_into().unwrap(),
+            std::ptr::addr_of!(dest_sockaddr).cast(),
+            dest_sockaddrlen.try_into().unwrap(),
+        )
+    };
+    if rc == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
     Ok(())
 }
 
@@ -197,6 +239,73 @@ pub fn recv_icmp_probe(
             ErrorKind::WouldBlock => Ok(None),
             _ => Err(TracerError::IoError(err)),
         },
+    }
+}
+
+#[cfg(windows)]
+#[allow(unsafe_code)]
+pub fn recv_icmp_probe(
+    recv_socket: &mut Socket,
+    recv_ol: &mut OVERLAPPED,
+    protocol: TracerProtocol,
+    direction: PortDirection,
+) -> TraceResult<Option<ProbeResponse>> {
+    let mut nread = 0;
+    let mut flags = 0;
+    let mut from = MaybeUninit::<SOCKADDR>::zeroed();
+    let mut fromlen = std::mem::size_of::<SOCKADDR>().try_into().unwrap();
+
+    let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
+    let ptr = unsafe { alloc(layout) };
+
+    let wbuf = WSABUF {
+        len: MAX_PACKET_SIZE as u32,
+        buf: PSTR::from_raw(ptr),
+    };
+
+    let ret = unsafe {
+        WSARecvFrom(
+            *recv_socket,
+            &[wbuf],
+            Some(&mut nread),
+            &mut flags,
+            Some(from.as_mut_ptr()),
+            Some(&mut fromlen),
+            Some(std::ptr::addr_of_mut!(*recv_ol)),
+            None,
+        )
+    };
+
+    if ret == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    };
+
+    let mut bytes = 0;
+    let mut flags = 0;
+    match unsafe {
+        WSAGetOverlappedResult(
+            *recv_socket,
+            std::ptr::addr_of!(*recv_ol),
+            &mut bytes,
+            false,
+            &mut flags,
+        )
+    }
+    .as_bool()
+    {
+        false => match Error::last_os_error().raw_os_error() {
+            Some(WSA_IO_INCOMPLETE) => Ok(None),
+            _ => Err(TracerError::IoError(Error::last_os_error())),
+        },
+        true => {
+            let icmp_v6 = IcmpPacket::new_view(unsafe { wbuf.buf.as_bytes() }).req()?;
+            let addr = platform::sockaddrptr_to_ipaddr(from.as_mut_ptr())?;
+            if let IpAddr::V6(src_addr) = addr {
+                extract_probe_resp(protocol, direction, &icmp_v6, src_addr)
+            } else {
+                Err(TracerError::InvalidSourceAddr(addr))
+            }
+        }
     }
 }
 
