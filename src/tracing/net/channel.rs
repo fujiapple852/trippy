@@ -1,8 +1,8 @@
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::platform;
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::net::{ipv4, ipv6};
+use crate::tracing::net::{platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -23,6 +23,7 @@ use windows::Win32::Networking::WinSock::{
     bind, socket, WSAIoctl, AF_INET, AF_INET6, INVALID_SOCKET, IPPROTO_UDP,
     SIO_ROUTING_INTERFACE_QUERY, SOCKET, SOCKET_ERROR, SOCK_DGRAM,
 };
+#[cfg(windows)]
 use windows::Win32::System::IO::OVERLAPPED;
 
 #[cfg(windows)]
@@ -116,7 +117,6 @@ impl TracerChannel {
     }
 }
 
-#[cfg(unix)]
 impl Network for TracerChannel {
     fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match self.protocol {
@@ -229,6 +229,29 @@ impl TracerChannel {
                 TracerAddrFamily::Ipv6 => {
                     ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
                 }
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(windows)]
+    fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
+        if platform::is_readable(&self.recv_socket, &self.recv_ol, self.read_timeout)? {
+            match self.addr_family {
+                TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
+                    &mut self.recv_socket,
+                    &mut self.recv_ol,
+                    self.protocol,
+                    self.multipath_strategy,
+                    self.port_direction,
+                ),
+                TracerAddrFamily::Ipv6 => ipv6::recv_icmp_probe(
+                    &mut self.recv_socket,
+                    &mut self.recv_ol,
+                    self.protocol,
+                    self.port_direction,
+                ),
             }
         } else {
             Ok(None)
@@ -358,7 +381,7 @@ fn discover_local_addr(
     <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     TBD We choose the first one arbitrarily.
      */
-    unsafe { platform::sockaddrptr_to_ipaddr(src.cast()) }
+    platform::sockaddrptr_to_ipaddr(src.cast())
 }
 
 #[cfg(unix)]
