@@ -89,11 +89,15 @@ fn start_tracer(
                 target_host
             )
         })?;
-
+    let source_addr = TracerChannel::discover_src_addr(
+        cfg.addr_family,
+        cfg.source_addr,
+        target_addr,
+        cfg.port_direction,
+        cfg.interface.as_deref(),
+    )?;
     let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
-    let channel_config = make_channel_config(cfg, target_addr, trace_identifier);
-    let channel = TracerChannel::connect(&channel_config)?;
-    let source_addr = channel.src_addr();
+    let channel_config = make_channel_config(cfg, source_addr, target_addr, trace_identifier);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
     {
         let trace_data = trace_data.clone();
@@ -101,7 +105,8 @@ fn start_tracer(
             .name(format!("tracer-{}", tracer_config.trace_identifier.0))
             .spawn(move || {
                 drop_caps().expect("failed to drop capabilities in tracer thread");
-                backend::run_backend(&tracer_config, channel, trace_data);
+                backend::run_backend(&tracer_config, &channel_config, trace_data)
+                    .expect("failed to run tracer backend");
             })?;
     }
     Ok(make_trace_info(
@@ -157,14 +162,14 @@ fn make_tracer_config(
 /// Make the tracer configuration.
 fn make_channel_config(
     args: &TrippyConfig,
+    source_addr: IpAddr,
     target_addr: IpAddr,
     trace_identifier: u16,
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
         args.protocol,
         args.addr_family,
-        args.source_addr,
-        args.interface.clone(),
+        source_addr,
         target_addr,
         trace_identifier,
         args.packet_size,

@@ -55,21 +55,14 @@ impl TracerChannel {
                 config.packet_size.0,
             )));
         }
-        let src_addr = make_src_addr(
-            config.source_addr,
-            config.target_addr,
-            config.port_direction,
-            config.interface.as_deref(),
-            config.addr_family,
-        )?;
-        let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(src_addr)?;
+        let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
         let udp_send_socket = make_udp_send_socket(config.addr_family)?;
         let recv_socket = make_recv_socket(config.addr_family)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
-            src_addr,
+            src_addr: config.source_addr,
             ipv4_length_order,
             dest_addr: config.target_addr,
             identifier: config.identifier,
@@ -88,10 +81,21 @@ impl TracerChannel {
         })
     }
 
-    /// Get the source `IpAddr` of the channel.
-    #[must_use]
-    pub fn src_addr(&self) -> IpAddr {
-        self.src_addr
+    /// Discover the source `IpAddr` of the channel.
+    pub fn discover_src_addr(
+        addr_family: TracerAddrFamily,
+        source_addr: Option<IpAddr>,
+        target_addr: IpAddr,
+        port_direction: PortDirection,
+        interface: Option<&str>,
+    ) -> TraceResult<IpAddr> {
+        make_src_addr(
+            source_addr,
+            target_addr,
+            port_direction,
+            interface,
+            addr_family,
+        )
     }
 }
 
