@@ -155,8 +155,7 @@ impl PortDirection {
 pub struct TracerChannelConfig {
     pub protocol: TracerProtocol,
     pub addr_family: TracerAddrFamily,
-    pub source_addr: Option<IpAddr>,
-    pub interface: Option<String>,
+    pub source_addr: IpAddr,
     pub target_addr: IpAddr,
     pub identifier: TraceId,
     pub packet_size: PacketSize,
@@ -175,8 +174,7 @@ impl TracerChannelConfig {
     pub fn new(
         protocol: TracerProtocol,
         addr_family: TracerAddrFamily,
-        source_addr: Option<IpAddr>,
-        interface: Option<String>,
+        source_addr: IpAddr,
         target_addr: IpAddr,
         identifier: u16,
         packet_size: u16,
@@ -192,7 +190,6 @@ impl TracerChannelConfig {
             protocol,
             addr_family,
             source_addr,
-            interface,
             target_addr,
             identifier: TraceId(identifier),
             packet_size: PacketSize(packet_size),
@@ -246,20 +243,17 @@ impl TracerConfig {
     ) -> TraceResult<Self> {
         if first_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
-                "first_ttl ({}) > {}",
-                first_ttl, MAX_TTL
+                "first_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
         if max_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
-                "max_ttl ({}) > {}",
-                first_ttl, MAX_TTL
+                "max_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
         if initial_sequence > MAX_SEQUENCE {
             return Err(TracerError::BadConfig(format!(
-                "initial_sequence ({}) > {}",
-                initial_sequence, MAX_SEQUENCE
+                "initial_sequence ({initial_sequence}) > {MAX_SEQUENCE}"
             )));
         }
         Ok(Self {

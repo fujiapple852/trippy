@@ -192,7 +192,7 @@ mod inner {
             let (tx, rx) = bounded(RESOLVER_MAX_QUEUE_SIZE);
             let addr_cache = Arc::new(RwLock::new(HashMap::new()));
 
-            let provider = if let DnsResolveMethod::System = config.resolve_method {
+            let provider = if matches!(config.resolve_method, DnsResolveMethod::System) {
                 DnsProvider::DnsLookup
             } else {
                 let mut options = ResolverOpts::default();
