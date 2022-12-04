@@ -4,7 +4,9 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
-use trippy::tracing::{Probe, ProbeStatus, Tracer, TracerChannel, TracerConfig, TracerRound};
+use trippy::tracing::{
+    Probe, ProbeStatus, Tracer, TracerChannel, TracerChannelConfig, TracerConfig, TracerRound,
+};
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
@@ -263,9 +265,14 @@ impl Default for Hop {
 ///
 /// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI will delay the
 /// next round of the started.
-pub fn run_backend(config: &TracerConfig, channel: TracerChannel, trace_data: Arc<RwLock<Trace>>) {
+pub fn run_backend(
+    tracer_config: &TracerConfig,
+    channel_config: &TracerChannelConfig,
+    trace_data: Arc<RwLock<Trace>>,
+) -> anyhow::Result<()> {
     let td = trace_data.clone();
-    let tracer = Tracer::new(config, move |round| {
+    let channel = TracerChannel::connect(channel_config)?;
+    let tracer = Tracer::new(tracer_config, move |round| {
         trace_data.write().update_from_round(round);
     });
     match tracer.trace(channel) {
@@ -274,4 +281,5 @@ pub fn run_backend(config: &TracerConfig, channel: TracerChannel, trace_data: Ar
             td.write().error = Some(err.to_string());
         }
     };
+    Ok(())
 }
