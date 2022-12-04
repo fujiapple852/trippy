@@ -244,8 +244,7 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
             let avg = hop.avg_ms();
             let loss_pct = hop.loss_pct();
             println!(
-                "ttl={} addrs={:?} loss_pct={:.1}, sent={} recv={} last={} best={} worst={} avg={:.1} stddev={:.1}",
-                ttl, addrs, loss_pct, sent, recv, last, best, worst, avg, stddev
+                "ttl={ttl} addrs={addrs:?} loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last} best={best} worst={worst} avg={avg:.1} stddev={stddev:.1}"
             );
         }
         sleep(info.min_round_duration);

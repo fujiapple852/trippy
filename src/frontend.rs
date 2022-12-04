@@ -503,8 +503,7 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!("protocol={} dns={} as-info={} interval={} grace={} start-ttl={} max-ttl={} max-hosts={}",
-                              protocol, dns, as_info, interval, grace, first_ttl, max_ttl, max_hosts))]),
+            Span::raw(format!("protocol={protocol} dns={dns} as-info={as_info} interval={interval} grace={grace} start-ttl={first_ttl} max-ttl={max_ttl} max-hosts={max_hosts}"))]),
         Spans::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),

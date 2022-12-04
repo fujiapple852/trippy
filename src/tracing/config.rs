@@ -246,20 +246,17 @@ impl TracerConfig {
     ) -> TraceResult<Self> {
         if first_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
-                "first_ttl ({}) > {}",
-                first_ttl, MAX_TTL
+                "first_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
         if max_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
-                "max_ttl ({}) > {}",
-                first_ttl, MAX_TTL
+                "max_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
         if initial_sequence > MAX_SEQUENCE {
             return Err(TracerError::BadConfig(format!(
-                "initial_sequence ({}) > {}",
-                initial_sequence, MAX_SEQUENCE
+                "initial_sequence ({initial_sequence}) > {MAX_SEQUENCE}"
             )));
         }
         Ok(Self {
