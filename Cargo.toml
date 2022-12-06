@@ -44,7 +44,7 @@ comfy-table = "6.1.3"
 [target.'cfg(target_os = "linux")'.dependencies]
 caps = "0.5.5"
 
-# Library dependancies (Unix)
+# Library dependencies (Unix)
 [target.'cfg(target_family = "unix")'.dependencies]
 nix = { version = "0.26.1", default-features = false, features = [ "user", "poll", "net" ] }
 
@@ -54,6 +54,18 @@ socket2 = { version = "0.4.7", features = [ "all" ] }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.43.0"
+features = [
+    "Win32_Foundation",
+    "Win32_Networking_WinSock",
+    "Win32_System_IO",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
+    "Win32_System_IO",
+    "Win32_System_Threading",
+]
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.42.0"
 features = [
     "Win32_Foundation",
     "Win32_Networking_WinSock",

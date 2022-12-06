@@ -9,7 +9,7 @@ mod ipv4;
 mod ipv6;
 
 /// Platform specific network code.
-mod platform;
+pub mod platform;
 
 /// A channel for sending and receiving probes.
 pub mod channel;

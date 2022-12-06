@@ -1210,6 +1210,7 @@ dependencies = [
  "trust-dns-resolver",
  "tui",
  "windows",
+ "windows-sys",
 ]
 
 [[package]]

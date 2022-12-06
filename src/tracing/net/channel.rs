@@ -1,3 +1,4 @@
+#[cfg(not(windows))]
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
@@ -5,29 +6,19 @@ use crate::tracing::net::{ipv4, ipv6};
 use crate::tracing::net::{platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
+#[cfg(not(windows))]
 use crate::tracing::util::Required;
 use crate::tracing::{
     MultipathStrategy, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
 };
 use arrayvec::ArrayVec;
-use itertools::Itertools;
+#[cfg(windows)]
+use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::ffi::c_void;
 use std::io::Error;
-use std::mem::MaybeUninit;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
-#[cfg(windows)]
-use windows::Win32::Networking::WinSock::{
-    bind, socket, WSAIoctl, AF_INET, AF_INET6, INVALID_SOCKET, IPPROTO_UDP,
-    SIO_ROUTING_INTERFACE_QUERY, SOCKET, SOCKET_ERROR, SOCK_DGRAM,
-};
-#[cfg(windows)]
-use windows::Win32::System::IO::OVERLAPPED;
-
-#[cfg(windows)]
-type Socket = SOCKET;
 
 /// The maximum size of the IP packet we allow.
 pub const MAX_PACKET_SIZE: usize = 1024;
@@ -57,8 +48,6 @@ pub struct TracerChannel {
     icmp_send_socket: Socket,
     udp_send_socket: Socket,
     recv_socket: Socket,
-    #[cfg(windows)]
-    recv_ol: OVERLAPPED,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
 
@@ -72,13 +61,15 @@ impl TracerChannel {
                 config.packet_size.0,
             )));
         }
-        let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
-        let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
-        let udp_send_socket = make_udp_send_socket(config.addr_family)?;
-        #[cfg(unix)]
-        let recv_socket = make_recv_socket(config.addr_family)?;
         #[cfg(windows)]
-        let (recv_socket, recv_ol) = make_recv_socket(config.addr_family)?;
+        platform::startup()?;
+        let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
+        #[cfg(unix)]
+        let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
+        #[cfg(windows)]
+        let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
+        let udp_send_socket = make_udp_send_socket(config.addr_family)?;
+        let recv_socket = make_recv_socket(config.source_addr)?;
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
@@ -97,8 +88,6 @@ impl TracerChannel {
             icmp_send_socket,
             udp_send_socket,
             recv_socket,
-            #[cfg(windows)]
-            recv_ol,
             tcp_probes: ArrayVec::new(),
         })
     }
@@ -253,21 +242,17 @@ impl TracerChannel {
 
     #[cfg(windows)]
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if platform::is_readable(&self.recv_socket, &self.recv_ol, self.read_timeout)? {
+        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
             match self.addr_family {
                 TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
-                    &mut self.recv_ol,
                     self.protocol,
                     self.multipath_strategy,
                     self.port_direction,
                 ),
-                TracerAddrFamily::Ipv6 => ipv6::recv_icmp_probe(
-                    &mut self.recv_socket,
-                    &mut self.recv_ol,
-                    self.protocol,
-                    self.port_direction,
-                ),
+                TracerAddrFamily::Ipv6 => {
+                    ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
+                }
             }
         } else {
             Ok(None)
@@ -362,7 +347,7 @@ fn discover_local_addr(
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn discover_local_addr(
-    addr_family: TracerAddrFamily,
+    _addr_family: TracerAddrFamily,
     target: IpAddr,
     _port: u16,
 ) -> TraceResult<IpAddr> {
@@ -373,37 +358,7 @@ fn discover_local_addr(
     We use SIO_ROUTING_INTERFACE_QUERY instead.
     */
 
-    let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
-    let bytes = MaybeUninit::<u32>::uninit().as_mut_ptr();
-    let s = udp_socket_for_addr_family(addr_family)?;
-    let (dest, destlen) = platform::ipaddr_to_sockaddr(target);
-    let rc = unsafe {
-        WSAIoctl(
-            s,
-            SIO_ROUTING_INTERFACE_QUERY,
-            Some(std::ptr::addr_of!(dest).cast()),
-            destlen,
-            Some(src),
-            1024,
-            bytes,
-            None,
-            None,
-        )
-    };
-    if rc == SOCKET_ERROR {
-        eprintln!(
-            "discover_local_addr: WSAIoctl failed with error: {}",
-            Error::last_os_error()
-        );
-        return Err(TracerError::IoError(Error::last_os_error()));
-    }
-
-    /*
-    NOTE The WSAIoctl call potentially returns multiple results (see
-    <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
-    TBD We choose the first one arbitrarily.
-     */
-    platform::sockaddrptr_to_ipaddr(src.cast())
+    platform::routing_interface_query(target)
 }
 
 #[cfg(unix)]
@@ -419,20 +374,17 @@ fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> Tr
 
 #[cfg(windows)]
 #[allow(unsafe_code)]
-fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
-    let s = udp_socket_for_addr_family(addr_family)?;
-    let (addr, addrlen) = platform::ipaddr_to_sockaddr(source_addr);
-    if unsafe {
-        bind(
-            s,
-            std::ptr::addr_of!(addr).cast(),
-            addrlen.try_into().unwrap(),
-        )
-    } == SOCKET_ERROR
-    {
-        return Err(TracerError::IoError(Error::last_os_error()));
+fn validate_local_addr(_addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
+    match Socket::udp_from(source_addr)?.bind(source_addr) {
+        Err(_) => {
+            eprintln!("validate_local_addr: bind failed with error");
+            Err(TracerError::IoError(Error::last_os_error()))
+        }
+        Ok(s) => {
+            s.close()?;
+            Ok(source_addr)
+        }
     }
-    Ok(source_addr)
 }
 
 #[cfg(unix)]
@@ -444,37 +396,19 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
     })
 }
 
-#[cfg(windows)]
-#[allow(unsafe_code)]
-fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    let res = match addr_family {
-        TracerAddrFamily::Ipv4 => unsafe {
-            socket(
-                AF_INET.0.try_into().unwrap(),
-                i32::from(SOCK_DGRAM),
-                IPPROTO_UDP.0,
-            )
-        },
-        TracerAddrFamily::Ipv6 => unsafe {
-            socket(
-                AF_INET6.0.try_into().unwrap(),
-                i32::from(SOCK_DGRAM),
-                IPPROTO_UDP.0,
-            )
-        },
-    };
-    if res == INVALID_SOCKET {
-        Err(TracerError::IoError(Error::last_os_error()))
-    } else {
-        Ok(res)
-    }
-}
-
 /// Make a socket for sending raw `ICMP` packets.
+#[cfg(unix)]
 fn make_icmp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
     match addr_family {
         TracerAddrFamily::Ipv4 => platform::make_icmp_send_socket_ipv4(),
         TracerAddrFamily::Ipv6 => platform::make_icmp_send_socket_ipv6(),
+    }
+}
+#[cfg(windows)]
+fn make_icmp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
+    match src_addr {
+        IpAddr::V4(_) => platform::make_icmp_send_socket_ipv4(),
+        IpAddr::V6(_) => platform::make_icmp_send_socket_ipv6(),
     }
 }
 
@@ -487,19 +421,10 @@ fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
-#[cfg(unix)]
-fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
-        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
-    }
-}
-
-#[cfg(windows)]
-fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<(Socket, OVERLAPPED)> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
-        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
+fn make_recv_socket(src_addr: IpAddr) -> TraceResult<Socket> {
+    match src_addr {
+        IpAddr::V4(ipv4addr) => platform::make_recv_socket_ipv4(ipv4addr),
+        IpAddr::V6(ipv6addr) => platform::make_recv_socket_ipv6(ipv6addr),
     }
 }
 
@@ -508,22 +433,11 @@ fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<(Socket, OVERL
 mod tests {
     use super::*;
     use std::sync::Once;
-    use windows::Win32::Networking::WinSock::{WSAStartup, WSADATA};
 
     static INIT: Once = Once::new();
 
     fn startup() {
-        const WINSOCK_VERSION: u16 = 0x202; // 2.2
-
-        INIT.call_once(|| {
-            let mut wsadata = MaybeUninit::<WSADATA>::zeroed();
-            unsafe {
-                if WSAStartup(WINSOCK_VERSION, wsadata.as_mut_ptr()) != 0 {
-                    eprintln!("WSAStartup failed: {}", Error::last_os_error());
-                }
-                wsadata.assume_init(); // extracts the WSADATA to ensure it gets dropped (as we don't need it ATM)
-            }
-        });
+        INIT.call_once(|| platform::startup().unwrap());
     }
 
     #[test]
