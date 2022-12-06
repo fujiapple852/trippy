@@ -213,7 +213,7 @@ pub fn recv_icmp_probe(
         let buf = recv_socket.wbuf.buf;
         let bytes = unsafe { buf.as_bytes() };
         let icmp_v6 = IcmpPacket::new_view(bytes).req()?;
-        let addr = platform::sockaddrptr_to_ipaddr(std::ptr::addr_of!(recv_socket.from))?;
+        let addr = platform::sockaddrptr_to_ipaddr(&recv_socket.from)?;
         // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
         recv_socket.recv_from()?;
         if let IpAddr::V6(src_addr) = addr {
