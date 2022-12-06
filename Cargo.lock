@@ -1245,6 +1245,7 @@ dependencies = [
  "trust-dns-resolver",
  "tui",
  "windows",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]

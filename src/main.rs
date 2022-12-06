@@ -72,6 +72,9 @@ fn start_tracer(
     trace_identifier: u16,
     resolver: &DnsResolver,
 ) -> Result<TraceInfo, Error> {
+    // NOTE how can we avoid making this public?
+    #[cfg(windows)]
+    trippy::tracing::net::platform::startup()?;
     let target_addr: IpAddr = resolver
         .lookup(target_host)
         .map_err(|e| anyhow!("failed to resolve target: {} ({})", target_host, e))?

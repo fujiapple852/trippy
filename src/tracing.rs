@@ -1,6 +1,6 @@
 mod config;
 mod error;
-mod net;
+pub mod net;
 mod probe;
 mod tracer;
 mod types;
