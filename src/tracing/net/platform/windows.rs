@@ -34,6 +34,9 @@ pub struct Socket {
 }
 impl Socket {
     #[allow(unsafe_code)]
+    /// # Panics
+    ///
+    /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`
     pub fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<Self> {
         let s = make_socket(af, r#type, protocol)?;
 
@@ -68,15 +71,10 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn bind(&self, source_addr: IpAddr) -> TraceResult<&Self> {
         let (addr, addrlen) = ipaddr_to_sockaddr(source_addr);
-        if unsafe {
-            bind(
-                self.s,
-                std::ptr::addr_of!(addr).cast(),
-                addrlen.try_into().unwrap(),
-            )
-        } == SOCKET_ERROR
+        if unsafe { bind(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR
         {
             eprintln!("bind: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
@@ -86,6 +84,7 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn sendto(&self, packet: &[u8], dest_addr: IpAddr) -> TraceResult<()> {
         let (addr, addrlen) = ipaddr_to_sockaddr(dest_addr);
         let rc = unsafe {
@@ -94,7 +93,7 @@ impl Socket {
                 packet,
                 0,
                 std::ptr::addr_of!(addr).cast(),
-                addrlen.try_into().unwrap(),
+                addrlen as i32,
             )
         };
         if rc == SOCKET_ERROR {
@@ -105,6 +104,7 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[must_use]
     pub fn get_overlapped_result(&self) -> bool {
         // let ol = self.ol.0;
         unsafe { WSAGetOverlappedResult(self.s, &self.ol.0, &mut 0, false, &mut 0) }.as_bool()
@@ -187,12 +187,13 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn set_ipv6_max_hops(&self, max_hops: u8) -> TraceResult<&Self> {
         if unsafe {
             setsockopt(
                 self.s,
                 IPPROTO_IPV6.0,
-                IPV6_UNICAST_HOPS.try_into().unwrap(),
+                IPV6_UNICAST_HOPS as i32,
                 Some(&[max_hops]),
             )
         } == SOCKET_ERROR
@@ -203,8 +204,9 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn recv_from(&mut self) -> TraceResult<()> {
-        let mut fromlen = std::mem::size_of::<SOCKADDR>().try_into().unwrap();
+        let mut fromlen = std::mem::size_of::<SOCKADDR>() as i32;
 
         let ret = unsafe {
             WSARecvFrom(
@@ -283,6 +285,9 @@ pub fn startup() -> TraceResult<()> {
 }
 
 #[allow(unsafe_code)]
+/// # Panics
+///
+/// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`.
 pub fn cleanup(sockets: &[Socket]) -> TraceResult<()> {
     let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
     for sock in sockets {
@@ -306,6 +311,10 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
+/// # Panics
+///
+/// Will panic if `FriendlyName` or `FistUnicastAddress.Address.lpSockaddr` raw pointer members of the `IP_ADAPTER_ADDRESSES_LH`
+/// linked list structure are null or misaligned.
 // inspired by <https://github.com/EstebanBorai/network-interface/blob/main/src/target/windows.rs>
 #[allow(unsafe_code)]
 fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAddr> {
@@ -372,14 +381,14 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     while !ip_adapter_address.is_null() {
         let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
         if name == friendly_name {
-            // PANIC should not occur as GetAdaptersAddress should return valid PWSTR
             // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
             // however, this is not supported by our function signature
             let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
             // while !current_unicast.is_null() {
             unsafe {
                 let socket_address = (*current_unicast).Address;
-                let ip_addr = sockaddrptr_to_ipaddr(socket_address.lpSockaddr);
+                let sockaddr = socket_address.lpSockaddr.as_ref().unwrap();
+                let ip_addr = sockaddrptr_to_ipaddr(sockaddr);
                 dealloc(list_ptr, layout);
                 return ip_addr;
             }
@@ -400,14 +409,19 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
 }
 
 #[allow(unsafe_code)]
-pub fn sockaddrptr_to_ipaddr(ptr: *const SOCKADDR) -> TraceResult<IpAddr> {
-    let af = unsafe { u32::from((*ptr).sa_family) };
+pub fn sockaddrptr_to_ipaddr(sockaddr: &SOCKADDR) -> TraceResult<IpAddr> {
+    let ptr = sockaddr as *const SOCKADDR;
+    let af = u32::from(sockaddr.sa_family);
     if af == AF_INET.0 {
-        let ipv4addr = unsafe { (*(ptr.cast::<SOCKADDR_IN>())).sin_addr };
+        let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
+        let sockaddr_in = unsafe { *sockaddr_in_ptr };
+        let ipv4addr = sockaddr_in.sin_addr;
         Ok(IpAddr::V4(Ipv4Addr::from(ipv4addr)))
     } else if af == AF_INET6.0 {
         #[allow(clippy::cast_ptr_alignment)]
-        let ipv6addr = unsafe { (*(ptr.cast::<SOCKADDR_IN6>())).sin6_addr };
+        let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
+        let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
+        let ipv6addr = sockaddr_in6.sin6_addr;
         Ok(IpAddr::V6(Ipv6Addr::from(ipv6addr)))
     } else {
         Err(TracerError::IoError(Error::new(
@@ -418,20 +432,21 @@ pub fn sockaddrptr_to_ipaddr(ptr: *const SOCKADDR) -> TraceResult<IpAddr> {
 }
 
 #[allow(unsafe_code)]
+#[must_use]
 pub fn ipaddr_to_sockaddr(source_addr: IpAddr) -> (SOCKADDR, u32) {
     let (paddr, addrlen): (*const SOCKADDR, u32) = match source_addr {
         IpAddr::V4(ipv4addr) => {
             let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
             (
                 std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN>().try_into().unwrap(),
+                size_of::<SOCKADDR_IN>() as u32,
             )
         }
         IpAddr::V6(ipv6addr) => {
             let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, 0, 0, 0).into();
             (
                 std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN6>().try_into().unwrap(),
+                size_of::<SOCKADDR_IN6>() as u32,
             )
         }
     };
@@ -447,6 +462,9 @@ pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
 }
 
 #[allow(unsafe_code)]
+/// # Panics
+///
+/// Use of `as_ref()` on raw pointer returned by the `WSAIoctl`, which might be null or misaligned.
 pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let bytes = MaybeUninit::<u32>::uninit().as_mut_ptr();
@@ -476,7 +494,8 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     TBD We choose the first one arbitrarily.
      */
-    sockaddrptr_to_ipaddr(src.cast())
+    let sockaddr = unsafe { src.cast::<SOCKADDR>().as_ref().unwrap() };
+    sockaddrptr_to_ipaddr(sockaddr)
 }
 
 #[allow(unsafe_code)]
@@ -566,7 +585,7 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 
 #[allow(unsafe_code)]
 pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
-    let millis = timeout.as_millis().try_into().unwrap();
+    let millis = timeout.as_millis() as u32;
     let ev = sock.ol.0.hEvent;
     let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
     eprintln!(
@@ -586,11 +605,13 @@ pub fn is_writable(_sock: &Socket) -> TraceResult<bool> {
 }
 
 /// TODO
+#[must_use]
 pub fn is_not_in_progress_error(_code: i32) -> bool {
     unimplemented!()
 }
 
 /// TODO
+#[must_use]
 pub fn is_conn_refused_error(_code: i32) -> bool {
     unimplemented!()
 }
