@@ -18,20 +18,15 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseDa
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
+#[cfg(windows)]
+use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::Error;
 #[cfg(not(windows))]
-use std::io::ErrorKind;
+use std::io::{Error, ErrorKind};
 #[cfg(windows)]
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
-
-#[cfg(windows)]
-use windows::Win32::Networking::WinSock::WSA_IO_INCOMPLETE;
-
-#[cfg(windows)]
-use platform::Socket;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
@@ -267,29 +262,12 @@ pub fn recv_icmp_probe(
     multipath_strategy: MultipathStrategy,
     direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
-    if recv_socket.get_overlapped_result() {
-        let buf = recv_socket.wbuf.buf;
-        let bytes = unsafe { buf.as_bytes() };
-        let ipv4 = Ipv4Packet::new_view(bytes).req()?;
-        // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
-        recv_socket.recv_from()?;
-        Ok(extract_probe_resp(
-            protocol,
-            multipath_strategy,
-            direction,
-            &ipv4,
-        )?)
-    } else if let Some(os_err) = Error::last_os_error().raw_os_error() {
-        if os_err == WSA_IO_INCOMPLETE.0 {
-            Ok(None)
-        } else {
-            eprintln!("recv_icmp_probe: WSAGetOverlappedResult failed with error");
-            Err(TracerError::IoError(Error::last_os_error()))
-        }
-    } else {
-        eprintln!("recv_icmp_probe: WSAGetOverlappedResult failed with error");
-        Err(TracerError::IoError(Error::last_os_error()))
-    }
+    let buf = recv_socket.wbuf.buf;
+    let bytes = unsafe { buf.as_bytes() };
+    let ipv4 = Ipv4Packet::new_view(bytes).req()?;
+    // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
+    recv_socket.recv_from()?;
+    extract_probe_resp(protocol, multipath_strategy, direction, &ipv4)
 }
 
 #[cfg(unix)]
