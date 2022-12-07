@@ -28,7 +28,7 @@ use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
 
 // type Socket = SOCKET;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Socket {
     pub s: SOCKET,
     pub ol: Overlapped,
@@ -219,15 +219,20 @@ impl Socket {
                 None,
             )
         };
-        if ret == SOCKET_ERROR && unsafe { WSAGetLastError() } != WSA_IO_PENDING {
-            eprintln!(
-                "WSARecvFrom failed: Internal={}, System Error={}",
-                self.ol.0.Internal,
-                unsafe { RtlNtStatusToDosError(NTSTATUS(self.ol.0.Internal as i32)) }
-            );
-            return Err(TracerError::IoError(Error::last_os_error()));
+        if ret == SOCKET_ERROR {
+            let err = unsafe { WSAGetLastError() };
+            if err != WSA_IO_PENDING {
+                eprintln!(
+                    "WSARecvFrom failed: Internal={}, System Error={}",
+                    self.ol.0.Internal,
+                    unsafe { RtlNtStatusToDosError(NTSTATUS(self.ol.0.Internal as i32)) }
+                );
+                return Err(TracerError::IoError(Error::last_os_error()));
+            }
+            eprintln!("WSARecvFrom pending");
+        } else {
+            eprintln!("WSARecvFrom OK"); // TODO no need to wait for an event, recv succeeded immediately! This should be handled
         };
-        eprintln!("WSARecvFrom OK");
         Ok(())
     }
 
@@ -235,15 +240,16 @@ impl Socket {
     fn get_overlapped_result(&self) -> TraceResult<(u32, u32)> {
         let mut bytes = 0;
         let mut flags = 0;
-        if unsafe { WSAGetOverlappedResult(self.s, &self.ol.0, &mut bytes, false, &mut flags) }
-            .as_bool()
-        {
+        let ol = self.ol.0;
+        if unsafe { WSAGetOverlappedResult(self.s, &ol, &mut bytes, false, &mut flags) }.as_bool() {
             eprintln!("WSAGetOverlappedResult returned {} bytes", bytes);
             return Ok((bytes, flags));
         }
         Err(TracerError::IoError(Error::from(ErrorKind::Other)))
     }
 }
+
+impl Copy for Socket {}
 
 impl convert::From<Socket> for SOCKET {
     fn from(sock: Socket) -> Self {
@@ -260,6 +266,7 @@ impl convert::From<&mut Socket> for SOCKET {
         sock.s
     }
 }
+#[derive(Clone)]
 pub struct Overlapped(pub OVERLAPPED);
 impl Overlapped {
     #[allow(unsafe_code)]
@@ -272,7 +279,7 @@ impl Overlapped {
             eprintln!("create_overlapped_event: WSACreateEvent failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("WSACreateEvent OK: {:?}", recv_ol.hEvent);
+        eprintln!("WSACreateEvent OK: {:?}", recv_ol.hEvent);
         self.0 = recv_ol;
         Ok(self)
     }
@@ -296,14 +303,15 @@ impl Overlapped {
 
     #[allow(unsafe_code)]
     // we could use WaitForMultipleEvents instead, but it does not seem to change anything
-    fn _wait_for_event2(&self, timeout: Duration) -> TraceResult<bool> {
+    fn _wait_for_event(&self, timeout: Duration) -> TraceResult<bool> {
         let millis = timeout.as_millis() as u32;
         let ev = self.0.hEvent;
-        let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
+        let rc = unsafe { WSAWaitForMultipleEvents(&[ev], false, millis, false) };
         if rc == WAIT_TIMEOUT.0 {
+            eprintln!("WSAWaitForMultipleEvents timed out");
             return Ok(false);
         } else if rc == WAIT_FAILED.0 {
-            eprintln!("is_readable: WSAWaitForMultipleEvents failed");
+            eprintln!("WSAWaitForMultipleEvents failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         eprintln!("WSAWaitForMultipleEvents={} (OK)", rc);
@@ -319,6 +327,9 @@ impl Overlapped {
         Ok(self)
     }
 }
+
+impl Copy for Overlapped {}
+
 impl fmt::Debug for Overlapped {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Overlapped")
@@ -621,7 +632,7 @@ pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     sock.bind(IpAddr::V6(src_addr))?;
     sock.ol.create_event()?;
     sock.recv_from()?;
-    eprintln!("WSACreateEvent OK\nCreated ICMP recv Socket {:?}", sock);
+    eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)
 }
 

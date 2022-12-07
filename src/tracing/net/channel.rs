@@ -67,9 +67,20 @@ impl TracerChannel {
         #[cfg(unix)]
         let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
         #[cfg(windows)]
-        let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
+        let mut icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
         let udp_send_socket = make_udp_send_socket(config.addr_family)?;
-        let recv_socket = make_recv_socket(config.source_addr)?;
+        let recv_socket = if false {
+            make_recv_socket(config.source_addr)?
+        } else {
+            icmp_send_socket.bind(config.source_addr)?;
+            icmp_send_socket.ol.create_event()?;
+            icmp_send_socket.recv_from()?;
+            eprintln!(
+                "Converted ICMP send socket to send/recv {:?}",
+                icmp_send_socket
+            );
+            icmp_send_socket
+        };
         Ok(Self {
             protocol: config.protocol,
             addr_family: config.addr_family,
