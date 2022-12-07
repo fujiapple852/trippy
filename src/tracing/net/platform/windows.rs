@@ -40,7 +40,7 @@ impl Socket {
     /// # Panics
     ///
     /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`
-    pub fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<Self> {
+    fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<Self> {
         let s = make_socket(af, r#type, protocol)?;
 
         let from = SOCKADDR::default();
@@ -230,6 +230,19 @@ impl Socket {
         eprintln!("WSARecvFrom OK");
         Ok(())
     }
+
+    #[allow(unsafe_code)]
+    fn get_overlapped_result(&self) -> TraceResult<(u32, u32)> {
+        let mut bytes = 0;
+        let mut flags = 0;
+        if unsafe { WSAGetOverlappedResult(self.s, &self.ol.0, &mut bytes, false, &mut flags) }
+            .as_bool()
+        {
+            eprintln!("WSAGetOverlappedResult returned {} bytes", bytes);
+            return Ok((bytes, flags));
+        }
+        Err(TracerError::IoError(Error::from(ErrorKind::Other)))
+    }
 }
 
 impl convert::From<Socket> for SOCKET {
@@ -261,6 +274,48 @@ impl Overlapped {
         }
         // eprintln!("WSACreateEvent OK: {:?}", recv_ol.hEvent);
         self.0 = recv_ol;
+        Ok(self)
+    }
+
+    #[allow(unsafe_code)]
+    fn wait_for_event(&self, timeout: Duration) -> TraceResult<bool> {
+        let millis = timeout.as_millis() as u32;
+        let ev = self.0.hEvent;
+
+        let rc = unsafe { WaitForSingleObject(ev, millis) };
+        if rc == WAIT_TIMEOUT {
+            eprintln!("WaitForSingleObject timed out");
+            return Ok(false);
+        } else if rc == WAIT_FAILED {
+            eprintln!("is_readable: WaitForSingleObject failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        eprintln!("WaitForSingleObject OK"); // WAIT_OBJECT_0
+        Ok(true)
+    }
+
+    #[allow(unsafe_code)]
+    // we could use WaitForMultipleEvents instead, but it does not seem to change anything
+    fn _wait_for_event2(&self, timeout: Duration) -> TraceResult<bool> {
+        let millis = timeout.as_millis() as u32;
+        let ev = self.0.hEvent;
+        let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
+        if rc == WAIT_TIMEOUT.0 {
+            return Ok(false);
+        } else if rc == WAIT_FAILED.0 {
+            eprintln!("is_readable: WSAWaitForMultipleEvents failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        eprintln!("WSAWaitForMultipleEvents={} (OK)", rc);
+        Ok(true)
+    }
+
+    #[allow(unsafe_code)]
+    fn reset_event(&self) -> TraceResult<&Self> {
+        if !unsafe { WSAResetEvent(self.0.hEvent) }.as_bool() {
+            eprintln!("is_readable: WSAResetEvent failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
         Ok(self)
     }
 }
@@ -452,7 +507,7 @@ pub fn sockaddrptr_to_ipaddr(sockaddr: &SOCKADDR) -> TraceResult<IpAddr> {
 
 #[allow(unsafe_code)]
 #[must_use]
-pub fn ipaddr_to_sockaddr(source_addr: IpAddr) -> (SOCKADDR, u32) {
+fn ipaddr_to_sockaddr(source_addr: IpAddr) -> (SOCKADDR, u32) {
     let (paddr, addrlen): (*const SOCKADDR, u32) = match source_addr {
         IpAddr::V4(ipv4addr) => {
             let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
@@ -529,21 +584,18 @@ fn make_socket(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResul
     }
 }
 
-#[allow(unsafe_code)]
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
     eprintln!("created ICMP send Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
     eprintln!("created UDP send Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
     sock.bind(IpAddr::V4(src_addr))?;
@@ -553,20 +605,17 @@ pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
     eprintln!("created ICMP send Socket {:?}", sock);
     sock.set_non_blocking(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_UDP)?;
     sock.set_non_blocking(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
     sock.bind(IpAddr::V6(src_addr))?;
@@ -576,13 +625,11 @@ pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     sock.set_non_blocking(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_STREAM, IPPROTO_TCP)?;
     sock.set_non_blocking(true)?.set_reuse_port(true)
 }
 
-#[allow(unsafe_code)]
 pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_STREAM, IPPROTO_TCP)?;
     sock.set_non_blocking(true)?.set_reuse_port(true)
@@ -590,42 +637,11 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 
 #[allow(unsafe_code)]
 pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
-    let millis = timeout.as_millis() as u32;
-    let ev = sock.ol.0.hEvent;
-    if true {
-        let rc = unsafe { WaitForSingleObject(ev, millis) };
-        if rc == WAIT_TIMEOUT {
-            eprintln!("WaitForSingleObject timed out");
-            return Ok(false);
-        } else if rc == WAIT_FAILED {
-            eprintln!("is_readable: WaitForSingleObject failed");
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        eprintln!("WaitForSingleObject={} (OK)", rc.0);
-    } else {
-        // we could use WaitForMultipleEvents instead, but it does not seem to change anything
-        let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
-        // eprintln!(
-        //     "WSAWaitForMultipleEvents on Overlapped {:?} returned {}",
-        //     ev, rc
-        // );
-        if rc == WAIT_TIMEOUT.0 {
-            return Ok(false);
-        } else if rc == WAIT_FAILED.0 {
-            eprintln!("is_readable: WSAWaitForMultipleEvents failed");
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        eprintln!("WSAWaitForMultipleEvents={} (OK)", rc);
-    }
+    if !sock.ol.wait_for_event(timeout)? {
+        return Ok(false);
+    };
 
-    let mut bytes = 0;
-    let mut flags = 0;
-    let ol = sock.ol.0;
-    loop {
-        if unsafe { WSAGetOverlappedResult(sock.s, &ol, &mut bytes, true, &mut flags) }.as_bool() {
-            eprintln!("WSAGetOverlappedResult={} (OK)", bytes);
-            break;
-        }
+    while sock.get_overlapped_result().is_err() {
         let err = unsafe { WSAGetLastError() };
         if err != WSA_IO_INCOMPLETE {
             eprintln!(
@@ -633,13 +649,9 @@ pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
                 err
             );
             return Err(TracerError::IoError(Error::last_os_error()));
-        };
+        }
     }
-
-    if !unsafe { WSAResetEvent(ev) }.as_bool() {
-        eprintln!("is_readable: WSAResetEvent failed");
-        return Err(TracerError::IoError(Error::last_os_error()));
-    }
+    sock.ol.reset_event()?;
 
     Ok(true)
 }
