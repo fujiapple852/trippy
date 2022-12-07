@@ -12,18 +12,19 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::time::Duration;
 use windows::core::PSTR;
 use windows::Win32::Foundation::{
-    RtlNtStatusToDosError, ERROR_BUFFER_OVERFLOW, NO_ERROR, NTSTATUS, WAIT_TIMEOUT,
+    RtlNtStatusToDosError, ERROR_BUFFER_OVERFLOW, NO_ERROR, NTSTATUS, WAIT_FAILED, WAIT_TIMEOUT,
 };
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
     bind, closesocket, sendto, setsockopt, socket, WSACleanup, WSACloseEvent, WSACreateEvent,
-    WSAGetLastError, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAStartup,
+    WSAGetLastError, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup,
     WSAWaitForMultipleEvents, ADDRESS_FAMILY, AF_INET, AF_INET6, FIONBIO, INVALID_SOCKET, IPPROTO,
     IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
     IPV6_UNICAST_HOPS, IP_HDRINCL, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
     SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET,
-    SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_IO_PENDING, WSA_WAIT_FAILED,
+    SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
+use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
 
 // type Socket = SOCKET;
@@ -102,14 +103,8 @@ impl Socket {
             eprintln!("dispatch_icmp_probe: sendto failed with error");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
+        eprintln!("sendto OK");
         Ok(())
-    }
-
-    #[allow(unsafe_code)]
-    #[must_use]
-    pub fn get_overlapped_result(&self) -> bool {
-        // let ol = self.ol.0;
-        unsafe { WSAGetOverlappedResult(self.s, &self.ol.0, &mut 0, false, &mut 0) }.as_bool()
     }
 
     #[allow(unsafe_code)]
@@ -118,6 +113,7 @@ impl Socket {
             eprintln!("closesocket: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
+        eprintln!("close OK");
         Ok(())
     }
 
@@ -143,7 +139,7 @@ impl Socket {
             eprintln!("set_non_blocking: WSAIoctl failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("WSAIoctl(non_blocking) OK");
+        // eprintln!("WSAIoctl(non_blocking) OK");
         Ok(self)
     }
 
@@ -164,7 +160,7 @@ impl Socket {
             eprintln!("set_header_included: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("setsockopt(header_included) OK");
+        // eprintln!("setsockopt(header_included) OK");
         Ok(self)
     }
 
@@ -184,7 +180,7 @@ impl Socket {
             eprintln!("set_reuse_port: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("setsockopt(reuse_port) OK");
+        // eprintln!("setsockopt(reuse_port) OK");
         Ok(self)
     }
 
@@ -202,6 +198,7 @@ impl Socket {
         {
             return Err(TracerError::IoError(Error::last_os_error()));
         }
+        // eprintln!("setsockopt(set_ipv6_max_hops) OK");
         Ok(self)
     }
 
@@ -251,6 +248,22 @@ impl convert::From<&mut Socket> for SOCKET {
     }
 }
 pub struct Overlapped(pub OVERLAPPED);
+impl Overlapped {
+    #[allow(unsafe_code)]
+    pub fn create_event(&mut self) -> TraceResult<&Self> {
+        let recv_ol = OVERLAPPED {
+            hEvent: unsafe { WSACreateEvent() },
+            ..Default::default()
+        };
+        if recv_ol.hEvent.is_invalid() {
+            eprintln!("create_overlapped_event: WSACreateEvent failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        // eprintln!("WSACreateEvent OK: {:?}", recv_ol.hEvent);
+        self.0 = recv_ol;
+        Ok(self)
+    }
+}
 impl fmt::Debug for Overlapped {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Overlapped")
@@ -511,23 +524,9 @@ fn make_socket(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResul
         eprintln!("make_socket: socket failed");
         Err(TracerError::IoError(Error::last_os_error()))
     } else {
-        eprintln!("socket OK");
+        // eprintln!("socket OK");
         Ok(s)
     }
-}
-
-#[allow(unsafe_code)]
-fn create_overlapped_event() -> TraceResult<OVERLAPPED> {
-    let recv_ol = OVERLAPPED {
-        hEvent: unsafe { WSACreateEvent() },
-        ..Default::default()
-    };
-    if recv_ol.hEvent.is_invalid() {
-        eprintln!("create_overlapped_event: WSACreateEvent failed");
-        return Err(TracerError::IoError(Error::last_os_error()));
-    }
-    eprintln!("WSACreateEvent OK: {:?}", recv_ol.hEvent);
-    Ok(recv_ol)
 }
 
 #[allow(unsafe_code)]
@@ -548,7 +547,7 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
 pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
     sock.bind(IpAddr::V4(src_addr))?;
-    sock.ol.0 = create_overlapped_event()?;
+    sock.ol.create_event()?;
     sock.recv_from()?;
     eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
@@ -571,7 +570,7 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
 pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
     sock.bind(IpAddr::V6(src_addr))?;
-    sock.ol.0 = create_overlapped_event()?;
+    sock.ol.create_event()?;
     sock.recv_from()?;
     eprintln!("WSACreateEvent OK\nCreated ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)
@@ -593,16 +592,56 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     let millis = timeout.as_millis() as u32;
     let ev = sock.ol.0.hEvent;
-    let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
-    eprintln!(
-        "WSAWaitForMultipleEvents on Overlapped {:?} returned {}",
-        ev, rc
-    );
-    if rc == WSA_WAIT_FAILED {
-        eprintln!("is_readable: WSAWaitForMultipleEvents failed");
+    if true {
+        let rc = unsafe { WaitForSingleObject(ev, millis) };
+        if rc == WAIT_TIMEOUT {
+            eprintln!("WaitForSingleObject timed out");
+            return Ok(false);
+        } else if rc == WAIT_FAILED {
+            eprintln!("is_readable: WaitForSingleObject failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        eprintln!("WaitForSingleObject={} (OK)", rc.0);
+    } else {
+        // we could use WaitForMultipleEvents instead, but it does not seem to change anything
+        let rc = unsafe { WSAWaitForMultipleEvents(&[ev], true, millis, false) };
+        // eprintln!(
+        //     "WSAWaitForMultipleEvents on Overlapped {:?} returned {}",
+        //     ev, rc
+        // );
+        if rc == WAIT_TIMEOUT.0 {
+            return Ok(false);
+        } else if rc == WAIT_FAILED.0 {
+            eprintln!("is_readable: WSAWaitForMultipleEvents failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        eprintln!("WSAWaitForMultipleEvents={} (OK)", rc);
+    }
+
+    let mut bytes = 0;
+    let mut flags = 0;
+    let ol = sock.ol.0;
+    loop {
+        if unsafe { WSAGetOverlappedResult(sock.s, &ol, &mut bytes, true, &mut flags) }.as_bool() {
+            eprintln!("WSAGetOverlappedResult={} (OK)", bytes);
+            break;
+        }
+        let err = unsafe { WSAGetLastError() };
+        if err != WSA_IO_INCOMPLETE {
+            eprintln!(
+                "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
+                err
+            );
+            return Err(TracerError::IoError(Error::last_os_error()));
+        };
+    }
+
+    if !unsafe { WSAResetEvent(ev) }.as_bool() {
+        eprintln!("is_readable: WSAResetEvent failed");
         return Err(TracerError::IoError(Error::last_os_error()));
     }
-    Ok(rc != WAIT_TIMEOUT.0)
+
+    Ok(true)
 }
 
 /// TODO

@@ -18,13 +18,10 @@ use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::Error;
 #[cfg(not(windows))]
-use std::io::ErrorKind;
+use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
-#[cfg(windows)]
-use windows::Win32::Networking::WinSock::WSA_IO_INCOMPLETE;
 
 #[cfg(windows)]
 use platform::Socket;
@@ -209,26 +206,16 @@ pub fn recv_icmp_probe(
     protocol: TracerProtocol,
     direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
-    if recv_socket.get_overlapped_result() {
-        let buf = recv_socket.wbuf.buf;
-        let bytes = unsafe { buf.as_bytes() };
-        let icmp_v6 = IcmpPacket::new_view(bytes).req()?;
-        let addr = platform::sockaddrptr_to_ipaddr(&recv_socket.from)?;
-        // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
-        recv_socket.recv_from()?;
-        if let IpAddr::V6(src_addr) = addr {
-            extract_probe_resp(protocol, direction, &icmp_v6, src_addr)
-        } else {
-            Err(TracerError::InvalidSourceAddr(addr))
-        }
-    } else if let Some(os_err) = Error::last_os_error().raw_os_error() {
-        if os_err == WSA_IO_INCOMPLETE.0 {
-            Ok(None)
-        } else {
-            Err(TracerError::IoError(Error::last_os_error()))
-        }
+    let buf = recv_socket.wbuf.buf;
+    let bytes = unsafe { buf.as_bytes() };
+    let icmp_v6 = IcmpPacket::new_view(bytes).req()?;
+    let addr = platform::sockaddrptr_to_ipaddr(&recv_socket.from)?;
+    // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
+    recv_socket.recv_from()?;
+    if let IpAddr::V6(src_addr) = addr {
+        extract_probe_resp(protocol, direction, &icmp_v6, src_addr)
     } else {
-        Err(TracerError::IoError(Error::last_os_error()))
+        Err(TracerError::InvalidSourceAddr(addr))
     }
 }
 
