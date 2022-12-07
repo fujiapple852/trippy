@@ -11,16 +11,18 @@ use std::mem::{align_of, size_of};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::time::Duration;
 use windows::core::PSTR;
-use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_TIMEOUT};
+use windows::Win32::Foundation::{
+    RtlNtStatusToDosError, ERROR_BUFFER_OVERFLOW, NO_ERROR, NTSTATUS, WAIT_TIMEOUT,
+};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
     bind, closesocket, sendto, setsockopt, socket, WSACleanup, WSACloseEvent, WSACreateEvent,
-    WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAStartup, WSAWaitForMultipleEvents,
-    ADDRESS_FAMILY, AF_INET, AF_INET6, FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP,
-    IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
+    WSAGetLastError, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAStartup,
+    WSAWaitForMultipleEvents, ADDRESS_FAMILY, AF_INET, AF_INET6, FIONBIO, INVALID_SOCKET, IPPROTO,
+    IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
     IPV6_UNICAST_HOPS, IP_HDRINCL, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
     SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET,
-    SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_WAIT_FAILED,
+    SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_IO_PENDING, WSA_WAIT_FAILED,
 };
 use windows::Win32::System::IO::OVERLAPPED;
 
@@ -220,8 +222,12 @@ impl Socket {
                 None,
             )
         };
-        if ret == SOCKET_ERROR {
-            eprintln!("WSARecvFrom failed");
+        if ret == SOCKET_ERROR && unsafe { WSAGetLastError() } != WSA_IO_PENDING {
+            eprintln!(
+                "WSARecvFrom failed: Internal={}, System Error={}",
+                self.ol.0.Internal,
+                unsafe { RtlNtStatusToDosError(NTSTATUS(self.ol.0.Internal as i32)) }
+            );
             return Err(TracerError::IoError(Error::last_os_error()));
         };
         eprintln!("WSARecvFrom OK");
