@@ -18,8 +18,8 @@ use windows::Win32::Networking::WinSock::{
     WSAGetLastError, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup,
     ADDRESS_FAMILY, AF_INET, AF_INET6, FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP,
     IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
-    IPV6_UNICAST_HOPS, IP_HDRINCL, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
-    SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET,
+    IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR,
+    SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET,
     SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
@@ -202,6 +202,42 @@ impl Socket {
         }
         // // eprintln!("setsockopt(header_included) OK");
         Ok(self)
+    }
+
+    #[allow(unsafe_code)]
+    pub fn set_ttl(&self, u32_ttl: u32) -> TraceResult<()> {
+        let ttl = u32_ttl.to_ne_bytes();
+        let optval = Some(&ttl[..]);
+        if unsafe {
+            setsockopt(
+                self.s,
+                IPPROTO_IP.try_into().unwrap(),
+                IP_TTL.try_into().unwrap(),
+                optval,
+            )
+        } == SOCKET_ERROR
+        {
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        Ok(())
+    }
+
+    #[allow(unsafe_code)]
+    pub fn set_tos(&self, u32_tos: u32) -> TraceResult<()> {
+        let tos = u32_tos.to_ne_bytes();
+        let optval = Some(&tos[..]);
+        if unsafe {
+            setsockopt(
+                self.s,
+                IPPROTO_IP.try_into().unwrap(),
+                IP_TOS.try_into().unwrap(),
+                optval,
+            )
+        } == SOCKET_ERROR
+        {
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        Ok(())
     }
 
     #[allow(unsafe_code)]
