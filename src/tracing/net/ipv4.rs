@@ -255,15 +255,13 @@ pub fn recv_icmp_probe(
 }
 
 #[cfg(windows)]
-#[allow(unsafe_code)]
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
     multipath_strategy: MultipathStrategy,
     direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
-    let buf = recv_socket.wbuf.buf;
-    let bytes = unsafe { buf.as_bytes() };
+    let bytes = &recv_socket.buf_bytes();
     let ipv4 = Ipv4Packet::new_view(bytes).req()?;
     // post the WSARecvFrom again, so that the next OVERLAPPED event can get triggered
     recv_socket.recv_from()?;

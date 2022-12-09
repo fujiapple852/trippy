@@ -11,9 +11,7 @@ use std::mem::{align_of, size_of};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::time::Duration;
 use windows::core::PSTR;
-use windows::Win32::Foundation::{
-    RtlNtStatusToDosError, ERROR_BUFFER_OVERFLOW, NO_ERROR, NTSTATUS, WAIT_FAILED, WAIT_TIMEOUT,
-};
+use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
     bind, closesocket, sendto, setsockopt, socket, WSACleanup, WSACloseEvent, WSACreateEvent,
@@ -29,10 +27,10 @@ use windows::Win32::System::IO::OVERLAPPED;
 
 // type Socket = SOCKET;
 pub struct Socket {
-    pub s: SOCKET,
-    pub ol: Box<OVERLAPPED>,
-    pub wbuf: WSABUF,
-    pub from: Box<SOCKADDR>,
+    s: SOCKET,
+    ol: Box<OVERLAPPED>,
+    wbuf: Box<WSABUF>,
+    from: Box<SOCKADDR>,
 }
 impl Socket {
     #[allow(unsafe_code)]
@@ -48,10 +46,10 @@ impl Socket {
             Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
         let ptr = unsafe { alloc(layout) };
 
-        let wbuf = WSABUF {
+        let wbuf = Box::new(WSABUF {
             len: MAX_PACKET_SIZE as u32,
             buf: PSTR::from_raw(ptr),
-        };
+        });
 
         let ol = Box::new(OVERLAPPED::default());
 
@@ -59,13 +57,26 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[must_use]
+    pub fn buf_bytes(&self) -> Vec<u8> {
+        let buf = self.wbuf.buf.as_ptr();
+        let slice = unsafe { std::slice::from_raw_parts(buf, self.wbuf.len as usize) };
+        slice.to_owned()
+    }
+
+    #[allow(unsafe_code)]
+    pub fn from(&self) -> TraceResult<IpAddr> {
+        sockaddrptr_to_ipaddr(&self.from)
+    }
+
+    #[allow(unsafe_code)]
     fn create_event(&mut self) -> TraceResult<()> {
         self.ol.hEvent = unsafe { WSACreateEvent() };
         if self.ol.hEvent.is_invalid() {
-            eprintln!("create_overlapped_event: WSACreateEvent failed");
+            // eprintln!("create_overlapped_event: WSACreateEvent failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("WSACreateEvent OK: {:?}", self.ol.hEvent);
+        // eprintln!("WSACreateEvent OK: {:?}", self.ol.hEvent);
         Ok(())
     }
 
@@ -75,20 +86,20 @@ impl Socket {
 
         let rc = unsafe { WaitForSingleObject(self.ol.hEvent, millis) };
         if rc == WAIT_TIMEOUT {
-            eprintln!("WaitForSingleObject timed out");
+            // eprintln!("WaitForSingleObject timed out");
             return Ok(false);
         } else if rc == WAIT_FAILED {
-            eprintln!("is_readable: WaitForSingleObject failed");
+            // eprintln!("is_readable: WaitForSingleObject failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("WaitForSingleObject OK"); // WAIT_OBJECT_0
+        // eprintln!("WaitForSingleObject OK"); // WAIT_OBJECT_0
         Ok(true)
     }
 
     #[allow(unsafe_code)]
     fn reset_event(&self) -> TraceResult<()> {
         if !unsafe { WSAResetEvent(self.ol.hEvent) }.as_bool() {
-            eprintln!("is_readable: WSAResetEvent failed");
+            // eprintln!("is_readable: WSAResetEvent failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         Ok(())
@@ -108,10 +119,10 @@ impl Socket {
         let (addr, addrlen) = ipaddr_to_sockaddr(source_addr);
         if unsafe { bind(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR
         {
-            eprintln!("bind: failed");
+            // eprintln!("bind: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("bind OK");
+        // eprintln!("bind OK");
         Ok(self)
     }
 
@@ -129,20 +140,20 @@ impl Socket {
             )
         };
         if rc == SOCKET_ERROR {
-            eprintln!("dispatch_icmp_probe: sendto failed with error");
+            // eprintln!("dispatch_icmp_probe: sendto failed with error");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("sendto OK");
+        // eprintln!("sendto OK");
         Ok(())
     }
 
     #[allow(unsafe_code)]
     pub fn close(&self) -> TraceResult<()> {
         if unsafe { closesocket(self.s) } == SOCKET_ERROR {
-            eprintln!("closesocket: failed");
+            // eprintln!("closesocket: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        eprintln!("close OK");
+        // eprintln!("close OK");
         Ok(())
     }
 
@@ -165,10 +176,10 @@ impl Socket {
             )
         } == SOCKET_ERROR
         {
-            eprintln!("set_non_blocking: WSAIoctl failed");
+            // eprintln!("set_non_blocking: WSAIoctl failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("WSAIoctl(non_blocking) OK");
+        // // eprintln!("WSAIoctl(non_blocking) OK");
         Ok(self)
     }
 
@@ -186,10 +197,10 @@ impl Socket {
             )
         } == SOCKET_ERROR
         {
-            eprintln!("set_header_included: setsockopt failed");
+            // eprintln!("set_header_included: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("setsockopt(header_included) OK");
+        // // eprintln!("setsockopt(header_included) OK");
         Ok(self)
     }
 
@@ -206,10 +217,10 @@ impl Socket {
             )
         } == SOCKET_ERROR
         {
-            eprintln!("set_reuse_port: setsockopt failed");
+            // eprintln!("set_reuse_port: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("setsockopt(reuse_port) OK");
+        // // eprintln!("setsockopt(reuse_port) OK");
         Ok(self)
     }
 
@@ -227,7 +238,7 @@ impl Socket {
         {
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("setsockopt(set_ipv6_max_hops) OK");
+        // // eprintln!("setsockopt(set_ipv6_max_hops) OK");
         Ok(self)
     }
 
@@ -239,7 +250,7 @@ impl Socket {
         let ret = unsafe {
             WSARecvFrom(
                 self.s,
-                &[self.wbuf],
+                &[*self.wbuf],
                 Some(&mut 0),
                 &mut 0,
                 Some(&mut *self.from),
@@ -251,17 +262,17 @@ impl Socket {
         if ret == SOCKET_ERROR {
             let err = unsafe { WSAGetLastError() };
             if err != WSA_IO_PENDING {
-                let internal = self.ol.Internal;
-                eprintln!(
-                    "WSARecvFrom failed: Internal={}, System Error={}",
-                    internal,
-                    unsafe { RtlNtStatusToDosError(NTSTATUS(internal as i32)) }
-                );
+                // let internal = self.ol.Internal;
+                // eprintln!(
+                // "WSARecvFrom failed: Internal={}, System Error={}",
+                // internal,
+                // unsafe { RtlNtStatusToDosError(NTSTATUS(internal as i32)) }
+                // );
                 return Err(TracerError::IoError(Error::last_os_error()));
             }
-            eprintln!("WSARecvFrom pending");
+            // eprintln!("WSARecvFrom pending");
         } else {
-            eprintln!("WSARecvFrom OK"); // TODO no need to wait for an event, recv succeeded immediately! This should be handled
+            // eprintln!("WSARecvFrom OK"); // TODO no need to wait for an event, recv succeeded immediately! This should be handled
         };
         Ok(())
     }
@@ -272,7 +283,7 @@ impl Socket {
         let mut flags = 0;
         let ol = &self.ol;
         if unsafe { WSAGetOverlappedResult(self, &**ol, &mut bytes, false, &mut flags) }.as_bool() {
-            eprintln!("WSAGetOverlappedResult returned {} bytes", bytes);
+            // eprintln!("WSAGetOverlappedResult returned {} bytes", bytes);
             return Ok((bytes, flags));
         }
         Err(TracerError::IoError(Error::from(ErrorKind::Other)))
@@ -309,10 +320,10 @@ pub fn startup() -> TraceResult<()> {
     let rc = unsafe { WSAStartup(WINSOCK_VERSION, wsd.as_mut_ptr()) };
     unsafe { wsd.assume_init() }; // extracts the WSDATA to ensure it gets dropped (it's not used ATM)
     if rc == 0 {
-        eprintln!("WSAStartup OK");
+        // eprintln!("WSAStartup OK");
         Ok(())
     } else {
-        eprintln!("WSAStartup failed");
+        // eprintln!("WSAStartup failed");
         Err(TracerError::IoError(Error::last_os_error()))
     }
 }
@@ -517,10 +528,10 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
         )
     };
     if rc == SOCKET_ERROR {
-        eprintln!("routing_interface_query: WSAIoctl failed");
+        // eprintln!("routing_interface_query: WSAIoctl failed");
         return Err(TracerError::IoError(Error::last_os_error()));
     }
-    eprintln!("WSAIoctl(routing_interface_query) OK");
+    // eprintln!("WSAIoctl(routing_interface_query) OK");
 
     /*
     NOTE The WSAIoctl call potentially returns multiple results (see
@@ -535,23 +546,23 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
 fn make_socket(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<SOCKET> {
     let s = unsafe { socket(af.0.try_into().unwrap(), i32::from(r#type), protocol.0) };
     if s == INVALID_SOCKET {
-        eprintln!("make_socket: socket failed");
+        // eprintln!("make_socket: socket failed");
         Err(TracerError::IoError(Error::last_os_error()))
     } else {
-        // eprintln!("socket OK");
+        // // eprintln!("socket OK");
         Ok(s)
     }
 }
 
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
-    eprintln!("created ICMP send Socket {:?}", sock);
+    // eprintln!("created ICMP send Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
 pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
-    eprintln!("created UDP send Socket {:?}", sock);
+    // eprintln!("created UDP send Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
@@ -560,13 +571,13 @@ pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     sock.bind(IpAddr::V4(src_addr))?;
     sock.create_event()?;
     sock.recv_from()?;
-    eprintln!("Created ICMP recv Socket {:?}", sock);
+    // eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
 pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
-    eprintln!("created ICMP send Socket {:?}", sock);
+    // eprintln!("created ICMP send Socket {:?}", sock);
     sock.set_non_blocking(true)
 }
 
@@ -580,7 +591,7 @@ pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     sock.bind(IpAddr::V6(src_addr))?;
     sock.create_event()?;
     sock.recv_from()?;
-    eprintln!("Created ICMP recv Socket {:?}", sock);
+    // eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)
 }
 
@@ -603,10 +614,10 @@ pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     while sock.get_overlapped_result().is_err() {
         let err = unsafe { WSAGetLastError() };
         if err != WSA_IO_INCOMPLETE {
-            eprintln!(
-                "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
-                err
-            );
+            // eprintln!(
+            //     "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
+            //     err
+            // );
             return Err(TracerError::IoError(Error::last_os_error()));
         }
     }
