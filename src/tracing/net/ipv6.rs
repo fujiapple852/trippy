@@ -101,7 +101,6 @@ pub fn dispatch_icmp_probe(
         .sendto(echo_request.packet(), IpAddr::V6(dest_addr))
 }
 
-#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_udp_probe(
     udp_send_socket: &mut Socket,
@@ -131,14 +130,22 @@ pub fn dispatch_udp_probe(
         udp_payload_size(packet_size),
         payload_pattern,
     )?;
-    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
-    udp_send_socket.bind(&SockAddr::from(local_addr))?;
-    udp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    #[cfg(unix)]
+    {
+        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
+        udp_send_socket.bind(&SockAddr::from(local_addr))?;
+        udp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
 
-    // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in the `UDP`
-    // packet.  If we (redundantly) set the target port here then the send wil fail with `EINVAL`.
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
-    udp_send_socket.send_to(udp.packet(), &remote_addr)?;
+        // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in the `UDP`
+        // packet.  If we (redundantly) set the target port here then the send wil fail with `EINVAL`.
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
+        udp_send_socket.send_to(udp.packet(), &remote_addr)?;
+    }
+    #[cfg(windows)]
+    udp_send_socket
+        .bind(IpAddr::V6(src_addr))?
+        .set_ipv6_max_hops(probe.ttl.0)?
+        .sendto(udp.packet(), IpAddr::V6(dest_addr))?;
     Ok(())
 }
 

@@ -158,7 +158,6 @@ impl TracerChannel {
         }
     }
 
-    #[cfg(unix)]
     /// Dispatch a UDP probe.
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.addr_family, self.src_addr, self.dest_addr) {
@@ -189,12 +188,6 @@ impl TracerChannel {
             }
             _ => unreachable!(),
         }
-    }
-
-    #[cfg(windows)]
-    #[allow(clippy::unused_self)]
-    fn dispatch_udp_probe(&mut self, _probe: Probe) -> TraceResult<()> {
-        unimplemented!()
     }
 
     #[cfg(unix)]
