@@ -45,7 +45,6 @@ const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_pa
 /// 0100 0000 0000 0000
 const DONT_FRAGMENT: u16 = 0x4000;
 
-#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
@@ -80,51 +79,16 @@ pub fn dispatch_icmp_probe(
         0,
         echo_request.packet(),
     )?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
-    icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    #[cfg(unix)]
+    {
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
+        icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    }
+    #[cfg(windows)]
+    icmp_send_socket.sendto(ipv4.packet(), IpAddr::V4(dest_addr))?;
     Ok(())
 }
 
-#[cfg(windows)]
-#[allow(clippy::too_many_arguments)]
-#[allow(unsafe_code)]
-pub fn dispatch_icmp_probe(
-    icmp_send_socket: &mut Socket,
-    probe: Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    identifier: TraceId,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    ipv4_byte_order: PlatformIpv4FieldByteOrder,
-) -> TraceResult<()> {
-    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-    let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
-    let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
-        return Err(TracerError::InvalidPacketSize(packet_size));
-    }
-    let echo_request = make_echo_request_icmp_packet(
-        &mut icmp_buf,
-        identifier,
-        probe.sequence,
-        icmp_payload_size(packet_size),
-        payload_pattern,
-    )?;
-    let ipv4 = make_ipv4_packet(
-        &mut ipv4_buf,
-        ipv4_byte_order,
-        IpProtocol::Icmp,
-        src_addr,
-        dest_addr,
-        probe.ttl.0,
-        0,
-        echo_request.packet(),
-    )?;
-    icmp_send_socket.sendto(ipv4.packet(), IpAddr::V4(dest_addr))
-}
-
-#[cfg(unix)]
 #[allow(clippy::too_many_arguments)]
 pub fn dispatch_udp_probe(
     raw_send_socket: &mut Socket,
@@ -185,8 +149,13 @@ pub fn dispatch_udp_probe(
         identifier,
         udp.packet(),
     )?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
-    raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    #[cfg(unix)]
+    {
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
+        raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    }
+    #[cfg(windows)]
+    raw_send_socket.sendto(ipv4.packet(), IpAddr::V4(dest_addr))?;
     Ok(())
 }
 
