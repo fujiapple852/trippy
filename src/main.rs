@@ -90,7 +90,6 @@ fn start_tracer(
             )
         })?;
     let source_addr = TracerChannel::discover_src_addr(
-        cfg.addr_family,
         cfg.source_addr,
         target_addr,
         cfg.port_direction,
