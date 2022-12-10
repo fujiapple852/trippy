@@ -127,6 +127,10 @@ pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
     Ok(socket)
 }
 
+pub fn make_udp_dgram_socket_ipv4() -> TraceResult<Socket> {
+    Ok(Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?)
+}
+
 pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
     let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
     socket.set_nonblocking(true)?;
@@ -143,6 +147,10 @@ pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
     let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
     socket.set_nonblocking(true)?;
     Ok(socket)
+}
+
+pub fn make_udp_dgram_socket_ipv6() -> TraceResult<Socket> {
+    Ok(Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?)
 }
 
 /// Create a IPv4/TCP socket.
