@@ -1,7 +1,9 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::platform;
+use crate::tracing::net::make_stream_socket_ipv6;
+use crate::tracing::net::Socket;
+use crate::tracing::net::{is_conn_refused_error, is_not_in_progress_error};
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
 use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
@@ -15,7 +17,6 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
-use socket2::{SockAddr, Socket};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
@@ -56,10 +57,10 @@ pub fn dispatch_icmp_probe(
         payload_pattern,
     )?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
-    icmp_send_socket.bind(&SockAddr::from(local_addr))?;
+    icmp_send_socket.bind(local_addr)?;
     icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
-    icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
+    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+    icmp_send_socket.send_to(echo_request.packet(), remote_addr)?;
     Ok(())
 }
 
@@ -93,13 +94,13 @@ pub fn dispatch_udp_probe(
         payload_pattern,
     )?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
-    udp_send_socket.bind(&SockAddr::from(local_addr))?;
+    udp_send_socket.bind(local_addr)?;
     udp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
 
     // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in the `UDP`
     // packet.  If we (redundantly) set the target port here then the send wil fail with `EINVAL`.
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
-    udp_send_socket.send_to(udp.packet(), &remote_addr)?;
+    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+    udp_send_socket.send_to(udp.packet(), remote_addr)?;
     Ok(())
 }
 
@@ -114,16 +115,16 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = platform::make_stream_socket_ipv6()?;
+    let socket = make_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
-    socket.bind(&SockAddr::from(local_addr))?;
+    socket.bind(local_addr)?;
     socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
-    match socket.connect(&SockAddr::from(remote_addr)) {
+    match socket.connect(remote_addr) {
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if platform::is_not_in_progress_error(code) {
+                if is_not_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
@@ -148,8 +149,15 @@ pub fn recv_icmp_probe(
     match recv_socket.recv_from_into_buf(&mut buf) {
         Ok((_bytes_read, addr)) => {
             let icmp_v6 = IcmpPacket::new_view(&buf).req()?;
-            let src_addr = *addr.as_socket_ipv6().req()?.ip();
-            Ok(extract_probe_resp(protocol, direction, &icmp_v6, src_addr)?)
+
+            let src_addr = match addr.as_ref().req()? {
+                SocketAddr::V6(addr) => addr.ip(),
+                SocketAddr::V4(_) => panic!(),
+            };
+
+            Ok(extract_probe_resp(
+                protocol, direction, &icmp_v6, *src_addr,
+            )?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -165,7 +173,7 @@ pub fn recv_tcp_socket(
 ) -> TraceResult<Option<ProbeResponse>> {
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            let addr = tcp_socket.peer_addr()?.req()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -176,7 +184,7 @@ pub fn recv_tcp_socket(
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
-                if platform::is_conn_refused_error(code) {
+                if is_conn_refused_error(code) {
                     return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
@@ -382,14 +390,14 @@ fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
 ///
 /// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
 trait RecvFrom {
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)>;
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, Option<SocketAddr>)>;
 }
 
 impl RecvFrom for Socket {
     // Safety: the `recv` implementation promises not to write uninitialised
     // bytes to the `buf`fer, so this casting is safe.
     #![allow(unsafe_code)]
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, SockAddr)> {
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, Option<SocketAddr>)> {
         let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
         self.recv_from(buf)
     }

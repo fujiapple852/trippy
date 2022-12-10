@@ -1,8 +1,11 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::platform;
-use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
+use crate::tracing::net::PlatformIpv4FieldByteOrder;
+use crate::tracing::net::Socket;
+use crate::tracing::net::{
+    is_conn_refused_error, is_not_in_progress_error, make_stream_socket_ipv4,
+};
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -17,7 +20,6 @@ use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
-use socket2::{SockAddr, Socket};
 use std::io::{ErrorKind, Read};
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
@@ -73,8 +75,8 @@ pub fn dispatch_icmp_probe(
         0,
         echo_request.packet(),
     )?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), 0));
-    icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
+    icmp_send_socket.send_to(ipv4.packet(), remote_addr)?;
     Ok(())
 }
 
@@ -138,8 +140,8 @@ pub fn dispatch_udp_probe(
         identifier,
         udp.packet(),
     )?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V4(dest_addr), dest_port));
-    raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
+    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
+    raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
     Ok(())
 }
 
@@ -155,17 +157,17 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = platform::make_stream_socket_ipv4()?;
+    let socket = make_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
-    socket.bind(&SockAddr::from(local_addr))?;
+    socket.bind(local_addr)?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
     socket.set_tos(u32::from(tos.0))?;
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
-    match socket.connect(&SockAddr::from(remote_addr)) {
+    match socket.connect(remote_addr) {
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if platform::is_not_in_progress_error(code) {
+                if is_not_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
@@ -212,7 +214,7 @@ pub fn recv_tcp_socket(
 ) -> TraceResult<Option<ProbeResponse>> {
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            let addr = tcp_socket.peer_addr()?.req()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -223,7 +225,7 @@ pub fn recv_tcp_socket(
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
-                if platform::is_conn_refused_error(code) {
+                if is_conn_refused_error(code) {
                     return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,

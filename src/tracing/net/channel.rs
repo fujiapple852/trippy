@@ -1,6 +1,12 @@
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
-use crate::tracing::net::{ipv4, ipv6, platform, Network};
+use crate::tracing::net::PlatformIpv4FieldByteOrder;
+use crate::tracing::net::Socket;
+use crate::tracing::net::{ipv4, ipv6, Network};
+use crate::tracing::net::{
+    is_readable, is_writable, make_icmp_send_socket_ipv4, make_icmp_send_socket_ipv6,
+    make_recv_socket_ipv4, make_recv_socket_ipv6, make_udp_send_socket_ipv4,
+    make_udp_send_socket_ipv6,
+};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::{
@@ -8,7 +14,6 @@ use crate::tracing::{
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
-use socket2::Socket;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
@@ -165,7 +170,7 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
+        if is_readable(&self.recv_socket, self.read_timeout)? {
             match self.dest_addr {
                 IpAddr::V4(_) => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
@@ -191,7 +196,7 @@ impl TracerChannel {
         let found_index = self
             .tcp_probes
             .iter()
-            .find_position(|&probe| platform::is_writable(&probe.socket).unwrap_or_default())
+            .find_position(|&probe| is_writable(&probe.socket).unwrap_or_default())
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
@@ -230,23 +235,23 @@ impl TcpProbe {
 /// Make a socket for sending raw `ICMP` packets.
 fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
     match addr {
-        IpAddr::V4(_) => platform::make_icmp_send_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_icmp_send_socket_ipv6(),
+        IpAddr::V4(_) => make_icmp_send_socket_ipv4(),
+        IpAddr::V6(_) => make_icmp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for sending `UDP` packets.
 fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
     match addr {
-        IpAddr::V4(_) => platform::make_udp_send_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_udp_send_socket_ipv6(),
+        IpAddr::V4(_) => make_udp_send_socket_ipv4(),
+        IpAddr::V6(_) => make_udp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
 fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
     match addr {
-        IpAddr::V4(_) => platform::make_recv_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_recv_socket_ipv6(),
+        IpAddr::V4(_) => make_recv_socket_ipv4(),
+        IpAddr::V6(_) => make_recv_socket_ipv6(),
     }
 }
