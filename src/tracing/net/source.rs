@@ -58,7 +58,7 @@ fn validate_local_addr(addr: IpAddr) -> TraceResult<IpAddr> {
 /// Create a socket suitable for a given address.
 fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
     Ok(match addr {
-        IpAddr::V4(_) => platform::make_udo_dgram_socket_ipv4()?,
+        IpAddr::V4(_) => platform::make_udp_dgram_socket_ipv4()?,
         IpAddr::V6(_) => platform::make_udp_dgram_socket_ipv6()?,
     })
 }
