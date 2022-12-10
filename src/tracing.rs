@@ -14,6 +14,6 @@ pub use config::{
     TracerProtocol,
 };
 pub use net::channel::TracerChannel;
-pub use net::source::discover_src_addr;
+pub use net::source::SourceAddr;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
 pub use tracer::{Tracer, TracerRound};
