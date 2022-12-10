@@ -1,17 +1,15 @@
-use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
-use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId, TypeOfService};
-use crate::tracing::util::Required;
+use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::{
     MultipathStrategy, PortDirection, Probe, TracerChannelConfig, TracerProtocol,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::net::{IpAddr, SocketAddr};
+use socket2::Socket;
+use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The maximum size of the IP packet we allow.
@@ -19,9 +17,6 @@ pub const MAX_PACKET_SIZE: usize = 1024;
 
 /// The maximum number of TCP probes we allow.
 const MAX_TCP_PROBES: usize = 256;
-
-/// The port used for local address discovery if not dest port is available.
-const DISCOVERY_PORT: Port = Port(80);
 
 /// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel {
@@ -77,16 +72,6 @@ impl TracerChannel {
             recv_socket,
             tcp_probes: ArrayVec::new(),
         })
-    }
-
-    /// Discover the source `IpAddr` of the channel.
-    pub fn discover_src_addr(
-        source_addr: Option<IpAddr>,
-        target_addr: IpAddr,
-        port_direction: PortDirection,
-        interface: Option<&str>,
-    ) -> TraceResult<IpAddr> {
-        make_src_addr(source_addr, target_addr, port_direction, interface)
     }
 }
 
@@ -240,59 +225,6 @@ impl TcpProbe {
             start,
         }
     }
-}
-
-/// Validate, Lookup or discover the source `IpAddr`.
-fn make_src_addr(
-    source_addr: Option<IpAddr>,
-    target_addr: IpAddr,
-    port_direction: PortDirection,
-    interface: Option<&str>,
-) -> TraceResult<IpAddr> {
-    match (source_addr, interface.as_ref()) {
-        (Some(addr), None) => validate_local_addr(addr),
-        (None, Some(interface)) => lookup_interface_addr(target_addr, interface),
-        (None, None) => discover_local_addr(
-            target_addr,
-            port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
-        ),
-        (Some(_), Some(_)) => unreachable!(),
-    }
-}
-
-/// Lookup the address for a named interface.
-fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
-    match addr {
-        IpAddr::V4(_) => platform::lookup_interface_addr_ipv4(name),
-        IpAddr::V6(_) => platform::lookup_interface_addr_ipv6(name),
-    }
-}
-
-/// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
-///
-/// Note that no packets are transmitted by this method.
-fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
-    let socket = udp_socket_for_addr_family(target_addr)?;
-    socket.connect(&SockAddr::from(SocketAddr::new(target_addr, port)))?;
-    Ok(socket.local_addr()?.as_socket().req()?.ip())
-}
-
-/// Validate that we can bind to the source address.
-fn validate_local_addr(addr: IpAddr) -> TraceResult<IpAddr> {
-    let socket = udp_socket_for_addr_family(addr)?;
-    let sock_addr = SocketAddr::new(addr, 0);
-    match socket.bind(&SockAddr::from(sock_addr)) {
-        Ok(_) => Ok(addr),
-        Err(_) => Err(InvalidSourceAddr(sock_addr.ip())),
-    }
-}
-
-/// Create a socket suitable for a given address.
-fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
-    Ok(match addr {
-        IpAddr::V4(_) => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?,
-        IpAddr::V6(_) => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?,
-    })
 }
 
 /// Make a socket for sending raw `ICMP` packets.

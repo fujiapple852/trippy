@@ -23,9 +23,10 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use trippy::tracing::discover_src_addr;
 use trippy::tracing::{
-    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannel, TracerChannelConfig,
-    TracerConfig, TracerProtocol,
+    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
+    TracerProtocol,
 };
 
 mod backend;
@@ -89,7 +90,7 @@ fn start_tracer(
                 target_host
             )
         })?;
-    let source_addr = TracerChannel::discover_src_addr(
+    let source_addr = discover_src_addr(
         cfg.source_addr,
         target_addr,
         cfg.port_direction,
