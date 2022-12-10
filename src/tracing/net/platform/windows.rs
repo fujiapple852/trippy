@@ -36,6 +36,11 @@ pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
 }
 
 /// TODO
+pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
+    unimplemented!()
+}
+
+/// TODO
 pub fn make_udp_dgram_socket_ipv4() -> TraceResult<Socket> {
     unimplemented!()
 }
@@ -57,11 +62,6 @@ pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
 
 /// TODO
 pub fn make_udp_dgram_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
     unimplemented!()
 }
 
