@@ -6,7 +6,6 @@ use thiserror::Error;
 pub type TraceResult<T> = Result<T, TracerError>;
 
 #[derive(Error, Debug)]
-#[error("required value was not supplied")]
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),

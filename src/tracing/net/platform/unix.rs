@@ -5,9 +5,12 @@ use nix::{
     sys::socket::{AddressFamily, SockaddrLike},
     sys::time::{TimeVal, TimeValLike},
 };
-use socket2::{Domain, Protocol, Socket, Type};
+use socket2::{Domain, Protocol, SockAddr, Type};
+use std::io;
+use std::mem::MaybeUninit;
 use std::net::{IpAddr, Ipv4Addr};
-use std::os::unix::io::AsRawFd;
+use std::net::{Shutdown, SocketAddr};
+use std::os::unix::io::{AsRawFd, RawFd};
 use std::time::Duration;
 
 /// The size of the test packet to use for discovering the `total_length` byte order.
@@ -64,8 +67,8 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
         Some(socket2::Protocol::from(nix::libc::IPPROTO_RAW)),
     )?;
     probe_socket.set_header_included(true)?;
-    let remote_addr = std::net::SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
-    Ok(probe_socket.send_to(ipv4.packet(), &socket2::SockAddr::from(remote_addr))?)
+    let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+    Ok(probe_socket.send_to(ipv4.packet(), remote_addr)?)
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
@@ -205,4 +208,99 @@ pub fn is_not_in_progress_error(code: i32) -> bool {
 
 pub fn is_conn_refused_error(code: i32) -> bool {
     nix::Error::from_i32(code) == nix::Error::ECONNREFUSED
+}
+
+/// A network socket.
+#[derive(Debug)]
+pub struct Socket {
+    inner: socket2::Socket,
+}
+
+impl Socket {
+    pub fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> io::Result<Self> {
+        Ok(Self {
+            inner: socket2::Socket::new(domain, ty, protocol)?,
+        })
+    }
+
+    pub fn bind(&self, address: SocketAddr) -> io::Result<()> {
+        self.inner.bind(&SockAddr::from(address))
+    }
+
+    pub fn set_tos(&self, tos: u32) -> io::Result<()> {
+        self.inner.set_tos(tos)
+    }
+
+    pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
+        self.inner.set_ttl(ttl)
+    }
+
+    pub fn set_reuse_port(&self, reuse: bool) -> io::Result<()> {
+        self.inner.set_reuse_port(reuse)
+    }
+
+    pub fn set_header_included(&self, included: bool) -> io::Result<()> {
+        self.inner.set_header_included(included)
+    }
+
+    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+        self.inner.set_nonblocking(nonblocking)
+    }
+
+    pub fn set_unicast_hops_v6(&self, hops: u32) -> io::Result<()> {
+        self.inner.set_unicast_hops_v6(hops)
+    }
+
+    pub fn connect(&self, address: SocketAddr) -> io::Result<()> {
+        self.inner.connect(&SockAddr::from(address))
+    }
+
+    pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
+        self.inner.send_to(buf, &SockAddr::from(addr))
+    }
+
+    pub fn recv_from(
+        &self,
+        buf: &mut [MaybeUninit<u8>],
+    ) -> io::Result<(usize, Option<SocketAddr>)> {
+        self.inner
+            .recv_from(buf)
+            .map(|(size, addr)| (size, addr.as_socket()))
+    }
+
+    pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
+        self.inner.shutdown(how)
+    }
+
+    pub fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
+        Ok(self.inner.local_addr()?.as_socket())
+    }
+
+    pub fn as_raw_fd(&self) -> RawFd {
+        self.inner.as_raw_fd()
+    }
+
+    #[allow(dead_code)]
+    pub fn unicast_hops_v6(&self) -> io::Result<u32> {
+        self.inner.unicast_hops_v6()
+    }
+
+    pub fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
+        Ok(self.inner.peer_addr()?.as_socket())
+    }
+
+    pub fn take_error(&self) -> io::Result<Option<io::Error>> {
+        self.inner.take_error()
+    }
+
+    #[allow(dead_code)]
+    pub fn ttl(&self) -> io::Result<u32> {
+        self.inner.ttl()
+    }
+}
+
+impl io::Read for Socket {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
 }
