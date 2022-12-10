@@ -23,7 +23,7 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use trippy::tracing::discover_src_addr;
+use trippy::tracing::SourceAddr;
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
     TracerProtocol,
@@ -90,12 +90,10 @@ fn start_tracer(
                 target_host
             )
         })?;
-    let source_addr = discover_src_addr(
-        cfg.source_addr,
-        target_addr,
-        cfg.port_direction,
-        cfg.interface.as_deref(),
-    )?;
+    let source_addr = match cfg.source_addr {
+        None => SourceAddr::discover(target_addr, cfg.port_direction, cfg.interface.as_deref())?,
+        Some(addr) => SourceAddr::validate(addr)?,
+    };
     let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
     let channel_config = make_channel_config(cfg, source_addr, target_addr, trace_identifier);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
