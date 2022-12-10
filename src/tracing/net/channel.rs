@@ -12,12 +12,13 @@ use crate::tracing::{
     MultipathStrategy, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
 };
 use arrayvec::ArrayVec;
+use itertools::Itertools;
 #[cfg(windows)]
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::Error;
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, SystemTime};
 
 /// The maximum size of the IP packet we allow.
@@ -64,11 +65,11 @@ impl TracerChannel {
         #[cfg(windows)]
         platform::startup()?;
         let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
-        #[cfg(unix)]
-        let icmp_send_socket = make_icmp_send_socket(config.addr_family)?;
-        #[cfg(windows)]
         let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
-        let udp_send_socket = make_udp_send_socket(config.addr_family)?;
+        let udp_send_socket = make_udp_send_socket(config.source_addr)?;
+        #[cfg(unix)]
+        let recv_socket = make_recv_socket(config.addr_family)?;
+        #[cfg(windows)]
         let recv_socket = make_recv_socket(config.source_addr)?;
         Ok(Self {
             protocol: config.protocol,
@@ -190,7 +191,6 @@ impl TracerChannel {
         }
     }
 
-    #[cfg(unix)]
     /// Dispatch a TCP probe.
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = match (self.addr_family, self.src_addr, self.dest_addr) {
@@ -205,12 +205,6 @@ impl TracerChannel {
         self.tcp_probes
             .push(TcpProbe::new(socket, SystemTime::now()));
         Ok(())
-    }
-
-    #[cfg(windows)]
-    #[allow(clippy::unused_self)]
-    fn dispatch_tcp_probe(&mut self, _probe: Probe) -> TraceResult<()> {
-        unimplemented!()
     }
 
     #[cfg(unix)]
@@ -252,7 +246,6 @@ impl TracerChannel {
         }
     }
 
-    #[cfg(unix)]
     /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
     ///
     /// Any TCP socket which has not connected or failed after a timeout wil be removed.
@@ -273,12 +266,6 @@ impl TracerChannel {
         } else {
             Ok(None)
         }
-    }
-
-    #[cfg(windows)]
-    #[allow(clippy::unused_self)]
-    fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        unimplemented!()
     }
 }
 
@@ -368,11 +355,8 @@ fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> Tr
 #[cfg(windows)]
 #[allow(unsafe_code)]
 fn validate_local_addr(_addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
-    match Socket::udp_from(source_addr)?.bind(source_addr) {
-        Err(_) => {
-            eprintln!("validate_local_addr: bind failed with error");
-            Err(TracerError::IoError(Error::last_os_error()))
-        }
+    match Socket::udp_from(source_addr)?.bind(SocketAddr::new(source_addr, 0)) {
+        Err(_) => Err(TracerError::IoError(Error::last_os_error())),
         Ok(s) => {
             s.close()?;
             Ok(source_addr)
@@ -390,14 +374,6 @@ fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Sock
 }
 
 /// Make a socket for sending raw `ICMP` packets.
-#[cfg(unix)]
-fn make_icmp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::make_icmp_send_socket_ipv4(),
-        TracerAddrFamily::Ipv6 => platform::make_icmp_send_socket_ipv6(),
-    }
-}
-#[cfg(windows)]
 fn make_icmp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
     match src_addr {
         IpAddr::V4(_) => platform::make_icmp_send_socket_ipv4(),
@@ -406,14 +382,23 @@ fn make_icmp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
 }
 
 /// Make a socket for sending `UDP` packets.
-fn make_udp_send_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::make_udp_send_socket_ipv4(),
-        TracerAddrFamily::Ipv6 => platform::make_udp_send_socket_ipv6(),
+fn make_udp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
+    match src_addr {
+        IpAddr::V4(_) => platform::make_udp_send_socket_ipv4(),
+        IpAddr::V6(_) => platform::make_udp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
+#[cfg(unix)]
+fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
+    match addr_family {
+        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
+        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
+    }
+}
+
+#[cfg(windows)]
 fn make_recv_socket(src_addr: IpAddr) -> TraceResult<Socket> {
     match src_addr {
         IpAddr::V4(ipv4addr) => platform::make_recv_socket_ipv4(ipv4addr),

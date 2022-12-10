@@ -5,22 +5,24 @@ use core::convert;
 use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_void;
 use std::fmt::{self};
-use std::io::{Error, ErrorKind};
+use std::io::{Error, ErrorKind, Result};
 use std::mem::MaybeUninit;
 use std::mem::{align_of, size_of};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::time::Duration;
 use windows::core::PSTR;
 use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
-    bind, closesocket, sendto, setsockopt, socket, WSACleanup, WSACloseEvent, WSACreateEvent,
-    WSAGetLastError, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup,
-    ADDRESS_FAMILY, AF_INET, AF_INET6, FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP,
-    IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
-    IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR,
-    SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET,
-    SO_PORT_SCALABILITY, WSABUF, WSADATA, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    bind, closesocket, connect, getpeername, getsockopt, select, sendto, setsockopt, shutdown,
+    socket, WSACleanup, WSACloseEvent, WSACreateEvent, WSAGetLastError, WSAGetOverlappedResult,
+    WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET,
+    FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6,
+    IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH,
+    SD_RECEIVE, SD_SEND, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET,
+    SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
+    TIMEVAL, WSABUF, WSADATA, WSAECONNREFUSED, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE,
+    WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
@@ -115,10 +117,9 @@ impl Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn bind(&self, source_addr: IpAddr) -> TraceResult<&Self> {
-        let (addr, addrlen) = ipaddr_to_sockaddr(source_addr);
-        if unsafe { bind(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR
-        {
+    pub fn bind(&self, source_socketaddr: SocketAddr) -> TraceResult<&Self> {
+        let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
+        if unsafe { bind(self.s, &addr, addrlen as i32) } == SOCKET_ERROR {
             // eprintln!("bind: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
@@ -128,19 +129,11 @@ impl Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn sendto(&self, packet: &[u8], dest_addr: IpAddr) -> TraceResult<()> {
-        let (addr, addrlen) = ipaddr_to_sockaddr(dest_addr);
-        let rc = unsafe {
-            sendto(
-                self.s,
-                packet,
-                0,
-                std::ptr::addr_of!(addr).cast(),
-                addrlen as i32,
-            )
-        };
+    pub fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> TraceResult<()> {
+        let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
+        let rc = unsafe { sendto(self.s, packet, 0, &addr, addrlen as i32) };
         if rc == SOCKET_ERROR {
-            // eprintln!("dispatch_icmp_probe: sendto failed with error");
+            // eprintln!("sendto failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         // eprintln!("sendto OK");
@@ -184,19 +177,12 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     fn set_header_included(self, is_header_included: bool) -> TraceResult<Self> {
         let u32_header_included: u32 = if is_header_included { 1 } else { 0 };
         let header_included = u32_header_included.to_ne_bytes();
         let optval = Some(&header_included[..]);
-        if unsafe {
-            setsockopt(
-                self.s,
-                IPPROTO_IP.try_into().unwrap(),
-                IP_HDRINCL.try_into().unwrap(),
-                optval,
-            )
-        } == SOCKET_ERROR
-        {
+        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_HDRINCL as _, optval) } == SOCKET_ERROR {
             // eprintln!("set_header_included: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
@@ -205,53 +191,39 @@ impl Socket {
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn set_ttl(&self, u32_ttl: u32) -> TraceResult<()> {
         let ttl = u32_ttl.to_ne_bytes();
         let optval = Some(&ttl[..]);
-        if unsafe {
-            setsockopt(
-                self.s,
-                IPPROTO_IP.try_into().unwrap(),
-                IP_TTL.try_into().unwrap(),
-                optval,
-            )
-        } == SOCKET_ERROR
-        {
+        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_TTL as _, optval) } == SOCKET_ERROR {
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         Ok(())
     }
 
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn ttl(&self) -> Result<u32> {
+        self.getsockopt(IPPROTO_IP as _, IP_TTL as _)
+    }
+
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     pub fn set_tos(&self, u32_tos: u32) -> TraceResult<()> {
         let tos = u32_tos.to_ne_bytes();
         let optval = Some(&tos[..]);
-        if unsafe {
-            setsockopt(
-                self.s,
-                IPPROTO_IP.try_into().unwrap(),
-                IP_TOS.try_into().unwrap(),
-                optval,
-            )
-        } == SOCKET_ERROR
-        {
+        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_TOS as _, optval) } == SOCKET_ERROR {
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         Ok(())
     }
 
     #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
     fn set_reuse_port(self, is_reuse_port: bool) -> TraceResult<Self> {
         let reuse_port = [is_reuse_port.try_into().unwrap()];
         let optval = Some(&reuse_port[..]);
-        if unsafe {
-            setsockopt(
-                self.s,
-                SOL_SOCKET.try_into().unwrap(),
-                SO_PORT_SCALABILITY.try_into().unwrap(),
-                optval,
-            )
-        } == SOCKET_ERROR
+        if unsafe { setsockopt(self.s, SOL_SOCKET as _, SO_PORT_SCALABILITY as _, optval) }
+            == SOCKET_ERROR
         {
             // eprintln!("set_reuse_port: setsockopt failed");
             return Err(TracerError::IoError(Error::last_os_error()));
@@ -262,7 +234,7 @@ impl Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn set_ipv6_max_hops(&self, max_hops: u8) -> TraceResult<&Self> {
+    pub fn set_unicast_hops_v6(&self, max_hops: u8) -> TraceResult<&Self> {
         if unsafe {
             setsockopt(
                 self.s,
@@ -276,6 +248,11 @@ impl Socket {
         }
         // // eprintln!("setsockopt(set_ipv6_max_hops) OK");
         Ok(self)
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn unicast_hops_v6(&self) -> Result<u32> {
+        self.getsockopt(IPPROTO_IPV6.0, IPV6_UNICAST_HOPS as _)
     }
 
     #[allow(unsafe_code)]
@@ -309,7 +286,7 @@ impl Socket {
             // eprintln!("WSARecvFrom pending");
         } else {
             // eprintln!("WSARecvFrom OK"); // TODO no need to wait for an event, recv succeeded immediately! This should be handled
-        };
+        }
         Ok(())
     }
 
@@ -323,6 +300,79 @@ impl Socket {
             return Ok((bytes, flags));
         }
         Err(TracerError::IoError(Error::from(ErrorKind::Other)))
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
+        let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
+        let rc = unsafe { connect(self.s, &addr, addrlen as i32) };
+        if rc == SOCKET_ERROR {
+            let err = unsafe { WSAGetLastError() };
+            if err != WSAEWOULDBLOCK {
+                // eprintln!("connect failed: {}", Error::last_os_error());
+                return Err(Error::last_os_error());
+            }
+            // eprintln!("connect pending");
+        } else {
+            // eprintln!("connect OK");
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn take_error(&self) -> Result<Option<Error>> {
+        match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _) {
+            Ok(0) => Ok(None),
+            Ok(errno) => Ok(Some(Error::from_raw_os_error(errno))),
+            Err(e) => Err(e),
+        }
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    fn getsockopt<T>(&self, level: i32, optname: i32) -> Result<T> {
+        let mut optval: MaybeUninit<T> = MaybeUninit::uninit();
+        let mut optlen = std::mem::size_of::<T>() as i32;
+
+        if unsafe {
+            getsockopt(
+                self.s,
+                level,
+                optname,
+                PSTR::from_raw(optval.as_mut_ptr().cast()),
+                &mut optlen,
+            )
+        } == SOCKET_ERROR
+        {
+            return Err(Error::last_os_error());
+        }
+        Ok(unsafe { optval.assume_init() })
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn peer_addr(&self) -> Result<SocketAddr> {
+        let mut name: MaybeUninit<SOCKADDR> = MaybeUninit::uninit();
+        let mut namelen = size_of::<SOCKADDR>() as i32;
+        if unsafe { getpeername(self.s, name.as_mut_ptr(), &mut namelen) } == SOCKET_ERROR {
+            return Err(Error::last_os_error());
+        }
+        sockaddr_to_socketaddr(unsafe { &name.assume_init() })
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn shutdown(&self, how: Shutdown) -> Result<()> {
+        let how = match how {
+            Shutdown::Both => SD_BOTH,
+            Shutdown::Read => SD_RECEIVE,
+            Shutdown::Write => SD_SEND,
+        } as i32;
+        if unsafe { shutdown(self.s, how) } == SOCKET_ERROR {
+            return Err(Error::last_os_error());
+        }
+        Ok(())
     }
 }
 
@@ -488,49 +538,70 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     )))
 }
 
+fn sockaddrptr_to_ipaddr(sockaddr: &SOCKADDR) -> TraceResult<IpAddr> {
+    match sockaddr_to_socketaddr(sockaddr) {
+        Err(e) => Err(TracerError::IoError(e)),
+        Ok(socketaddr) => match socketaddr {
+            SocketAddr::V4(socketaddrv4) => Ok(IpAddr::V4(*socketaddrv4.ip())),
+            SocketAddr::V6(socketaddrv6) => Ok(IpAddr::V6(*socketaddrv6.ip())),
+        },
+    }
+}
+
 #[allow(unsafe_code)]
-pub fn sockaddrptr_to_ipaddr(sockaddr: &SOCKADDR) -> TraceResult<IpAddr> {
+pub fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR) -> Result<SocketAddr> {
     let ptr = sockaddr as *const SOCKADDR;
     let af = u32::from(sockaddr.sa_family);
     if af == AF_INET.0 {
         let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
         let sockaddr_in = unsafe { *sockaddr_in_ptr };
         let ipv4addr = sockaddr_in.sin_addr;
-        Ok(IpAddr::V4(Ipv4Addr::from(ipv4addr)))
+        let port = sockaddr_in.sin_port;
+        Ok(SocketAddr::V4(SocketAddrV4::new(
+            Ipv4Addr::from(ipv4addr),
+            port,
+        )))
     } else if af == AF_INET6.0 {
         #[allow(clippy::cast_ptr_alignment)]
         let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
         let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
         let ipv6addr = sockaddr_in6.sin6_addr;
-        Ok(IpAddr::V6(Ipv6Addr::from(ipv6addr)))
+        let port = sockaddr_in6.sin6_port;
+        Ok(SocketAddr::V6(SocketAddrV6::new(
+            Ipv6Addr::from(ipv6addr),
+            port,
+            sockaddr_in6.sin6_flowinfo,
+            unsafe { sockaddr_in6.Anonymous.sin6_scope_id },
+        )))
     } else {
-        Err(TracerError::IoError(Error::new(
+        Err(Error::new(
             ErrorKind::Unsupported,
             format!("Unsupported address family: {}", af),
-        )))
+        ))
     }
 }
 
 #[allow(unsafe_code)]
 #[must_use]
-fn ipaddr_to_sockaddr(source_addr: IpAddr) -> (SOCKADDR, u32) {
-    let (paddr, addrlen): (*const SOCKADDR, u32) = match source_addr {
-        IpAddr::V4(ipv4addr) => {
-            let sa: SOCKADDR_IN = SocketAddrV4::new(ipv4addr, 0).into();
+// TODO this allocate a SOCKADDR, should we drop it manually later?
+fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR, u32) {
+    let (paddr, addrlen): (*const SOCKADDR, u32) = match socketaddr {
+        SocketAddr::V4(socketaddrv4) => {
+            let sa: SOCKADDR_IN = socketaddrv4.into();
             (
                 std::ptr::addr_of!(sa).cast(),
                 size_of::<SOCKADDR_IN>() as u32,
             )
         }
-        IpAddr::V6(ipv6addr) => {
-            let sa: SOCKADDR_IN6 = SocketAddrV6::new(ipv6addr, 0, 0, 0).into();
+        SocketAddr::V6(socketaddrv6) => {
+            let sa: SOCKADDR_IN6 = socketaddrv6.into();
             (
                 std::ptr::addr_of!(sa).cast(),
                 size_of::<SOCKADDR_IN6>() as u32,
             )
         }
     };
-    unsafe { (*paddr, addrlen) }
+    (unsafe { *paddr }, addrlen)
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
@@ -549,7 +620,7 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let bytes = MaybeUninit::<u32>::uninit().as_mut_ptr();
     let s = Socket::udp_from(target)?;
-    let (dest, destlen) = ipaddr_to_sockaddr(target);
+    let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
     let rc = unsafe {
         WSAIoctl(
             s,
@@ -564,7 +635,10 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
         )
     };
     if rc == SOCKET_ERROR {
-        // eprintln!("routing_interface_query: WSAIoctl failed");
+        eprintln!(
+            "routing_interface_query: WSAIoctl failed: {}",
+            Error::last_os_error()
+        );
         return Err(TracerError::IoError(Error::last_os_error()));
     }
     // eprintln!("WSAIoctl(routing_interface_query) OK");
@@ -604,7 +678,7 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
 
 pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
-    sock.bind(IpAddr::V4(src_addr))?;
+    sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
     sock.create_event()?;
     sock.recv_from()?;
     // eprintln!("Created ICMP recv Socket {:?}", sock);
@@ -624,7 +698,7 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
 
 pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
-    sock.bind(IpAddr::V6(src_addr))?;
+    sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
     sock.create_event()?;
     sock.recv_from()?;
     // eprintln!("Created ICMP recv Socket {:?}", sock);
@@ -662,27 +736,41 @@ pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     Ok(true)
 }
 
-/// TODO
-pub fn is_writable(_sock: &Socket) -> TraceResult<bool> {
-    unimplemented!()
+#[allow(unsafe_code)]
+pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
+    let mut fds = FD_SET::default();
+    let timeout = TIMEVAL::default();
+    fds.fd_array[0] = sock.s;
+    fds.fd_count = 1;
+    let rc = unsafe { select(1, None, Some(&mut fds), None, Some(&timeout)) };
+    if rc == SOCKET_ERROR {
+        return Err(TracerError::IoError(Error::last_os_error()));
+    }
+    Ok(rc == 1)
 }
 
-/// TODO
 #[must_use]
-pub fn is_not_in_progress_error(_code: i32) -> bool {
-    unimplemented!()
+pub fn is_not_in_progress_error(code: i32) -> bool {
+    code != WSAEINPROGRESS.0
 }
 
-/// TODO
 #[must_use]
-pub fn is_conn_refused_error(_code: i32) -> bool {
-    unimplemented!()
+pub fn is_conn_refused_error(code: i32) -> bool {
+    code == WSAECONNREFUSED.0
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::net::IpAddr;
+
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn startup() {
+        INIT.call_once(|| super::startup().unwrap());
+    }
 
     #[test]
     fn test_ipv4_interface_lookup() {
@@ -696,5 +784,17 @@ mod tests {
         let res = lookup_interface_addr_ipv6("vEthernet (External Switch)").unwrap();
         let addr: IpAddr = "fe80::f31a:9c2f:4f14:105b".parse().unwrap();
         assert_eq!(res, addr);
+    }
+
+    #[test]
+    fn set_and_get_ttl() {
+        startup();
+        let ttl = 46;
+        let s = Socket::create(AF_INET, SOCK_STREAM, IPPROTO_TCP).unwrap();
+        s.bind("192.168.2.2:0".parse().unwrap())
+            .unwrap()
+            .set_ttl(ttl)
+            .unwrap();
+        assert_eq!(s.ttl().unwrap(), ttl);
     }
 }

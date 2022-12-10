@@ -1,4 +1,3 @@
-#[cfg(not(windows))]
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
@@ -18,7 +17,6 @@ use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-#[cfg(not(windows))]
 use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
@@ -38,7 +36,6 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
-#[cfg(unix)]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
     probe: Probe,
@@ -62,43 +59,24 @@ pub fn dispatch_icmp_probe(
         icmp_payload_size(packet_size),
         payload_pattern,
     )?;
-    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
-    icmp_send_socket.bind(&SockAddr::from(local_addr))?;
-    icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
-    let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
-    icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
+    #[cfg(unix)]
+    {
+        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
+        icmp_send_socket.bind(&SockAddr::from(local_addr))?;
+        icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+        let remote_addr = SockAddr::from(SocketAddr::new(IpAddr::V6(dest_addr), 0));
+        icmp_send_socket.send_to(echo_request.packet(), &remote_addr)?;
+    }
+    #[cfg(windows)]
+    {
+        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
+        let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+        icmp_send_socket
+            .bind(local_addr)?
+            .set_unicast_hops_v6(probe.ttl.0)?
+            .send_to(echo_request.packet(), remote_addr)?;
+    }
     Ok(())
-}
-
-#[cfg(windows)]
-#[allow(unsafe_code)]
-pub fn dispatch_icmp_probe(
-    icmp_send_socket: &mut Socket,
-    probe: Probe,
-    src_addr: Ipv6Addr,
-    dest_addr: Ipv6Addr,
-    identifier: TraceId,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-) -> TraceResult<()> {
-    let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
-    let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
-        return Err(TracerError::InvalidPacketSize(packet_size));
-    }
-    let echo_request = make_echo_request_icmp_packet(
-        &mut icmp_buf,
-        src_addr,
-        dest_addr,
-        identifier,
-        probe.sequence,
-        icmp_payload_size(packet_size),
-        payload_pattern,
-    )?;
-    icmp_send_socket
-        .bind(IpAddr::V6(src_addr))?
-        .set_ipv6_max_hops(probe.ttl.0)?
-        .sendto(echo_request.packet(), IpAddr::V6(dest_addr))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -142,14 +120,17 @@ pub fn dispatch_udp_probe(
         udp_send_socket.send_to(udp.packet(), &remote_addr)?;
     }
     #[cfg(windows)]
-    udp_send_socket
-        .bind(IpAddr::V6(src_addr))?
-        .set_ipv6_max_hops(probe.ttl.0)?
-        .sendto(udp.packet(), IpAddr::V6(dest_addr))?;
+    {
+        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
+        let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+        udp_send_socket
+            .bind(local_addr)?
+            .set_unicast_hops_v6(probe.ttl.0)?
+            .send_to(udp.packet(), remote_addr)?;
+    }
     Ok(())
 }
 
-#[cfg(unix)]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
@@ -163,10 +144,20 @@ pub fn dispatch_tcp_probe(
     };
     let socket = platform::make_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
+    #[cfg(unix)]
     socket.bind(&SockAddr::from(local_addr))?;
+    #[cfg(windows)]
+    socket.bind(local_addr)?;
+    #[cfg(unix)]
     socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    #[cfg(windows)]
+    socket.set_unicast_hops_v6(probe.ttl.0)?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
-    match socket.connect(&SockAddr::from(remote_addr)) {
+    #[cfg(unix)]
+    let dest_socketaddr = &SockAddr::from(remote_addr);
+    #[cfg(windows)]
+    let dest_socketaddr = remote_addr;
+    match socket.connect(dest_socketaddr) {
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
@@ -225,7 +216,6 @@ pub fn recv_icmp_probe(
     }
 }
 
-#[cfg(unix)]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     dest_addr: IpAddr,
@@ -233,7 +223,10 @@ pub fn recv_tcp_socket(
     let ttl = tcp_socket.unicast_hops_v6()? as u8;
     match tcp_socket.take_error()? {
         None => {
+            #[cfg(unix)]
             let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            #[cfg(windows)]
+            let addr = tcp_socket.peer_addr()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
             return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
                 SystemTime::now(),

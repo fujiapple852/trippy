@@ -1,4 +1,3 @@
-#[cfg(not(windows))]
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
@@ -22,9 +21,7 @@ use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-#[cfg(not(windows))]
 use std::io::{Error, ErrorKind};
-#[cfg(windows)]
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
@@ -85,7 +82,10 @@ pub fn dispatch_icmp_probe(
         icmp_send_socket.send_to(ipv4.packet(), &remote_addr)?;
     }
     #[cfg(windows)]
-    icmp_send_socket.sendto(ipv4.packet(), IpAddr::V4(dest_addr))?;
+    {
+        let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
+        icmp_send_socket.send_to(ipv4.packet(), remote_addr)?;
+    }
     Ok(())
 }
 
@@ -155,11 +155,13 @@ pub fn dispatch_udp_probe(
         raw_send_socket.send_to(ipv4.packet(), &remote_addr)?;
     }
     #[cfg(windows)]
-    raw_send_socket.sendto(ipv4.packet(), IpAddr::V4(dest_addr))?;
+    {
+        let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
+        raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
+    }
     Ok(())
 }
 
-#[cfg(unix)]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv4Addr,
@@ -174,11 +176,18 @@ pub fn dispatch_tcp_probe(
     };
     let socket = platform::make_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
+    #[cfg(unix)]
     socket.bind(&SockAddr::from(local_addr))?;
+    #[cfg(windows)]
+    socket.bind(local_addr)?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
     socket.set_tos(u32::from(tos.0))?;
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
-    match socket.connect(&SockAddr::from(remote_addr)) {
+    #[cfg(unix)]
+    let dest_sockaddr = &SockAddr::from(remote_addr);
+    #[cfg(windows)]
+    let dest_sockaddr = remote_addr;
+    match socket.connect(dest_sockaddr) {
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
@@ -237,7 +246,6 @@ pub fn recv_icmp_probe(
     extract_probe_resp(protocol, multipath_strategy, direction, &ipv4)
 }
 
-#[cfg(unix)]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     dest_addr: IpAddr,
@@ -245,7 +253,10 @@ pub fn recv_tcp_socket(
     let ttl = tcp_socket.ttl()? as u8;
     match tcp_socket.take_error()? {
         None => {
+            #[cfg(unix)]
             let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
+            #[cfg(windows)]
+            let addr = tcp_socket.peer_addr()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
             return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
                 SystemTime::now(),
