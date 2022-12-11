@@ -16,13 +16,13 @@ use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
     bind, closesocket, connect, getpeername, getsockopt, select, sendto, setsockopt, shutdown,
     socket, WSACleanup, WSACloseEvent, WSACreateEvent, WSAGetLastError, WSAGetOverlappedResult,
-    WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_SET,
-    FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6,
-    IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH,
-    SD_RECEIVE, SD_SEND, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET,
-    SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
-    TIMEVAL, WSABUF, WSADATA, WSAECONNREFUSED, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE,
-    WSA_IO_PENDING,
+    WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, __WSAFDIsSet, ADDRESS_FAMILY, AF_INET,
+    AF_INET6, FD_SET, FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP,
+    IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS,
+    IP_TTL, SD_BOTH, SD_RECEIVE, SD_SEND, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
+    SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR,
+    SO_PORT_SCALABILITY, TIMEVAL, WSABUF, WSADATA, WSAECONNREFUSED, WSAEINPROGRESS, WSAEWOULDBLOCK,
+    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
@@ -746,7 +746,13 @@ pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
     if rc == SOCKET_ERROR {
         return Err(TracerError::IoError(Error::last_os_error()));
     }
-    Ok(rc == 1)
+    let fdisset = unsafe { __WSAFDIsSet(sock.s, &mut fds) };
+    // if fdisset == 0 {
+    //     eprintln!("FD_ISSET returns {}", fdisset);
+    // } else {
+    //     eprintln!("===========> FD_ISSET returns {}", fdisset);
+    // }
+    Ok(fdisset != 0)
 }
 
 #[must_use]
