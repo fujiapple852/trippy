@@ -174,7 +174,7 @@ impl TracerChannel {
             _ => unreachable!(),
         }?;
         self.tcp_probes
-            .push(TcpProbe::new(socket, SystemTime::now()));
+            .push(TcpProbe::new(socket, probe.sequence, SystemTime::now()));
         Ok(())
     }
 
@@ -211,8 +211,12 @@ impl TracerChannel {
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
             match self.dest_addr {
-                IpAddr::V4(_) => ipv4::recv_tcp_socket(&probe.socket, self.dest_addr),
-                IpAddr::V6(_) => ipv6::recv_tcp_socket(&probe.socket, self.dest_addr),
+                IpAddr::V4(_) => {
+                    ipv4::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                }
+                IpAddr::V6(_) => {
+                    ipv6::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                }
             }
         } else {
             Ok(None)
@@ -224,12 +228,17 @@ impl TracerChannel {
 #[derive(Debug)]
 struct TcpProbe {
     socket: Socket,
+    sequence: Sequence,
     start: SystemTime,
 }
 
 impl TcpProbe {
-    pub fn new(socket: Socket, start: SystemTime) -> Self {
-        Self { socket, start }
+    pub fn new(socket: Socket, sequence: Sequence, start: SystemTime) -> Self {
+        Self {
+            socket,
+            sequence,
+            start,
+        }
     }
 }
 

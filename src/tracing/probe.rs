@@ -144,11 +144,15 @@ impl ProbeResponseData {
 pub struct TcpProbeResponseData {
     pub recv: SystemTime,
     pub addr: IpAddr,
-    pub ttl: u8,
+    pub sequence: u16,
 }
 
 impl TcpProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
-        Self { recv, addr, ttl }
+    pub fn new(recv: SystemTime, addr: IpAddr, sequence: u16) -> Self {
+        Self {
+            recv,
+            addr,
+            sequence,
+        }
     }
 }
