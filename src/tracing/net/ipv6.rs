@@ -142,7 +142,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = platform::make_stream_socket_ipv6()?;
+    let mut socket = platform::make_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
     #[cfg(unix)]
     socket.bind(&SockAddr::from(local_addr))?;

@@ -14,18 +14,20 @@ use windows::core::PSTR;
 use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
-    bind, closesocket, connect, getpeername, getsockopt, select, sendto, setsockopt, shutdown,
-    socket, WSACleanup, WSACloseEvent, WSACreateEvent, WSAGetLastError, WSAGetOverlappedResult,
-    WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, __WSAFDIsSet, ADDRESS_FAMILY, AF_INET,
-    AF_INET6, FD_SET, FIONBIO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP,
-    IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS,
-    IP_TTL, SD_BOTH, SD_RECEIVE, SD_SEND, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
-    SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR,
-    SO_PORT_SCALABILITY, TIMEVAL, WSABUF, WSADATA, WSAECONNREFUSED, WSAEINPROGRESS, WSAEWOULDBLOCK,
-    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    bind, closesocket, connect, getpeername, getsockopt, sendto, setsockopt, shutdown, socket,
+    WSACleanup, WSACloseEvent, WSACreateEvent, WSAEventSelect, WSAGetLastError,
+    WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, ADDRESS_FAMILY,
+    AF_INET, AF_INET6, FD_WRITE, FIONBIO, ICMP_ERROR_INFO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP,
+    IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
+    IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH, SD_RECEIVE, SD_SEND,
+    SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR,
+    SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
+    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
+    WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
+use windows_sys::Win32::Networking::WinSock::FD_CONNECT;
 
 // type Socket = SOCKET;
 pub struct Socket {
@@ -117,13 +119,13 @@ impl Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn bind(&self, source_socketaddr: SocketAddr) -> TraceResult<&Self> {
+    pub fn bind(&mut self, source_socketaddr: SocketAddr) -> TraceResult<&Self> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
         if unsafe { bind(self.s, &addr, addrlen as i32) } == SOCKET_ERROR {
             // eprintln!("bind: failed");
             return Err(TracerError::IoError(Error::last_os_error()));
         }
-        // eprintln!("bind OK");
+        self.create_event()?;
         Ok(self)
     }
 
@@ -294,8 +296,12 @@ impl Socket {
     fn get_overlapped_result(&self) -> TraceResult<(u32, u32)> {
         let mut bytes = 0;
         let mut flags = 0;
-        let ol = &self.ol;
-        if unsafe { WSAGetOverlappedResult(self, &**ol, &mut bytes, false, &mut flags) }.as_bool() {
+        let ol = *self.ol;
+        if unsafe {
+            WSAGetOverlappedResult(self, std::ptr::addr_of!(ol), &mut bytes, false, &mut flags)
+        }
+        .as_bool()
+        {
             // eprintln!("WSAGetOverlappedResult returned {} bytes", bytes);
             return Ok((bytes, flags));
         }
@@ -305,6 +311,15 @@ impl Socket {
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
     pub fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
+        self.set_fail_connect_on_icmp_error(true)?;
+
+        if unsafe { WSAEventSelect(self.s, self.ol.hEvent, (FD_CONNECT | FD_WRITE) as _) }
+            == SOCKET_ERROR
+        {
+            eprintln!("WSAEventSelect failed: {}", Error::last_os_error());
+            return Err(Error::last_os_error());
+        }
+
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         let rc = unsafe { connect(self.s, &addr, addrlen as i32) };
         if rc == SOCKET_ERROR {
@@ -320,11 +335,34 @@ impl Socket {
         Ok(())
     }
 
+    /// # Panics
+    ///
+    /// If ttl() fails.
+    #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
     pub fn take_error(&self) -> Result<Option<Error>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _) {
             Ok(0) => Ok(None),
-            Ok(errno) => Ok(Some(Error::from_raw_os_error(errno))),
+            Ok(errno) => {
+                // eprintln!("Socket error: {}", errno);
+                let icmp_error = self
+                    .getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _);
+
+                match icmp_error {
+                    Ok(icmp_info) => eprintln!(
+                        "Received ICMP error from {} (type={}, code={}, TTL={})",
+                        Ipv4Addr::from(unsafe {
+                            icmp_info.srcaddress.Ipv4.sin_addr.S_un.S_addr.to_ne_bytes()
+                        }),
+                        icmp_info.r#type,
+                        icmp_info.code,
+                        self.ttl().unwrap(),
+                    ),
+                    Err(_) => eprintln!("Did not receive ICMP error"),
+                }
+
+                Ok(Some(Error::from_raw_os_error(errno)))
+            }
             Err(e) => Err(e),
         }
     }
@@ -372,6 +410,86 @@ impl Socket {
         if unsafe { shutdown(self.s, how) } == SOCKET_ERROR {
             return Err(Error::last_os_error());
         }
+        self.cleanup()
+    }
+
+    #[allow(unsafe_code)]
+    fn _is_writable_select(&self) -> TraceResult<bool> {
+        use windows::Win32::Networking::WinSock::{__WSAFDIsSet, select, FD_SET, TIMEVAL};
+
+        let mut fds = FD_SET::default();
+        let timeout = TIMEVAL::default();
+        fds.fd_array[0] = self.s;
+        fds.fd_count = 1;
+        let rc = unsafe { select(1, None, Some(&mut fds), None, Some(&timeout)) };
+        if rc == SOCKET_ERROR {
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
+        let fdisset = unsafe { __WSAFDIsSet(self.s, &mut fds) };
+        // if fdisset == 0 {
+        //     eprintln!("FD_ISSET returns {}", fdisset);
+        // } else {
+        //     eprintln!("===========> FD_ISSET returns {}", fdisset);
+        // }
+        Ok(fdisset != 0)
+    }
+
+    #[allow(unsafe_code)]
+    fn is_writable_overlapped(&self) -> TraceResult<bool> {
+        if !self.wait_for_event(Duration::ZERO)? {
+            return Ok(false);
+        };
+
+        while self.get_overlapped_result().is_err() {
+            let err = unsafe { WSAGetLastError() };
+            if err != WSA_IO_INCOMPLETE {
+                // eprintln!(
+                //     "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
+                //     err
+                // );
+                return Err(TracerError::IoError(Error::last_os_error()));
+            }
+        }
+        self.reset_event()?;
+        Ok(true)
+    }
+
+    #[allow(unsafe_code)]
+    fn cleanup(&self) -> Result<()> {
+        let layout =
+            Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
+
+        if unsafe { closesocket(self.s) } == SOCKET_ERROR {
+            return Err(Error::last_os_error());
+        }
+        if !self.ol.hEvent.is_invalid() && unsafe { WSACloseEvent(self.ol.hEvent) } == false {
+            return Err(Error::last_os_error());
+        }
+        unsafe { dealloc(self.wbuf.buf.as_ptr(), layout) };
+        // should we cleanup sock.from too?
+
+        Ok(())
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
+        let u32_enabled: u32 = if enabled { 1 } else { 0 };
+        let fail_connect = u32_enabled.to_ne_bytes();
+        let optval = Some(&fail_connect[..]);
+        if unsafe {
+            setsockopt(
+                self.s,
+                IPPROTO_TCP.0 as _,
+                TCP_FAIL_CONNECT_ON_ICMP_ERROR as _,
+                optval,
+            )
+        } == SOCKET_ERROR
+        {
+            // eprintln!("set_fail_connect_on_icmp_error: setsockopt failed");
+            return Err(Error::last_os_error());
+        }
+        // eprintln!("setsockopt(set_fail_connect_on_icmp_error) OK");
         Ok(())
     }
 }
@@ -419,16 +537,8 @@ pub fn startup() -> TraceResult<()> {
 ///
 /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`.
 pub fn cleanup(sockets: &[Socket]) -> TraceResult<()> {
-    let layout = Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
     for sock in sockets {
-        if unsafe { closesocket(sock) } == SOCKET_ERROR {
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        if !sock.ol.hEvent.is_invalid() && unsafe { WSACloseEvent(sock.ol.hEvent) } == false {
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        unsafe { dealloc(sock.wbuf.buf.as_ptr(), layout) };
-        // should we cleanup sock.from too?
+        sock.cleanup()?;
     }
     if unsafe { WSACleanup() } == SOCKET_ERROR {
         return Err(TracerError::IoError(Error::last_os_error()));
@@ -666,22 +776,21 @@ fn make_socket(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResul
 
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
-    // eprintln!("created ICMP send Socket {:?}", sock);
+    // eprintln!("created ICMP send Socket {}", sock.s.0);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
 pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
-    // eprintln!("created UDP send Socket {:?}", sock);
+    // eprintln!("created UDP send Socket {}", sock.s.0);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
 pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
+    // eprint!("ICMP recv ");
     sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
-    sock.create_event()?;
     sock.recv_from()?;
-    // eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)?.set_header_included(true)
 }
 
@@ -698,8 +807,8 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
 
 pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     let mut sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
+    // eprint!("ICMP recv ");
     sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
-    sock.create_event()?;
     sock.recv_from()?;
     // eprintln!("Created ICMP recv Socket {:?}", sock);
     sock.set_non_blocking(true)
@@ -736,23 +845,12 @@ pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     Ok(true)
 }
 
-#[allow(unsafe_code)]
 pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
-    let mut fds = FD_SET::default();
-    let timeout = TIMEVAL::default();
-    fds.fd_array[0] = sock.s;
-    fds.fd_count = 1;
-    let rc = unsafe { select(1, None, Some(&mut fds), None, Some(&timeout)) };
-    if rc == SOCKET_ERROR {
-        return Err(TracerError::IoError(Error::last_os_error()));
-    }
-    let fdisset = unsafe { __WSAFDIsSet(sock.s, &mut fds) };
-    // if fdisset == 0 {
-    //     eprintln!("FD_ISSET returns {}", fdisset);
+    // if false {
+    //     sock.is_writable_select()
     // } else {
-    //     eprintln!("===========> FD_ISSET returns {}", fdisset);
+    sock.is_writable_overlapped()
     // }
-    Ok(fdisset != 0)
 }
 
 #[must_use]
@@ -796,7 +894,7 @@ mod tests {
     fn set_and_get_ttl() {
         startup();
         let ttl = 46;
-        let s = Socket::create(AF_INET, SOCK_STREAM, IPPROTO_TCP).unwrap();
+        let mut s = Socket::create(AF_INET, SOCK_STREAM, IPPROTO_TCP).unwrap();
         s.bind("192.168.2.2:0".parse().unwrap())
             .unwrap()
             .set_ttl(ttl)
