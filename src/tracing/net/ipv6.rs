@@ -11,7 +11,7 @@ use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
@@ -167,18 +167,20 @@ pub fn recv_tcp_socket(
         None => {
             let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
-            return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
+            return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
                 addr,
+                0,
                 sequence.0,
             ))));
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
                 if platform::is_conn_refused_error(code) {
-                    return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
+                    return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
+                        0,
                         sequence.0,
                     ))));
                 }
