@@ -40,9 +40,13 @@ impl Socket {
     #[allow(unsafe_code)]
     /// # Panics
     ///
-    /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`
+    /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`.
     fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<Self> {
-        let s = make_socket(af, r#type, protocol)?;
+        let s = unsafe { socket(af.0.try_into().unwrap(), i32::from(r#type), protocol.0) };
+        if s == INVALID_SOCKET {
+            // eprintln!("make_socket: socket failed");
+            return Err(TracerError::IoError(Error::last_os_error()));
+        }
 
         let from = Box::new(SOCKADDR::default());
 
@@ -155,7 +159,7 @@ impl Socket {
     // NOTE FIONBIO is really unsigned (in WinSock2.h)
     #[allow(clippy::cast_sign_loss)]
     #[allow(unsafe_code)]
-    fn set_non_blocking(self, is_non_blocking: bool) -> TraceResult<Self> {
+    fn set_non_blocking(&self, is_non_blocking: bool) -> TraceResult<()> {
         let non_blocking: u32 = if is_non_blocking { 1 } else { 0 };
         if unsafe {
             WSAIoctl(
@@ -175,32 +179,34 @@ impl Socket {
             return Err(TracerError::IoError(Error::last_os_error()));
         }
         // // eprintln!("WSAIoctl(non_blocking) OK");
-        Ok(self)
-    }
-
-    #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    fn set_header_included(self, is_header_included: bool) -> TraceResult<Self> {
-        let u32_header_included: u32 = if is_header_included { 1 } else { 0 };
-        let header_included = u32_header_included.to_ne_bytes();
-        let optval = Some(&header_included[..]);
-        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_HDRINCL as _, optval) } == SOCKET_ERROR {
-            // eprintln!("set_header_included: setsockopt failed");
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        // // eprintln!("setsockopt(header_included) OK");
-        Ok(self)
-    }
-
-    #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    pub fn set_ttl(&self, u32_ttl: u32) -> TraceResult<()> {
-        let ttl = u32_ttl.to_ne_bytes();
-        let optval = Some(&ttl[..]);
-        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_TTL as _, optval) } == SOCKET_ERROR {
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
         Ok(())
+    }
+
+    fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
+        self.setsockopt_u32(level, optname, u32::from(optval))
+    }
+
+    #[allow(unsafe_code)]
+    fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
+        let bytes_array = optval.to_ne_bytes();
+        let bytes_slice_ref_option = Some(&bytes_array[..]);
+        if unsafe { setsockopt(self.s, level, optname, bytes_slice_ref_option) } == SOCKET_ERROR {
+            Err(Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    fn set_header_included(&self, is_header_included: bool) -> TraceResult<()> {
+        self.setsockopt_bool(IPPROTO_IP as _, IP_HDRINCL as _, is_header_included)
+            .map_err(TracerError::IoError)
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn set_ttl(&self, ttl: u32) -> TraceResult<()> {
+        self.setsockopt_u32(IPPROTO_IP as _, IP_TTL as _, ttl)
+            .map_err(TracerError::IoError)
     }
 
     #[allow(clippy::cast_possible_wrap)]
@@ -208,30 +214,16 @@ impl Socket {
         self.getsockopt(IPPROTO_IP as _, IP_TTL as _)
     }
 
-    #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    pub fn set_tos(&self, u32_tos: u32) -> TraceResult<()> {
-        let tos = u32_tos.to_ne_bytes();
-        let optval = Some(&tos[..]);
-        if unsafe { setsockopt(self.s, IPPROTO_IP as _, IP_TOS as _, optval) } == SOCKET_ERROR {
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        Ok(())
+    pub fn set_tos(&self, tos: u32) -> TraceResult<()> {
+        self.setsockopt_u32(IPPROTO_IP as _, IP_TOS as _, tos)
+            .map_err(TracerError::IoError)
     }
 
-    #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
-    fn set_reuse_port(self, is_reuse_port: bool) -> TraceResult<Self> {
-        let reuse_port = [is_reuse_port.try_into().unwrap()];
-        let optval = Some(&reuse_port[..]);
-        if unsafe { setsockopt(self.s, SOL_SOCKET as _, SO_PORT_SCALABILITY as _, optval) }
-            == SOCKET_ERROR
-        {
-            // eprintln!("set_reuse_port: setsockopt failed");
-            return Err(TracerError::IoError(Error::last_os_error()));
-        }
-        // // eprintln!("setsockopt(reuse_port) OK");
-        Ok(self)
+    fn set_reuse_port(&self, is_reuse_port: bool) -> TraceResult<()> {
+        self.setsockopt_bool(SOL_SOCKET as _, SO_PORT_SCALABILITY as _, is_reuse_port)
+            .map_err(TracerError::IoError)
     }
 
     #[allow(unsafe_code)]
@@ -471,26 +463,9 @@ impl Socket {
         Ok(())
     }
 
-    #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
     fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
-        let u32_enabled: u32 = if enabled { 1 } else { 0 };
-        let fail_connect = u32_enabled.to_ne_bytes();
-        let optval = Some(&fail_connect[..]);
-        if unsafe {
-            setsockopt(
-                self.s,
-                IPPROTO_TCP.0 as _,
-                TCP_FAIL_CONNECT_ON_ICMP_ERROR as _,
-                optval,
-            )
-        } == SOCKET_ERROR
-        {
-            // eprintln!("set_fail_connect_on_icmp_error: setsockopt failed");
-            return Err(Error::last_os_error());
-        }
-        // eprintln!("setsockopt(set_fail_connect_on_icmp_error) OK");
-        Ok(())
+        self.setsockopt_bool(IPPROTO_TCP.0, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
     }
 }
 
@@ -762,28 +737,20 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     sockaddrptr_to_ipaddr(sockaddr)
 }
 
-#[allow(unsafe_code)]
-fn make_socket(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> TraceResult<SOCKET> {
-    let s = unsafe { socket(af.0.try_into().unwrap(), i32::from(r#type), protocol.0) };
-    if s == INVALID_SOCKET {
-        // eprintln!("make_socket: socket failed");
-        Err(TracerError::IoError(Error::last_os_error()))
-    } else {
-        // // eprintln!("socket OK");
-        Ok(s)
-    }
-}
-
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
     // eprintln!("created ICMP send Socket {}", sock.s.0);
-    sock.set_non_blocking(true)?.set_header_included(true)
+    sock.set_non_blocking(true)?;
+    sock.set_header_included(true)?;
+    Ok(sock)
 }
 
 pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
     // eprintln!("created UDP send Socket {}", sock.s.0);
-    sock.set_non_blocking(true)?.set_header_included(true)
+    sock.set_non_blocking(true)?;
+    sock.set_header_included(true)?;
+    Ok(sock)
 }
 
 pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
@@ -791,18 +758,22 @@ pub fn make_recv_socket_ipv4(src_addr: Ipv4Addr) -> TraceResult<Socket> {
     // eprint!("ICMP recv ");
     sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
     sock.recv_from()?;
-    sock.set_non_blocking(true)?.set_header_included(true)
+    sock.set_non_blocking(true)?;
+    sock.set_header_included(true)?;
+    Ok(sock)
 }
 
 pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
     // eprintln!("created ICMP send Socket {:?}", sock);
-    sock.set_non_blocking(true)
+    sock.set_non_blocking(true)?;
+    Ok(sock)
 }
 
 pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_RAW, IPPROTO_UDP)?;
-    sock.set_non_blocking(true)
+    sock.set_non_blocking(true)?;
+    Ok(sock)
 }
 
 pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
@@ -811,17 +782,22 @@ pub fn make_recv_socket_ipv6(src_addr: Ipv6Addr) -> TraceResult<Socket> {
     sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
     sock.recv_from()?;
     // eprintln!("Created ICMP recv Socket {:?}", sock);
-    sock.set_non_blocking(true)
+    sock.set_non_blocking(true)?;
+    Ok(sock)
 }
 
 pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET, SOCK_STREAM, IPPROTO_TCP)?;
-    sock.set_non_blocking(true)?.set_reuse_port(true)
+    sock.set_non_blocking(true)?;
+    sock.set_reuse_port(true)?;
+    Ok(sock)
 }
 
 pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
     let sock = Socket::create(AF_INET6, SOCK_STREAM, IPPROTO_TCP)?;
-    sock.set_non_blocking(true)?.set_reuse_port(true)
+    sock.set_non_blocking(true)?;
+    sock.set_reuse_port(true)?;
+    Ok(sock)
 }
 
 #[allow(unsafe_code)]
