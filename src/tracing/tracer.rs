@@ -184,7 +184,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let host = data.addr;
-                if st.in_round(sequence) {
+                let trace_id = TraceId(data.identifier);
+                if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_other(sequence, host, received);
                 }
             }
