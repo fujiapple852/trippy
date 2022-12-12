@@ -11,18 +11,17 @@ use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
-#[cfg(not(windows))]
-use socket2::{SockAddr, Socket};
-use std::io::{Error, ErrorKind};
-use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
-use std::time::SystemTime;
-
 #[cfg(windows)]
 use platform::Socket;
+#[cfg(not(windows))]
+use socket2::{SockAddr, Socket};
+use std::io::ErrorKind;
+use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
+use std::time::SystemTime;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_size();
@@ -218,9 +217,9 @@ pub fn recv_icmp_probe(
 
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
+    sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
-    let ttl = tcp_socket.unicast_hops_v6()? as u8;
     match tcp_socket.take_error()? {
         None => {
             #[cfg(unix)]
@@ -228,19 +227,21 @@ pub fn recv_tcp_socket(
             #[cfg(windows)]
             let addr = tcp_socket.peer_addr()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
-            return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
+            return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
                 addr,
-                ttl,
+                0,
+                sequence.0,
             ))));
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
                 if platform::is_conn_refused_error(code) {
-                    return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
+                    return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
-                        ttl,
+                        0,
+                        sequence.0,
                     ))));
                 }
             }

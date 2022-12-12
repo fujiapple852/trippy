@@ -9,7 +9,7 @@ use crate::tracing::types::{PacketSize, PayloadPattern, Port, Sequence, TraceId,
 #[cfg(not(windows))]
 use crate::tracing::util::Required;
 use crate::tracing::{
-    MultipathStrategy, PortDirection, Probe, TracerAddrFamily, TracerChannelConfig, TracerProtocol,
+    MultipathStrategy, PortDirection, Probe, TracerChannelConfig, TracerProtocol,
 };
 use arrayvec::ArrayVec;
 use itertools::Itertools;
@@ -33,7 +33,6 @@ const DISCOVERY_PORT: Port = Port(80);
 /// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel {
     protocol: TracerProtocol,
-    addr_family: TracerAddrFamily,
     src_addr: IpAddr,
     ipv4_length_order: PlatformIpv4FieldByteOrder,
     dest_addr: IpAddr,
@@ -67,13 +66,9 @@ impl TracerChannel {
         let ipv4_length_order = PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
         let udp_send_socket = make_udp_send_socket(config.source_addr)?;
-        #[cfg(unix)]
-        let recv_socket = make_recv_socket(config.addr_family)?;
-        #[cfg(windows)]
         let recv_socket = make_recv_socket(config.source_addr)?;
         Ok(Self {
             protocol: config.protocol,
-            addr_family: config.addr_family,
             src_addr: config.source_addr,
             ipv4_length_order,
             dest_addr: config.target_addr,
@@ -95,19 +90,12 @@ impl TracerChannel {
 
     /// Discover the source `IpAddr` of the channel.
     pub fn discover_src_addr(
-        addr_family: TracerAddrFamily,
         source_addr: Option<IpAddr>,
         target_addr: IpAddr,
         port_direction: PortDirection,
         interface: Option<&str>,
     ) -> TraceResult<IpAddr> {
-        make_src_addr(
-            source_addr,
-            target_addr,
-            port_direction,
-            interface,
-            addr_family,
-        )
+        make_src_addr(source_addr, target_addr, port_direction, interface)
     }
 }
 
@@ -132,113 +120,85 @@ impl Network for TracerChannel {
 impl TracerChannel {
     /// Dispatch a ICMP probe.
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        match (self.addr_family, self.src_addr, self.dest_addr) {
-            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_icmp_probe(
-                    &mut self.icmp_send_socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.identifier,
-                    self.packet_size,
-                    self.payload_pattern,
-                    self.ipv4_length_order,
-                )
-            }
-            (TracerAddrFamily::Ipv6, IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_icmp_probe(
-                    &mut self.icmp_send_socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.identifier,
-                    self.packet_size,
-                    self.payload_pattern,
-                )
-            }
+        match (self.src_addr, self.dest_addr) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_icmp_probe(
+                &mut self.icmp_send_socket,
+                probe,
+                src_addr,
+                dest_addr,
+                self.identifier,
+                self.packet_size,
+                self.payload_pattern,
+                self.ipv4_length_order,
+            ),
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => ipv6::dispatch_icmp_probe(
+                &mut self.icmp_send_socket,
+                probe,
+                src_addr,
+                dest_addr,
+                self.identifier,
+                self.packet_size,
+                self.payload_pattern,
+            ),
             _ => unreachable!(),
         }
     }
 
     /// Dispatch a UDP probe.
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        match (self.addr_family, self.src_addr, self.dest_addr) {
-            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_udp_probe(
-                    &mut self.udp_send_socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.initial_sequence,
-                    self.multipath_strategy,
-                    self.port_direction,
-                    self.packet_size,
-                    self.payload_pattern,
-                    self.ipv4_length_order,
-                )
-            }
-            (TracerAddrFamily::Ipv6, IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_udp_probe(
-                    &mut self.udp_send_socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.port_direction,
-                    self.packet_size,
-                    self.payload_pattern,
-                )
-            }
+        match (self.src_addr, self.dest_addr) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_udp_probe(
+                &mut self.udp_send_socket,
+                probe,
+                src_addr,
+                dest_addr,
+                self.initial_sequence,
+                self.multipath_strategy,
+                self.port_direction,
+                self.packet_size,
+                self.payload_pattern,
+                self.ipv4_length_order,
+            ),
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => ipv6::dispatch_udp_probe(
+                &mut self.udp_send_socket,
+                probe,
+                src_addr,
+                dest_addr,
+                self.port_direction,
+                self.packet_size,
+                self.payload_pattern,
+            ),
             _ => unreachable!(),
         }
     }
 
     /// Dispatch a TCP probe.
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        let socket = match (self.addr_family, self.src_addr, self.dest_addr) {
-            (TracerAddrFamily::Ipv4, IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
+        let socket = match (self.src_addr, self.dest_addr) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
                 ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction, self.tos)
             }
-            (TracerAddrFamily::Ipv6, IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
                 ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction)
             }
             _ => unreachable!(),
         }?;
         self.tcp_probes
-            .push(TcpProbe::new(socket, SystemTime::now()));
+            .push(TcpProbe::new(socket, probe.sequence, SystemTime::now()));
         Ok(())
     }
 
-    #[cfg(unix)]
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         if platform::is_readable(&self.recv_socket, self.read_timeout)? {
-            match self.addr_family {
-                TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
+            match self.dest_addr {
+                IpAddr::V4(_) => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
                     self.protocol,
                     self.multipath_strategy,
                     self.port_direction,
                 ),
-                TracerAddrFamily::Ipv6 => {
-                    ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
-                }
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
-    #[cfg(windows)]
-    fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
-            match self.addr_family {
-                TracerAddrFamily::Ipv4 => ipv4::recv_icmp_probe(
-                    &mut self.recv_socket,
-                    self.protocol,
-                    self.multipath_strategy,
-                    self.port_direction,
-                ),
-                TracerAddrFamily::Ipv6 => {
+                IpAddr::V6(_) => {
                     ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
                 }
             }
@@ -260,9 +220,13 @@ impl TracerChannel {
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
-            match self.addr_family {
-                TracerAddrFamily::Ipv4 => ipv4::recv_tcp_socket(&probe.socket, self.dest_addr),
-                TracerAddrFamily::Ipv6 => ipv6::recv_tcp_socket(&probe.socket, self.dest_addr),
+            match self.dest_addr {
+                IpAddr::V4(_) => {
+                    ipv4::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                }
+                IpAddr::V6(_) => {
+                    ipv6::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                }
             }
         } else {
             Ok(None)
@@ -274,12 +238,17 @@ impl TracerChannel {
 #[derive(Debug)]
 struct TcpProbe {
     socket: Socket,
+    sequence: Sequence,
     start: SystemTime,
 }
 
 impl TcpProbe {
-    pub fn new(socket: Socket, start: SystemTime) -> Self {
-        Self { socket, start }
+    pub fn new(socket: Socket, sequence: Sequence, start: SystemTime) -> Self {
+        Self {
+            socket,
+            sequence,
+            start,
+        }
     }
 }
 
@@ -289,13 +258,11 @@ fn make_src_addr(
     target_addr: IpAddr,
     port_direction: PortDirection,
     interface: Option<&str>,
-    addr_family: TracerAddrFamily,
 ) -> TraceResult<IpAddr> {
     match (source_addr, interface.as_ref()) {
-        (Some(addr), None) => validate_local_addr(addr_family, addr),
-        (None, Some(interface)) => lookup_interface_addr(addr_family, interface),
+        (Some(addr), None) => validate_local_addr(addr),
+        (None, Some(interface)) => lookup_interface_addr(target_addr, interface),
         (None, None) => discover_local_addr(
-            addr_family,
             target_addr,
             port_direction.dest().unwrap_or(DISCOVERY_PORT).0,
         ),
@@ -304,10 +271,10 @@ fn make_src_addr(
 }
 
 /// Lookup the address for a named interface.
-fn lookup_interface_addr(addr_family: TracerAddrFamily, name: &str) -> TraceResult<IpAddr> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::lookup_interface_addr_ipv4(name),
-        TracerAddrFamily::Ipv6 => platform::lookup_interface_addr_ipv6(name),
+fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+    match addr {
+        IpAddr::V4(_) => platform::lookup_interface_addr_ipv4(name),
+        IpAddr::V6(_) => platform::lookup_interface_addr_ipv6(name),
     }
 }
 
@@ -315,23 +282,14 @@ fn lookup_interface_addr(addr_family: TracerAddrFamily, name: &str) -> TraceResu
 ///
 /// Note that no packets are transmitted by this method.
 #[cfg(unix)]
-fn discover_local_addr(
-    addr_family: TracerAddrFamily,
-    target: IpAddr,
-    port: u16,
-) -> TraceResult<IpAddr> {
-    let socket = udp_socket_for_addr_family(addr_family)?;
-    socket.connect(&SockAddr::from(SocketAddr::new(target, port)))?;
+fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+    let socket = udp_socket_for_addr_family(target_addr)?;
+    socket.connect(&SockAddr::from(SocketAddr::new(target_addr, port)))?;
     Ok(socket.local_addr()?.as_socket().req()?.ip())
 }
 
 #[cfg(windows)]
-#[allow(unsafe_code)]
-fn discover_local_addr(
-    _addr_family: TracerAddrFamily,
-    target: IpAddr,
-    _port: u16,
-) -> TraceResult<IpAddr> {
+fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
     /*
     NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
     is using a connectionless protocol, the address may not be available until I/O
@@ -344,18 +302,17 @@ fn discover_local_addr(
 
 #[cfg(unix)]
 /// Validate that we can bind to the source address.
-fn validate_local_addr(addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
-    let socket = udp_socket_for_addr_family(addr_family)?;
-    let addr = SocketAddr::new(source_addr, 0);
-    match socket.bind(&SockAddr::from(addr)) {
-        Ok(_) => Ok(source_addr),
-        Err(_) => Err(InvalidSourceAddr(addr.ip())),
+fn validate_local_addr(addr: IpAddr) -> TraceResult<IpAddr> {
+    let socket = udp_socket_for_addr_family(addr)?;
+    let sock_addr = SocketAddr::new(addr, 0);
+    match socket.bind(&SockAddr::from(sock_addr)) {
+        Ok(_) => Ok(addr),
+        Err(_) => Err(InvalidSourceAddr(sock_addr.ip())),
     }
 }
 
 #[cfg(windows)]
-#[allow(unsafe_code)]
-fn validate_local_addr(_addr_family: TracerAddrFamily, source_addr: IpAddr) -> TraceResult<IpAddr> {
+fn validate_local_addr(source_addr: IpAddr) -> TraceResult<IpAddr> {
     match Socket::udp_from(source_addr)?.bind(SocketAddr::new(source_addr, 0)) {
         Err(_) => Err(TracerError::IoError(Error::last_os_error())),
         Ok(s) => {
@@ -367,24 +324,24 @@ fn validate_local_addr(_addr_family: TracerAddrFamily, source_addr: IpAddr) -> T
 
 #[cfg(unix)]
 /// Create a socket suitable for a given address.
-fn udp_socket_for_addr_family(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    Ok(match addr_family {
-        TracerAddrFamily::Ipv4 => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?,
-        TracerAddrFamily::Ipv6 => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?,
+fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
+    Ok(match addr {
+        IpAddr::V4(_) => Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?,
+        IpAddr::V6(_) => Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?,
     })
 }
 
 /// Make a socket for sending raw `ICMP` packets.
-fn make_icmp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
-    match src_addr {
+fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
+    match addr {
         IpAddr::V4(_) => platform::make_icmp_send_socket_ipv4(),
         IpAddr::V6(_) => platform::make_icmp_send_socket_ipv6(),
     }
 }
 
 /// Make a socket for sending `UDP` packets.
-fn make_udp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
-    match src_addr {
+fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
+    match addr {
         IpAddr::V4(_) => platform::make_udp_send_socket_ipv4(),
         IpAddr::V6(_) => platform::make_udp_send_socket_ipv6(),
     }
@@ -392,10 +349,10 @@ fn make_udp_send_socket(src_addr: IpAddr) -> TraceResult<Socket> {
 
 /// Make a socket for receiving raw `ICMP` packets.
 #[cfg(unix)]
-fn make_recv_socket(addr_family: TracerAddrFamily) -> TraceResult<Socket> {
-    match addr_family {
-        TracerAddrFamily::Ipv4 => platform::make_recv_socket_ipv4(),
-        TracerAddrFamily::Ipv6 => platform::make_recv_socket_ipv6(),
+fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
+    match addr {
+        IpAddr::V4(_) => platform::make_recv_socket_ipv4(),
+        IpAddr::V6(_) => platform::make_recv_socket_ipv6(),
     }
 }
 
@@ -408,7 +365,6 @@ fn make_recv_socket(src_addr: IpAddr) -> TraceResult<Socket> {
 }
 
 #[cfg(test)]
-#[allow(unsafe_code)]
 mod tests {
     use super::*;
     use std::sync::Once;
@@ -422,21 +378,14 @@ mod tests {
     #[test]
     fn test_discover_local_addr() {
         startup();
-        let res = discover_local_addr(
-            TracerAddrFamily::Ipv4,
-            IpAddr::V4("212.82.100.150".parse().unwrap()),
-            443,
-        );
+        let res = discover_local_addr(IpAddr::V4("212.82.100.150".parse().unwrap()), 443);
         assert!(res.is_ok());
     }
 
     #[test]
     fn test_validate_local_addr() {
         startup();
-        let res = validate_local_addr(
-            TracerAddrFamily::Ipv4,
-            IpAddr::V4("192.168.2.2".parse().unwrap()),
-        );
+        let res = validate_local_addr(IpAddr::V4("192.168.2.2".parse().unwrap()));
         assert!(res.is_ok());
     }
 }

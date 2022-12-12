@@ -115,8 +115,8 @@ pub enum ProbeResponse {
     TimeExceeded(ProbeResponseData),
     DestinationUnreachable(ProbeResponseData),
     EchoReply(ProbeResponseData),
-    TcpReply(TcpProbeResponseData),
-    TcpRefused(TcpProbeResponseData),
+    TcpReply(ProbeResponseData),
+    TcpRefused(ProbeResponseData),
 }
 
 /// The data in the probe response.
@@ -136,19 +136,5 @@ impl ProbeResponseData {
             identifier,
             sequence,
         }
-    }
-}
-
-/// The data in the TCP probe response.
-#[derive(Debug, Copy, Clone)]
-pub struct TcpProbeResponseData {
-    pub recv: SystemTime,
-    pub addr: IpAddr,
-    pub ttl: u8,
-}
-
-impl TcpProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, ttl: u8) -> Self {
-        Self { recv, addr, ttl }
     }
 }

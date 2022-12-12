@@ -181,17 +181,13 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 }
             }
             Some(ProbeResponse::TcpReply(data) | ProbeResponse::TcpRefused(data)) => {
-                let ttl = TimeToLive(data.ttl);
+                let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let host = data.addr;
-                // If we received a delayed TCP probe response after the round had ended we will not be able to find the
-                // probe by ttl and so must ignore it.
-                if let Some(probe) = st.probe_for_ttl(ttl) {
-                    let sequence = probe.sequence;
-                    if st.in_round(sequence) {
-                        st.complete_probe_other(sequence, host, received);
-                    }
-                };
+                let trace_id = TraceId(data.identifier);
+                if self.check_trace_id(trace_id) && st.in_round(sequence) {
+                    st.complete_probe_other(sequence, host, received);
+                }
             }
             None => {}
         }
@@ -343,11 +339,6 @@ mod state {
         /// Get the `Probe` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> Probe {
             self.buffer[usize::from(sequence - self.round_sequence)]
-        }
-
-        /// Find the first `Probe` for `ttl`.
-        pub fn probe_for_ttl(&self, ttl: TimeToLive) -> Option<&Probe> {
-            self.probes().iter().find(|p| p.ttl == ttl)
         }
 
         pub const fn ttl(&self) -> TimeToLive {

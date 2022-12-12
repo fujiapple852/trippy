@@ -13,7 +13,7 @@ use crate::tracing::packet::ipv4::Ipv4Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData, TcpProbeResponseData};
+use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
@@ -21,7 +21,7 @@ use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::{Error, ErrorKind};
+use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
@@ -248,9 +248,9 @@ pub fn recv_icmp_probe(
 
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
+    sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
-    let ttl = tcp_socket.ttl()? as u8;
     match tcp_socket.take_error()? {
         None => {
             #[cfg(unix)]
@@ -258,19 +258,21 @@ pub fn recv_tcp_socket(
             #[cfg(windows)]
             let addr = tcp_socket.peer_addr()?.ip();
             tcp_socket.shutdown(Shutdown::Both)?;
-            return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
+            return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
                 addr,
-                ttl,
+                0,
+                sequence.0,
             ))));
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
                 if platform::is_conn_refused_error(code) {
-                    return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
+                    return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
-                        ttl,
+                        0,
+                        sequence.0,
                     ))));
                 }
             }
