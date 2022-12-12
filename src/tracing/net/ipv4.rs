@@ -207,9 +207,9 @@ pub fn recv_icmp_probe(
 
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
+    sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
-    let ttl = tcp_socket.ttl()? as u8;
     match tcp_socket.take_error()? {
         None => {
             let addr = tcp_socket.peer_addr()?.as_socket().req()?.ip();
@@ -217,7 +217,7 @@ pub fn recv_tcp_socket(
             return Ok(Some(ProbeResponse::TcpReply(TcpProbeResponseData::new(
                 SystemTime::now(),
                 addr,
-                ttl,
+                sequence.0,
             ))));
         }
         Some(err) => {
@@ -226,7 +226,7 @@ pub fn recv_tcp_socket(
                     return Ok(Some(ProbeResponse::TcpRefused(TcpProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
-                        ttl,
+                        sequence.0,
                     ))));
                 }
             }
