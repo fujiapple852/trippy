@@ -23,7 +23,7 @@ use windows::Win32::Networking::WinSock::{
     SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR,
     SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
     TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
-    WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
@@ -336,26 +336,26 @@ impl Socket {
             Ok(0) => Ok(None),
             Ok(errno) => {
                 // eprintln!("Socket error: {}", errno);
-                let icmp_error = self
-                    .getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _);
-
-                match icmp_error {
-                    Ok(icmp_info) => eprintln!(
-                        "Received ICMP error from {} (type={}, code={}, TTL={})",
-                        Ipv4Addr::from(unsafe {
-                            icmp_info.srcaddress.Ipv4.sin_addr.S_un.S_addr.to_ne_bytes()
-                        }),
-                        icmp_info.r#type,
-                        icmp_info.code,
-                        self.ttl().unwrap(),
-                    ),
-                    Err(_) => eprintln!("Did not receive ICMP error"),
-                }
-
                 Ok(Some(Error::from_raw_os_error(errno)))
             }
             Err(e) => Err(e),
         }
+    }
+
+    #[allow(unsafe_code)]
+    #[allow(clippy::cast_possible_wrap)]
+    pub fn icmp_error_info(&self) -> Result<IpAddr> {
+        let icmp_error_info =
+            self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _)?;
+        Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
+            icmp_error_info
+                .srcaddress
+                .Ipv4
+                .sin_addr
+                .S_un
+                .S_addr
+                .to_ne_bytes()
+        })))
     }
 
     #[allow(unsafe_code)]
@@ -832,6 +832,11 @@ pub fn is_not_in_progress_error(code: i32) -> bool {
 #[must_use]
 pub fn is_conn_refused_error(code: i32) -> bool {
     code == WSAECONNREFUSED.0
+}
+
+#[must_use]
+pub fn is_host_unreachable_error(code: i32) -> bool {
+    code == WSAEHOSTUNREACH.0
 }
 
 #[cfg(test)]

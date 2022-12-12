@@ -152,7 +152,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
         match next {
-            Some(ProbeResponse::TimeExceeded(data)) => {
+            Some(ProbeResponse::TimeExceeded(data) | ProbeResponse::TcpTimeExceeded(data)) => {
                 let sequence = Sequence(data.sequence);
                 let received = data.recv;
                 let host = data.addr;

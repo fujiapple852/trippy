@@ -117,6 +117,7 @@ pub enum ProbeResponse {
     EchoReply(ProbeResponseData),
     TcpReply(ProbeResponseData),
     TcpRefused(ProbeResponseData),
+    TcpTimeExceeded(ProbeResponseData),
 }
 
 /// The data in the probe response.
