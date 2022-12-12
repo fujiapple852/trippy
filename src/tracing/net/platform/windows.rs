@@ -267,8 +267,7 @@ impl Socket {
             )
         };
         if ret == SOCKET_ERROR {
-            let err = unsafe { WSAGetLastError() };
-            if err != WSA_IO_PENDING {
+            if Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING.0) {
                 // let internal = self.ol.Internal;
                 // eprintln!(
                 // "WSARecvFrom failed: Internal={}, System Error={}",
@@ -426,15 +425,13 @@ impl Socket {
         Ok(fdisset != 0)
     }
 
-    #[allow(unsafe_code)]
     fn is_writable_overlapped(&self) -> TraceResult<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
         };
 
         while self.get_overlapped_result().is_err() {
-            let err = unsafe { WSAGetLastError() };
-            if err != WSA_IO_INCOMPLETE {
+            if Error::last_os_error().raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
                 // eprintln!(
                 //     "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
                 //     err
@@ -800,15 +797,13 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
     Ok(sock)
 }
 
-#[allow(unsafe_code)]
 pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
     if !sock.wait_for_event(timeout)? {
         return Ok(false);
     };
 
     while sock.get_overlapped_result().is_err() {
-        let err = unsafe { WSAGetLastError() };
-        if err != WSA_IO_INCOMPLETE {
+        if Error::last_os_error().raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
             // eprintln!(
             //     "is_readable: WSAGetOverlappedResult failed with WSA_ERROR: {:?}",
             //     err
