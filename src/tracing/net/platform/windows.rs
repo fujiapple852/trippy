@@ -15,15 +15,15 @@ use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, W
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
     bind, closesocket, connect, getpeername, getsockopt, sendto, setsockopt, shutdown, socket,
-    WSACleanup, WSACloseEvent, WSACreateEvent, WSAEventSelect, WSAGetLastError,
-    WSAGetOverlappedResult, WSAIoctl, WSARecvFrom, WSAResetEvent, WSAStartup, ADDRESS_FAMILY,
-    AF_INET, AF_INET6, FD_WRITE, FIONBIO, ICMP_ERROR_INFO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP,
-    IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP,
-    IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH, SD_RECEIVE, SD_SEND,
-    SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKET, SOCKET_ERROR,
-    SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
-    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
-    WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    WSACleanup, WSACloseEvent, WSACreateEvent, WSAEventSelect, WSAGetOverlappedResult, WSAIoctl,
+    WSARecvFrom, WSAResetEvent, WSAStartup, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_WRITE, FIONBIO,
+    ICMP_ERROR_INFO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP,
+    IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS,
+    IP_TTL, SD_BOTH, SD_RECEIVE, SD_SEND, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
+    SOCKADDR_IN6, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR,
+    SO_PORT_SCALABILITY, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
+    WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE,
+    WSA_IO_PENDING,
 };
 use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
@@ -72,9 +72,8 @@ impl Socket {
         slice.to_owned()
     }
 
-    #[allow(unsafe_code)]
-    pub fn from(&self) -> TraceResult<IpAddr> {
-        sockaddrptr_to_ipaddr(&self.from)
+    pub fn from(&mut self) -> TraceResult<IpAddr> {
+        sockaddrptr_to_ipaddr(std::ptr::addr_of_mut!(*self.from))
     }
 
     #[allow(unsafe_code)]
@@ -314,8 +313,7 @@ impl Socket {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         let rc = unsafe { connect(self.s, &addr, addrlen as i32) };
         if rc == SOCKET_ERROR {
-            let err = unsafe { WSAGetLastError() };
-            if err != WSAEWOULDBLOCK {
+            if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK.0) {
                 // eprintln!("connect failed: {}", Error::last_os_error());
                 return Err(Error::last_os_error());
             }
@@ -326,10 +324,6 @@ impl Socket {
         Ok(())
     }
 
-    /// # Panics
-    ///
-    /// If ttl() fails.
-    #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
     pub fn take_error(&self) -> Result<Option<Error>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _) {
@@ -599,7 +593,8 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             // while !current_unicast.is_null() {
             unsafe {
                 let socket_address = (*current_unicast).Address;
-                let sockaddr = socket_address.lpSockaddr.as_ref().unwrap();
+                // let sockaddr = socket_address.lpSockaddr.as_ref().unwrap();
+                let sockaddr = socket_address.lpSockaddr;
                 let ip_addr = sockaddrptr_to_ipaddr(sockaddr);
                 dealloc(list_ptr, layout);
                 return ip_addr;
@@ -620,8 +615,9 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     )))
 }
 
-fn sockaddrptr_to_ipaddr(sockaddr: &SOCKADDR) -> TraceResult<IpAddr> {
-    match sockaddr_to_socketaddr(sockaddr) {
+#[allow(unsafe_code)]
+fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR) -> TraceResult<IpAddr> {
+    match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().unwrap() }) {
         Err(e) => Err(TracerError::IoError(e)),
         Ok(socketaddr) => match socketaddr {
             SocketAddr::V4(socketaddrv4) => Ok(IpAddr::V4(*socketaddrv4.ip())),
@@ -730,7 +726,8 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     TBD We choose the first one arbitrarily.
      */
-    let sockaddr = unsafe { src.cast::<SOCKADDR>().as_ref().unwrap() };
+    // let sockaddr = unsafe { src.cast::<SOCKADDR>().as_ref().unwrap() };
+    let sockaddr = src.cast::<SOCKADDR>();
     sockaddrptr_to_ipaddr(sockaddr)
 }
 
