@@ -39,7 +39,7 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [linux-gnu, linux-musl, linux-arm, macos, netbsd]
+        build: [linux-gnu, linux-musl, linux-arm, macos, netbsd, win-msvc]
         include:
           - build: linux-gnu
             os: ubuntu-18.04
@@ -56,6 +56,9 @@ jobs:
           - build: netbsd
             os: ubuntu-18.04
             target: x86_64-unknown-netbsd
+          - build: win-msvc
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
 
     steps:
       - name: Checkout repository
@@ -93,9 +96,15 @@ jobs:
         run: |
           staging="trippy-${{ needs.create-release.outputs.trip_version }}-${{ matrix.target }}"
           mkdir -p "$staging"
-          cp "target/${{ matrix.target }}/release/trip" "$staging/"
-          tar czf "$staging.tar.gz" "$staging"
-          echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
+          if [ "${{ matrix.os }}" = "windows-2022" ]; then
+            cp "target/${{ matrix.target }}/release/trip.exe" "$staging/"
+            7z a "$staging.zip" "$staging"
+            echo "ASSET=$staging.zip" >> $GITHUB_ENV
+          else
+            cp "target/${{ matrix.target }}/release/trip" "$staging/"
+            tar czf "$staging.tar.gz" "$staging"
+            echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
+          fi
 
       - name: Create Debian package
         shell: bash
