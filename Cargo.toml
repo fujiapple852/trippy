@@ -47,25 +47,10 @@ caps = "0.5.5"
 # Library dependencies (Unix)
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.26.1", default-features = false, features = [ "user", "poll", "net" ] }
-
-# We don't use Socket2 on Windows
-[target.'cfg(not(windows))'.dependencies]
 socket2 = { version = "0.4.7", features = [ "all" ] }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.43.0"
-features = [
-    "Win32_Foundation",
-    "Win32_Networking_WinSock",
-    "Win32_System_IO",
-    "Win32_NetworkManagement_IpHelper",
-    "Win32_NetworkManagement_Ndis",
-    "Win32_System_IO",
-    "Win32_System_Threading",
-]
-
-[target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.42.0"
 features = [
     "Win32_Foundation",
     "Win32_Networking_WinSock",
