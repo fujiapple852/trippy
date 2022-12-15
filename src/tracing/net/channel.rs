@@ -17,6 +17,7 @@ use itertools::Itertools;
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+#[cfg(windows)]
 use std::io::Error;
 use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, SystemTime};
@@ -364,6 +365,7 @@ fn make_recv_socket(src_addr: IpAddr) -> TraceResult<Socket> {
     }
 }
 
+#[cfg(windows)]
 #[cfg(test)]
 mod tests {
     use super::*;
