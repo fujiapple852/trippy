@@ -21,7 +21,9 @@ use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::{ErrorKind, Read as _};
+use std::io::ErrorKind;
+#[cfg(not(windows))]
+use std::io::Read as _;
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
