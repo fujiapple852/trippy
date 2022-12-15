@@ -21,7 +21,7 @@ use crate::tracing::{MultipathStrategy, PortDirection, Probe, TracerProtocol};
 use platform::Socket;
 #[cfg(not(windows))]
 use socket2::{SockAddr, Socket};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read as _};
 use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr};
 use std::time::SystemTime;
 
@@ -174,6 +174,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
+    #[allow(unused_mut)]
     let mut socket = platform::make_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
     #[cfg(unix)]
