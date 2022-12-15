@@ -44,20 +44,6 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 - Runs on multiple platform (macOS, Linux, NetBSD)
 - Capabilities aware application (Linux only)
 
-### Equal Cost Multi-path Routing
-
-Support for [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
-strategies are shown in the following table (see
-the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
-
-| Strategy | Family      | Protocol  | Status |
-|----------|-------------|-----------|--------|
-| Classic  | IPv4 / IPv6 | UDP / TCP | ✅      |
-| Paris    | IPv4 / IPv6 | UDP / TCP | ❌      |
-| Dublin   | IPv4        | UDP       | ✅      |
-| Dublin   | IPv4        | TCP       | ❌      |
-| Dublin   | IPv6        | UDP / TCP | ❌      |
-
 ## Distributions
 
 ### Cargo
@@ -133,6 +119,20 @@ Trippy has been (lightly...) tested on the following platforms:
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
 | FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
 | Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
+
+## Equal Cost Multi-path Routing
+
+Support for [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
+strategies are shown in the following table (see
+the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
+
+| Strategy | Family      | Protocol  | Status |
+|----------|-------------|-----------|--------|
+| Classic  | IPv4 / IPv6 | UDP / TCP | ✅      |
+| Paris    | IPv4 / IPv6 | UDP / TCP | ❌      |
+| Dublin   | IPv4        | UDP       | ✅      |
+| Dublin   | IPv4        | TCP       | ❌      |
+| Dublin   | IPv6        | UDP / TCP | ❌      |
 
 ## Privileges
 
