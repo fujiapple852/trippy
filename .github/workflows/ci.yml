@@ -16,7 +16,8 @@ jobs:
           - linux-stable
           - linux-beta
           - linux-nightly
-          - macos-nightly
+          - macos-stable
+          - windows-stable
         include:
           - build: linux-pinned
             os: ubuntu-20.04
@@ -30,9 +31,12 @@ jobs:
           - build: linux-nightly
             os: ubuntu-latest
             rust: nightly
-          - build: macos-nightly
+          - build: macos-stable
             os: macos-latest
             rust: nightly
+          - build: windows-stable
+            os: windows-latest
+            rust: stable
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
