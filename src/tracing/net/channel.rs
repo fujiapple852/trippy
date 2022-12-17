@@ -378,9 +378,16 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_local_addr() {
+    fn test_discover_local_addr_v4() {
         startup();
         let res = discover_local_addr(IpAddr::V4("212.82.100.150".parse().unwrap()), 443);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_discover_local_addr_v6() {
+        startup();
+        let res = discover_local_addr(IpAddr::V6("2a00:1450:400b:c01::67".parse().unwrap()), 443);
         assert!(res.is_ok());
     }
 
