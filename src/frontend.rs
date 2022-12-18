@@ -556,7 +556,7 @@ fn render_destination(app: &mut TuiApp) -> String {
     }
 }
 
-/// Render te headline status of the tracing.
+/// Render the headline status of the tracing.
 fn render_status(app: &TuiApp) -> String {
     if app.selected_tracer_data.error().is_some() {
         String::from("Failed")

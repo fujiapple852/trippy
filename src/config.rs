@@ -84,7 +84,7 @@ pub enum AddressMode {
     Both,
 }
 
-/// How DNS queries wil be resolved.
+/// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum DnsResolveMethod {
     /// Resolve using the OS resolver.
