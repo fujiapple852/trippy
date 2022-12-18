@@ -68,10 +68,8 @@ pub fn dispatch_icmp_probe(
     }
     #[cfg(windows)]
     {
-        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), 0);
         let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
         icmp_send_socket
-            .bind(local_addr)?
             .set_unicast_hops_v6(probe.ttl.0)?
             .send_to(echo_request.packet(), remote_addr)?;
     }
@@ -120,10 +118,8 @@ pub fn dispatch_udp_probe(
     }
     #[cfg(windows)]
     {
-        let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
         let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
         udp_send_socket
-            .bind(local_addr)?
             .set_unicast_hops_v6(probe.ttl.0)?
             .send_to(udp.packet(), remote_addr)?;
     }
