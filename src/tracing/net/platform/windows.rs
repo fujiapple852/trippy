@@ -349,15 +349,16 @@ impl Socket {
     pub fn icmp_error_info(&self) -> Result<IpAddr> {
         let icmp_error_info =
             self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _)?;
-        Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
-            icmp_error_info
-                .srcaddress
-                .Ipv4
-                .sin_addr
-                .S_un
-                .S_addr
-                .to_ne_bytes()
-        })))
+        let src_addr = icmp_error_info.srcaddress;
+        match ADDRESS_FAMILY(u32::from(unsafe { src_addr.si_family })) {
+            AF_INET => Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
+                src_addr.Ipv4.sin_addr.S_un.S_addr.to_ne_bytes()
+            }))),
+            AF_INET6 => Ok(IpAddr::V6(Ipv6Addr::from(unsafe {
+                src_addr.Ipv6.sin6_addr.u.Byte
+            }))),
+            _ => Err(Error::from(ErrorKind::AddrNotAvailable)),
+        }
     }
 
     #[allow(unsafe_code)]
