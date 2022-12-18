@@ -148,7 +148,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
-    /// the algorithm will send `EchoRequest` wih larger time-to-live values before the `EchoReply` is received.
+    /// the algorithm will send `EchoRequest` with larger time-to-live values before the `EchoReply` is received.
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
         match next {

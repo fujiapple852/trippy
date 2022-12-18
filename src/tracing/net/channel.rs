@@ -189,7 +189,7 @@ impl TracerChannel {
 
     /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
     ///
-    /// Any TCP socket which has not connected or failed after a timeout wil be removed.
+    /// Any TCP socket which has not connected or failed after a timeout will be removed.
     fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
