@@ -48,6 +48,7 @@ impl TracerChannel {
                 config.packet_size.0,
             )));
         }
+        platform::startup()?;
         let ipv4_length_order =
             platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let icmp_send_socket = make_icmp_send_socket(config.target_addr)?;
