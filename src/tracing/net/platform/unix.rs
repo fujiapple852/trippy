@@ -252,8 +252,8 @@ impl Socket {
         self.inner.set_nonblocking(nonblocking)
     }
 
-    pub fn set_unicast_hops_v6(&self, hops: u32) -> io::Result<()> {
-        self.inner.set_unicast_hops_v6(hops)
+    pub fn set_unicast_hops_v6(&self, hops: u8) -> io::Result<()> {
+        self.inner.set_unicast_hops_v6(u32::from(hops))
     }
 
     pub fn connect(&self, address: SocketAddr) -> io::Result<()> {
