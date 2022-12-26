@@ -140,7 +140,7 @@ pub fn recv_icmp_probe(
     direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
-    match recv_socket.recv_from_into_buf(&mut buf) {
+    match recv_socket.recv_from(&mut buf) {
         Ok((_bytes_read, addr)) => {
             let icmp_v6 = IcmpPacket::new_view(&buf).req()?;
 
@@ -376,23 +376,4 @@ fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
     let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
     let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
-}
-
-/// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
-///
-/// This is required for `socket2::Socket` which [does not currently provide] this method.
-///
-/// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
-trait RecvFrom {
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, Option<SocketAddr>)>;
-}
-
-impl RecvFrom for Socket {
-    // Safety: the `recv` implementation promises not to write uninitialised
-    // bytes to the `buf`fer, so this casting is safe.
-    #![allow(unsafe_code)]
-    fn recv_from_into_buf(&self, buf: &mut [u8]) -> std::io::Result<(usize, Option<SocketAddr>)> {
-        let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
-        self.recv_from(buf)
-    }
 }
