@@ -215,6 +215,12 @@ pub fn is_conn_refused_error(code: i32) -> bool {
     nix::Error::from_i32(code) == nix::Error::ECONNREFUSED
 }
 
+#[allow(dead_code)]
+#[must_use]
+pub fn is_host_unreachable_error(_code: i32) -> bool {
+    false
+}
+
 /// A network socket.
 #[derive(Debug)]
 pub struct Socket {
