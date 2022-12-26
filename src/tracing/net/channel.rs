@@ -51,9 +51,9 @@ impl TracerChannel {
         platform::startup()?;
         let ipv4_length_order =
             platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
-        let icmp_send_socket = make_icmp_send_socket(config.target_addr)?;
-        let udp_send_socket = make_udp_send_socket(config.target_addr)?;
-        let recv_socket = make_recv_socket(config.target_addr)?;
+        let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
+        let udp_send_socket = make_udp_send_socket(config.source_addr)?;
+        let recv_socket = make_recv_socket(config.source_addr)?;
         Ok(Self {
             protocol: config.protocol,
             src_addr: config.source_addr,
