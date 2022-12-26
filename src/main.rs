@@ -102,7 +102,6 @@ fn start_tracer(
         thread::Builder::new()
             .name(format!("tracer-{}", tracer_config.trace_identifier.0))
             .spawn(move || {
-                drop_caps().expect("failed to drop capabilities in tracer thread");
                 backend::run_backend(&tracer_config, &channel_config, trace_data)
                     .expect("failed to run tracer backend");
             })?;
