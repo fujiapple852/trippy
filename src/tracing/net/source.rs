@@ -1,10 +1,7 @@
 use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
-use crate::tracing::net::Socket;
-use crate::tracing::net::{
-    lookup_interface_addr_ipv4, lookup_interface_addr_ipv6, make_udp_dgram_socket_ipv4,
-    make_udp_dgram_socket_ipv6,
-};
+use crate::tracing::net::platform;
+use crate::tracing::net::platform::Socket;
 use crate::tracing::types::Port;
 use crate::tracing::util::Required;
 use crate::tracing::PortDirection;
@@ -53,15 +50,15 @@ fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
 /// Create a socket suitable for a given address.
 fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
     Ok(match addr {
-        IpAddr::V4(_) => make_udp_dgram_socket_ipv4()?,
-        IpAddr::V6(_) => make_udp_dgram_socket_ipv6()?,
+        IpAddr::V4(_) => platform::make_udp_dgram_socket_ipv4()?,
+        IpAddr::V6(_) => platform::make_udp_dgram_socket_ipv6()?,
     })
 }
 
 /// Lookup the address for a named interface.
 fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
     match addr {
-        IpAddr::V4(_) => lookup_interface_addr_ipv4(name),
-        IpAddr::V6(_) => lookup_interface_addr_ipv6(name),
+        IpAddr::V4(_) => platform::lookup_interface_addr_ipv4(name),
+        IpAddr::V6(_) => platform::lookup_interface_addr_ipv6(name),
     }
 }
