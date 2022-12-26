@@ -296,6 +296,11 @@ impl Socket {
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
         self.inner.take_error()
     }
+
+    #[allow(dead_code, clippy::unused_self)]
+    pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
+        unimplemented!()
+    }
 }
 
 impl io::Read for Socket {
