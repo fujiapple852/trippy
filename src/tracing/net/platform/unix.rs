@@ -7,7 +7,7 @@ use nix::{
 };
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::io;
-use std::mem::MaybeUninit;
+use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr};
 use std::net::{Shutdown, SocketAddr};
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -259,13 +259,12 @@ impl Socket {
         self.inner.send_to(buf, &SockAddr::from(addr))
     }
 
-    pub fn recv_from(
-        &self,
-        buf: &mut [MaybeUninit<u8>],
-    ) -> io::Result<(usize, Option<SocketAddr>)> {
-        self.inner
-            .recv_from(buf)
-            .map(|(size, addr)| (size, addr.as_socket()))
+    pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+        self.inner.recv_from_into_buf(buf)
+    }
+
+    pub fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
     }
 
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
@@ -302,5 +301,25 @@ impl Socket {
 impl io::Read for Socket {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
+    }
+}
+
+/// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
+///
+/// This is required for `socket2::Socket` which [does not currently provide] this method.
+///
+/// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
+trait RecvFrom {
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)>;
+}
+
+impl RecvFrom for socket2::Socket {
+    // Safety: the `recv` implementation promises not to write uninitialised
+    // bytes to the `buf`fer, so this casting is safe.
+    #![allow(unsafe_code)]
+    fn recv_from_into_buf(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+        let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
+        self.recv_from(buf)
+            .map(|(size, addr)| (size, addr.as_socket()))
     }
 }

@@ -1,8 +1,7 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::TraceResult;
 use std::io;
-use std::mem::MaybeUninit;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
 use std::time::Duration;
 
@@ -153,10 +152,11 @@ impl Socket {
     }
 
     /// TODO
-    pub fn recv_from(
-        &self,
-        _buf: &mut [MaybeUninit<u8>],
-    ) -> io::Result<(usize, Option<SocketAddr>)> {
+    pub fn recv_from(&self, _buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+        unimplemented!()
+    }
+
+    pub fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         unimplemented!()
     }
 
