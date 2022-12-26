@@ -247,7 +247,7 @@ fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
 /// Make a socket for receiving raw `ICMP` packets.
 fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
     match addr {
-        IpAddr::V4(_) => platform::make_recv_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_recv_socket_ipv6(),
+        IpAddr::V4(ipv4addr) => platform::make_recv_socket_ipv4(ipv4addr),
+        IpAddr::V6(ipv6addr) => platform::make_recv_socket_ipv6(ipv6addr),
     }
 }

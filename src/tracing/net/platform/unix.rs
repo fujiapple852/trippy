@@ -8,7 +8,7 @@ use nix::{
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::io;
 use std::io::Read;
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::time::Duration;
@@ -128,7 +128,7 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
     Ok(socket)
 }
 
-pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
+pub fn make_recv_socket_ipv4(_addr: Ipv4Addr) -> TraceResult<Socket> {
     let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
     socket.set_nonblocking(true)?;
     socket.set_header_included(true)?;
@@ -159,7 +159,7 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
     Ok(socket)
 }
 
-pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
+pub fn make_recv_socket_ipv6(_addr: Ipv6Addr) -> TraceResult<Socket> {
     let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
     socket.set_nonblocking(true)?;
     Ok(socket)

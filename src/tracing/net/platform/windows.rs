@@ -37,7 +37,7 @@ pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
 }
 
 /// TODO
-pub fn make_recv_socket_ipv4() -> TraceResult<Socket> {
+pub fn make_recv_socket_ipv4(_addr: Ipv4Addr) -> TraceResult<Socket> {
     unimplemented!()
 }
 
@@ -62,7 +62,7 @@ pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
 }
 
 /// TODO
-pub fn make_recv_socket_ipv6() -> TraceResult<Socket> {
+pub fn make_recv_socket_ipv6(_addr: Ipv6Addr) -> TraceResult<Socket> {
     unimplemented!()
 }
 
