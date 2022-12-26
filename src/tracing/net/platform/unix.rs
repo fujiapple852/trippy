@@ -284,11 +284,6 @@ impl Socket {
         self.inner.as_raw_fd()
     }
 
-    #[allow(dead_code)]
-    pub fn unicast_hops_v6(&self) -> io::Result<u32> {
-        self.inner.unicast_hops_v6()
-    }
-
     pub fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
         Ok(self.inner.peer_addr()?.as_socket())
     }
