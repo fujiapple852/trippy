@@ -142,7 +142,7 @@ impl Socket {
     }
 
     /// TODO
-    pub fn set_unicast_hops_v6(&self, _hops: u32) -> io::Result<()> {
+    pub fn set_unicast_hops_v6(&self, _hops: u8) -> io::Result<()> {
         unimplemented!()
     }
 

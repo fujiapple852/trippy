@@ -55,7 +55,7 @@ pub fn dispatch_icmp_probe(
         icmp_payload_size(packet_size),
         payload_pattern,
     )?;
-    icmp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    icmp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
     icmp_send_socket.send_to(echo_request.packet(), remote_addr)?;
     Ok(())
@@ -90,7 +90,7 @@ pub fn dispatch_udp_probe(
         udp_payload_size(packet_size),
         payload_pattern,
     )?;
-    udp_send_socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
     // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in the `UDP`
     // packet.  If we (redundantly) set the target port here then the send will fail with `EINVAL`.
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
@@ -112,7 +112,7 @@ pub fn dispatch_tcp_probe(
     let socket = platform::make_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
     socket.bind(local_addr)?;
-    socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
+    socket.set_unicast_hops_v6(probe.ttl.0)?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
     match socket.connect(remote_addr) {
         Ok(_) => {}
