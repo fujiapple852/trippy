@@ -1,9 +1,8 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::make_stream_socket_ipv6;
-use crate::tracing::net::Socket;
-use crate::tracing::net::{is_conn_refused_error, is_not_in_progress_error};
+use crate::tracing::net::platform;
+use crate::tracing::net::platform::Socket;
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
 use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
@@ -110,7 +109,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = make_stream_socket_ipv6()?;
+    let socket = platform::make_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
     socket.bind(local_addr)?;
     socket.set_unicast_hops_v6(u32::from(probe.ttl.0))?;
@@ -119,7 +118,7 @@ pub fn dispatch_tcp_probe(
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if is_not_in_progress_error(code) {
+                if platform::is_not_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
@@ -179,7 +178,7 @@ pub fn recv_tcp_socket(
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
-                if is_conn_refused_error(code) {
+                if platform::is_conn_refused_error(code) {
                     return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,

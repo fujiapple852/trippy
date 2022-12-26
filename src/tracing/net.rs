@@ -17,10 +17,6 @@ pub mod channel;
 /// Determine the source address.
 pub mod source;
 
-/// Re-exports
-#[allow(clippy::wildcard_imports)]
-use platform::*;
-
 /// An abstraction over a network interface for tracing.
 pub trait Network {
     /// Send a `Probe`.

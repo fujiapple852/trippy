@@ -1,11 +1,8 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
-use crate::tracing::net::PlatformIpv4FieldByteOrder;
-use crate::tracing::net::Socket;
-use crate::tracing::net::{
-    is_conn_refused_error, is_not_in_progress_error, make_stream_socket_ipv4,
-};
+use crate::tracing::net::platform;
+use crate::tracing::net::platform::Socket;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -50,7 +47,7 @@ pub fn dispatch_icmp_probe(
     identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_byte_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
@@ -91,7 +88,7 @@ pub fn dispatch_udp_probe(
     port_direction: PortDirection,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_byte_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
@@ -157,7 +154,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let socket = make_stream_socket_ipv4()?;
+    let socket = platform::make_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
     socket.bind(local_addr)?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
@@ -167,7 +164,7 @@ pub fn dispatch_tcp_probe(
         Ok(_) => {}
         Err(err) => {
             if let Some(code) = err.raw_os_error() {
-                if is_not_in_progress_error(code) {
+                if platform::is_not_in_progress_error(code) {
                     return match err.kind() {
                         ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
                             Err(AddressNotAvailable(local_addr))
@@ -225,7 +222,7 @@ pub fn recv_tcp_socket(
         }
         Some(err) => {
             if let Some(code) = err.raw_os_error() {
-                if is_conn_refused_error(code) {
+                if platform::is_conn_refused_error(code) {
                     return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
@@ -285,7 +282,7 @@ fn make_udp_packet(
 #[allow(clippy::too_many_arguments)]
 fn make_ipv4_packet<'a>(
     ipv4_buf: &'a mut [u8],
-    ipv4_byte_order: PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
     protocol: IpProtocol,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
