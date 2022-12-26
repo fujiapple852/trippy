@@ -101,6 +101,11 @@ pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
         .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
 }
 
+#[allow(clippy::unnecessary_wraps)]
+pub fn startup() -> TraceResult<()> {
+    Ok(())
+}
+
 pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
     let socket = Socket::new(
         Domain::IPV4,

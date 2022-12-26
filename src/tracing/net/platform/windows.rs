@@ -11,6 +11,11 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
+#[allow(clippy::unnecessary_wraps)]
+pub fn startup() -> TraceResult<()> {
+    Ok(())
+}
+
 /// TODO
 pub fn lookup_interface_addr_ipv4(_name: &str) -> TraceResult<IpAddr> {
     unimplemented!()
