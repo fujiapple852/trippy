@@ -296,11 +296,6 @@ impl Socket {
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
         self.inner.take_error()
     }
-
-    #[allow(dead_code)]
-    pub fn ttl(&self) -> io::Result<u32> {
-        self.inner.ttl()
-    }
 }
 
 impl io::Read for Socket {
