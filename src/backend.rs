@@ -1,3 +1,4 @@
+use crate::caps::drop_caps;
 use crate::config::MAX_HOPS;
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -272,6 +273,7 @@ pub fn run_backend(
 ) -> anyhow::Result<()> {
     let td = trace_data.clone();
     let channel = TracerChannel::connect(channel_config)?;
+    drop_caps()?;
     let tracer = Tracer::new(tracer_config, move |round| {
         trace_data.write().update_from_round(round);
     });
