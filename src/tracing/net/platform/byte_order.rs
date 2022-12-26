@@ -50,6 +50,7 @@ impl PlatformIpv4FieldByteOrder {
     }
 
     /// Adjust the IPv4 `total_length` header.
+    #[must_use]
     pub fn adjust_length(self, ipv4_total_length: u16) -> u16 {
         match self {
             #[cfg(all(unix, not(target_os = "linux"), not(target_os = "windows")))]
