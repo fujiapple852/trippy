@@ -207,6 +207,12 @@ impl Socket {
     pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
         unimplemented!()
     }
+
+    /// TODO
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+    pub fn close(&self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 impl io::Read for Socket {
