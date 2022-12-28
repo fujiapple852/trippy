@@ -207,12 +207,6 @@ impl Socket {
     pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
         unimplemented!()
     }
-
-    /// TODO
-    #[allow(dead_code)]
-    pub fn ttl(&self) -> io::Result<u32> {
-        unimplemented!()
-    }
 }
 
 impl io::Read for Socket {
