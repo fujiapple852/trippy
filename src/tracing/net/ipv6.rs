@@ -186,6 +186,15 @@ pub fn recv_tcp_socket(
                         sequence.0,
                     ))));
                 }
+                if platform::is_host_unreachable_error(code) {
+                    let error_addr = tcp_socket.icmp_error_info()?;
+                    return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
+                        SystemTime::now(),
+                        error_addr,
+                        0,
+                        sequence.0,
+                    ))));
+                }
             }
         }
     };
