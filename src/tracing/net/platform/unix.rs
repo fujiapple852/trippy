@@ -1,5 +1,6 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::util::Required;
 use nix::{
     sys::select::FdSet,
     sys::socket::{AddressFamily, SockaddrLike},
@@ -51,7 +52,6 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
 /// test if the OS rejects the attempt.
 #[cfg(not(target_os = "linux"))]
 fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<usize> {
-    use crate::tracing::util::Required;
     let mut buf = [0_u8; TEST_PACKET_LENGTH as usize];
     let mut ipv4 = crate::tracing::packet::ipv4::Ipv4Packet::new(&mut buf).req()?;
     ipv4.set_version(4);
@@ -220,6 +220,18 @@ pub fn is_host_unreachable_error(_code: i32) -> bool {
     false
 }
 
+/// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
+///
+/// Note that no packets are transmitted by this method.
+pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+    let socket = match target_addr {
+        IpAddr::V4(_) => make_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => make_udp_dgram_socket_ipv6(),
+    }?;
+    socket.connect(SocketAddr::new(target_addr, port))?;
+    Ok(socket.local_addr()?.req()?.ip())
+}
+
 /// A network socket.
 #[derive(Debug)]
 pub struct Socket {
@@ -300,6 +312,11 @@ impl Socket {
     #[allow(dead_code, clippy::unused_self)]
     pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
         unimplemented!()
+    }
+
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+    pub fn close(&self) -> io::Result<()> {
+        Ok(())
     }
 }
 

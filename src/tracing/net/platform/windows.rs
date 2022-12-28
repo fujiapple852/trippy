@@ -96,8 +96,14 @@ pub fn is_conn_refused_error(_code: i32) -> bool {
     unimplemented!()
 }
 
+/// TODO
 #[must_use]
 pub fn is_host_unreachable_error(_code: i32) -> bool {
+    unimplemented!()
+}
+
+/// TODO
+pub fn discover_local_addr(_target_addr: IpAddr, _port: u16) -> TraceResult<IpAddr> {
     unimplemented!()
 }
 
@@ -114,7 +120,7 @@ impl Socket {
     }
 
     /// TODO
-    pub fn bind(&self, _address: SocketAddr) -> io::Result<()> {
+    pub fn bind(&mut self, _address: SocketAddr) -> io::Result<()> {
         unimplemented!()
     }
 
@@ -176,6 +182,7 @@ impl Socket {
     }
 
     /// TODO
+    #[allow(dead_code, clippy::unused_self)]
     pub fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
         unimplemented!()
     }
