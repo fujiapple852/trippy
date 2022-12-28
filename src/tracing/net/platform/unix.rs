@@ -309,9 +309,9 @@ impl Socket {
         self.inner.take_error()
     }
 
-    #[allow(dead_code, clippy::unused_self)]
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
-        unimplemented!()
+        Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
     }
 
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
