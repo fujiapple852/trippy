@@ -96,6 +96,11 @@ pub fn is_conn_refused_error(_code: i32) -> bool {
     unimplemented!()
 }
 
+#[must_use]
+pub fn is_host_unreachable_error(_code: i32) -> bool {
+    unimplemented!()
+}
+
 /// A network socket.
 #[derive(Debug)]
 pub struct Socket {}
@@ -194,6 +199,12 @@ impl Socket {
 
     /// TODO
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
+        unimplemented!()
+    }
+
+    /// TODO
+    #[allow(clippy::unused_self)]
+    pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
         unimplemented!()
     }
 
