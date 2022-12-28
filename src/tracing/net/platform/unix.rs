@@ -233,7 +233,7 @@ impl Socket {
         })
     }
 
-    pub fn bind(&self, address: SocketAddr) -> io::Result<()> {
+    pub fn bind(&mut self, address: SocketAddr) -> io::Result<()> {
         self.inner.bind(&SockAddr::from(address))
     }
 
