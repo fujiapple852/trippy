@@ -3,7 +3,6 @@ use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::Socket;
 use crate::tracing::types::Port;
-use crate::tracing::util::Required;
 use crate::tracing::PortDirection;
 use std::net::{IpAddr, SocketAddr};
 
@@ -23,36 +22,30 @@ impl SourceAddr {
         let port = port_direction.dest().unwrap_or(DISCOVERY_PORT).0;
         match interface.as_ref() {
             Some(interface) => lookup_interface_addr(target_addr, interface),
-            None => discover_local_addr(target_addr, port),
+            None => platform::discover_local_addr(target_addr, port),
         }
     }
 
-    /// Validate that we can bind to the source address.
+    /// Validate that we can bind to the source `IpAddr`.
     pub fn validate(source_addr: IpAddr) -> TraceResult<IpAddr> {
-        let socket = udp_socket_for_addr_family(source_addr)?;
+        let mut socket = udp_socket_for_addr_family(source_addr)?;
         let sock_addr = SocketAddr::new(source_addr, 0);
         match socket.bind(sock_addr) {
-            Ok(_) => Ok(source_addr),
+            Ok(_) => {
+                socket.close()?;
+                Ok(source_addr)
+            }
             Err(_) => Err(InvalidSourceAddr(sock_addr.ip())),
         }
     }
 }
 
-/// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
-///
-/// Note that no packets are transmitted by this method.
-fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
-    let socket = udp_socket_for_addr_family(target_addr)?;
-    socket.connect(SocketAddr::new(target_addr, port))?;
-    Ok(socket.local_addr()?.req()?.ip())
-}
-
 /// Create a socket suitable for a given address.
-fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
-    Ok(match addr {
-        IpAddr::V4(_) => platform::make_udp_dgram_socket_ipv4()?,
-        IpAddr::V6(_) => platform::make_udp_dgram_socket_ipv6()?,
-    })
+pub fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
+    match addr {
+        IpAddr::V4(_) => platform::make_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => platform::make_udp_dgram_socket_ipv6(),
+    }
 }
 
 /// Lookup the address for a named interface.
