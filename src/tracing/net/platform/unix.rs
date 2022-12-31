@@ -1,5 +1,6 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::net::socket::TracerSocket;
 use crate::tracing::util::Required;
 use nix::{
     sys::select::FdSet,
@@ -237,83 +238,68 @@ pub struct Socket {
 }
 
 impl Socket {
-    pub fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> io::Result<Self> {
+    fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> io::Result<Self> {
         Ok(Self {
             inner: socket2::Socket::new(domain, ty, protocol)?,
         })
     }
-
-    pub fn bind(&mut self, address: SocketAddr) -> io::Result<()> {
-        self.inner.bind(&SockAddr::from(address))
-    }
-
-    pub fn set_tos(&self, tos: u32) -> io::Result<()> {
-        self.inner.set_tos(tos)
-    }
-
-    pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.inner.set_ttl(ttl)
-    }
-
-    pub fn set_reuse_port(&self, reuse: bool) -> io::Result<()> {
-        self.inner.set_reuse_port(reuse)
-    }
-
-    pub fn set_header_included(&self, included: bool) -> io::Result<()> {
-        self.inner.set_header_included(included)
-    }
-
-    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
-        self.inner.set_nonblocking(nonblocking)
-    }
-
-    pub fn set_unicast_hops_v6(&self, hops: u8) -> io::Result<()> {
-        self.inner.set_unicast_hops_v6(u32::from(hops))
-    }
-
-    pub fn connect(&self, address: SocketAddr) -> io::Result<()> {
-        self.inner.connect(&SockAddr::from(address))
-    }
-
-    pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
-        self.inner.send_to(buf, &SockAddr::from(addr))
-    }
-
-    pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
-        self.inner.recv_from_into_buf(buf)
-    }
-
-    pub fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner.read(buf)
-    }
-
-    pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.inner.shutdown(how)
-    }
-
-    pub fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
-        Ok(self.inner.local_addr()?.as_socket())
-    }
-
-    pub fn as_raw_fd(&self) -> RawFd {
+    fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
+}
 
-    pub fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
+impl TracerSocket for Socket {
+    fn bind(&mut self, address: SocketAddr) -> io::Result<()> {
+        self.inner.bind(&SockAddr::from(address))
+    }
+    fn set_tos(&self, tos: u32) -> io::Result<()> {
+        self.inner.set_tos(tos)
+    }
+    fn set_ttl(&self, ttl: u32) -> io::Result<()> {
+        self.inner.set_ttl(ttl)
+    }
+    fn set_reuse_port(&self, reuse: bool) -> io::Result<()> {
+        self.inner.set_reuse_port(reuse)
+    }
+    fn set_header_included(&self, included: bool) -> io::Result<()> {
+        self.inner.set_header_included(included)
+    }
+    fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+        self.inner.set_nonblocking(nonblocking)
+    }
+    fn set_unicast_hops_v6(&self, hops: u8) -> io::Result<()> {
+        self.inner.set_unicast_hops_v6(u32::from(hops))
+    }
+    fn connect(&self, address: SocketAddr) -> io::Result<()> {
+        self.inner.connect(&SockAddr::from(address))
+    }
+    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
+        self.inner.send_to(buf, &SockAddr::from(addr))
+    }
+    fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+        self.inner.recv_from_into_buf(buf)
+    }
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
+    fn shutdown(&self, how: Shutdown) -> io::Result<()> {
+        self.inner.shutdown(how)
+    }
+    fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
+        Ok(self.inner.local_addr()?.as_socket())
+    }
+    fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
         Ok(self.inner.peer_addr()?.as_socket())
     }
-
-    pub fn take_error(&self) -> io::Result<Option<io::Error>> {
+    fn take_error(&self) -> io::Result<Option<io::Error>> {
         self.inner.take_error()
     }
-
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-    pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
+    fn icmp_error_info(&self) -> io::Result<IpAddr> {
         Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
     }
-
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-    pub fn close(&self) -> io::Result<()> {
+    fn close(&self) -> io::Result<()> {
         Ok(())
     }
 }
