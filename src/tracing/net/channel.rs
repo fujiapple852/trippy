@@ -231,24 +231,24 @@ impl TcpProbe {
 
 /// Make a socket for sending raw `ICMP` packets.
 fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
-    match addr {
-        IpAddr::V4(_) => platform::make_icmp_send_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_icmp_send_socket_ipv6(),
-    }
+    Ok(match addr {
+        IpAddr::V4(_) => Socket::new_icmp_send_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_icmp_send_socket_ipv6(),
+    }?)
 }
 
 /// Make a socket for sending `UDP` packets.
 fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
-    match addr {
-        IpAddr::V4(_) => platform::make_udp_send_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_udp_send_socket_ipv6(),
-    }
+    Ok(match addr {
+        IpAddr::V4(_) => Socket::new_udp_send_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_udp_send_socket_ipv6(),
+    }?)
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
 fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
-    match addr {
-        IpAddr::V4(ipv4addr) => platform::make_recv_socket_ipv4(ipv4addr),
-        IpAddr::V6(ipv6addr) => platform::make_recv_socket_ipv6(ipv6addr),
-    }
+    Ok(match addr {
+        IpAddr::V4(ipv4addr) => Socket::new_recv_socket_ipv4(ipv4addr),
+        IpAddr::V6(ipv6addr) => Socket::new_recv_socket_ipv6(ipv6addr),
+    }?)
 }

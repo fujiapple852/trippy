@@ -155,7 +155,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let mut socket = platform::make_stream_socket_ipv4()?;
+    let mut socket = Socket::new_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
     socket.bind(local_addr)?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
