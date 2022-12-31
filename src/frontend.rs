@@ -601,7 +601,7 @@ fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         })
         .collect();
     let tabs = Tabs::new(titles)
-        .block(tabs_block.clone())
+        .block(tabs_block)
         .select(app.trace_selected)
         .style(Style::default())
         .highlight_style(
