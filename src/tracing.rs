@@ -18,4 +18,4 @@ pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;
 pub use net::SocketImpl;
 pub use probe::{IcmpPacketType, Probe, ProbeStatus};
-pub use tracer::{Tracer, TracerRound};
+pub use tracer::{CompletionReason, Tracer, TracerRound};
