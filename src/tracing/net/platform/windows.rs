@@ -142,7 +142,7 @@ impl TracerSocket for Socket {
     }
 
     /// TODO
-    fn send_to(&self, _buf: &[u8], _addr: SocketAddr) -> io::Result<usize> {
+    fn send_to(&self, _buf: &[u8], _addr: SocketAddr) -> io::Result<()> {
         unimplemented!()
     }
 
