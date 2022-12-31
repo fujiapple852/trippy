@@ -52,7 +52,7 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
 /// The packet is actually of length `256` bytes but we set the `total_length` based on the input provided so as to
 /// test if the OS rejects the attempt.
 #[cfg(not(target_os = "linux"))]
-fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<usize> {
+fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
     let mut buf = [0_u8; TEST_PACKET_LENGTH as usize];
     let mut ipv4 = crate::tracing::packet::ipv4::Ipv4Packet::new(&mut buf).req()?;
     ipv4.set_version(4);
@@ -69,7 +69,8 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
     )?;
     probe_socket.set_header_included(true)?;
     let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
-    Ok(probe_socket.send_to(ipv4.packet(), remote_addr)?)
+    probe_socket.send_to(ipv4.packet(), remote_addr)?;
+    Ok(())
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
@@ -237,8 +238,9 @@ impl TracerSocket for Socket {
     fn connect(&self, address: SocketAddr) -> io::Result<()> {
         self.inner.connect(&SockAddr::from(address))
     }
-    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
-        self.inner.send_to(buf, &SockAddr::from(addr))
+    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<()> {
+        self.inner.send_to(buf, &SockAddr::from(addr))?;
+        Ok(())
     }
     fn is_readable(&self, timeout: Duration) -> io::Result<bool> {
         let mut read = FdSet::new();
