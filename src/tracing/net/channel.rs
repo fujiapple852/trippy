@@ -1,5 +1,6 @@
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::platform::Socket;
+use crate::tracing::net::socket::TracerSocket as _;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
@@ -166,7 +167,7 @@ impl TracerChannel {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        if platform::is_readable(&self.recv_socket, self.read_timeout)? {
+        if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
                 IpAddr::V4(_) => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
@@ -192,7 +193,7 @@ impl TracerChannel {
         let found_index = self
             .tcp_probes
             .iter()
-            .find_position(|&probe| platform::is_writable(&probe.socket).unwrap_or_default())
+            .find_position(|&probe| probe.socket.is_writable().unwrap_or_default())
             .map(|(i, _)| i);
         if let Some(i) = found_index {
             let probe = self.tcp_probes.remove(i);
