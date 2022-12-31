@@ -11,6 +11,9 @@ mod ipv6;
 /// Platform specific network code.
 mod platform;
 
+/// A network socket.
+mod socket;
+
 /// A channel for sending and receiving probes.
 pub mod channel;
 
