@@ -132,12 +132,6 @@ impl TracerSocket for Socket {
     }
 
     /// TODO
-    #[allow(dead_code)]
-    fn set_nonblocking(&self, _nonblocking: bool) -> io::Result<()> {
-        unimplemented!()
-    }
-
-    /// TODO
     fn set_unicast_hops_v6(&self, _hops: u8) -> io::Result<()> {
         unimplemented!()
     }
@@ -163,7 +157,7 @@ impl TracerSocket for Socket {
     }
 
     /// TODO
-    fn recv_from(&self, _buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+    fn recv_from(&mut self, _buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
         unimplemented!()
     }
 
@@ -173,12 +167,6 @@ impl TracerSocket for Socket {
 
     /// TODO
     fn shutdown(&self, _how: Shutdown) -> io::Result<()> {
-        unimplemented!()
-    }
-
-    /// TODO
-    #[allow(dead_code, clippy::unused_self)]
-    fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
         unimplemented!()
     }
 

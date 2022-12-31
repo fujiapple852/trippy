@@ -154,6 +154,14 @@ impl Socket {
             inner: socket2::Socket::new(Domain::IPV6, Type::RAW, Some(protocol))?,
         })
     }
+
+    fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+        self.inner.set_nonblocking(nonblocking)
+    }
+
+    fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
+        Ok(self.inner.local_addr()?.as_socket())
+    }
 }
 
 impl TracerSocket for Socket {
@@ -223,9 +231,6 @@ impl TracerSocket for Socket {
     fn set_header_included(&self, included: bool) -> io::Result<()> {
         self.inner.set_header_included(included)
     }
-    fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
-        self.inner.set_nonblocking(nonblocking)
-    }
     fn set_unicast_hops_v6(&self, hops: u8) -> io::Result<()> {
         self.inner.set_unicast_hops_v6(u32::from(hops))
     }
@@ -259,7 +264,7 @@ impl TracerSocket for Socket {
         )?;
         Ok(writable == 1)
     }
-    fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+    fn recv_from(&mut self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
         self.inner.recv_from_into_buf(buf)
     }
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -267,9 +272,6 @@ impl TracerSocket for Socket {
     }
     fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.inner.shutdown(how)
-    }
-    fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
-        Ok(self.inner.local_addr()?.as_socket())
     }
     fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
         Ok(self.inner.peer_addr()?.as_socket())
