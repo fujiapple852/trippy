@@ -74,7 +74,6 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
     nix::ifaddrs::getifaddrs()
         .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
-        .into_iter()
         .find_map(|ia| {
             ia.address.and_then(|addr| match addr.family() {
                 Some(AddressFamily::Inet) if ia.interface_name == name => addr
@@ -89,7 +88,6 @@ pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
 pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
     nix::ifaddrs::getifaddrs()
         .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
-        .into_iter()
         .find_map(|ia| {
             ia.address.and_then(|addr| match addr.family() {
                 Some(AddressFamily::Inet6) if ia.interface_name == name => addr
