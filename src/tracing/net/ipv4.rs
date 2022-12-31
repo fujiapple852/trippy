@@ -3,6 +3,7 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::Socket;
+use crate::tracing::net::socket::TracerSocket as _;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;

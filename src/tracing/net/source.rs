@@ -2,6 +2,7 @@ use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::Socket;
+use crate::tracing::net::socket::TracerSocket as _;
 use crate::tracing::types::Port;
 use crate::tracing::PortDirection;
 use std::net::{IpAddr, SocketAddr};
