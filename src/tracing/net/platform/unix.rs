@@ -12,7 +12,7 @@ use std::io;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
-use std::os::unix::io::{AsRawFd, RawFd};
+use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
 /// The size of the test packet to use for discovering the `total_length` byte order.
@@ -176,36 +176,6 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
     Ok(socket)
 }
 
-/// Returns true if the socket becomes readable before the timeout, false otherwise.
-pub fn is_readable(sock: &Socket, timeout: Duration) -> TraceResult<bool> {
-    let mut read = FdSet::new();
-    read.insert(sock.as_raw_fd());
-    let readable = nix::sys::select::select(
-        None,
-        Some(&mut read),
-        None,
-        None,
-        Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
-    )
-    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
-    Ok(readable == 1)
-}
-
-/// Returns true if the socket is currently writeable, false otherwise.
-pub fn is_writable(sock: &Socket) -> TraceResult<bool> {
-    let mut write = FdSet::new();
-    write.insert(sock.as_raw_fd());
-    let writable = nix::sys::select::select(
-        None,
-        None,
-        Some(&mut write),
-        None,
-        Some(&mut TimeVal::zero()),
-    )
-    .map_err(|err| TracerError::IoError(std::io::Error::from(err)))?;
-    Ok(writable == 1)
-}
-
 pub fn is_not_in_progress_error(code: i32) -> bool {
     nix::Error::from_i32(code) != nix::Error::EINPROGRESS
 }
@@ -243,9 +213,6 @@ impl Socket {
             inner: socket2::Socket::new(domain, ty, protocol)?,
         })
     }
-    fn as_raw_fd(&self) -> RawFd {
-        self.inner.as_raw_fd()
-    }
 }
 
 impl TracerSocket for Socket {
@@ -275,6 +242,30 @@ impl TracerSocket for Socket {
     }
     fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
         self.inner.send_to(buf, &SockAddr::from(addr))
+    }
+    fn is_readable(&self, timeout: Duration) -> io::Result<bool> {
+        let mut read = FdSet::new();
+        read.insert(self.inner.as_raw_fd());
+        let readable = nix::sys::select::select(
+            None,
+            Some(&mut read),
+            None,
+            None,
+            Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
+        )?;
+        Ok(readable == 1)
+    }
+    fn is_writable(&self) -> io::Result<bool> {
+        let mut write = FdSet::new();
+        write.insert(self.inner.as_raw_fd());
+        let writable = nix::sys::select::select(
+            None,
+            None,
+            Some(&mut write),
+            None,
+            Some(&mut TimeVal::zero()),
+        )?;
+        Ok(writable == 1)
     }
     fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
         self.inner.recv_from_into_buf(buf)

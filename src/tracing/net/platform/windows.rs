@@ -78,16 +78,6 @@ pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
 }
 
 /// TODO
-pub fn is_readable(_sock: &Socket, _timeout: Duration) -> TraceResult<bool> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn is_writable(_sock: &Socket) -> TraceResult<bool> {
-    unimplemented!()
-}
-
-/// TODO
 pub fn is_not_in_progress_error(_code: i32) -> bool {
     unimplemented!()
 }
@@ -159,6 +149,16 @@ impl TracerSocket for Socket {
 
     /// TODO
     fn send_to(&self, _buf: &[u8], _addr: SocketAddr) -> io::Result<usize> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn is_readable(&self, _timeout: Duration) -> io::Result<bool> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn is_writable(&self) -> io::Result<bool> {
         unimplemented!()
     }
 
