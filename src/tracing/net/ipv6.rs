@@ -110,7 +110,7 @@ pub fn dispatch_tcp_probe(
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
         PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
     };
-    let mut socket = platform::make_stream_socket_ipv6()?;
+    let mut socket = Socket::new_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
     socket.bind(local_addr)?;
     socket.set_unicast_hops_v6(probe.ttl.0)?;

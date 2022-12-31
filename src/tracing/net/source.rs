@@ -43,10 +43,10 @@ impl SourceAddr {
 
 /// Create a socket suitable for a given address.
 pub fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
-    match addr {
-        IpAddr::V4(_) => platform::make_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => platform::make_udp_dgram_socket_ipv6(),
-    }
+    Ok(match addr {
+        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+    }?)
 }
 
 /// Lookup the address for a named interface.

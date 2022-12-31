@@ -28,56 +28,6 @@ pub fn lookup_interface_addr_ipv6(_name: &str) -> TraceResult<IpAddr> {
 }
 
 /// TODO
-pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_recv_socket_ipv4(_addr: Ipv4Addr) -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_udp_dgram_socket_ipv4() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_recv_socket_ipv6(_addr: Ipv6Addr) -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_udp_dgram_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
-pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
-    unimplemented!()
-}
-
-/// TODO
 pub fn is_not_in_progress_error(_code: i32) -> bool {
     unimplemented!()
 }
@@ -104,6 +54,56 @@ pub struct Socket {}
 
 #[allow(clippy::unused_self)]
 impl TracerSocket for Socket {
+    /// TODO
+    fn new_icmp_send_socket_ipv4() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_icmp_send_socket_ipv6() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_udp_send_socket_ipv4() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_udp_send_socket_ipv6() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_recv_socket_ipv4(_addr: Ipv4Addr) -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_recv_socket_ipv6(_addr: Ipv6Addr) -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_stream_socket_ipv4() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_stream_socket_ipv6() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_udp_dgram_socket_ipv4() -> io::Result<Self> {
+        unimplemented!()
+    }
+
+    /// TODO
+    fn new_udp_dgram_socket_ipv6() -> io::Result<Self> {
+        unimplemented!()
+    }
+
     /// TODO
     fn bind(&mut self, _address: SocketAddr) -> io::Result<()> {
         unimplemented!()

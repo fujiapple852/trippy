@@ -65,7 +65,7 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
     let probe_socket = Socket::new(
         socket2::Domain::IPV4,
         socket2::Type::RAW,
-        Some(socket2::Protocol::from(nix::libc::IPPROTO_RAW)),
+        socket2::Protocol::from(nix::libc::IPPROTO_RAW),
     )?;
     probe_socket.set_header_included(true)?;
     let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
@@ -105,77 +105,6 @@ pub fn startup() -> TraceResult<()> {
     Ok(())
 }
 
-pub fn make_icmp_send_socket_ipv4() -> TraceResult<Socket> {
-    let socket = Socket::new(
-        Domain::IPV4,
-        Type::RAW,
-        Some(Protocol::from(nix::libc::IPPROTO_RAW)),
-    )?;
-    socket.set_nonblocking(true)?;
-    socket.set_header_included(true)?;
-    Ok(socket)
-}
-
-pub fn make_udp_send_socket_ipv4() -> TraceResult<Socket> {
-    let socket = Socket::new(
-        Domain::IPV4,
-        Type::RAW,
-        Some(Protocol::from(nix::libc::IPPROTO_RAW)),
-    )?;
-    socket.set_nonblocking(true)?;
-    socket.set_header_included(true)?;
-    Ok(socket)
-}
-
-pub fn make_recv_socket_ipv4(_addr: Ipv4Addr) -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
-    socket.set_nonblocking(true)?;
-    socket.set_header_included(true)?;
-    Ok(socket)
-}
-
-pub fn make_udp_dgram_socket_ipv4() -> TraceResult<Socket> {
-    Ok(Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?)
-}
-
-/// Create a IPv4/TCP socket.
-pub fn make_stream_socket_ipv4() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
-    socket.set_nonblocking(true)?;
-    socket.set_reuse_port(true)?;
-    Ok(socket)
-}
-
-pub fn make_icmp_send_socket_ipv6() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
-    socket.set_nonblocking(true)?;
-    Ok(socket)
-}
-
-pub fn make_udp_send_socket_ipv6() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
-    socket.set_nonblocking(true)?;
-    Ok(socket)
-}
-
-pub fn make_recv_socket_ipv6(_addr: Ipv6Addr) -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
-    socket.set_nonblocking(true)?;
-    Ok(socket)
-}
-
-pub fn make_udp_dgram_socket_ipv6() -> TraceResult<Socket> {
-    Ok(Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?)
-}
-
-/// Create a IPv6/TCP socket.
-pub fn make_stream_socket_ipv6() -> TraceResult<Socket> {
-    let socket = Socket::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
-    socket.set_nonblocking(true)?;
-    socket.set_reuse_port(true)?;
-    Ok(socket)
-}
-
 pub fn is_not_in_progress_error(code: i32) -> bool {
     nix::Error::from_i32(code) != nix::Error::EINPROGRESS
 }
@@ -194,8 +123,8 @@ pub fn is_host_unreachable_error(_code: i32) -> bool {
 /// Note that no packets are transmitted by this method.
 pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
     let socket = match target_addr {
-        IpAddr::V4(_) => make_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => make_udp_dgram_socket_ipv6(),
+        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
     }?;
     socket.connect(SocketAddr::new(target_addr, port))?;
     Ok(socket.local_addr()?.req()?.ip())
@@ -208,14 +137,77 @@ pub struct Socket {
 }
 
 impl Socket {
-    fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> io::Result<Self> {
+    fn new(domain: Domain, ty: Type, protocol: Protocol) -> io::Result<Self> {
         Ok(Self {
-            inner: socket2::Socket::new(domain, ty, protocol)?,
+            inner: socket2::Socket::new(domain, ty, Some(protocol))?,
+        })
+    }
+
+    fn new_raw_ipv4(protocol: Protocol) -> io::Result<Self> {
+        Ok(Self {
+            inner: socket2::Socket::new(Domain::IPV4, Type::RAW, Some(protocol))?,
+        })
+    }
+
+    fn new_raw_ipv6(protocol: Protocol) -> io::Result<Self> {
+        Ok(Self {
+            inner: socket2::Socket::new(Domain::IPV6, Type::RAW, Some(protocol))?,
         })
     }
 }
 
 impl TracerSocket for Socket {
+    fn new_icmp_send_socket_ipv4() -> io::Result<Self> {
+        let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+        socket.set_nonblocking(true)?;
+        socket.set_header_included(true)?;
+        Ok(socket)
+    }
+    fn new_icmp_send_socket_ipv6() -> io::Result<Self> {
+        let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
+        socket.set_nonblocking(true)?;
+        Ok(socket)
+    }
+    fn new_udp_send_socket_ipv4() -> io::Result<Self> {
+        let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+        socket.set_nonblocking(true)?;
+        socket.set_header_included(true)?;
+        Ok(socket)
+    }
+    fn new_udp_send_socket_ipv6() -> io::Result<Self> {
+        let socket = Self::new_raw_ipv6(Protocol::UDP)?;
+        socket.set_nonblocking(true)?;
+        Ok(socket)
+    }
+    fn new_recv_socket_ipv4(_addr: Ipv4Addr) -> io::Result<Self> {
+        let socket = Self::new_raw_ipv4(Protocol::ICMPV4)?;
+        socket.set_nonblocking(true)?;
+        socket.set_header_included(true)?;
+        Ok(socket)
+    }
+    fn new_recv_socket_ipv6(_addr: Ipv6Addr) -> io::Result<Self> {
+        let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
+        socket.set_nonblocking(true)?;
+        Ok(socket)
+    }
+    fn new_stream_socket_ipv4() -> io::Result<Self> {
+        let socket = Self::new(Domain::IPV4, Type::STREAM, Protocol::TCP)?;
+        socket.set_nonblocking(true)?;
+        socket.set_reuse_port(true)?;
+        Ok(socket)
+    }
+    fn new_stream_socket_ipv6() -> io::Result<Self> {
+        let socket = Self::new(Domain::IPV6, Type::STREAM, Protocol::TCP)?;
+        socket.set_nonblocking(true)?;
+        socket.set_reuse_port(true)?;
+        Ok(socket)
+    }
+    fn new_udp_dgram_socket_ipv4() -> io::Result<Self> {
+        Self::new(Domain::IPV4, Type::DGRAM, Protocol::UDP)
+    }
+    fn new_udp_dgram_socket_ipv6() -> io::Result<Self> {
+        Self::new(Domain::IPV6, Type::DGRAM, Protocol::UDP)
+    }
     fn bind(&mut self, address: SocketAddr) -> io::Result<()> {
         self.inner.bind(&SockAddr::from(address))
     }
