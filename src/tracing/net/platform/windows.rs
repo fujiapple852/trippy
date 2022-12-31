@@ -1,5 +1,6 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::TraceResult;
+use crate::tracing::net::socket::TracerSocket;
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
@@ -112,112 +113,94 @@ pub fn discover_local_addr(_target_addr: IpAddr, _port: u16) -> TraceResult<IpAd
 pub struct Socket {}
 
 #[allow(clippy::unused_self)]
-impl Socket {
+impl TracerSocket for Socket {
     /// TODO
-    #[allow(dead_code)]
-    pub fn new(_domain: (), _ty: (), _protocol: Option<()>) -> io::Result<Self> {
+    fn bind(&mut self, _address: SocketAddr) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn bind(&mut self, _address: SocketAddr) -> io::Result<()> {
+    fn set_tos(&self, _tos: u32) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn set_tos(&self, _tos: u32) -> io::Result<()> {
-        unimplemented!()
-    }
-
-    /// TODO
-    pub fn set_ttl(&self, _ttl: u32) -> io::Result<()> {
+    fn set_ttl(&self, _ttl: u32) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(dead_code)]
-    pub fn set_reuse_port(&self, _reuse: bool) -> io::Result<()> {
+    fn set_reuse_port(&self, _reuse: bool) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(dead_code)]
-    pub fn set_header_included(&self, _included: bool) -> io::Result<()> {
+    fn set_header_included(&self, _included: bool) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(dead_code)]
-    pub fn set_nonblocking(&self, _nonblocking: bool) -> io::Result<()> {
+    fn set_nonblocking(&self, _nonblocking: bool) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn set_unicast_hops_v6(&self, _hops: u8) -> io::Result<()> {
+    fn set_unicast_hops_v6(&self, _hops: u8) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn connect(&self, _address: SocketAddr) -> io::Result<()> {
+    fn connect(&self, _address: SocketAddr) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn send_to(&self, _buf: &[u8], _addr: SocketAddr) -> io::Result<usize> {
+    fn send_to(&self, _buf: &[u8], _addr: SocketAddr) -> io::Result<usize> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn recv_from(&self, _buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
+    fn recv_from(&self, _buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
         unimplemented!()
     }
 
-    pub fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         unimplemented!()
     }
 
     /// TODO
-    pub fn shutdown(&self, _how: Shutdown) -> io::Result<()> {
+    fn shutdown(&self, _how: Shutdown) -> io::Result<()> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(dead_code, clippy::unused_self)]
-    pub fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
+    fn local_addr(&self) -> io::Result<Option<SocketAddr>> {
         unimplemented!()
     }
 
     /// TODO
-    #[allow(dead_code)]
-    pub fn as_raw_fd(&self) {
+    fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
         unimplemented!()
     }
 
     /// TODO
-    #[allow(dead_code)]
-    pub fn unicast_hops_v6(&self) -> io::Result<u32> {
-        unimplemented!()
-    }
-
-    /// TODO
-    pub fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
-        unimplemented!()
-    }
-
-    /// TODO
-    pub fn take_error(&self) -> io::Result<Option<io::Error>> {
+    fn take_error(&self) -> io::Result<Option<io::Error>> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(clippy::unused_self)]
-    pub fn icmp_error_info(&self) -> io::Result<IpAddr> {
+    fn icmp_error_info(&self) -> io::Result<IpAddr> {
         unimplemented!()
     }
 
     /// TODO
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-    pub fn close(&self) -> io::Result<()> {
+    fn close(&self) -> io::Result<()> {
         Ok(())
     }
 }
