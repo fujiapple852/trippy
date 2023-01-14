@@ -307,9 +307,16 @@ impl TracerSocket for Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::transmute_ptr_to_ptr)] // a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
-        if unsafe { bind(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR
+        if unsafe {
+            bind(
+                self.s,
+                std::mem::transmute(std::ptr::addr_of!(addr)),
+                addrlen as i32,
+            )
+        } == SOCKET_ERROR
         {
             return Err(Error::last_os_error());
         }
@@ -356,6 +363,7 @@ impl TracerSocket for Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::transmute_ptr_to_ptr)] // a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         if unsafe { WSAEventSelect(self.s, self.ol.hEvent, (FD_CONNECT | FD_WRITE) as _) }
@@ -365,7 +373,13 @@ impl TracerSocket for Socket {
             return Err(Error::last_os_error());
         }
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        let rc = unsafe { connect(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) };
+        let rc = unsafe {
+            connect(
+                self.s,
+                std::mem::transmute(std::ptr::addr_of!(addr)),
+                addrlen as i32,
+            )
+        };
         if rc == SOCKET_ERROR {
             if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK.0) {
                 return Err(Error::last_os_error());
@@ -378,6 +392,7 @@ impl TracerSocket for Socket {
 
     #[allow(unsafe_code)]
     #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::transmute_ptr_to_ptr)] // Witnessed a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         let rc = unsafe {
@@ -385,7 +400,7 @@ impl TracerSocket for Socket {
                 self.s,
                 packet,
                 0,
-                std::ptr::addr_of!(addr).cast(),
+                std::mem::transmute(std::ptr::addr_of!(addr)),
                 addrlen as i32,
             )
         };
@@ -469,7 +484,7 @@ impl TracerSocket for Socket {
         let icmp_error_info =
             self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _)?;
         let src_addr = icmp_error_info.srcaddress;
-        match ADDRESS_FAMILY(u32::from(unsafe { src_addr.si_family })) {
+        match unsafe { src_addr.si_family } {
             AF_INET => Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
                 src_addr.Ipv4.sin_addr.S_un.S_addr.to_ne_bytes()
             }))),
@@ -558,7 +573,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
 
         res = unsafe {
             IpHelper::GetAdaptersAddresses(
-                family,
+                u32::from(family.0),
                 flags,
                 None,
                 Some(ip_adapter_address),
@@ -626,8 +641,8 @@ fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> Result<IpAddr> {
 #[allow(unsafe_code)]
 pub fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
     let ptr = sockaddr as *const SOCKADDR_STORAGE;
-    let af = u32::from(sockaddr.ss_family);
-    if af == AF_INET.0 {
+    let af = sockaddr.ss_family;
+    if af == AF_INET {
         let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
         let sockaddr_in = unsafe { *sockaddr_in_ptr };
         let ipv4addr = sockaddr_in.sin_addr;
@@ -636,7 +651,7 @@ pub fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr>
             Ipv4Addr::from(ipv4addr),
             port,
         )))
-    } else if af == AF_INET6.0 {
+    } else if af == AF_INET6 {
         #[allow(clippy::cast_ptr_alignment)]
         let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
         let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
@@ -651,7 +666,7 @@ pub fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr>
     } else {
         Err(Error::new(
             ErrorKind::Unsupported,
-            format!("Unsupported address family: {af}"),
+            format!("Unsupported address family: {:?}", af),
         ))
     }
 }
