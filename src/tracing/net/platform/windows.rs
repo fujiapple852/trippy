@@ -673,25 +673,33 @@ pub fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr>
 
 #[allow(unsafe_code)]
 #[must_use]
-// TODO this allocate a SOCKADDR_STORAGE, should we drop it manually later?
 fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, u32) {
-    let (paddr, addrlen): (*const SOCKADDR_STORAGE, u32) = match socketaddr {
+    let mut storage = SOCKADDR_STORAGE::default();
+    let len = match socketaddr {
         SocketAddr::V4(socketaddrv4) => {
             let sa: SOCKADDR_IN = socketaddrv4.into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN>() as u32,
-            )
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    std::ptr::addr_of!(sa).cast::<u8>(),
+                    std::ptr::addr_of_mut!(storage).cast::<u8>(),
+                    size_of::<SOCKADDR_IN>(),
+                );
+            };
+            size_of::<SOCKADDR_IN>() as u32
         }
         SocketAddr::V6(socketaddrv6) => {
             let sa: SOCKADDR_IN6 = socketaddrv6.into();
-            (
-                std::ptr::addr_of!(sa).cast(),
-                size_of::<SOCKADDR_IN6>() as u32,
-            )
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    std::ptr::addr_of!(sa).cast::<u8>(),
+                    std::ptr::addr_of_mut!(storage).cast::<u8>(),
+                    size_of::<SOCKADDR_IN6>(),
+                );
+            };
+            size_of::<SOCKADDR_IN6>() as u32
         }
     };
-    (unsafe { *paddr }, addrlen)
+    (storage, len)
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
