@@ -306,17 +306,9 @@ impl TracerSocket for Socket {
     }
 
     #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    #[allow(clippy::transmute_ptr_to_ptr)] // a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
-        if unsafe {
-            bind(
-                self.s,
-                std::mem::transmute(std::ptr::addr_of!(addr)),
-                addrlen as i32,
-            )
-        } == SOCKET_ERROR
+        if unsafe { bind(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) } == SOCKET_ERROR
         {
             return Err(Error::last_os_error());
         }
@@ -362,8 +354,6 @@ impl TracerSocket for Socket {
     }
 
     #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    #[allow(clippy::transmute_ptr_to_ptr)] // a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         if unsafe { WSAEventSelect(self.s, self.ol.hEvent, (FD_CONNECT | FD_WRITE) as _) }
@@ -373,13 +363,7 @@ impl TracerSocket for Socket {
             return Err(Error::last_os_error());
         }
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        let rc = unsafe {
-            connect(
-                self.s,
-                std::mem::transmute(std::ptr::addr_of!(addr)),
-                addrlen as i32,
-            )
-        };
+        let rc = unsafe { connect(self.s, std::ptr::addr_of!(addr).cast(), addrlen as i32) };
         if rc == SOCKET_ERROR {
             if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK.0) {
                 return Err(Error::last_os_error());
@@ -391,8 +375,6 @@ impl TracerSocket for Socket {
     }
 
     #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    #[allow(clippy::transmute_ptr_to_ptr)] // Witnessed a simple cast seems to create STATUS_STACK_BUFFER_OVERRUN
     fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         let rc = unsafe {
@@ -400,7 +382,7 @@ impl TracerSocket for Socket {
                 self.s,
                 packet,
                 0,
-                std::mem::transmute(std::ptr::addr_of!(addr)),
+                std::ptr::addr_of!(addr).cast(),
                 addrlen as i32,
             )
         };
