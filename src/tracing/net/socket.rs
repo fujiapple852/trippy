@@ -1,5 +1,5 @@
 use std::io::{Error, Result};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, Shutdown, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
 pub trait TracerSocket
@@ -40,7 +40,7 @@ where
     fn is_writable(&self) -> Result<bool>;
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)>;
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
-    fn shutdown(&self, how: Shutdown) -> Result<()>;
+    fn shutdown(&self) -> Result<()>;
     fn peer_addr(&self) -> Result<Option<SocketAddr>>;
     fn take_error(&self) -> Result<Option<Error>>;
     fn icmp_error_info(&self) -> Result<IpAddr>;

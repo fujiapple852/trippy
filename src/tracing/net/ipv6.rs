@@ -18,7 +18,7 @@ use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
 use crate::tracing::{PortDirection, Probe, TracerProtocol};
 use std::io::ErrorKind;
-use std::net::{IpAddr, Ipv6Addr, Shutdown, SocketAddr};
+use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
 
 /// The maximum size of UDP packet we allow.
@@ -169,7 +169,7 @@ pub fn recv_tcp_socket(
     match tcp_socket.take_error()? {
         None => {
             let addr = tcp_socket.peer_addr()?.req()?.ip();
-            tcp_socket.shutdown(Shutdown::Both)?;
+            tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
                 addr,
