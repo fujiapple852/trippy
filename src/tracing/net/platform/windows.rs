@@ -2,8 +2,8 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::TraceResult;
 use crate::tracing::net::socket::TracerSocket;
 use std::io;
+use std::net::SocketAddr;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::net::{Shutdown, SocketAddr};
 use std::time::Duration;
 
 /// TODO
@@ -166,7 +166,7 @@ impl TracerSocket for Socket {
     }
 
     /// TODO
-    fn shutdown(&self, _how: Shutdown) -> io::Result<()> {
+    fn shutdown(&self) -> io::Result<()> {
         unimplemented!()
     }
 

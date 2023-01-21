@@ -272,8 +272,8 @@ impl TracerSocket for Socket {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
     }
-    fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.inner.shutdown(how)
+    fn shutdown(&self) -> io::Result<()> {
+        self.inner.shutdown(Shutdown::Both)
     }
     fn peer_addr(&self) -> io::Result<Option<SocketAddr>> {
         Ok(self.inner.peer_addr()?.as_socket())
