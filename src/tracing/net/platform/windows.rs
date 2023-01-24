@@ -14,34 +14,36 @@ use windows::core::PSTR;
 use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
 use windows::Win32::NetworkManagement::IpHelper;
 use windows::Win32::Networking::WinSock::{
-    bind, closesocket, connect, getpeername, getsockopt, sendto, setsockopt, shutdown, socket,
-    WSACloseEvent, WSACreateEvent, WSAEventSelect, WSAGetOverlappedResult, WSAIoctl, WSARecvFrom,
-    WSAResetEvent, WSAStartup, ADDRESS_FAMILY, AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, FIONBIO,
-    ICMP_ERROR_INFO, INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP,
-    IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS,
-    IP_TTL, SD_BOTH, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_STORAGE,
-    SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR,
-    SO_PORT_SCALABILITY, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
-    WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE,
-    WSA_IO_PENDING,
+    ADDRESS_FAMILY, AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, FIONBIO, ICMP_ERROR_INFO,
+    INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW,
+    IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH,
+    SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_STORAGE, SOCKET, SOCKET_ERROR,
+    SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
+    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
+    WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
-use windows::Win32::System::Threading::WaitForSingleObject;
 use windows::Win32::System::IO::OVERLAPPED;
 
 /// `WinSock` version 2.2
 const WINSOCK_VERSION: u16 = 0x202;
 
-macro_rules! syscall_raw {
+macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        unsafe { $fn($($arg, )*) }
+        #[allow(unsafe_code)]
+        unsafe { windows::Win32::System::Threading::$fn($($arg, )*) }
+    }};
+}
+
+macro_rules! syscall {
+    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
+        #[allow(unsafe_code)]
+        unsafe { windows::Win32::Networking::WinSock::$fn($($arg, )*) }
     }};
 }
 
 macro_rules! syscall_invalid_socket {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        let res = unsafe { $fn($($arg, )*) };
+        let res = syscall!( $fn($($arg, )*) );
         if res == INVALID_SOCKET {
             Err(std::io::Error::last_os_error())
         } else {
@@ -52,8 +54,7 @@ macro_rules! syscall_invalid_socket {
 
 macro_rules! syscall_zero {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        let res = unsafe { $fn($($arg, )*) };
+        let res = syscall!( $fn($($arg, )*) );
         if res != 0 {
             Err(std::io::Error::last_os_error())
         } else {
@@ -64,8 +65,7 @@ macro_rules! syscall_zero {
 
 macro_rules! syscall_is_invalid {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        let res = unsafe { $fn($($arg, )*) };
+        let res = syscall!( $fn($($arg, )*) );
         if res.is_invalid() {
             Err(std::io::Error::last_os_error())
         } else {
@@ -76,8 +76,7 @@ macro_rules! syscall_is_invalid {
 
 macro_rules! syscall_bool {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        let res = unsafe { $fn($($arg, )*) };
+        let res = syscall!( $fn($($arg, )*) );
         if res.as_bool() == false {
             Err(std::io::Error::last_os_error())
         } else {
@@ -88,8 +87,7 @@ macro_rules! syscall_bool {
 
 macro_rules! syscall_socket_error {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code, unused_unsafe)]
-        let res = unsafe { $fn($($arg, )*) };
+        let res = syscall!( $fn($($arg, )*) );
         if res == SOCKET_ERROR {
             Err(std::io::Error::last_os_error())
         } else {
@@ -141,7 +139,7 @@ impl Socket {
 
     fn wait_for_event(&self, timeout: Duration) -> Result<bool> {
         let millis = timeout.as_millis() as u32;
-        let rc = syscall_raw!(WaitForSingleObject(self.ol.hEvent, millis));
+        let rc = syscall_threading!(WaitForSingleObject(self.ol.hEvent, millis));
         if rc == WAIT_TIMEOUT {
             return Ok(false);
         } else if rc == WAIT_FAILED {
@@ -244,7 +242,7 @@ impl Socket {
             len: self.wbuf_len,
             buf: PSTR::from_raw(self.wbuf.as_mut_ptr()),
         };
-        let ret = syscall_raw!(WSARecvFrom(
+        let ret = syscall!(WSARecvFrom(
             self.s,
             &[wbuf],
             Some(&mut 0),
@@ -387,7 +385,7 @@ impl TracerSocket for Socket {
             (FD_CONNECT | FD_WRITE) as _
         ))?;
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        let rc = syscall_raw!(connect(self.s, addr_of!(addr).cast(), addrlen as i32));
+        let rc = syscall!(connect(self.s, addr_of!(addr).cast(), addrlen as i32));
         if rc == SOCKET_ERROR {
             if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK.0) {
                 return Err(Error::last_os_error());
@@ -433,13 +431,7 @@ impl TracerSocket for Socket {
         Ok((len, Some(SocketAddr::new(addr, 0))))
     }
 
-    // #[allow(unsafe_code)]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        // let buf_ptr = self.wbuf.buf.as_ptr();
-        // // Safety: TODO
-        // let slice = unsafe { std::slice::from_raw_parts(buf_ptr, self.wbuf.len as usize) };
-        // buf.copy_from_slice(slice);
-
         buf.copy_from_slice(self.wbuf.as_slice());
         self.post_recv_from()?;
         Ok(self.wbuf_len as usize)
