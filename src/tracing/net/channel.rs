@@ -212,7 +212,6 @@ impl TracerChannel {
 }
 
 /// An entry in the TCP probes array.
-#[derive(Debug)]
 struct TcpProbe {
     socket: Socket,
     sequence: Sequence,

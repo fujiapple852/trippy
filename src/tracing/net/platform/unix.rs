@@ -132,7 +132,6 @@ pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr
 }
 
 /// A network socket.
-#[derive(Debug)]
 pub struct Socket {
     inner: socket2::Socket,
 }
