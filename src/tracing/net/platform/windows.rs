@@ -96,40 +96,61 @@ macro_rules! syscall_socket_error {
     }};
 }
 
+pub fn startup() -> Result<()> {
+    Socket::startup()
+}
+
+#[allow(clippy::unnecessary_wraps)]
+pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+    Ok(PlatformIpv4FieldByteOrder::Network)
+}
+
+pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
+    lookup_interface_addr(AF_INET, name)
+}
+
+pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+    lookup_interface_addr(AF_INET6, name)
+}
+
+pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
+    routing_interface_query(target)
+}
+
+#[must_use]
+pub fn is_not_in_progress_error(code: i32) -> bool {
+    code != WSAEINPROGRESS.0
+}
+
+#[must_use]
+pub fn is_conn_refused_error(code: i32) -> bool {
+    code == WSAECONNREFUSED.0
+}
+
+#[must_use]
+pub fn is_host_unreachable_error(code: i32) -> bool {
+    code == WSAEHOSTUNREACH.0
+}
+
 pub struct Socket {
     s: SOCKET,
     ol: Box<OVERLAPPED>,
-    wbuf: Vec<u8>,
-    wbuf_len: u32,
+    buf: Vec<u8>,
     from: Box<SOCKADDR_STORAGE>,
 }
 
 impl Socket {
-    fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> Result<Self> {
-        let s = syscall_invalid_socket!(socket(
-            af.0.try_into().unwrap(),
-            i32::from(r#type),
-            protocol.0
-        ))?;
-        let from = Box::<SOCKADDR_STORAGE>::default();
-        let ol = Box::<OVERLAPPED>::default();
-        let wbuf = vec![0u8; MAX_PACKET_SIZE];
-        let wbuf_len = MAX_PACKET_SIZE as u32;
-        Ok(Self {
-            s,
-            ol,
-            wbuf,
-            wbuf_len,
-            from,
-        })
+    fn startup() -> Result<()> {
+        let mut wsa_data = WSADATA::default();
+        syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)))
     }
 
-    fn udp_from(target: IpAddr) -> Result<Self> {
-        let s = match target {
-            IpAddr::V4(_) => Self::create(AF_INET, SOCK_DGRAM, IPPROTO_UDP),
-            IpAddr::V6(_) => Self::create(AF_INET6, SOCK_DGRAM, IPPROTO_UDP),
-        }?;
-        Ok(s)
+    fn new(af: ADDRESS_FAMILY, ty: u16, protocol: IPPROTO) -> Result<Self> {
+        let s = syscall_invalid_socket!(socket(i32::from(af.0), i32::from(ty), protocol.0))?;
+        let from = Box::<SOCKADDR_STORAGE>::default();
+        let ol = Box::<OVERLAPPED>::default();
+        let buf = vec![0u8; MAX_PACKET_SIZE];
+        Ok(Self { s, ol, buf, from })
     }
 
     fn create_event(&mut self) -> Result<()> {
@@ -153,6 +174,40 @@ impl Socket {
         Ok(syscall_bool!(WSAResetEvent(self.ol.hEvent))?)
     }
 
+    #[allow(clippy::cast_possible_wrap)]
+    fn getsockopt<T: Default>(&self, level: i32, optname: i32) -> Result<T> {
+        let mut optval = T::default();
+        let mut optlen = size_of::<T>() as i32;
+        syscall_socket_error!(getsockopt(
+            self.s,
+            level,
+            optname,
+            PSTR::from_raw(addr_of_mut!(optval).cast()),
+            &mut optlen,
+        ))?;
+        Ok(optval)
+    }
+
+    fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
+        let bytes_array = optval.to_ne_bytes();
+        let bytes_slice_ref_option = Some(&bytes_array[..]);
+        Ok(syscall_socket_error!(setsockopt(
+            self.s,
+            level,
+            optname,
+            bytes_slice_ref_option
+        ))?)
+    }
+
+    fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
+        self.setsockopt_u32(level, optname, u32::from(optval))
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
+        self.setsockopt_bool(IPPROTO_TCP.0, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
+    }
+
     // NOTE FIONBIO is really unsigned (in WinSock2.h)
     #[allow(clippy::cast_sign_loss)]
     fn set_non_blocking(&self, is_non_blocking: bool) -> Result<()> {
@@ -170,77 +225,12 @@ impl Socket {
         ))?)
     }
 
-    fn from(&mut self) -> Result<IpAddr> {
-        sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))
-    }
-
-    fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
-        self.setsockopt_u32(level, optname, u32::from(optval))
-    }
-
-    fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
-        let bytes_array = optval.to_ne_bytes();
-        let bytes_slice_ref_option = Some(&bytes_array[..]);
-        Ok(syscall_socket_error!(setsockopt(
-            self.s,
-            level,
-            optname,
-            bytes_slice_ref_option
-        ))?)
-    }
-
-    fn get_overlapped_result(&self) -> Result<(u32, u32)> {
-        let mut bytes = 0;
-        let mut flags = 0;
-        let ol = *self.ol;
-        syscall_bool!(WSAGetOverlappedResult(
-            self.s,
-            addr_of!(ol),
-            &mut bytes,
-            false,
-            &mut flags,
-        ))?;
-        Ok((bytes, flags))
-    }
-
-    #[allow(clippy::cast_possible_wrap)]
-    fn getsockopt<T: Default>(&self, level: i32, optname: i32) -> Result<T> {
-        let mut optval = T::default();
-        let mut optlen = size_of::<T>() as i32;
-        syscall_socket_error!(getsockopt(
-            self.s,
-            level,
-            optname,
-            PSTR::from_raw(addr_of_mut!(optval).cast()),
-            &mut optlen,
-        ))?;
-        Ok(optval)
-    }
-
-    fn is_writable_overlapped(&self) -> Result<bool> {
-        if !self.wait_for_event(Duration::ZERO)? {
-            return Ok(false);
-        };
-        while let Err(err) = self.get_overlapped_result() {
-            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
-                return Err(err);
-            }
-        }
-        self.reset_event()?;
-        Ok(true)
-    }
-
-    #[allow(clippy::cast_possible_wrap)]
-    fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
-        self.setsockopt_bool(IPPROTO_TCP.0, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
-    }
-
     #[allow(clippy::cast_possible_wrap)]
     fn post_recv_from(&mut self) -> Result<()> {
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
-            len: self.wbuf_len,
-            buf: PSTR::from_raw(self.wbuf.as_mut_ptr()),
+            len: MAX_PACKET_SIZE as u32,
+            buf: PSTR::from_raw(self.buf.as_mut_ptr()),
         };
         let ret = syscall!(WSARecvFrom(
             self.s,
@@ -261,6 +251,20 @@ impl Socket {
         }
         Ok(())
     }
+
+    fn get_overlapped_result(&self) -> Result<(u32, u32)> {
+        let mut bytes = 0;
+        let mut flags = 0;
+        let ol = *self.ol;
+        syscall_bool!(WSAGetOverlappedResult(
+            self.s,
+            addr_of!(ol),
+            &mut bytes,
+            false,
+            &mut flags,
+        ))?;
+        Ok((bytes, flags))
+    }
 }
 
 impl Drop for Socket {
@@ -274,33 +278,33 @@ impl Drop for Socket {
 
 impl TracerSocket for Socket {
     fn new_icmp_send_socket_ipv4() -> Result<Self> {
-        let sock = Self::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
+        let sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
         sock.set_non_blocking(true)?;
         sock.set_header_included(true)?;
         Ok(sock)
     }
 
     fn new_icmp_send_socket_ipv6() -> Result<Self> {
-        let sock = Self::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
+        let sock = Self::new(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
         sock.set_non_blocking(true)?;
         Ok(sock)
     }
 
     fn new_udp_send_socket_ipv4() -> Result<Self> {
-        let sock = Self::create(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
+        let sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
         sock.set_non_blocking(true)?;
         sock.set_header_included(true)?;
         Ok(sock)
     }
 
     fn new_udp_send_socket_ipv6() -> Result<Self> {
-        let sock = Self::create(AF_INET6, SOCK_RAW, IPPROTO_UDP)?;
+        let sock = Self::new(AF_INET6, SOCK_RAW, IPPROTO_UDP)?;
         sock.set_non_blocking(true)?;
         Ok(sock)
     }
 
     fn new_recv_socket_ipv4(src_addr: Ipv4Addr) -> Result<Self> {
-        let mut sock = Self::create(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
+        let mut sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_ICMP)?;
         sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
         sock.post_recv_from()?;
         sock.set_non_blocking(true)?;
@@ -309,7 +313,7 @@ impl TracerSocket for Socket {
     }
 
     fn new_recv_socket_ipv6(src_addr: Ipv6Addr) -> Result<Self> {
-        let mut sock = Self::create(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
+        let mut sock = Self::new(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)?;
         sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
         sock.post_recv_from()?;
         sock.set_non_blocking(true)?;
@@ -317,25 +321,25 @@ impl TracerSocket for Socket {
     }
 
     fn new_stream_socket_ipv4() -> Result<Self> {
-        let sock = Self::create(AF_INET, SOCK_STREAM, IPPROTO_TCP)?;
+        let sock = Self::new(AF_INET, SOCK_STREAM, IPPROTO_TCP)?;
         sock.set_non_blocking(true)?;
         sock.set_reuse_port(true)?;
         Ok(sock)
     }
 
     fn new_stream_socket_ipv6() -> Result<Self> {
-        let sock = Self::create(AF_INET6, SOCK_STREAM, IPPROTO_TCP)?;
+        let sock = Self::new(AF_INET6, SOCK_STREAM, IPPROTO_TCP)?;
         sock.set_non_blocking(true)?;
         sock.set_reuse_port(true)?;
         Ok(sock)
     }
 
     fn new_udp_dgram_socket_ipv4() -> Result<Self> {
-        Self::create(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+        Self::new(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     }
 
     fn new_udp_dgram_socket_ipv6() -> Result<Self> {
-        Self::create(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
+        Self::new(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
     }
 
     #[allow(clippy::cast_possible_wrap)]
@@ -422,24 +426,32 @@ impl TracerSocket for Socket {
     }
 
     fn is_writable(&self) -> Result<bool> {
-        self.is_writable_overlapped()
+        if !self.wait_for_event(Duration::ZERO)? {
+            return Ok(false);
+        };
+        while let Err(err) = self.get_overlapped_result() {
+            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
+                return Err(err);
+            }
+        }
+        self.reset_event()?;
+        Ok(true)
     }
 
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)> {
-        let addr = self.from()?;
+        let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))?;
         let len = self.read(buf)?;
         Ok((len, Some(SocketAddr::new(addr, 0))))
     }
 
+    // TODO
+    // we always copy and claim to have returned MAX_PACKET_SIZE bytes, regardless of how many bytes we actually
+    // received.  The callers currently ignore this and just try to parse a packet from the buffer which isn't ideal.
+    // Really we should record the actual number of bytes read in the `get_overlapped_result` call and return that here.
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        buf.copy_from_slice(self.wbuf.as_slice());
+        buf.copy_from_slice(self.buf.as_slice());
         self.post_recv_from()?;
-        Ok(self.wbuf_len as usize)
-    }
-
-    #[allow(clippy::cast_possible_wrap)]
-    fn shutdown(&self) -> Result<()> {
-        Ok(syscall_socket_error!(shutdown(self.s, SD_BOTH as i32))?)
+        Ok(MAX_PACKET_SIZE)
     }
 
     #[allow(clippy::cast_possible_wrap)]
@@ -476,6 +488,11 @@ impl TracerSocket for Socket {
         }
     }
 
+    #[allow(clippy::cast_possible_wrap)]
+    fn shutdown(&self) -> Result<()> {
+        Ok(syscall_socket_error!(shutdown(self.s, SD_BOTH as i32))?)
+    }
+
     fn close(&self) -> Result<()> {
         syscall_socket_error!(closesocket(self.s))
     }
@@ -485,16 +502,6 @@ impl fmt::Debug for Socket {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Socket").field("s", &self.s).finish()
     }
-}
-
-pub fn startup() -> Result<()> {
-    let mut wsa_data = WSADATA::default();
-    syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)))
-}
-
-#[allow(clippy::unnecessary_wraps)]
-pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-    Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
 /// # Panics
@@ -682,18 +689,17 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, u32) {
     (storage, len)
 }
 
-pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(AF_INET, name)
-}
-
-pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(AF_INET6, name)
-}
-
-pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
+/// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
+/// is using a connectionless protocol, the address may not be available until I/O
+/// occurs on the socket."
+/// We use `SIO_ROUTING_INTERFACE_QUERY` instead.
+fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
-    let socket = Socket::udp_from(target)?;
+    let socket = match target {
+        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+    }?;
     let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
     syscall_socket_error!(WSAIoctl(
         socket.s,
@@ -711,27 +717,4 @@ pub fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     // TBD We choose the first one arbitrarily.
     let sockaddr = src.cast::<SOCKADDR_STORAGE>();
     sockaddrptr_to_ipaddr(sockaddr).map_err(TracerError::IoError)
-}
-
-/// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
-/// is using a connectionless protocol, the address may not be available until I/O
-/// occurs on the socket."
-/// We use `SIO_ROUTING_INTERFACE_QUERY` instead.
-pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
-    routing_interface_query(target)
-}
-
-#[must_use]
-pub fn is_not_in_progress_error(code: i32) -> bool {
-    code != WSAEINPROGRESS.0
-}
-
-#[must_use]
-pub fn is_conn_refused_error(code: i32) -> bool {
-    code == WSAECONNREFUSED.0
-}
-
-#[must_use]
-pub fn is_host_unreachable_error(code: i32) -> bool {
-    code == WSAEHOSTUNREACH.0
 }
