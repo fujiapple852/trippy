@@ -113,7 +113,6 @@ pub fn startup() -> Result<()> {
     Socket::startup()
 }
 
-// TODO move these to the Socket as associated methods + in Unix
 #[must_use]
 pub fn is_not_in_progress_error(code: i32) -> bool {
     code != WSAEINPROGRESS.0
@@ -155,7 +154,6 @@ impl Socket {
         Ok(Self { s, ol, buf, from })
     }
 
-    // TODO should take `&mut self`, requires change to TracerSocket trait
     fn create_event(&mut self) -> Result<()> {
         self.ol.hEvent = syscall_is_invalid!(WSACreateEvent())?;
         Ok(())
@@ -172,7 +170,6 @@ impl Socket {
         Ok(true)
     }
 
-    // TODO should take `&mut self`, requires change to TracerSocket trait
     fn reset_event(&self) -> Result<()> {
         syscall_bool!(WSAResetEvent(self.ol.hEvent)).map(|_| ())
     }
@@ -483,13 +480,6 @@ impl TracerSocket for Socket {
 
     fn close(&self) -> Result<()> {
         syscall_socket_error!(closesocket(self.s)).map(|_| ())
-    }
-}
-
-// TODO remove once Debug in channel removed
-impl std::fmt::Debug for Socket {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Socket").field("s", &self.s).finish()
     }
 }
 
