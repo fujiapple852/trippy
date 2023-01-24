@@ -4,7 +4,6 @@ use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::socket::TracerSocket;
 use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_void;
-use std::fmt::{self};
 use std::io::{Error, ErrorKind, Result};
 use std::mem::{align_of, size_of};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
@@ -23,9 +22,6 @@ use windows::Win32::Networking::WinSock::{
     WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows::Win32::System::IO::OVERLAPPED;
-
-/// `WinSock` version 2.2
-const WINSOCK_VERSION: u16 = 0x202;
 
 macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
@@ -58,7 +54,7 @@ macro_rules! syscall_zero {
         if res != 0 {
             Err(std::io::Error::last_os_error())
         } else {
-            Ok(())
+            Ok(res)
         }
     }};
 }
@@ -80,7 +76,7 @@ macro_rules! syscall_bool {
         if res.as_bool() == false {
             Err(std::io::Error::last_os_error())
         } else {
-            Ok(())
+            Ok(res)
         }
     }};
 }
@@ -91,13 +87,9 @@ macro_rules! syscall_socket_error {
         if res == SOCKET_ERROR {
             Err(std::io::Error::last_os_error())
         } else {
-            Ok(())
+            Ok(res)
         }
     }};
-}
-
-pub fn startup() -> Result<()> {
-    Socket::startup()
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -117,6 +109,11 @@ pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
     routing_interface_query(target)
 }
 
+pub fn startup() -> Result<()> {
+    Socket::startup()
+}
+
+// TODO move these to the Socket as associated methods + in Unix
 #[must_use]
 pub fn is_not_in_progress_error(code: i32) -> bool {
     code != WSAEINPROGRESS.0
@@ -132,6 +129,10 @@ pub fn is_host_unreachable_error(code: i32) -> bool {
     code == WSAEHOSTUNREACH.0
 }
 
+/// `WinSock` version 2.2
+const WINSOCK_VERSION: u16 = 0x202;
+
+/// A network socket.
 pub struct Socket {
     s: SOCKET,
     ol: Box<OVERLAPPED>,
@@ -139,10 +140,11 @@ pub struct Socket {
     from: Box<SOCKADDR_STORAGE>,
 }
 
+#[allow(clippy::cast_possible_wrap)]
 impl Socket {
     fn startup() -> Result<()> {
         let mut wsa_data = WSADATA::default();
-        syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)))
+        syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data))).map(|_| ())
     }
 
     fn new(af: ADDRESS_FAMILY, ty: u16, protocol: IPPROTO) -> Result<Self> {
@@ -153,6 +155,7 @@ impl Socket {
         Ok(Self { s, ol, buf, from })
     }
 
+    // TODO should take `&mut self`, requires change to TracerSocket trait
     fn create_event(&mut self) -> Result<()> {
         self.ol.hEvent = syscall_is_invalid!(WSACreateEvent())?;
         Ok(())
@@ -169,12 +172,11 @@ impl Socket {
         Ok(true)
     }
 
-    // TODO should be &mut self ?
+    // TODO should take `&mut self`, requires change to TracerSocket trait
     fn reset_event(&self) -> Result<()> {
-        Ok(syscall_bool!(WSAResetEvent(self.ol.hEvent))?)
+        syscall_bool!(WSAResetEvent(self.ol.hEvent)).map(|_| ())
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn getsockopt<T: Default>(&self, level: i32, optname: i32) -> Result<T> {
         let mut optval = T::default();
         let mut optlen = size_of::<T>() as i32;
@@ -191,19 +193,14 @@ impl Socket {
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
         let bytes_array = optval.to_ne_bytes();
         let bytes_slice_ref_option = Some(&bytes_array[..]);
-        Ok(syscall_socket_error!(setsockopt(
-            self.s,
-            level,
-            optname,
-            bytes_slice_ref_option
-        ))?)
+        syscall_socket_error!(setsockopt(self.s, level, optname, bytes_slice_ref_option))
+            .map(|_| ())
     }
 
     fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
         self.setsockopt_u32(level, optname, u32::from(optval))
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
         self.setsockopt_bool(IPPROTO_TCP.0, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
     }
@@ -212,7 +209,7 @@ impl Socket {
     #[allow(clippy::cast_sign_loss)]
     fn set_non_blocking(&self, is_non_blocking: bool) -> Result<()> {
         let non_blocking: u32 = u32::from(is_non_blocking);
-        Ok(syscall_socket_error!(WSAIoctl(
+        syscall_socket_error!(WSAIoctl(
             self.s,
             FIONBIO as u32,
             Some(addr_of!(non_blocking).cast()),
@@ -222,10 +219,10 @@ impl Socket {
             &mut 0,
             None,
             None,
-        ))?)
+        ))
+        .map(|_| ())
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn post_recv_from(&mut self) -> Result<()> {
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
@@ -276,6 +273,7 @@ impl Drop for Socket {
     }
 }
 
+#[allow(clippy::cast_possible_wrap)]
 impl TracerSocket for Socket {
     fn new_icmp_send_socket_ipv4() -> Result<Self> {
         let sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
@@ -342,7 +340,6 @@ impl TracerSocket for Socket {
         Self::new(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
         syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen as i32))?;
@@ -350,27 +347,22 @@ impl TracerSocket for Socket {
         Ok(())
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_tos(&self, tos: u32) -> Result<()> {
         self.setsockopt_u32(IPPROTO_IP as _, IP_TOS as _, tos)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_ttl(&self, ttl: u32) -> Result<()> {
         self.setsockopt_u32(IPPROTO_IP as _, IP_TTL as _, ttl)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_reuse_port(&self, is_reuse_port: bool) -> Result<()> {
         self.setsockopt_bool(SOL_SOCKET as _, SO_PORT_SCALABILITY as _, is_reuse_port)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_header_included(&self, is_header_included: bool) -> Result<()> {
         self.setsockopt_bool(IPPROTO_IP as _, IP_HDRINCL as _, is_header_included)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn set_unicast_hops_v6(&self, max_hops: u8) -> Result<()> {
         syscall_socket_error!(setsockopt(
             self.s,
@@ -378,9 +370,9 @@ impl TracerSocket for Socket {
             IPV6_UNICAST_HOPS as i32,
             Some(&[max_hops]),
         ))
+        .map(|_| ())
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         syscall_socket_error!(WSAEventSelect(
@@ -400,7 +392,6 @@ impl TracerSocket for Socket {
         Ok(())
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         syscall_socket_error!(sendto(
@@ -410,6 +401,7 @@ impl TracerSocket for Socket {
             addr_of!(addr).cast(),
             addrlen as i32,
         ))
+        .map(|_| ())
     }
 
     fn is_readable(&self, timeout: Duration) -> Result<bool> {
@@ -454,7 +446,10 @@ impl TracerSocket for Socket {
         Ok(MAX_PACKET_SIZE)
     }
 
-    #[allow(clippy::cast_possible_wrap)]
+    fn shutdown(&self) -> Result<()> {
+        syscall_socket_error!(shutdown(self.s, SD_BOTH as i32)).map(|_| ())
+    }
+
     fn peer_addr(&self) -> Result<Option<SocketAddr>> {
         let mut name = SOCKADDR_STORAGE::default();
         let mut namelen = size_of::<SOCKADDR_STORAGE>() as i32;
@@ -462,7 +457,6 @@ impl TracerSocket for Socket {
         Ok(Some(sockaddr_to_socketaddr(&name)?))
     }
 
-    #[allow(clippy::cast_possible_wrap)]
     fn take_error(&self) -> Result<Option<Error>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _) {
             Ok(0) => Ok(None),
@@ -472,7 +466,6 @@ impl TracerSocket for Socket {
     }
 
     #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
     fn icmp_error_info(&self) -> Result<IpAddr> {
         let icmp_error_info =
             self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _)?;
@@ -488,20 +481,45 @@ impl TracerSocket for Socket {
         }
     }
 
-    #[allow(clippy::cast_possible_wrap)]
-    fn shutdown(&self) -> Result<()> {
-        Ok(syscall_socket_error!(shutdown(self.s, SD_BOTH as i32))?)
-    }
-
     fn close(&self) -> Result<()> {
-        syscall_socket_error!(closesocket(self.s))
+        syscall_socket_error!(closesocket(self.s)).map(|_| ())
     }
 }
 
-impl fmt::Debug for Socket {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+// TODO remove once Debug in channel removed
+impl std::fmt::Debug for Socket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Socket").field("s", &self.s).finish()
     }
+}
+
+/// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
+/// is using a connectionless protocol, the address may not be available until I/O
+/// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
+fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
+    let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
+    let mut bytes = 0;
+    let socket = match target {
+        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+    }?;
+    let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
+    syscall_socket_error!(WSAIoctl(
+        socket.s,
+        SIO_ROUTING_INTERFACE_QUERY,
+        Some(addr_of!(dest).cast()),
+        destlen,
+        Some(src),
+        1024,
+        addr_of_mut!(bytes),
+        None,
+        None,
+    ))?;
+    // Note that the WSAIoctl call potentially returns multiple results (see
+    // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
+    // TBD We choose the first one arbitrarily.
+    let sockaddr = src.cast::<SOCKADDR_STORAGE>();
+    sockaddrptr_to_ipaddr(sockaddr).map_err(TracerError::IoError)
 }
 
 /// # Panics
@@ -687,34 +705,4 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, u32) {
         }
     };
     (storage, len)
-}
-
-/// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
-/// is using a connectionless protocol, the address may not be available until I/O
-/// occurs on the socket."
-/// We use `SIO_ROUTING_INTERFACE_QUERY` instead.
-fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
-    let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
-    let mut bytes = 0;
-    let socket = match target {
-        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
-    }?;
-    let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
-    syscall_socket_error!(WSAIoctl(
-        socket.s,
-        SIO_ROUTING_INTERFACE_QUERY,
-        Some(addr_of!(dest).cast()),
-        destlen,
-        Some(src),
-        1024,
-        addr_of_mut!(bytes),
-        None,
-        None,
-    ))?;
-    // Note that the WSAIoctl call potentially returns multiple results (see
-    // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
-    // TBD We choose the first one arbitrarily.
-    let sockaddr = src.cast::<SOCKADDR_STORAGE>();
-    sockaddrptr_to_ipaddr(sockaddr).map_err(TracerError::IoError)
 }
