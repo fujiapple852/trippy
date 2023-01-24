@@ -210,7 +210,7 @@ impl Socket {
             self.s,
             FIONBIO as u32,
             Some(addr_of!(non_blocking).cast()),
-            size_of::<u32>().try_into().unwrap(),
+            size_of::<u32>() as u32,
             None,
             0,
             &mut 0,
@@ -263,6 +263,7 @@ impl Socket {
 
 impl Drop for Socket {
     fn drop(&mut self) {
+        // TODO can we unconditionally close the socket?
         syscall_socket_error!(closesocket(self.s)).unwrap_or_default();
         if !self.ol.hEvent.is_invalid() {
             syscall_bool!(WSACloseEvent(self.ol.hEvent)).unwrap_or_default();
