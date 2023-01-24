@@ -101,15 +101,12 @@ macro_rules! syscall_socket_error {
 pub struct Socket {
     s: SOCKET,
     ol: Box<OVERLAPPED>,
-    wbuf: Box<WSABUF>,
+    wbuf: Vec<u8>,
+    wbuf_len: u32,
     from: Box<SOCKADDR_STORAGE>,
 }
 
 impl Socket {
-    #[allow(unsafe_code)]
-    /// # Panics
-    ///
-    /// Will panic if `Layout` constructor fails to build a layout for `MAX_PACKET_SIZE` aligned on `WSABUF`.
     fn create(af: ADDRESS_FAMILY, r#type: u16, protocol: IPPROTO) -> Result<Self> {
         let s = syscall_invalid_socket!(socket(
             af.0.try_into().unwrap(),
@@ -117,16 +114,16 @@ impl Socket {
             protocol.0
         ))?;
         let from = Box::<SOCKADDR_STORAGE>::default();
-        let layout =
-            Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
-        // Safety: TODO
-        let ptr = unsafe { alloc(layout) };
-        let wbuf = Box::new(WSABUF {
-            len: MAX_PACKET_SIZE as u32,
-            buf: PSTR::from_raw(ptr),
-        });
         let ol = Box::<OVERLAPPED>::default();
-        Ok(Self { s, ol, wbuf, from })
+        let wbuf = vec![0u8; MAX_PACKET_SIZE];
+        let wbuf_len = MAX_PACKET_SIZE as u32;
+        Ok(Self {
+            s,
+            ol,
+            wbuf,
+            wbuf_len,
+            from,
+        })
     }
 
     fn udp_from(target: IpAddr) -> Result<Self> {
@@ -243,9 +240,13 @@ impl Socket {
     #[allow(clippy::cast_possible_wrap)]
     fn post_recv_from(&mut self) -> Result<()> {
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
+        let wbuf = WSABUF {
+            len: self.wbuf_len,
+            buf: PSTR::from_raw(self.wbuf.as_mut_ptr()),
+        };
         let ret = syscall_raw!(WSARecvFrom(
             self.s,
-            &[*self.wbuf],
+            &[wbuf],
             Some(&mut 0),
             &mut 0,
             Some(addr_of_mut!(*self.from).cast()),
@@ -265,17 +266,11 @@ impl Socket {
 }
 
 impl Drop for Socket {
-    #![allow(unsafe_code)]
     fn drop(&mut self) {
         syscall_socket_error!(closesocket(self.s)).unwrap_or_default();
         if !self.ol.hEvent.is_invalid() {
             syscall_bool!(WSACloseEvent(self.ol.hEvent)).unwrap_or_default();
         }
-        let layout =
-            Layout::from_size_align(MAX_PACKET_SIZE, std::mem::align_of::<WSABUF>()).unwrap();
-        // Safety: TODO
-        unsafe { dealloc(self.wbuf.buf.as_ptr(), layout) };
-        // TODO should we cleanup sock.from too?
     }
 }
 
@@ -438,14 +433,16 @@ impl TracerSocket for Socket {
         Ok((len, Some(SocketAddr::new(addr, 0))))
     }
 
-    #[allow(unsafe_code)]
+    // #[allow(unsafe_code)]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let buf_ptr = self.wbuf.buf.as_ptr();
-        // Safety: TODO
-        let slice = unsafe { std::slice::from_raw_parts(buf_ptr, self.wbuf.len as usize) };
-        buf.copy_from_slice(slice);
+        // let buf_ptr = self.wbuf.buf.as_ptr();
+        // // Safety: TODO
+        // let slice = unsafe { std::slice::from_raw_parts(buf_ptr, self.wbuf.len as usize) };
+        // buf.copy_from_slice(slice);
+
+        buf.copy_from_slice(self.wbuf.as_slice());
         self.post_recv_from()?;
-        Ok(self.wbuf.len as usize)
+        Ok(self.wbuf_len as usize)
     }
 
     #[allow(clippy::cast_possible_wrap)]
