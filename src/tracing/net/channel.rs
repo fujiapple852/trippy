@@ -89,7 +89,10 @@ impl Network for TracerChannel {
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         match self.protocol {
             TracerProtocol::Icmp | TracerProtocol::Udp => self.recv_icmp_probe(),
-            TracerProtocol::Tcp => Ok(self.recv_tcp_sockets()?.or(self.recv_icmp_probe()?)),
+            TracerProtocol::Tcp => match self.recv_tcp_sockets()? {
+                None => self.recv_icmp_probe(),
+                resp => Ok(resp),
+            },
         }
     }
 }
