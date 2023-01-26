@@ -229,7 +229,7 @@ impl Socket {
         let ret = syscall!(WSARecvFrom(
             self.s,
             &[wbuf],
-            Some(&mut 0),
+            None,
             &mut 0,
             Some(addr_of_mut!(*self.from).cast()),
             Some(&mut fromlen),
