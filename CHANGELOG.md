@@ -15,6 +15,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Variable Equal Cost Multi-path Routing (ECMP) causing truncated
   trace ([#269](https://github.com/fujiapple852/trippy/issues/269))
+- Tracing using the `tcp` may ignore some incoming `icmp`
+  responses ([#407](https://github.com/fujiapple852/trippy/issues/407))
 
 ## [0.6.0] - 2022-08-19
 
