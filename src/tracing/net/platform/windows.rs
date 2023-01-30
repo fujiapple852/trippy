@@ -668,32 +668,21 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
 #[allow(unsafe_code)]
 #[must_use]
 fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, u32) {
-    let mut storage = SOCKADDR_STORAGE::default();
-    let len = match socketaddr {
-        SocketAddr::V4(socketaddrv4) => {
-            let sa: SOCKADDR_IN = socketaddrv4.into();
-            // Safety: TODO
-            unsafe {
-                std::ptr::copy_nonoverlapping(
-                    addr_of!(sa).cast::<u8>(),
-                    addr_of_mut!(storage).cast::<u8>(),
-                    size_of::<SOCKADDR_IN>(),
-                );
-            };
-            size_of::<SOCKADDR_IN>() as u32
+    #[repr(C)]
+    union SockAddr {
+        storage: SOCKADDR_STORAGE,
+        in4: SOCKADDR_IN,
+        in6: SOCKADDR_IN6,
         }
-        SocketAddr::V6(socketaddrv6) => {
-            let sa: SOCKADDR_IN6 = socketaddrv6.into();
-            // Safety: TODO
-            unsafe {
-                std::ptr::copy_nonoverlapping(
-                    addr_of!(sa).cast::<u8>(),
-                    addr_of_mut!(storage).cast::<u8>(),
-                    size_of::<SOCKADDR_IN6>(),
-                );
-            };
-            size_of::<SOCKADDR_IN6>() as u32
-        }
+
+    let sockaddr = match socketaddr {
+        SocketAddr::V4(socketaddrv4) => SockAddr {
+            in4: socketaddrv4.into(),
+        },
+        SocketAddr::V6(socketaddrv6) => SockAddr {
+            in6: socketaddrv6.into(),
+        },
     };
-    (storage, len)
+
+    (unsafe { sockaddr.storage }, size_of::<SockAddr>() as u32)
 }
