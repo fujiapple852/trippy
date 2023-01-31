@@ -41,7 +41,6 @@ serde_json = "1.0.91"
 comfy-table = "6.1.4"
 
 #cargo-generate-rpm dependencies
-cargo-generate-rpm = "0.9.1"
 [package.metadata.generate-rpm]
 assets = [
   { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
