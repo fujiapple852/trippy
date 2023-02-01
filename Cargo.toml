@@ -64,3 +64,9 @@ features = [
 
 [dev-dependencies]
 rand = "0.8.5"
+
+#cargo-generate-rpm dependencies
+[package.metadata.generate-rpm]
+assets = [
+  { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
+]
