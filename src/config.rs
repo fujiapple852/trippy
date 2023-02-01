@@ -265,8 +265,72 @@ pub struct Args {
     #[clap(long, default_value = "100ms", display_order = 30)]
     pub tui_refresh_rate: String,
 
+    /// The default background color.
+    #[clap(long, default_value = "black", display_order = 31)]
+    pub tui_theme_bg_color: String,
+
+    /// The default color of borders.
+    #[clap(long, default_value = "gray", display_order = 32)]
+    pub tui_theme_border_color: String,
+
+    /// The default color of text.
+    #[clap(long, default_value = "gray", display_order = 33)]
+    pub tui_theme_text_color: String,
+
+    /// The color of the text in traces tabs.
+    #[clap(long, default_value = "green", display_order = 34)]
+    pub tui_theme_tab_text_color: String,
+
+    /// The background color of the hops table header.
+    #[clap(long, default_value = "white", display_order = 35)]
+    pub tui_theme_hops_table_header_bg_color: String,
+
+    /// The color of text in the hops table header.
+    #[clap(long, default_value = "black", display_order = 36)]
+    pub tui_theme_hops_table_header_text_color: String,
+
+    /// The color of text of active rows in the hops table.
+    #[clap(long, default_value = "gray", display_order = 37)]
+    pub tui_theme_hops_table_row_active_text_color: String,
+
+    /// The color of text of inactive rows in the hops table.
+    #[clap(long, default_value = "dark-gray", display_order = 38)]
+    pub tui_theme_hops_table_row_inactive_text_color: String,
+
+    /// The color of the selected series in the hops chart.
+    #[clap(long, default_value = "green", display_order = 39)]
+    pub tui_theme_hops_chart_selected_color: String,
+
+    /// The color of the unselected series in the hops chart.
+    #[clap(long, default_value = "gray", display_order = 40)]
+    pub tui_theme_hops_chart_unselected_color: String,
+
+    /// The color of the axis in the hops chart.
+    #[clap(long, default_value = "dark-gray", display_order = 41)]
+    pub tui_theme_hops_chart_axis_color: String,
+
+    /// The color of bars in the frequency chart.
+    #[clap(long, default_value = "green", display_order = 42)]
+    pub tui_theme_frequency_chart_bar_color: String,
+
+    /// The color of text in the bars of the frequency chart.
+    #[clap(long, default_value = "gray", display_order = 43)]
+    pub tui_theme_frequency_chart_text_color: String,
+
+    /// The color of the samples chart.
+    #[clap(long, default_value = "yellow", display_order = 44)]
+    pub tui_theme_samples_chart_color: String,
+
+    /// The background color of the help dialog.
+    #[clap(long, default_value = "blue", display_order = 45)]
+    pub tui_theme_help_dialog_bg_color: String,
+
+    /// The color of the text in the help dialog.
+    #[clap(long, default_value = "gray", display_order = 46)]
+    pub tui_theme_help_dialog_text_color: String,
+
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 31)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 47)]
     pub report_cycles: usize,
 }
 
@@ -298,9 +362,107 @@ pub struct TrippyConfig {
     pub tui_refresh_rate: Duration,
     pub tui_address_mode: AddressMode,
     pub tui_max_addrs: Option<u8>,
+    pub tui_theme: TuiTheme,
     pub mode: Mode,
     pub report_cycles: usize,
     pub max_rounds: Option<usize>,
+}
+
+/// Tui color theme.
+#[derive(Debug, Clone, Copy)]
+pub struct TuiTheme {
+    /// The default background color.
+    ///
+    /// This may be overridden for specific components.
+    pub bg_color: TuiColor,
+    /// The default color of borders.
+    ///
+    /// This may be overridden for specific components.
+    pub border_color: TuiColor,
+    /// The default color of text.
+    ///
+    /// This may be overridden for specific components.
+    pub text_color: TuiColor,
+    /// The color of the text in traces tabs.
+    pub tab_text_color: TuiColor,
+    /// The background color of the hops table header.
+    pub hops_table_header_bg_color: TuiColor,
+    /// The color of text in the hops table header.
+    pub hops_table_header_text_color: TuiColor,
+    /// The color of text of active rows in the hops table.
+    pub hops_table_row_active_text_color: TuiColor,
+    /// The color of text of inactive rows in the hops table.
+    pub hops_table_row_inactive_text_color: TuiColor,
+    /// The color of the selected series in the hops chart.
+    pub hops_chart_selected_color: TuiColor,
+    /// The color of the unselected series in the hops chart.
+    pub hops_chart_unselected_color: TuiColor,
+    /// The color of the axis in the hops chart.
+    pub hops_chart_axis_color: TuiColor,
+    /// The color of bars in the frequency chart.
+    pub frequency_chart_bar_color: TuiColor,
+    /// The color of text in the bars of the frequency chart.
+    pub frequency_chart_text_color: TuiColor,
+    /// The color of the samples chart.
+    pub samples_chart_color: TuiColor,
+    /// The background color of the help dialog.
+    pub help_dialog_bg_color: TuiColor,
+    /// The color of the text in the help dialog.
+    pub help_dialog_text_color: TuiColor,
+}
+
+/// A TUI color.
+#[derive(Debug, Clone, Copy)]
+pub enum TuiColor {
+    Black,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    Gray,
+    DarkGray,
+    LightRed,
+    LightGreen,
+    LightYellow,
+    LightBlue,
+    LightMagenta,
+    LightCyan,
+    White,
+    Rgb(u8, u8, u8),
+}
+
+impl TryFrom<String> for TuiColor {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().replace('-', "").as_ref() {
+            "black" => Ok(Self::Black),
+            "red" => Ok(Self::Red),
+            "green" => Ok(Self::Green),
+            "yellow" => Ok(Self::Yellow),
+            "blue" => Ok(Self::Blue),
+            "magenta" => Ok(Self::Magenta),
+            "cyan" => Ok(Self::Cyan),
+            "gray" => Ok(Self::Gray),
+            "darkgray" => Ok(Self::DarkGray),
+            "lightred" => Ok(Self::LightRed),
+            "lightgreen" => Ok(Self::LightGreen),
+            "lightyellow" => Ok(Self::LightYellow),
+            "lightblue" => Ok(Self::LightBlue),
+            "lightmagenta" => Ok(Self::LightMagenta),
+            "lightcyan" => Ok(Self::LightCyan),
+            "white" => Ok(Self::White),
+            rgb_hex if value.len() == 6 && value.chars().all(|c| c.is_ascii_hexdigit()) => {
+                let red = u8::from_str_radix(&rgb_hex[0..2], 16)?;
+                let green = u8::from_str_radix(&rgb_hex[2..4], 16)?;
+                let blue = u8::from_str_radix(&rgb_hex[4..6], 16)?;
+                Ok(Self::Rgb(red, green, blue))
+            }
+            _ => Err(anyhow!("unknown color: {value}")),
+        }
+    }
 }
 
 impl TryFrom<(Args, u16)> for TrippyConfig {
@@ -384,6 +546,40 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         validate_tui_refresh_rate(tui_refresh_rate)?;
         validate_report_cycles(args.report_cycles)?;
         validate_dns(args.dns_resolve_method, args.dns_lookup_as_info)?;
+        let tui_theme = TuiTheme {
+            bg_color: TuiColor::try_from(args.tui_theme_bg_color)?,
+            border_color: TuiColor::try_from(args.tui_theme_border_color)?,
+            text_color: TuiColor::try_from(args.tui_theme_text_color)?,
+            tab_text_color: TuiColor::try_from(args.tui_theme_tab_text_color)?,
+            hops_table_header_bg_color: TuiColor::try_from(
+                args.tui_theme_hops_table_header_bg_color,
+            )?,
+            hops_table_header_text_color: TuiColor::try_from(
+                args.tui_theme_hops_table_header_text_color,
+            )?,
+            hops_table_row_active_text_color: TuiColor::try_from(
+                args.tui_theme_hops_table_row_active_text_color,
+            )?,
+            hops_table_row_inactive_text_color: TuiColor::try_from(
+                args.tui_theme_hops_table_row_inactive_text_color,
+            )?,
+            hops_chart_selected_color: TuiColor::try_from(
+                args.tui_theme_hops_chart_selected_color,
+            )?,
+            hops_chart_unselected_color: TuiColor::try_from(
+                args.tui_theme_hops_chart_unselected_color,
+            )?,
+            hops_chart_axis_color: TuiColor::try_from(args.tui_theme_hops_chart_axis_color)?,
+            frequency_chart_bar_color: TuiColor::try_from(
+                args.tui_theme_frequency_chart_bar_color,
+            )?,
+            frequency_chart_text_color: TuiColor::try_from(
+                args.tui_theme_frequency_chart_text_color,
+            )?,
+            samples_chart_color: TuiColor::try_from(args.tui_theme_samples_chart_color)?,
+            help_dialog_bg_color: TuiColor::try_from(args.tui_theme_help_dialog_bg_color)?,
+            help_dialog_text_color: TuiColor::try_from(args.tui_theme_help_dialog_text_color)?,
+        };
         Ok(Self {
             targets: args.targets,
             protocol,
@@ -411,6 +607,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tui_refresh_rate,
             tui_address_mode: args.tui_address_mode,
             tui_max_addrs: args.tui_max_addrs,
+            tui_theme,
             mode: args.mode,
             report_cycles: args.report_cycles,
             max_rounds,
