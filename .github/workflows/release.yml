@@ -111,7 +111,7 @@ jobs:
         if: startsWith(matrix.build, 'linux-gnu')
         run: |
           cargo install cargo-generate-rpm
-          cargo generate-rpm -o target/${{ matrix.target }}/generate-rpm/trippy-${{ needs.create-release.outputs.trip_version }}-x86_64.rpm
+          cargo generate-rpm --target ${{ matrix.target }} -o target/${{ matrix.target }}/generate-rpm/trippy-${{ needs.create-release.outputs.trip_version }}-x86_64.rpm
 
       - name: Upload RPM package
         if: startsWith(matrix.build, 'linux-gnu')
