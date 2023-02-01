@@ -1,5 +1,5 @@
 use crate::backend::Hop;
-use crate::config::{AddressMode, DnsResolveMethod};
+use crate::config::{AddressMode, DnsResolveMethod, TuiColor, TuiTheme};
 use crate::dns::{DnsEntry, Resolved};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
@@ -82,6 +82,98 @@ const HELP_LINES: [&str; 16] = [
     "q                - quit",
 ];
 
+/// Tui color theme.
+#[derive(Debug, Clone, Copy)]
+pub struct Theme {
+    /// The default background color.
+    ///
+    /// This may be overridden for specific components.
+    bg_color: Color,
+    /// The default color of borders.
+    ///
+    /// This may be overridden for specific components.
+    border_color: Color,
+    /// The default color of text.
+    ///
+    /// This may be overridden for specific components.
+    text_color: Color,
+    /// The color of the text in traces tabs.
+    tab_text_color: Color,
+    /// The background color of the hops table header.
+    hops_table_header_bg_color: Color,
+    /// The color of text in the hops table header.
+    hops_table_header_text_color: Color,
+    /// The color of text of active rows in the hops table.
+    hops_table_row_active_text_color: Color,
+    /// The color of text of inactive rows in the hops table.
+    hops_table_row_inactive_text_color: Color,
+    /// The color of the selected series in the hops chart.
+    hops_chart_selected_color: Color,
+    /// The color of the unselected series in the hops chart.
+    hops_chart_unselected_color: Color,
+    /// The color of the axis in the hops chart.
+    hops_chart_axis_color: Color,
+    /// The color of bars in the frequency chart.
+    frequency_chart_bar_color: Color,
+    /// The color of text in the bars of the frequency chart.
+    frequency_chart_text_color: Color,
+    /// The color of the samples chart.
+    samples_chart_color: Color,
+    /// The background color of the help dialog.
+    help_dialog_bg_color: Color,
+    /// The color of the text in the help dialog.
+    help_dialog_text_color: Color,
+}
+
+impl From<TuiTheme> for Theme {
+    fn from(value: TuiTheme) -> Self {
+        Self {
+            bg_color: Color::from(value.bg_color),
+            border_color: Color::from(value.border_color),
+            text_color: Color::from(value.text_color),
+            tab_text_color: Color::from(value.tab_text_color),
+            hops_table_header_bg_color: Color::from(value.hops_table_header_bg_color),
+            hops_table_header_text_color: Color::from(value.hops_table_header_text_color),
+            hops_table_row_active_text_color: Color::from(value.hops_table_row_active_text_color),
+            hops_table_row_inactive_text_color: Color::from(
+                value.hops_table_row_inactive_text_color,
+            ),
+            hops_chart_selected_color: Color::from(value.hops_chart_selected_color),
+            hops_chart_unselected_color: Color::from(value.hops_chart_unselected_color),
+            hops_chart_axis_color: Color::from(value.hops_chart_axis_color),
+            frequency_chart_bar_color: Color::from(value.frequency_chart_bar_color),
+            frequency_chart_text_color: Color::from(value.frequency_chart_text_color),
+            samples_chart_color: Color::from(value.samples_chart_color),
+            help_dialog_bg_color: Color::from(value.help_dialog_bg_color),
+            help_dialog_text_color: Color::from(value.help_dialog_text_color),
+        }
+    }
+}
+
+impl From<TuiColor> for Color {
+    fn from(value: TuiColor) -> Self {
+        match value {
+            TuiColor::Black => Self::Black,
+            TuiColor::Red => Self::Red,
+            TuiColor::Green => Self::Green,
+            TuiColor::Yellow => Self::Yellow,
+            TuiColor::Blue => Self::Blue,
+            TuiColor::Magenta => Self::Magenta,
+            TuiColor::Cyan => Self::Cyan,
+            TuiColor::Gray => Self::Gray,
+            TuiColor::DarkGray => Self::DarkGray,
+            TuiColor::LightRed => Self::LightRed,
+            TuiColor::LightGreen => Self::LightGreen,
+            TuiColor::LightYellow => Self::LightYellow,
+            TuiColor::LightBlue => Self::LightBlue,
+            TuiColor::LightMagenta => Self::LightMagenta,
+            TuiColor::LightCyan => Self::LightCyan,
+            TuiColor::White => Self::White,
+            TuiColor::Rgb(r, g, b) => Self::Rgb(r, g, b),
+        }
+    }
+}
+
 /// Tui configuration.
 #[derive(Debug)]
 pub struct TuiConfig {
@@ -97,6 +189,8 @@ pub struct TuiConfig {
     max_addrs: Option<u8>,
     /// The maximum number of samples to record per hop.
     max_samples: usize,
+    /// The Tui color theme.
+    theme: Theme,
 }
 
 impl TuiConfig {
@@ -107,6 +201,7 @@ impl TuiConfig {
         lookup_as_info: bool,
         max_addrs: Option<u8>,
         max_samples: usize,
+        tui_theme: TuiTheme,
     ) -> Self {
         Self {
             refresh_rate,
@@ -115,6 +210,7 @@ impl TuiConfig {
             lookup_as_info,
             max_addrs,
             max_samples,
+            theme: Theme::from(tui_theme),
         }
     }
 }
@@ -451,7 +547,12 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .style(Style::default());
+        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
+        );
     let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
     let clock_span = Spans::from(Span::raw(now));
     let help_span = Spans::from(vec![
@@ -589,14 +690,19 @@ fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .style(Style::default());
+        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
+        );
     let titles: Vec<_> = app
         .trace_info
         .iter()
         .map(|trace| {
             Spans::from(Span::styled(
                 &trace.target_hostname,
-                Style::default().fg(Color::Green),
+                Style::default().fg(app.tui_config.theme.tab_text_color),
             ))
         })
         .collect();
@@ -604,11 +710,7 @@ fn render_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         .block(tabs_block)
         .select(app.trace_selected)
         .style(Style::default())
-        .highlight_style(
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .bg(Color::Black),
-        );
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD));
     f.render_widget(tabs, rect);
 }
 
@@ -619,7 +721,7 @@ fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
         render_bsod(f, rec, err);
     } else if app.tracer_data().hops().is_empty() {
-        render_splash(f, rec);
+        render_splash(f, app, rec);
     } else if app.show_chart {
         render_chart(f, app, rec);
     } else {
@@ -629,7 +731,7 @@ fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
 
 /// Render the ping history for all hops as a chart.
 fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
-    let target_hop = app.table_state.selected().map_or_else(
+    let selected_hop = app.table_state.selected().map_or_else(
         || app.tracer_data().target_hop(),
         |s| &app.tracer_data().hops()[s],
     );
@@ -664,8 +766,10 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                 .marker(Marker::Braille)
                 .style(Style::default().fg({
                     match i {
-                        i if i + 1 == target_hop.ttl() as usize => Color::Green,
-                        _ => Color::Gray,
+                        i if i + 1 == selected_hop.ttl() as usize => {
+                            app.tui_config.theme.hops_chart_selected_color
+                        }
+                        _ => app.tui_config.theme.hops_chart_unselected_color,
                     }
                 }))
         })
@@ -683,7 +787,7 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                         .map(Span::from)
                         .collect(),
                 )
-                .style(Style::default().fg(Color::DarkGray)),
+                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis_color)),
         )
         .y_axis(
             Axis::default()
@@ -699,13 +803,19 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                     .map(Span::from)
                     .collect(),
                 )
-                .style(Style::default().fg(Color::DarkGray)),
+                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis_color)),
         )
         .hidden_legend_constraints(constraints)
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
+        )
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(app.tui_config.theme.border_color))
                 .title("Hops"),
         );
     f.render_widget(chart, rect);
@@ -739,7 +849,7 @@ fn render_bsod<B: Backend>(f: &mut Frame<'_, B>, rect: Rect, error: &str) {
 /// Render the splash screen.
 ///
 /// This is shown on startup whilst we await the first round of data to be available.
-fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
+fn render_splash<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let chunks = Layout::default()
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);
@@ -747,7 +857,12 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
         .title("Hops")
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .style(Style::default());
+        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
+        );
     let splash = vec![
         r#" _____    _                "#,
         r#"|_   _| _(_)_ __ _ __ _  _ "#,
@@ -782,7 +897,7 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, rect: Rect) {
 /// - The standard deviation round-trip time for all probes at this hop (`StDev`)
 /// - The status of this hop (`Sts`)
 fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
-    let header = render_table_header();
+    let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app.tracer_data().hops().iter().map(|hop| {
         render_table_row(
@@ -790,9 +905,7 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
             &app.resolver,
             app.tracer_data().is_target(hop),
             app.tracer_data().is_in_round(hop),
-            app.tui_config.address_mode,
-            app.tui_config.lookup_as_info,
-            app.tui_config.max_addrs,
+            &app.tui_config,
         )
     });
     let table = Table::new(rows)
@@ -801,7 +914,13 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(app.tui_config.theme.border_color))
                 .title("Hops"),
+        )
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
         )
         .highlight_style(selected_style)
         .widths(&TABLE_WIDTH);
@@ -809,12 +928,12 @@ fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
 }
 
 /// Render the table header.
-fn render_table_header() -> Row<'static> {
+fn render_table_header(theme: Theme) -> Row<'static> {
     let header_cells = TABLE_HEADER
         .iter()
-        .map(|h| Cell::from(*h).style(Style::default().fg(Color::Black)));
+        .map(|h| Cell::from(*h).style(Style::default().fg(theme.hops_table_header_text_color)));
     Row::new(header_cells)
-        .style(Style::default().bg(Color::White))
+        .style(Style::default().bg(theme.hops_table_header_bg_color))
         .height(1)
         .bottom_margin(0)
 }
@@ -825,12 +944,16 @@ fn render_table_row(
     dns: &DnsResolver,
     is_target: bool,
     is_in_round: bool,
-    address_mode: AddressMode,
-    lookup_as_info: bool,
-    max_addr: Option<u8>,
+    config: &TuiConfig,
 ) -> Row<'static> {
     let ttl_cell = render_ttl_cell(hop);
-    let hostname_cell = render_hostname_cell(hop, dns, address_mode, lookup_as_info, max_addr);
+    let hostname_cell = render_hostname_cell(
+        hop,
+        dns,
+        config.address_mode,
+        config.lookup_as_info,
+        config.max_addrs,
+    );
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
     let total_recv_cell = render_total_recv_cell(hop);
@@ -855,11 +978,11 @@ fn render_table_row(
     ];
     let row_height = hop
         .addr_count()
-        .clamp(1, max_addr.unwrap_or(u8::MAX) as usize) as u16;
+        .clamp(1, config.max_addrs.unwrap_or(u8::MAX) as usize) as u16;
     let row_color = if is_in_round {
-        Color::Gray
+        config.theme.hops_table_row_active_text_color
     } else {
-        Color::DarkGray
+        config.theme.hops_table_row_inactive_text_color
     };
     Row::new(cells)
         .height(row_height)
@@ -1034,7 +1157,7 @@ fn render_footer<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) 
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
     if app.show_help {
-        render_help(f);
+        render_help(f, app);
     }
 }
 
@@ -1054,11 +1177,21 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
         .block(
             Block::default()
                 .title(format!("Samples #{}", target_hop.ttl()))
+                .style(
+                    Style::default()
+                        .bg(app.tui_config.theme.bg_color)
+                        .fg(app.tui_config.theme.text_color),
+                )
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(app.tui_config.theme.border_color)),
         )
         .data(&data)
-        .style(Style::default().fg(Color::Yellow));
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.samples_chart_color),
+        );
     f.render_widget(history, rect);
 }
 
@@ -1074,32 +1207,39 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
         .block(
             Block::default()
                 .title(format!("Frequency #{}", target_hop.ttl()))
+                .style(
+                    Style::default()
+                        .bg(app.tui_config.theme.bg_color)
+                        .fg(app.tui_config.theme.text_color),
+                )
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(app.tui_config.theme.border_color)),
         )
         .data(freq_data_ref.as_slice())
         .bar_width(4)
         .bar_gap(1)
-        .bar_style(Style::default().fg(Color::Green))
+        .bar_style(Style::default().fg(app.tui_config.theme.frequency_chart_bar_color))
         .value_style(
             Style::default()
-                .bg(Color::Green)
+                .bg(app.tui_config.theme.frequency_chart_bar_color)
+                .fg(app.tui_config.theme.frequency_chart_text_color)
                 .add_modifier(Modifier::BOLD),
         );
     f.render_widget(barchart, rect);
 }
 
 /// Render help
-fn render_help<B: Backend>(f: &mut Frame<'_, B>) {
+fn render_help<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     let block = Block::default()
         .title(" Controls ")
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
-        .style(Style::default().bg(Color::Blue))
+        .style(Style::default().bg(app.tui_config.theme.help_dialog_bg_color))
         .border_type(BorderType::Double);
     let control_spans: Vec<_> = HELP_LINES.iter().map(|&line| Spans::from(line)).collect();
     let control = Paragraph::new(control_spans)
-        .style(Style::default())
+        .style(Style::default().fg(app.tui_config.theme.help_dialog_text_color))
         .block(block.clone())
         .alignment(Alignment::Left);
     let area = centered_rect(50, 50, f.size());
