@@ -12,16 +12,12 @@ jobs:
     strategy:
       matrix:
         build:
-          - linux-pinned
           - linux-stable
           - linux-beta
           - linux-nightly
           - macos-stable
           - windows-stable
         include:
-          - build: linux-pinned
-            os: ubuntu-20.04
-            rust: 1.63.0
           - build: linux-stable
             os: ubuntu-20.04
             rust: stable
