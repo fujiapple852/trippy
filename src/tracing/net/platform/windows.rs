@@ -541,8 +541,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             Ok(layout) => layout,
             Err(e) => {
                 return Err(TracerError::UnknownInterface(format!(
-                    "Could not compute layout for {} words: {}",
-                    buf_len, e
+                    "Could not compute layout for {buf_len} words: {e}"
                 )));
             }
         };
@@ -550,8 +549,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         list_ptr = unsafe { alloc(layout) };
         if list_ptr.is_null() {
             return Err(TracerError::UnknownInterface(format!(
-                "Could not allocate {} words for layout {:?}",
-                buf_len, layout
+                "Could not allocate {buf_len} words for layout {layout:?}"
             )));
         }
         ip_adapter_address = list_ptr.cast();
@@ -611,8 +609,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     }
 
     Err(TracerError::UnknownInterface(format!(
-        "could not find address for {}",
-        name
+        "could not find address for {name}"
     )))
 }
 
