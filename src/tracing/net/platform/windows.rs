@@ -5,35 +5,36 @@ use crate::tracing::net::socket::TracerSocket;
 use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_void;
 use std::io::{Error, ErrorKind, Result};
-use std::mem::{align_of, size_of};
+use std::mem::{align_of, size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::ptr::{addr_of, addr_of_mut};
+use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
-use windows::core::PSTR;
-use windows::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
-use windows::Win32::NetworkManagement::IpHelper;
-use windows::Win32::Networking::WinSock::{
-    ADDRESS_FAMILY, AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, FIONBIO, ICMP_ERROR_INFO,
-    INVALID_SOCKET, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6, IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW,
-    IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL, IP_TOS, IP_TTL, SD_BOTH,
-    SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_STORAGE, SOCKET, SOCKET_ERROR,
-    SOCK_DGRAM, SOCK_RAW, SOCK_STREAM, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
-    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
-    WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+use widestring::WideCString;
+use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
+use windows_sys::Win32::NetworkManagement::IpHelper;
+use windows_sys::Win32::Networking::WinSock::{
+    ADDRESS_FAMILY, AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, FIONBIO, ICMP_ERROR_INFO, IN6_ADDR,
+    IN6_ADDR_0, INVALID_SOCKET, IN_ADDR, IN_ADDR_0, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6,
+    IPPROTO_IP, IPPROTO_IPV6, IPPROTO_RAW, IPPROTO_TCP, IPPROTO_UDP, IPV6_UNICAST_HOPS, IP_HDRINCL,
+    IP_TOS, IP_TTL, SD_BOTH, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
+    SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM,
+    SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO,
+    WSABUF, WSADATA, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK,
+    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
-use windows::Win32::System::IO::OVERLAPPED;
+use windows_sys::Win32::System::IO::OVERLAPPED;
 
 macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         #[allow(unsafe_code)]
-        unsafe { windows::Win32::System::Threading::$fn($($arg, )*) }
+        unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
     }};
 }
 
 macro_rules! syscall {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         #[allow(unsafe_code)]
-        unsafe { windows::Win32::Networking::WinSock::$fn($($arg, )*) }
+        unsafe { windows_sys::Win32::Networking::WinSock::$fn($($arg, )*) }
     }};
 }
 
@@ -62,7 +63,7 @@ macro_rules! syscall_zero {
 macro_rules! syscall_is_invalid {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         let res = syscall!( $fn($($arg, )*) );
-        if res.is_invalid() {
+        if res == 0 || res == -1 {
             Err(std::io::Error::last_os_error())
         } else {
             Ok(res)
@@ -73,7 +74,7 @@ macro_rules! syscall_is_invalid {
 macro_rules! syscall_bool {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         let res = syscall!( $fn($($arg, )*) );
-        if res.as_bool() == false {
+        if res == 0 {
             Err(std::io::Error::last_os_error())
         } else {
             Ok(res)
@@ -115,17 +116,17 @@ pub fn startup() -> Result<()> {
 
 #[must_use]
 pub fn is_not_in_progress_error(code: i32) -> bool {
-    code != WSAEINPROGRESS.0
+    code != WSAEINPROGRESS
 }
 
 #[must_use]
 pub fn is_conn_refused_error(code: i32) -> bool {
-    code == WSAECONNREFUSED.0
+    code == WSAECONNREFUSED
 }
 
 #[must_use]
 pub fn is_host_unreachable_error(code: i32) -> bool {
-    code == WSAEHOSTUNREACH.0
+    code == WSAEHOSTUNREACH
 }
 
 /// `WinSock` version 2.2
@@ -140,16 +141,17 @@ pub struct Socket {
 }
 
 #[allow(clippy::cast_possible_wrap)]
+#[allow(unsafe_code)]
 impl Socket {
     fn startup() -> Result<()> {
-        let mut wsa_data = WSADATA::default();
+        let mut wsa_data = unsafe { zeroed::<WSADATA>() };
         syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data))).map(|_| ())
     }
 
     fn new(af: ADDRESS_FAMILY, ty: u16, protocol: IPPROTO) -> Result<Self> {
-        let s = syscall_invalid_socket!(socket(i32::from(af.0), i32::from(ty), protocol.0))?;
-        let from = Box::<SOCKADDR_STORAGE>::default();
-        let ol = Box::<OVERLAPPED>::default();
+        let s = syscall_invalid_socket!(socket(i32::from(af), i32::from(ty), protocol))?;
+        let from = Box::new(unsafe { zeroed::<SOCKADDR_STORAGE>() });
+        let ol = Box::new(unsafe { zeroed::<OVERLAPPED>() });
         let buf = vec![0u8; MAX_PACKET_SIZE];
         Ok(Self { s, ol, buf, from })
     }
@@ -174,24 +176,28 @@ impl Socket {
         syscall_bool!(WSAResetEvent(self.ol.hEvent)).map(|_| ())
     }
 
-    fn getsockopt<T: Default>(&self, level: i32, optname: i32) -> Result<T> {
-        let mut optval = T::default();
+    fn getsockopt<T>(&self, level: i32, optname: i32) -> Result<T> {
+        let mut optval = unsafe { zeroed::<T>() };
         let mut optlen = size_of::<T>() as i32;
         syscall_socket_error!(getsockopt(
             self.s,
             level,
             optname,
-            PSTR::from_raw(addr_of_mut!(optval).cast()),
+            addr_of_mut!(optval).cast(),
             &mut optlen,
         ))?;
         Ok(optval)
     }
 
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
-        let bytes_array = optval.to_ne_bytes();
-        let bytes_slice_ref_option = Some(&bytes_array[..]);
-        syscall_socket_error!(setsockopt(self.s, level, optname, bytes_slice_ref_option))
-            .map(|_| ())
+        syscall_socket_error!(setsockopt(
+            self.s,
+            level,
+            optname,
+            addr_of!(optval).cast(),
+            size_of::<u32>() as i32,
+        ))
+        .map(|_| ())
     }
 
     fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
@@ -199,7 +205,7 @@ impl Socket {
     }
 
     fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
-        self.setsockopt_bool(IPPROTO_TCP.0, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
+        self.setsockopt_bool(IPPROTO_TCP, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
     }
 
     // NOTE FIONBIO is really unsigned (in WinSock2.h)
@@ -209,12 +215,12 @@ impl Socket {
         syscall_socket_error!(WSAIoctl(
             self.s,
             FIONBIO as u32,
-            Some(addr_of!(non_blocking).cast()),
+            addr_of!(non_blocking).cast(),
             size_of::<u32>() as u32,
-            None,
+            null_mut(),
             0,
             &mut 0,
-            None,
+            null_mut(),
             None,
         ))
         .map(|_| ())
@@ -224,20 +230,21 @@ impl Socket {
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
             len: MAX_PACKET_SIZE as u32,
-            buf: PSTR::from_raw(self.buf.as_mut_ptr()),
+            buf: self.buf.as_mut_ptr(),
         };
         let ret = syscall!(WSARecvFrom(
             self.s,
-            &[wbuf],
-            None,
+            addr_of!(wbuf),
+            1,
+            null_mut(),
             &mut 0,
-            Some(addr_of_mut!(*self.from).cast()),
-            Some(&mut fromlen),
-            Some(&mut *self.ol),
+            addr_of_mut!(*self.from).cast(),
+            addr_of_mut!(fromlen),
+            addr_of_mut!(*self.ol),
             None,
         ));
         if ret == SOCKET_ERROR {
-            if Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING.0) {
+            if Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING) {
                 return Err(Error::last_os_error());
             }
         } else {
@@ -254,7 +261,7 @@ impl Socket {
             self.s,
             addr_of!(ol),
             &mut bytes,
-            false,
+            0,
             &mut flags,
         ))?;
         Ok((bytes, flags))
@@ -265,7 +272,7 @@ impl Drop for Socket {
     fn drop(&mut self) {
         // TODO can we unconditionally close the socket?
         syscall_socket_error!(closesocket(self.s)).unwrap_or_default();
-        if !self.ol.hEvent.is_invalid() {
+        if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
             syscall_bool!(WSACloseEvent(self.ol.hEvent)).unwrap_or_default();
         }
     }
@@ -340,7 +347,19 @@ impl TracerSocket for Socket {
 
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
-        syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen as i32))?;
+        // DEBUG
+        // eprint!("bind[{}]: ", self.s);
+        // let res = syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen));
+        // match res {
+        //     Ok(_) => {
+        //         eprintln!("ok");
+        //     }
+        //     Err(e) => {
+        //         eprintln!("failed");
+        //         return Err(e);
+        //     }
+        // };
+        syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen))?;
         self.create_event()?;
         Ok(())
     }
@@ -364,9 +383,10 @@ impl TracerSocket for Socket {
     fn set_unicast_hops_v6(&self, max_hops: u8) -> Result<()> {
         syscall_socket_error!(setsockopt(
             self.s,
-            IPPROTO_IPV6.0,
+            IPPROTO_IPV6,
             IPV6_UNICAST_HOPS as i32,
-            Some(&[max_hops]),
+            addr_of!(max_hops).cast(),
+            size_of::<u8>() as i32,
         ))
         .map(|_| ())
     }
@@ -379,9 +399,9 @@ impl TracerSocket for Socket {
             (FD_CONNECT | FD_WRITE) as _
         ))?;
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        let rc = syscall!(connect(self.s, addr_of!(addr).cast(), addrlen as i32));
+        let rc = syscall!(connect(self.s, addr_of!(addr).cast(), addrlen));
         if rc == SOCKET_ERROR {
-            if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK.0) {
+            if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK) {
                 return Err(Error::last_os_error());
             }
         } else {
@@ -394,10 +414,11 @@ impl TracerSocket for Socket {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
         syscall_socket_error!(sendto(
             self.s,
-            packet,
+            addr_of!(packet[0]),
+            packet.len() as i32,
             0,
             addr_of!(addr).cast(),
-            addrlen as i32,
+            addrlen,
         ))
         .map(|_| ())
     }
@@ -407,7 +428,7 @@ impl TracerSocket for Socket {
             return Ok(false);
         };
         while let Err(err) = self.get_overlapped_result() {
-            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
+            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE) {
                 return Err(err);
             }
         }
@@ -420,7 +441,7 @@ impl TracerSocket for Socket {
             return Ok(false);
         };
         while let Err(err) = self.get_overlapped_result() {
-            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE.0) {
+            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE) {
                 return Err(err);
             }
         }
@@ -448,8 +469,9 @@ impl TracerSocket for Socket {
         syscall_socket_error!(shutdown(self.s, SD_BOTH as i32)).map(|_| ())
     }
 
+    #[allow(unsafe_code)]
     fn peer_addr(&self) -> Result<Option<SocketAddr>> {
-        let mut name = SOCKADDR_STORAGE::default();
+        let mut name = unsafe { zeroed::<SOCKADDR_STORAGE>() };
         let mut namelen = size_of::<SOCKADDR_STORAGE>() as i32;
         syscall_socket_error!(getpeername(self.s, addr_of_mut!(name).cast(), &mut namelen))?;
         Ok(Some(sockaddr_to_socketaddr(&name)?))
@@ -466,7 +488,7 @@ impl TracerSocket for Socket {
     #[allow(unsafe_code)]
     fn icmp_error_info(&self) -> Result<IpAddr> {
         let icmp_error_info =
-            self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP.0 as _, TCP_ICMP_ERROR_INFO as _)?;
+            self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP as _, TCP_ICMP_ERROR_INFO as _)?;
         let src_addr = icmp_error_info.srcaddress;
         match unsafe { src_addr.si_family } {
             AF_INET => Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
@@ -487,6 +509,7 @@ impl TracerSocket for Socket {
 /// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
+#[allow(clippy::cast_sign_loss)]
 fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
@@ -498,12 +521,12 @@ fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     syscall_socket_error!(WSAIoctl(
         socket.s,
         SIO_ROUTING_INTERFACE_QUERY,
-        Some(addr_of!(dest).cast()),
-        destlen,
-        Some(src),
+        addr_of!(dest).cast(),
+        destlen as u32,
+        src,
         1024,
         addr_of_mut!(bytes),
-        None,
+        null_mut(),
         None,
     ))?;
     // Note that the WSAIoctl call potentially returns multiple results (see
@@ -529,7 +552,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
     let mut buf_len: u32 = 15000;
     let mut layout;
     let mut list_ptr;
-    let mut ip_adapter_address;
+    let mut ip_adapter_addresses;
     let mut res;
     let mut i = 0;
 
@@ -552,41 +575,46 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
                 "Could not allocate {buf_len} words for layout {layout:?}"
             )));
         }
-        ip_adapter_address = list_ptr.cast();
+        ip_adapter_addresses = list_ptr.cast();
         // Safety: TODO
         res = unsafe {
             IpHelper::GetAdaptersAddresses(
-                u32::from(family.0),
+                u32::from(family),
                 flags,
-                None,
-                Some(ip_adapter_address),
+                null_mut(),
+                ip_adapter_addresses,
                 &mut buf_len,
             )
         };
         i += 1;
 
-        if res != ERROR_BUFFER_OVERFLOW.0 || i > MAX_TRIES {
+        if res != ERROR_BUFFER_OVERFLOW || i > MAX_TRIES {
             break;
         }
         // Safety: TODO
         unsafe { dealloc(list_ptr, layout) };
     }
 
-    if res != NO_ERROR.0 {
+    if res != NO_ERROR {
         return Err(TracerError::UnknownInterface(format!(
             "GetAdaptersAddresses returned error: {}",
             Error::from_raw_os_error(res.try_into().unwrap())
         )));
     }
 
-    while !ip_adapter_address.is_null() {
+    while !ip_adapter_addresses.is_null() {
         // Safety: TODO
-        let friendly_name = unsafe { (*ip_adapter_address).FriendlyName.to_string().unwrap() };
+        let friendly_name = unsafe {
+            let friendly_name = (*ip_adapter_addresses).FriendlyName;
+            WideCString::from_ptr_str(friendly_name)
+                .to_string()
+                .unwrap()
+        };
         if name == friendly_name {
             // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
             // however, this is not supported by our function signature
             // Safety: TODO
-            let current_unicast = unsafe { (*ip_adapter_address).FirstUnicastAddress };
+            let current_unicast = unsafe { (*ip_adapter_addresses).FirstUnicastAddress };
             // while !current_unicast.is_null() {
             // Safety: TODO
             unsafe {
@@ -601,7 +629,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             // }
         }
         // Safety: TODO
-        ip_adapter_address = unsafe { (*ip_adapter_address).Next };
+        ip_adapter_addresses = unsafe { (*ip_adapter_addresses).Next };
     }
     // Safety: TODO
     unsafe {
@@ -633,7 +661,7 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
         let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
         // Safety: TODO
         let sockaddr_in = unsafe { *sockaddr_in_ptr };
-        let ipv4addr = sockaddr_in.sin_addr;
+        let ipv4addr = u32::from_be(unsafe { sockaddr_in.sin_addr.S_un.S_addr });
         let port = sockaddr_in.sin_port;
         Ok(SocketAddr::V4(SocketAddrV4::new(
             Ipv4Addr::from(ipv4addr),
@@ -644,7 +672,9 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
         let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
         // Safety: TODO
         let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
-        let ipv6addr = sockaddr_in6.sin6_addr;
+        // Safety: TODO
+        // TODO: check endianness
+        let ipv6addr = unsafe { sockaddr_in6.sin6_addr.u.Byte };
         let port = sockaddr_in6.sin6_port;
         // Safety: TODO
         let scope_id = unsafe { sockaddr_in6.Anonymous.sin6_scope_id };
@@ -663,23 +693,45 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
 }
 
 #[allow(unsafe_code)]
+#[allow(clippy::cast_possible_wrap)]
 #[must_use]
-fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, u32) {
+fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
     #[repr(C)]
     union SockAddr {
         storage: SOCKADDR_STORAGE,
         in4: SOCKADDR_IN,
         in6: SOCKADDR_IN6,
-        }
+    }
 
     let sockaddr = match socketaddr {
         SocketAddr::V4(socketaddrv4) => SockAddr {
-            in4: socketaddrv4.into(),
+            in4: SOCKADDR_IN {
+                sin_family: AF_INET,
+                sin_port: socketaddrv4.port().to_be(),
+                sin_addr: IN_ADDR {
+                    S_un: IN_ADDR_0 {
+                        S_addr: u32::from(*socketaddrv4.ip()).to_be(),
+                    },
+                },
+                sin_zero: [0; 8],
+            },
         },
         SocketAddr::V6(socketaddrv6) => SockAddr {
-            in6: socketaddrv6.into(),
+            in6: SOCKADDR_IN6 {
+                sin6_family: AF_INET6,
+                sin6_port: socketaddrv6.port().to_be(),
+                sin6_flowinfo: socketaddrv6.flowinfo(),
+                sin6_addr: IN6_ADDR {
+                    u: IN6_ADDR_0 {
+                        Byte: socketaddrv6.ip().octets(),
+                    },
+                },
+                Anonymous: SOCKADDR_IN6_0 {
+                    sin6_scope_id: socketaddrv6.scope_id(),
+                },
+            },
         },
     };
 
-    (unsafe { sockaddr.storage }, size_of::<SockAddr>() as u32)
+    (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
 }
