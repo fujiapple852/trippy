@@ -190,11 +190,13 @@ impl Socket {
     }
 
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
+        let bytes = optval.to_ne_bytes();
+        let optval = addr_of!(bytes).cast();
         syscall_socket_error!(setsockopt(
             self.s,
             level,
             optname,
-            addr_of!(optval).cast(),
+            optval,
             size_of::<u32>() as i32,
         ))
         .map(|_| ())
