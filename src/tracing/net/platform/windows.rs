@@ -19,8 +19,9 @@ use windows_sys::Win32::Networking::WinSock::{
     IP_TOS, IP_TTL, SD_BOTH, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
     SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET, SOCKET_ERROR, SOCK_DGRAM, SOCK_RAW, SOCK_STREAM,
     SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY, SO_REUSE_UNICASTPORT,
-    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAECONNREFUSED,
-    WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA, WSAEACCES, WSAEADDRINUSE,
+    WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEWOULDBLOCK, WSA_IO_INCOMPLETE,
+    WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -349,19 +350,16 @@ impl TracerSocket for Socket {
 
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
-        // DEBUG
-        // eprint!("bind[{}]: ", self.s);
-        // let res = syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen));
-        // match res {
-        //     Ok(_) => {
-        //         eprintln!("ok");
-        //     }
-        //     Err(e) => {
-        //         eprintln!("failed");
-        //         return Err(e);
-        //     }
-        // };
-        syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen))?;
+        if let Err(e) = syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen)) {
+            // Permission denied is (most of the time?) in fact equivalent to AddrInUse: when the bind function
+            // is called (on Windows NT 4.0 with SP4 and later) and another application, service, or kernel mode
+            // driver is bound to the same address with exclusive access.
+            // See <https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2>
+            if Some(WSAEACCES) == e.raw_os_error() {
+                return Err(Error::from_raw_os_error(WSAEADDRINUSE));
+            }
+            return Err(e);
+        }
         self.create_event()?;
         Ok(())
     }
@@ -377,7 +375,7 @@ impl TracerSocket for Socket {
     fn set_reuse_port(&self, is_reuse_port: bool) -> Result<()> {
         self.setsockopt_bool(SOL_SOCKET as _, SO_REUSE_UNICASTPORT as _, is_reuse_port)
             .or_else(|_| {
-        self.setsockopt_bool(SOL_SOCKET as _, SO_PORT_SCALABILITY as _, is_reuse_port)
+                self.setsockopt_bool(SOL_SOCKET as _, SO_PORT_SCALABILITY as _, is_reuse_port)
             })
     }
 

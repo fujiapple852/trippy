@@ -157,7 +157,23 @@ pub fn dispatch_tcp_probe(
     };
     let mut socket = Socket::new_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), src_port);
-    socket.bind(local_addr)?;
+    match socket.bind(local_addr) {
+        Ok(_) => {}
+        Err(err) => {
+            if let Some(code) = err.raw_os_error() {
+                if platform::is_not_in_progress_error(code) {
+                    return match err.kind() {
+                        ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                            Err(AddressNotAvailable(local_addr))
+                        }
+                        _ => Err(TracerError::IoError(err)),
+                    };
+                }
+            } else {
+                return Err(TracerError::IoError(err));
+            }
+        }
+    }
     socket.set_ttl(u32::from(probe.ttl.0))?;
     socket.set_tos(u32::from(tos.0))?;
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), dest_port);
