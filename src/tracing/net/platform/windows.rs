@@ -99,10 +99,9 @@ pub struct Socket {
 }
 
 #[allow(clippy::cast_possible_wrap)]
-#[allow(unsafe_code)]
 impl Socket {
     fn startup() -> Result<()> {
-        let mut wsa_data = unsafe { zeroed::<WSADATA>() };
+        let mut wsa_data = Self::new_wsa_data();
         syscall!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)), |res| {
             res != 0
         })
@@ -113,8 +112,8 @@ impl Socket {
         let s = syscall!(socket(i32::from(af), i32::from(ty), protocol), |res| {
             res == INVALID_SOCKET
         })?;
-        let from = Box::new(unsafe { zeroed::<SOCKADDR_STORAGE>() });
-        let ol = Box::new(unsafe { zeroed::<OVERLAPPED>() });
+        let from = Box::new(Self::new_sockaddr_storage());
+        let ol = Box::new(Self::new_overlapped());
         let buf = vec![0u8; MAX_PACKET_SIZE];
         Ok(Self { s, ol, buf, from })
     }
@@ -139,8 +138,7 @@ impl Socket {
         syscall!(WSAResetEvent(self.ol.hEvent), |res| { res == 0 }).map(|_| ())
     }
 
-    fn getsockopt<T>(&self, level: i32, optname: i32) -> Result<T> {
-        let mut optval = unsafe { zeroed::<T>() };
+    fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> Result<T> {
         let mut optlen = size_of::<T>() as i32;
         syscall!(
             getsockopt(
@@ -229,6 +227,30 @@ impl Socket {
             |res| { res == 0 }
         )?;
         Ok((bytes, flags))
+    }
+
+    #[allow(unsafe_code)]
+    fn new_wsa_data() -> WSADATA {
+        // Safety: an all-zero value is valid for WSADATA.
+        unsafe { zeroed::<WSADATA>() }
+    }
+
+    #[allow(unsafe_code)]
+    fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
+        // Safety: an all-zero value is valid for SOCKADDR_STORAGE.
+        unsafe { zeroed::<SOCKADDR_STORAGE>() }
+    }
+
+    #[allow(unsafe_code)]
+    fn new_overlapped() -> OVERLAPPED {
+        // Safety: an all-zero value is valid for OVERLAPPED.
+        unsafe { zeroed::<OVERLAPPED>() }
+    }
+
+    #[allow(unsafe_code)]
+    fn new_icmp_error_info() -> ICMP_ERROR_INFO {
+        // Safety: an all-zero value is valid for ICMP_ERROR_INFO.
+        unsafe { zeroed::<ICMP_ERROR_INFO>() }
     }
 }
 
@@ -436,9 +458,8 @@ impl TracerSocket for Socket {
         syscall!(shutdown(self.s, SD_BOTH as i32), |res| res == SOCKET_ERROR).map(|_| ())
     }
 
-    #[allow(unsafe_code)]
     fn peer_addr(&self) -> Result<Option<SocketAddr>> {
-        let mut name = unsafe { zeroed::<SOCKADDR_STORAGE>() };
+        let mut name = Self::new_sockaddr_storage();
         let mut namelen = size_of::<SOCKADDR_STORAGE>() as i32;
         syscall!(
             getpeername(self.s, addr_of_mut!(name).cast(), &mut namelen),
@@ -448,7 +469,7 @@ impl TracerSocket for Socket {
     }
 
     fn take_error(&self) -> Result<Option<Error>> {
-        match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _) {
+        match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
             Ok(errno) => Ok(Some(Error::from_raw_os_error(errno))),
             Err(e) => Err(e),
@@ -457,8 +478,11 @@ impl TracerSocket for Socket {
 
     #[allow(unsafe_code)]
     fn icmp_error_info(&self) -> Result<IpAddr> {
-        let icmp_error_info =
-            self.getsockopt::<ICMP_ERROR_INFO>(IPPROTO_TCP as _, TCP_ICMP_ERROR_INFO as _)?;
+        let icmp_error_info = self.getsockopt::<ICMP_ERROR_INFO>(
+            IPPROTO_TCP as _,
+            TCP_ICMP_ERROR_INFO as _,
+            Self::new_icmp_error_info(),
+        )?;
         let src_addr = icmp_error_info.srcaddress;
         match unsafe { src_addr.si_family } {
             AF_INET => Ok(IpAddr::V4(Ipv4Addr::from(unsafe {
