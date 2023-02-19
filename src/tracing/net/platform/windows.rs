@@ -25,72 +25,29 @@ use windows_sys::Win32::Networking::WinSock::{
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
+/// Execute a `Win32::Networking::WinSock` syscall.
+///
+/// The result of the syscall will be passed to the supplied boolean closure to determine if it represents an error
+/// and if so returns the last OS error, otherwise the result of the syscall is returned.
+macro_rules! syscall {
+    ($fn: ident ( $($arg: expr),* $(,)* ), $err_fn: expr) => {{
+        #[allow(unsafe_code)]
+        let res = unsafe { windows_sys::Win32::Networking::WinSock::$fn($($arg, )*) };
+        if $err_fn(res) {
+            Err(Error::last_os_error())
+        } else {
+            Ok(res)
+        }
+    }};
+}
+
+/// Execute a `Win32::System::Threading` syscall.
+///
+/// The raw result of the syscall is returned.
 macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         #[allow(unsafe_code)]
         unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
-    }};
-}
-
-macro_rules! syscall {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code)]
-        unsafe { windows_sys::Win32::Networking::WinSock::$fn($($arg, )*) }
-    }};
-}
-
-macro_rules! syscall_invalid_socket {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        let res = syscall!( $fn($($arg, )*) );
-        if res == INVALID_SOCKET {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(res)
-        }
-    }};
-}
-
-macro_rules! syscall_zero {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        let res = syscall!( $fn($($arg, )*) );
-        if res != 0 {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(res)
-        }
-    }};
-}
-
-macro_rules! syscall_is_invalid {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        let res = syscall!( $fn($($arg, )*) );
-        if res == 0 || res == -1 {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(res)
-        }
-    }};
-}
-
-macro_rules! syscall_bool {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        let res = syscall!( $fn($($arg, )*) );
-        if res == 0 {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(res)
-        }
-    }};
-}
-
-macro_rules! syscall_socket_error {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        let res = syscall!( $fn($($arg, )*) );
-        if res == SOCKET_ERROR {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(res)
-        }
     }};
 }
 
@@ -146,11 +103,16 @@ pub struct Socket {
 impl Socket {
     fn startup() -> Result<()> {
         let mut wsa_data = unsafe { zeroed::<WSADATA>() };
-        syscall_zero!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data))).map(|_| ())
+        syscall!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)), |res| {
+            res != 0
+        })
+        .map(|_| ())
     }
 
     fn new(af: ADDRESS_FAMILY, ty: u16, protocol: IPPROTO) -> Result<Self> {
-        let s = syscall_invalid_socket!(socket(i32::from(af), i32::from(ty), protocol))?;
+        let s = syscall!(socket(i32::from(af), i32::from(ty), protocol), |res| {
+            res == INVALID_SOCKET
+        })?;
         let from = Box::new(unsafe { zeroed::<SOCKADDR_STORAGE>() });
         let ol = Box::new(unsafe { zeroed::<OVERLAPPED>() });
         let buf = vec![0u8; MAX_PACKET_SIZE];
@@ -158,7 +120,7 @@ impl Socket {
     }
 
     fn create_event(&mut self) -> Result<()> {
-        self.ol.hEvent = syscall_is_invalid!(WSACreateEvent())?;
+        self.ol.hEvent = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })?;
         Ok(())
     }
 
@@ -174,32 +136,32 @@ impl Socket {
     }
 
     fn reset_event(&self) -> Result<()> {
-        syscall_bool!(WSAResetEvent(self.ol.hEvent)).map(|_| ())
+        syscall!(WSAResetEvent(self.ol.hEvent), |res| { res == 0 }).map(|_| ())
     }
 
     fn getsockopt<T>(&self, level: i32, optname: i32) -> Result<T> {
         let mut optval = unsafe { zeroed::<T>() };
         let mut optlen = size_of::<T>() as i32;
-        syscall_socket_error!(getsockopt(
-            self.s,
-            level,
-            optname,
-            addr_of_mut!(optval).cast(),
-            &mut optlen,
-        ))?;
+        syscall!(
+            getsockopt(
+                self.s,
+                level,
+                optname,
+                addr_of_mut!(optval).cast(),
+                &mut optlen,
+            ),
+            |res| res == SOCKET_ERROR
+        )?;
         Ok(optval)
     }
 
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
         let bytes = optval.to_ne_bytes();
         let optval = addr_of!(bytes).cast();
-        syscall_socket_error!(setsockopt(
-            self.s,
-            level,
-            optname,
-            optval,
-            size_of::<u32>() as i32,
-        ))
+        syscall!(
+            setsockopt(self.s, level, optname, optval, size_of::<u32>() as i32,),
+            |res| res == SOCKET_ERROR
+        )
         .map(|_| ())
     }
 
@@ -215,58 +177,57 @@ impl Socket {
     #[allow(clippy::cast_sign_loss)]
     fn set_non_blocking(&self, is_non_blocking: bool) -> Result<()> {
         let non_blocking: u32 = u32::from(is_non_blocking);
-        syscall_socket_error!(WSAIoctl(
-            self.s,
-            FIONBIO as u32,
-            addr_of!(non_blocking).cast(),
-            size_of::<u32>() as u32,
-            null_mut(),
-            0,
-            &mut 0,
-            null_mut(),
-            None,
-        ))
+        syscall!(
+            WSAIoctl(
+                self.s,
+                FIONBIO as u32,
+                addr_of!(non_blocking).cast(),
+                size_of::<u32>() as u32,
+                null_mut(),
+                0,
+                &mut 0,
+                null_mut(),
+                None,
+            ),
+            |res| res == SOCKET_ERROR
+        )
         .map(|_| ())
     }
 
+    // TODO handle case where `WSARecvFrom` succeeded immediately.
     fn post_recv_from(&mut self) -> Result<()> {
+        fn is_err(res: i32) -> bool {
+            res == SOCKET_ERROR && Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
+        }
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
             len: MAX_PACKET_SIZE as u32,
             buf: self.buf.as_mut_ptr(),
         };
-        let ret = syscall!(WSARecvFrom(
-            self.s,
-            addr_of!(wbuf),
-            1,
-            null_mut(),
-            &mut 0,
-            addr_of_mut!(*self.from).cast(),
-            addr_of_mut!(fromlen),
-            addr_of_mut!(*self.ol),
-            None,
-        ));
-        if ret == SOCKET_ERROR {
-            if Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING) {
-                return Err(Error::last_os_error());
-            }
-        } else {
-            // TODO no need to wait for an event, recv succeeded immediately! This should be handled
-        }
+        syscall!(
+            WSARecvFrom(
+                self.s,
+                addr_of!(wbuf),
+                1,
+                null_mut(),
+                &mut 0,
+                addr_of_mut!(*self.from).cast(),
+                addr_of_mut!(fromlen),
+                addr_of_mut!(*self.ol),
+                None,
+            ),
+            is_err
+        )?;
         Ok(())
     }
-
     fn get_overlapped_result(&self) -> Result<(u32, u32)> {
         let mut bytes = 0;
         let mut flags = 0;
         let ol = *self.ol;
-        syscall_bool!(WSAGetOverlappedResult(
-            self.s,
-            addr_of!(ol),
-            &mut bytes,
-            0,
-            &mut flags,
-        ))?;
+        syscall!(
+            WSAGetOverlappedResult(self.s, addr_of!(ol), &mut bytes, 0, &mut flags,),
+            |res| { res == 0 }
+        )?;
         Ok((bytes, flags))
     }
 }
@@ -274,9 +235,9 @@ impl Socket {
 impl Drop for Socket {
     fn drop(&mut self) {
         // TODO can we unconditionally close the socket?
-        syscall_socket_error!(closesocket(self.s)).unwrap_or_default();
+        syscall!(closesocket(self.s), |res| res == SOCKET_ERROR).unwrap_or_default();
         if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
-            syscall_bool!(WSACloseEvent(self.ol.hEvent)).unwrap_or_default();
+            syscall!(WSACloseEvent(self.ol.hEvent), |res| { res == 0 }).unwrap_or_default();
         }
     }
 }
@@ -350,7 +311,9 @@ impl TracerSocket for Socket {
 
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(source_socketaddr);
-        if let Err(e) = syscall_socket_error!(bind(self.s, addr_of!(addr).cast(), addrlen)) {
+        if let Err(e) = syscall!(bind(self.s, addr_of!(addr).cast(), addrlen), |res| res
+            == SOCKET_ERROR)
+        {
             // Permission denied is (most of the time?) in fact equivalent to AddrInUse: when the bind function
             // is called (on Windows NT 4.0 with SP4 and later) and another application, service, or kernel mode
             // driver is bound to the same address with exclusive access.
@@ -384,45 +347,46 @@ impl TracerSocket for Socket {
     }
 
     fn set_unicast_hops_v6(&self, max_hops: u8) -> Result<()> {
-        syscall_socket_error!(setsockopt(
-            self.s,
-            IPPROTO_IPV6,
-            IPV6_UNICAST_HOPS as i32,
-            addr_of!(max_hops).cast(),
-            size_of::<u8>() as i32,
-        ))
+        syscall!(
+            setsockopt(
+                self.s,
+                IPPROTO_IPV6,
+                IPV6_UNICAST_HOPS as i32,
+                addr_of!(max_hops).cast(),
+                size_of::<u8>() as i32,
+            ),
+            |res| res == SOCKET_ERROR
+        )
         .map(|_| ())
     }
 
     fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
-        self.set_fail_connect_on_icmp_error(true)?;
-        syscall_socket_error!(WSAEventSelect(
-            self.s,
-            self.ol.hEvent,
-            (FD_CONNECT | FD_WRITE) as _
-        ))?;
-        let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        let rc = syscall!(connect(self.s, addr_of!(addr).cast(), addrlen));
-        if rc == SOCKET_ERROR {
-            if Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK) {
-                return Err(Error::last_os_error());
-            }
-        } else {
-            // TODO
+        fn is_err(res: i32) -> bool {
+            res == SOCKET_ERROR && Error::last_os_error().raw_os_error() != Some(WSAEWOULDBLOCK)
         }
+        self.set_fail_connect_on_icmp_error(true)?;
+        syscall!(
+            WSAEventSelect(self.s, self.ol.hEvent, (FD_CONNECT | FD_WRITE) as _),
+            |res| res == SOCKET_ERROR
+        )?;
+        let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
+        syscall!(connect(self.s, addr_of!(addr).cast(), addrlen), is_err)?;
         Ok(())
     }
 
     fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> Result<()> {
         let (addr, addrlen) = socketaddr_to_sockaddr(dest_socketaddr);
-        syscall_socket_error!(sendto(
-            self.s,
-            addr_of!(packet[0]),
-            packet.len() as i32,
-            0,
-            addr_of!(addr).cast(),
-            addrlen,
-        ))
+        syscall!(
+            sendto(
+                self.s,
+                addr_of!(packet[0]),
+                packet.len() as i32,
+                0,
+                addr_of!(addr).cast(),
+                addrlen,
+            ),
+            |res| res == SOCKET_ERROR
+        )
         .map(|_| ())
     }
 
@@ -469,14 +433,17 @@ impl TracerSocket for Socket {
     }
 
     fn shutdown(&self) -> Result<()> {
-        syscall_socket_error!(shutdown(self.s, SD_BOTH as i32)).map(|_| ())
+        syscall!(shutdown(self.s, SD_BOTH as i32), |res| res == SOCKET_ERROR).map(|_| ())
     }
 
     #[allow(unsafe_code)]
     fn peer_addr(&self) -> Result<Option<SocketAddr>> {
         let mut name = unsafe { zeroed::<SOCKADDR_STORAGE>() };
         let mut namelen = size_of::<SOCKADDR_STORAGE>() as i32;
-        syscall_socket_error!(getpeername(self.s, addr_of_mut!(name).cast(), &mut namelen))?;
+        syscall!(
+            getpeername(self.s, addr_of_mut!(name).cast(), &mut namelen),
+            |res| res == SOCKET_ERROR
+        )?;
         Ok(Some(sockaddr_to_socketaddr(&name)?))
     }
 
@@ -505,7 +472,7 @@ impl TracerSocket for Socket {
     }
 
     fn close(&self) -> Result<()> {
-        syscall_socket_error!(closesocket(self.s)).map(|_| ())
+        syscall!(closesocket(self.s), |res| res == SOCKET_ERROR).map(|_| ())
     }
 }
 
@@ -521,17 +488,20 @@ fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
         IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
     }?;
     let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
-    syscall_socket_error!(WSAIoctl(
-        socket.s,
-        SIO_ROUTING_INTERFACE_QUERY,
-        addr_of!(dest).cast(),
-        destlen as u32,
-        src,
-        1024,
-        addr_of_mut!(bytes),
-        null_mut(),
-        None,
-    ))?;
+    syscall!(
+        WSAIoctl(
+            socket.s,
+            SIO_ROUTING_INTERFACE_QUERY,
+            addr_of!(dest).cast(),
+            destlen as u32,
+            src,
+            1024,
+            addr_of_mut!(bytes),
+            null_mut(),
+            None,
+        ),
+        |res| res == SOCKET_ERROR
+    )?;
     // Note that the WSAIoctl call potentially returns multiple results (see
     // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     // TBD We choose the first one arbitrarily.
