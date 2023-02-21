@@ -2,10 +2,9 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::socket::TracerSocket;
-use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_void;
 use std::io::{Error, ErrorKind, Result};
-use std::mem::{align_of, size_of, zeroed};
+use std::mem::{size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
@@ -547,33 +546,14 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
     // Initial buffer size is 15k per <https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses>
     let mut buf_len: u32 = 15000;
-    let mut layout;
-    let mut list_ptr;
     let mut ip_adapter_addresses;
     let mut res;
     let mut i = 0;
-
+    let mut buf: Vec<u8>;
     loop {
-        layout = match Layout::from_size_align(
-            buf_len as usize,
-            align_of::<IpHelper::IP_ADAPTER_ADDRESSES_LH>(),
-        ) {
-            Ok(layout) => layout,
-            Err(e) => {
-                return Err(TracerError::UnknownInterface(format!(
-                    "Could not compute layout for {buf_len} words: {e}"
-                )));
-            }
-        };
-        // Safety: TODO
-        list_ptr = unsafe { alloc(layout) };
-        if list_ptr.is_null() {
-            return Err(TracerError::UnknownInterface(format!(
-                "Could not allocate {buf_len} words for layout {layout:?}"
-            )));
-        }
-        ip_adapter_addresses = list_ptr.cast();
-        // Safety: TODO
+        buf = vec![0_u8; buf_len as usize];
+        ip_adapter_addresses = buf.as_mut_ptr().cast();
+        // TODO syscall, use macro
         res = unsafe {
             IpHelper::GetAdaptersAddresses(
                 u32::from(family),
@@ -584,12 +564,9 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
             )
         };
         i += 1;
-
         if res != ERROR_BUFFER_OVERFLOW || i > MAX_TRIES {
             break;
         }
-        // Safety: TODO
-        unsafe { dealloc(list_ptr, layout) };
     }
 
     if res != NO_ERROR {
@@ -619,7 +596,7 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
                 // let sockaddr = socket_address.lpSockaddr.as_ref().unwrap();
                 let sockaddr = socket_address.lpSockaddr;
                 let ip_addr = sockaddrptr_to_ipaddr(sockaddr.cast())?;
-                dealloc(list_ptr, layout);
+                // dealloc(list_ptr, layout);
                 return Ok(ip_addr);
             }
             // current_unicast = unsafe { (*current_unicast).Next };
@@ -627,10 +604,6 @@ fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAd
         }
         // Safety: TODO
         ip_adapter_addresses = unsafe { (*ip_adapter_addresses).Next };
-    }
-    // Safety: TODO
-    unsafe {
-        dealloc(list_ptr, layout);
     }
 
     Err(TracerError::UnknownInterface(format!(
