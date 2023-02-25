@@ -1,6 +1,7 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
+use crate::tracing::net::platform::windows::adapter::Adapters;
 use crate::tracing::net::socket::TracerSocket;
 use std::ffi::c_void;
 use std::io::{Error, ErrorKind, Result};
@@ -8,9 +9,7 @@ use std::mem::{size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
-use widestring::WideCString;
-use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR, WAIT_FAILED, WAIT_TIMEOUT};
-use windows_sys::Win32::NetworkManagement::IpHelper;
+use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::Networking::WinSock::{
     ADDRESS_FAMILY, AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, FIONBIO, ICMP_ERROR_INFO, IN6_ADDR,
     IN6_ADDR_0, INVALID_SOCKET, IN_ADDR, IN_ADDR_0, IPPROTO, IPPROTO_ICMP, IPPROTO_ICMPV6,
@@ -40,6 +39,16 @@ macro_rules! syscall {
     }};
 }
 
+/// Execute a `Win32::NetworkManagement::IpHelper` syscall.
+///
+/// The raw result of the syscall is returned.
+macro_rules! syscall_ip_helper {
+    ($fn: ident ( $($arg: expr),* $(,)* )) => {{
+        #[allow(unsafe_code)]
+        unsafe { windows_sys::Win32::NetworkManagement::IpHelper::$fn($($arg, )*) }
+    }};
+}
+
 /// Execute a `Win32::System::Threading` syscall.
 ///
 /// The raw result of the syscall is returned.
@@ -56,11 +65,11 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
 }
 
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(AF_INET, name)
+    lookup_interface_addr(&Adapters::ipv4()?, name)
 }
 
 pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(AF_INET6, name)
+    lookup_interface_addr(&Adapters::ipv6()?, name)
 }
 
 pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
@@ -499,7 +508,7 @@ impl TracerSocket for Socket {
     }
 }
 
-/// NOTE under Windows, we cannot use a blind connect/getsockname as "If the socket
+/// NOTE under Windows, we cannot use a bind connect/getsockname as "If the socket
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
 #[allow(clippy::cast_sign_loss)]
@@ -532,85 +541,7 @@ fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     sockaddrptr_to_ipaddr(sockaddr).map_err(TracerError::IoError)
 }
 
-/// # Panics
-///
-/// Will panic if `FriendlyName` or `FistUnicastAddress.Address.lpSockaddr` raw pointer members of the `IP_ADAPTER_ADDRESSES_LH`
-/// linked list structure are null or misaligned.
-// inspired by <https://github.com/EstebanBorai/network-interface/blob/main/src/target/windows.rs>
-#[allow(unsafe_code)]
-fn lookup_interface_addr(family: ADDRESS_FAMILY, name: &str) -> TraceResult<IpAddr> {
-    // Max tries allowed to call `GetAdaptersAddresses` on a loop basis
-    const MAX_TRIES: usize = 3;
-    let flags = IpHelper::GAA_FLAG_SKIP_ANYCAST
-        | IpHelper::GAA_FLAG_SKIP_MULTICAST
-        | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
-    // Initial buffer size is 15k per <https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses>
-    let mut buf_len: u32 = 15000;
-    let mut ip_adapter_addresses;
-    let mut res;
-    let mut i = 0;
-    let mut buf: Vec<u8>;
-    loop {
-        buf = vec![0_u8; buf_len as usize];
-        ip_adapter_addresses = buf.as_mut_ptr().cast();
-        // TODO syscall, use macro
-        res = unsafe {
-            IpHelper::GetAdaptersAddresses(
-                u32::from(family),
-                flags,
-                null_mut(),
-                ip_adapter_addresses,
-                &mut buf_len,
-            )
-        };
-        i += 1;
-        if res != ERROR_BUFFER_OVERFLOW || i > MAX_TRIES {
-            break;
-        }
-    }
-
-    if res != NO_ERROR {
-        return Err(TracerError::UnknownInterface(format!(
-            "GetAdaptersAddresses returned error: {}",
-            Error::from_raw_os_error(res.try_into().unwrap())
-        )));
-    }
-
-    while !ip_adapter_addresses.is_null() {
-        // Safety: TODO
-        let friendly_name = unsafe {
-            let friendly_name = (*ip_adapter_addresses).FriendlyName;
-            WideCString::from_ptr_str(friendly_name)
-                .to_string()
-                .unwrap()
-        };
-        if name == friendly_name {
-            // NOTE this really should be a while over the linked list of FistUnicastAddress, and current_unicast would then be mutable
-            // however, this is not supported by our function signature
-            // Safety: TODO
-            let current_unicast = unsafe { (*ip_adapter_addresses).FirstUnicastAddress };
-            // while !current_unicast.is_null() {
-            // Safety: TODO
-            unsafe {
-                let socket_address = (*current_unicast).Address;
-                // let sockaddr = socket_address.lpSockaddr.as_ref().unwrap();
-                let sockaddr = socket_address.lpSockaddr;
-                let ip_addr = sockaddrptr_to_ipaddr(sockaddr.cast())?;
-                // dealloc(list_ptr, layout);
-                return Ok(ip_addr);
-            }
-            // current_unicast = unsafe { (*current_unicast).Next };
-            // }
-        }
-        // Safety: TODO
-        ip_adapter_addresses = unsafe { (*ip_adapter_addresses).Next };
-    }
-
-    Err(TracerError::UnknownInterface(format!(
-        "could not find address for {name}"
-    )))
-}
-
+// TODO why is this *mut?
 #[allow(unsafe_code)]
 fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> Result<IpAddr> {
     // Safety: TODO
@@ -704,4 +635,151 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
     };
 
     (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
+}
+
+fn lookup_interface_addr(adapters: &Adapters, name: &str) -> TraceResult<IpAddr> {
+    adapters
+        .iter()
+        .find_map(|addr| {
+            if addr.name.eq_ignore_ascii_case(name) {
+                Some(addr.addr)
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+}
+
+mod adapter {
+    use crate::tracing::error::{TraceResult, TracerError};
+    use crate::tracing::net::platform::windows::sockaddrptr_to_ipaddr;
+    use std::io::Error;
+    use std::marker::PhantomData;
+    use std::net::IpAddr;
+    use std::ptr::null_mut;
+    use widestring::WideCString;
+    use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, NO_ERROR};
+    use windows_sys::Win32::NetworkManagement::IpHelper;
+    use windows_sys::Win32::NetworkManagement::IpHelper::{
+        GET_ADAPTERS_ADDRESSES_FLAGS, IP_ADAPTER_ADDRESSES_LH,
+    };
+    use windows_sys::Win32::Networking::WinSock::{ADDRESS_FAMILY, AF_INET, AF_INET6};
+
+    /// Retrieve adapter address information.
+    pub struct Adapters {
+        buf: Vec<u8>,
+    }
+
+    impl Adapters {
+        /// Retrieve IPv4 adapter details.
+        pub fn ipv4() -> TraceResult<Self> {
+            Self::retrieve_addresses(AF_INET)
+        }
+
+        /// Retrieve IPv6 adapter details.
+        pub fn ipv6() -> TraceResult<Self> {
+            Self::retrieve_addresses(AF_INET6)
+        }
+
+        /// Return a iterator of `AdapterAddress` in this `Adapters`.
+        pub fn iter(&self) -> AdaptersIter<'_> {
+            AdaptersIter::new(self)
+        }
+
+        // The maximum number of attempts to retrieve addresses.
+        const MAX_ATTEMPTS: usize = 3;
+
+        // The size of the buffer to use for the first retrieval attempt.
+        const INITIAL_BUFFER_SIZE: u32 = 15000;
+
+        // The flags to use when performing the adapter addresses retrieval.
+        const ADDRESS_FLAGS: GET_ADAPTERS_ADDRESSES_FLAGS = IpHelper::GAA_FLAG_SKIP_ANYCAST
+            | IpHelper::GAA_FLAG_SKIP_MULTICAST
+            | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
+
+        fn retrieve_addresses(family: ADDRESS_FAMILY) -> TraceResult<Self> {
+            let mut buf_len = Self::INITIAL_BUFFER_SIZE;
+            let mut buf: Vec<u8>;
+            for _ in 0..Self::MAX_ATTEMPTS {
+                buf = vec![0_u8; buf_len as usize];
+                let res = syscall_ip_helper!(GetAdaptersAddresses(
+                    u32::from(family),
+                    Self::ADDRESS_FLAGS,
+                    null_mut(),
+                    buf.as_mut_ptr().cast(),
+                    &mut buf_len,
+                ));
+                if res == ERROR_BUFFER_OVERFLOW {
+                    continue;
+                }
+                if res != NO_ERROR {
+                    return Err(TracerError::UnknownInterface(format!(
+                        "GetAdaptersAddresses returned error: {}",
+                        Error::from_raw_os_error(res.try_into().unwrap())
+                    )));
+                }
+                return Ok(Self { buf });
+            }
+            return Err(TracerError::UnknownInterface(format!(
+                "GetAdaptersAddresses did not success after {} attempts",
+                Self::MAX_ATTEMPTS
+            )));
+        }
+    }
+
+    /// A named adapter address.
+    #[derive(Debug)]
+    pub struct AdapterAddress {
+        /// The adapter friendly name.
+        pub name: String,
+        /// The adapter IpAddress.
+        pub addr: IpAddr,
+    }
+
+    /// An iterator for `Adapters` which yields `AdapterAddress`
+    pub struct AdaptersIter<'a> {
+        next: *const IP_ADAPTER_ADDRESSES_LH,
+        _data: PhantomData<&'a ()>,
+    }
+
+    impl<'a> AdaptersIter<'a> {
+        /// Create an iterator for an `Adapters`.
+        pub fn new(data: &'a Adapters) -> Self {
+            let next = data.buf.as_ptr().cast();
+            Self {
+                next,
+                // tie the lifetime of this iterator to the lifetime of the `Adapters`
+                _data: PhantomData::default(),
+            }
+        }
+    }
+
+    impl Iterator for AdaptersIter<'_> {
+        type Item = AdapterAddress;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.next.is_null() {
+                None
+            } else {
+                // Safety: `next` is not null and points to a valid IP_ADAPTER_ADDRESSES_LH
+                #[allow(unsafe_code)]
+                unsafe {
+                    let friendly_name = WideCString::from_ptr_str((*self.next).FriendlyName)
+                        .to_string()
+                        .ok()?;
+                    let addr = {
+                        let first_unicast = (*self.next).FirstUnicastAddress;
+                        let socket_address = (*first_unicast).Address;
+                        let sockaddr = socket_address.lpSockaddr;
+                        sockaddrptr_to_ipaddr(sockaddr.cast()).ok()?
+                    };
+                    self.next = (*self.next).Next;
+                    Some(AdapterAddress {
+                        name: friendly_name,
+                        addr,
+                    })
+                }
+            }
+        }
+    }
 }
