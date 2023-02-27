@@ -47,7 +47,7 @@ caps = "0.5.5"
 # Library dependencies (Unix)
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.26.2", default-features = false, features = [ "user", "poll", "net" ] }
-socket2 = { version = "0.4.7", features = [ "all" ] }
+socket2 = { version = "0.5.1", features = [ "all" ] }
 
 # Library dependencies (Windows)
 [target.'cfg(windows)'.dependencies.windows]
