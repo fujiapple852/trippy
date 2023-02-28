@@ -799,8 +799,8 @@ mod state {
             let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
-                    let _ = state.next_probe();
-                    let _ = state.reissue_probe();
+                    _ = state.next_probe();
+                    _ = state.reissue_probe();
                 }
                 state.advance_round(TimeToLive(1));
             }
