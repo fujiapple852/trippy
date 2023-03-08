@@ -17,7 +17,8 @@ use windows_sys::Win32::Networking::WinSock::{
     IN_ADDR_0, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0,
     SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
     SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
-    WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSA_IO_INCOMPLETE,
+    WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -104,39 +105,6 @@ pub struct Socket {
     from: Box<SOCKADDR_STORAGE>,
 }
 
-// impl TryFrom<OverlappedSocket> for SOCKET {
-//     type Error = std::io::Error;
-//     fn try_from(socket: OverlappedSocket) -> Result<Self> {
-//         socket
-//             .inner
-//             .as_raw_socket()
-//             .try_into()
-//             .map_err(|_| Error::new(ErrorKind::Other, "Unable to convert from Socket2 to SOCKET"))
-//     }
-// }
-
-// impl TryFrom<&OverlappedSocket> for SOCKET {
-//     type Error = std::io::Error;
-//     fn try_from(socket: &OverlappedSocket) -> Result<Self> {
-//         socket
-//             .inner
-//             .as_raw_socket()
-//             .try_into()
-//             .map_err(|_| Error::new(ErrorKind::Other, "Unable to convert from Socket2 to SOCKET"))
-//     }
-// }
-
-// impl TryFrom<&mut OverlappedSocket> for SOCKET {
-//     type Error = std::io::Error;
-//     fn try_from(socket: &mut OverlappedSocket) -> Result<Self> {
-//         socket
-//             .inner
-//             .as_raw_socket()
-//             .try_into()
-//             .map_err(|_| Error::new(ErrorKind::Other, "Unable to convert from Socket2 to SOCKET"))
-//     }
-// }
-
 #[allow(clippy::cast_possible_wrap)]
 impl Socket {
     fn startup() -> Result<()> {
@@ -146,16 +114,6 @@ impl Socket {
         })
         .map(|_| ())
     }
-
-    // fn new(af: ADDRESS_FAMILY, ty: u16, protocol: IPPROTO) -> Result<Self> {
-    //     let s = syscall!(socket(i32::from(af), i32::from(ty), protocol), |res| {
-    //         res == INVALID_SOCKET
-    //     })?;
-    //     let from = Box::new(Self::new_sockaddr_storage());
-    //     let ol = Box::new(Self::new_overlapped());
-    //     let buf = vec![0u8; MAX_PACKET_SIZE];
-    //     Ok(Self { s, ol, buf, from })
-    // }
 
     fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> Result<Self> {
         let inner = socket2::Socket::new(domain, ty, protocol)?;
@@ -381,7 +339,15 @@ impl TracerSocket for Socket {
     }
 
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
-        self.inner.bind(&SockAddr::from(source_socketaddr))?;
+        self.inner
+            .bind(&SockAddr::from(source_socketaddr))
+            .map_err(|e| {
+                if e.kind() == ErrorKind::PermissionDenied {
+                    Error::from_raw_os_error(WSAEADDRNOTAVAIL)
+                } else {
+                    e
+                }
+            })?;
         self.create_event()?;
         Ok(())
     }
