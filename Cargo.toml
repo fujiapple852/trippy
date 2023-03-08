@@ -39,6 +39,7 @@ itertools = "0.10.3"
 serde = { version = "1.0.152", features = [ "derive" ] }
 serde_json = "1.0.91"
 comfy-table = "6.1.4"
+socket2 = { version = "0.5.1", features = [ "all" ] }
 
 # Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -47,7 +48,6 @@ caps = "0.5.5"
 # Library dependencies (Unix)
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.26.2", default-features = false, features = [ "user", "poll", "net" ] }
-socket2 = { version = "0.4.7", features = [ "all" ] }
 
 # Library dependencies (Windows)
 [target.'cfg(windows)'.dependencies.windows-sys]
