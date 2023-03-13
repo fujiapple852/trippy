@@ -62,6 +62,9 @@ features = [
     "Win32_System_Threading",
 ]
 
+[target.'cfg(windows)'.dependencies]
+widestring = "1.0.2"
+
 [dev-dependencies]
 rand = "0.8.5"
 
