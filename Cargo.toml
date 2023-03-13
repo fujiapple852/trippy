@@ -23,6 +23,7 @@ name = "trip"
 thiserror = "1.0.38"
 derive_more = "0.99.17"
 arrayvec = "0.7.2"
+socket2 = { version = "0.5.1", features = [ "all" ] }
 
 # TUI dependencies
 anyhow = "1.0.68"
@@ -47,11 +48,10 @@ caps = "0.5.5"
 # Library dependencies (Unix)
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.26.2", default-features = false, features = [ "user", "poll", "net" ] }
-socket2 = { version = "0.5.1", features = [ "all" ] }
 
 # Library dependencies (Windows)
-[target.'cfg(windows)'.dependencies.windows]
-version = "0.44.0"
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.45.0"
 features = [
     "Win32_Foundation",
     "Win32_Networking_WinSock",
