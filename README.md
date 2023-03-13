@@ -41,7 +41,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
     - configurable reporting cycles
-- Runs on multiple platform (macOS, Linux, NetBSD)
+- Runs on multiple platform (macOS, Linux, NetBSD, Windows)
 - Capabilities aware application (Linux only)
 
 ## Distributions
@@ -107,7 +107,7 @@ Trippy has been (lightly...) tested on the following platforms:
 | NetBSD   | ✅    | ✅   | ✅   |                                                               |
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
 | FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
+| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ### IPv6
 
@@ -118,7 +118,7 @@ Trippy has been (lightly...) tested on the following platforms:
 | NetBSD   | ✅    | ✅   | ✅   |                                                               |
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
 | FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ❌    | ❌   | ❌   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
+| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ## Equal Cost Multi-path Routing
 
