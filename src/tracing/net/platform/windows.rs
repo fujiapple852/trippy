@@ -14,8 +14,8 @@ use std::time::Duration;
 use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::Networking::WinSock::{
     AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, ICMP_ERROR_INFO, IN6_ADDR, IN6_ADDR_0, IN_ADDR,
-    IN_ADDR_0, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0,
-    SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
+    IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
+    SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
     SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
     WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSA_IO_INCOMPLETE,
     WSA_IO_PENDING,
@@ -274,7 +274,7 @@ impl Drop for Socket {
 impl TracerSocket for Socket {
     fn new_icmp_send_socket_ipv4() -> Result<Self> {
         // let sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
-        let sock = Self::new(Domain::IPV4, Type::RAW, None)?;
+        let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
         sock.set_non_blocking(true)?;
         sock.set_header_included(true)?;
         Ok(sock)
@@ -287,7 +287,7 @@ impl TracerSocket for Socket {
     }
 
     fn new_udp_send_socket_ipv4() -> Result<Self> {
-        let sock = Self::new(Domain::IPV4, Type::RAW, None)?;
+        let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
         sock.set_non_blocking(true)?;
         sock.set_header_included(true)?;
         Ok(sock)
