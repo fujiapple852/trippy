@@ -105,6 +105,27 @@ pub fn dispatch_tcp_probe(
     dest_addr: Ipv6Addr,
     port_direction: PortDirection,
 ) -> TraceResult<Socket> {
+    fn process_result(addr: SocketAddr, res: std::io::Result<()>) -> TraceResult<()> {
+        match res {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                if let Some(code) = err.raw_os_error() {
+                    if platform::is_not_in_progress_error(code) {
+                        match err.kind() {
+                            ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                                Err(AddressNotAvailable(addr))
+                            }
+                            _ => Err(TracerError::IoError(err)),
+                        }
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    Err(TracerError::IoError(err))
+                }
+            }
+        }
+    }
     let (src_port, dest_port) = match port_direction {
         PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
         PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
@@ -112,26 +133,10 @@ pub fn dispatch_tcp_probe(
     };
     let mut socket = Socket::new_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
-    socket.bind(local_addr)?;
+    process_result(local_addr, socket.bind(local_addr))?;
     socket.set_unicast_hops_v6(probe.ttl.0)?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
-    match socket.connect(remote_addr) {
-        Ok(_) => {}
-        Err(err) => {
-            if let Some(code) = err.raw_os_error() {
-                if platform::is_not_in_progress_error(code) {
-                    return match err.kind() {
-                        ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                            Err(AddressNotAvailable(local_addr))
-                        }
-                        _ => Err(TracerError::IoError(err)),
-                    };
-                }
-            } else {
-                return Err(TracerError::IoError(err));
-            }
-        }
-    }
+    process_result(remote_addr, socket.bind(remote_addr))?;
     Ok(socket)
 }
 
