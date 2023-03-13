@@ -56,10 +56,10 @@ cargo install trippy
 
 ### Homebrew
 
-[![homebrew version](https://img.shields.io/badge/homebrew-0.6.0-blue)](https://github.com/fujiapple852/homebrew-trippy)
+[![Homebrew package](https://repology.org/badge/version-for-repo/homebrew/trippy.svg)](https://formulae.brew.sh/formula/trippy)
 
 ```shell
-brew tap fujiapple852/trippy && brew install trippy
+brew install trippy
 ```
 
 ### NetBSD
