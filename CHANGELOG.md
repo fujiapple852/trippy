@@ -9,6 +9,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for Windows (`icmp`, `udp` & `tcp`
+  for `IPv4` &`IPv6`) ([#98](https://github.com/fujiapple852/trippy/issues/98))
+
 ### Changed
 
 ### Fixed
