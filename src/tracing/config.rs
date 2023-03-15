@@ -1,3 +1,4 @@
+use crate::tracing::constants::{MAX_SEQUENCE, MAX_TTL};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
     MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
@@ -6,14 +7,6 @@ use crate::tracing::types::{
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::time::Duration;
-
-/// The maximum time-to-live value allowed.
-const MAX_TTL: u8 = 254;
-
-/// The maximum _starting_ sequence number allowed.
-///
-/// This ensures that there are sufficient sequence numbers available for at least one round.
-const MAX_SEQUENCE: u16 = u16::MAX - MAX_TTL as u16 - 1;
 
 /// The address family.
 #[derive(Debug, Copy, Clone)]

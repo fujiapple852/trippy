@@ -254,6 +254,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 /// This is contained within a sub-module to ensure that mutations are only performed via methods on the
 /// `TracerState` struct.
 mod state {
+    use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
     use crate::tracing::types::{MaxRounds, Round, Sequence, TimeToLive};
     use crate::tracing::{IcmpPacketType, Probe, ProbeStatus};
     use std::net::IpAddr;
@@ -262,7 +263,7 @@ mod state {
     /// The maximum number of `Probe` entries in the buffer.
     ///
     /// This is larger than maximum number of time-to-live (TTL) we can support to allow for skipped sequences.
-    const BUFFER_SIZE: u16 = 1024;
+    const BUFFER_SIZE: u16 = MAX_SEQUENCE_PER_ROUND;
 
     /// The maximum sequence number.
     ///
@@ -815,6 +816,17 @@ mod state {
             assert!(state.in_round(Sequence(33000)));
             assert!(state.in_round(Sequence(34023)));
             assert!(!state.in_round(Sequence(34024)));
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_in_delayed_probe_not_in_round() {
+            let mut state = TracerState::new(TimeToLive(1), Sequence(64000));
+            for _ in 0..55 {
+                _ = state.next_probe();
+            }
+            state.advance_round(TimeToLive(1));
+            assert!(!state.in_round(Sequence(64491)));
         }
     }
 }
