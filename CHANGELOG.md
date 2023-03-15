@@ -20,6 +20,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   trace ([#269](https://github.com/fujiapple852/trippy/issues/269))
 - Tracing using the `tcp` may ignore some incoming `icmp`
   responses ([#407](https://github.com/fujiapple852/trippy/issues/407))
+- Tracer panics with large `--initial-sequence` and delayed TCP probe
+  response ([#435](https://github.com/fujiapple852/trippy/issues/435))
 
 ## [0.6.0] - 2022-08-19
 
