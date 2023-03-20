@@ -26,7 +26,7 @@ arrayvec = "0.7.2"
 socket2 = { version = "0.5.1", features = [ "all" ] }
 
 # TUI dependencies
-anyhow = "1.0.68"
+anyhow = "1.0.70"
 dns-lookup = "1.0.8"
 trust-dns-resolver = "0.22.0"
 crossbeam = "0.8.2"
