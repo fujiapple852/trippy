@@ -269,7 +269,7 @@ pub struct Args {
     pub tui_refresh_rate: String,
 
     /// The TUI theme color overrides [item1=color, item2=color]
-    #[clap(long, num_args(0..), value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
+    #[clap(long, num_args(1..), value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
     pub tui_color: Vec<Option<(TuiItem, TuiColor)>>,
 
     /// Print all TUI theme items and exit
