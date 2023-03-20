@@ -2,9 +2,10 @@ use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::process;
 use std::str::FromStr;
 use std::time::Duration;
-use strum::{EnumString, EnumVariantNames};
+use strum::{EnumString, EnumVariantNames, VariantNames};
 use trippy::tracing::{MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol};
 
 /// The maximum number of hops we allow.
@@ -271,6 +272,10 @@ pub struct Args {
     #[clap(long, num_args(0..), value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
     pub tui_color: Vec<Option<(TuiItem, TuiColor)>>,
 
+    /// Print all TUI theme items and exit
+    #[clap(long, display_order = 32)]
+    pub print_tui_items: bool,
+
     /// The number of report cycles to run
     #[clap(
         short = 'c',
@@ -522,6 +527,10 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
     #[allow(clippy::too_many_lines)]
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
+        if args.print_tui_items {
+            println!("TUI theme color items: {}", TuiItem::VARIANTS.join(", "));
+            process::exit(0);
+        }
         let protocol = match (args.udp, args.tcp, args.protocol) {
             (false, false, Protocol::Icmp) => TracerProtocol::Icmp,
             (false, false, Protocol::Udp) | (true, _, _) => TracerProtocol::Udp,
