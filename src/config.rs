@@ -268,21 +268,16 @@ pub struct Args {
     #[clap(long, default_value = "100ms", display_order = 30)]
     pub tui_refresh_rate: String,
 
-    /// The TUI theme color overrides [item1=color,item2=color]
+    /// The TUI theme colors [item1=color,item2=color]
     #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 31)]
-    pub tui_color: Vec<(TuiThemeItem, TuiColor)>,
+    pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
     #[clap(long, display_order = 32)]
     pub print_tui_items: bool,
 
     /// The number of report cycles to run
-    #[clap(
-        short = 'c',
-        long,
-        default_value_t = 10,
-        display_order = 33
-    )]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 33)]
     pub report_cycles: usize,
 }
 
@@ -375,9 +370,15 @@ pub struct TuiTheme {
 impl From<HashMap<TuiThemeItem, TuiColor>> for TuiTheme {
     fn from(value: HashMap<TuiThemeItem, TuiColor>) -> Self {
         Self {
-            bg_color: *value.get(&TuiThemeItem::BgColor).unwrap_or(&TuiColor::Black),
-            border_color: *value.get(&TuiThemeItem::BorderColor).unwrap_or(&TuiColor::Gray),
-            text_color: *value.get(&TuiThemeItem::TextColor).unwrap_or(&TuiColor::Gray),
+            bg_color: *value
+                .get(&TuiThemeItem::BgColor)
+                .unwrap_or(&TuiColor::Black),
+            border_color: *value
+                .get(&TuiThemeItem::BorderColor)
+                .unwrap_or(&TuiColor::Gray),
+            text_color: *value
+                .get(&TuiThemeItem::TextColor)
+                .unwrap_or(&TuiColor::Gray),
             tab_text_color: *value
                 .get(&TuiThemeItem::TabTextColor)
                 .unwrap_or(&TuiColor::Green),
@@ -523,7 +524,10 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
         if args.print_tui_items {
-            println!("TUI theme color items: {}", TuiThemeItem::VARIANTS.join(", "));
+            println!(
+                "TUI theme color items: {}",
+                TuiThemeItem::VARIANTS.join(", ")
+            );
             process::exit(0);
         }
         let protocol = match (args.udp, args.tcp, args.protocol) {
@@ -602,7 +606,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         validate_report_cycles(args.report_cycles)?;
         validate_dns(args.dns_resolve_method, args.dns_lookup_as_info)?;
         let tui_theme = TuiTheme::from(
-            args.tui_color
+            args.tui_theme_colors
                 .into_iter()
                 .collect::<HashMap<TuiThemeItem, TuiColor>>(),
         );
