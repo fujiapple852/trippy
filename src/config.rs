@@ -268,9 +268,9 @@ pub struct Args {
     #[clap(long, default_value = "100ms", display_order = 30)]
     pub tui_refresh_rate: String,
 
-    /// The TUI theme color overrides [item1=color, item2=color]
-    #[clap(long, num_args(1..), value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
-    pub tui_color: Vec<Option<(TuiItem, TuiColor)>>,
+    /// The TUI theme color overrides [item1=color,item2=color]
+    #[clap(long, value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
+    pub tui_color: Vec<(TuiItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
     #[clap(long, display_order = 32)]
@@ -287,17 +287,13 @@ pub struct Args {
     pub report_cycles: usize,
 }
 
-fn parse_tui_color_value(value: &str) -> anyhow::Result<Option<(TuiItem, TuiColor)>> {
-    if value.is_empty() {
-        Ok(None)
-    } else {
-        let pos = value
-            .find('=')
-            .ok_or_else(|| anyhow!("invalid theme value: expected format `item=value`"))?;
-        let item = TuiItem::try_from(&value[..pos])?;
-        let color = TuiColor::try_from(&value[pos + 1..])?;
-        Ok(Some((item, color)))
-    }
+fn parse_tui_color_value(value: &str) -> anyhow::Result<(TuiItem, TuiColor)> {
+    let pos = value
+        .find('=')
+        .ok_or_else(|| anyhow!("invalid theme value: expected format `item=value`"))?;
+    let item = TuiItem::try_from(&value[..pos])?;
+    let color = TuiColor::try_from(&value[pos + 1..])?;
+    Ok((item, color))
 }
 
 /// Fully parsed and validate configuration.
@@ -609,7 +605,6 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let tui_theme = TuiTheme::from(
             args.tui_color
                 .into_iter()
-                .flatten()
                 .collect::<HashMap<TuiItem, TuiColor>>(),
         );
         Ok(Self {
