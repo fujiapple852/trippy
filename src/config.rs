@@ -281,7 +281,6 @@ pub struct Args {
         short = 'c',
         long,
         default_value_t = 10,
-        hide = true,
         display_order = 33
     )]
     pub report_cycles: usize,
