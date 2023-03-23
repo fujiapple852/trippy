@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
+use crossterm::event::{KeyCode, KeyModifiers};
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::process;
@@ -276,8 +277,16 @@ pub struct Args {
     #[clap(long, display_order = 32)]
     pub print_tui_theme_items: bool,
 
+    /// The TUI key bindings [command=key,command=key,..]
+    #[clap(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 33)]
+    pub tui_key_bindings: Vec<(TuiCommandItem, TuiKeyBinding)>,
+
+    /// Print all TUI commands that can be bound and exit
+    #[clap(long, display_order = 34)]
+    pub print_tui_binding_commands: bool,
+
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 33)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 35)]
     pub report_cycles: usize,
 }
 
@@ -288,6 +297,15 @@ fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, Tui
     let item = TuiThemeItem::try_from(&value[..pos])?;
     let color = TuiColor::try_from(&value[pos + 1..])?;
     Ok((item, color))
+}
+
+fn parse_tui_binding_value(value: &str) -> anyhow::Result<(TuiCommandItem, TuiKeyBinding)> {
+    let pos = value
+        .find('=')
+        .ok_or_else(|| anyhow!("invalid binding value: expected format `item=value`"))?;
+    let item = TuiCommandItem::try_from(&value[..pos])?;
+    let binding = TuiKeyBinding::try_from(&value[pos + 1..])?;
+    Ok((item, binding))
 }
 
 /// Fully parsed and validate configuration.
@@ -319,6 +337,7 @@ pub struct TrippyConfig {
     pub tui_address_mode: AddressMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
+    pub tui_bindings: TuiBindings,
     pub mode: Mode,
     pub report_cycles: usize,
     pub max_rounds: Option<usize>,
@@ -517,6 +536,314 @@ impl TryFrom<&str> for TuiColor {
     }
 }
 
+/// Tui keyboard bindings.
+#[derive(Debug, Clone, Copy)]
+pub struct TuiBindings {
+    pub toggle_help: TuiKeyBinding,
+    pub up: TuiKeyBinding,
+    pub down: TuiKeyBinding,
+    pub left: TuiKeyBinding,
+    pub right: TuiKeyBinding,
+    pub address_mode_ip: TuiKeyBinding,
+    pub address_mode_host: TuiKeyBinding,
+    pub address_mode_both: TuiKeyBinding,
+    pub toggle_freeze: TuiKeyBinding,
+    pub toggle_chart: TuiKeyBinding,
+    pub expand_hosts: TuiKeyBinding,
+    pub contract_hosts: TuiKeyBinding,
+    pub expand_hosts_max: TuiKeyBinding,
+    pub contract_hosts_min: TuiKeyBinding,
+    pub chart_zoom_in: TuiKeyBinding,
+    pub chart_zoom_out: TuiKeyBinding,
+    pub clear_trace_data: TuiKeyBinding,
+    pub clear_dns_cache: TuiKeyBinding,
+    pub clear_selection: TuiKeyBinding,
+    pub toggle_as_info: TuiKeyBinding,
+    pub quit: TuiKeyBinding,
+}
+
+impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
+    fn from(value: HashMap<TuiCommandItem, TuiKeyBinding>) -> Self {
+        Self {
+            toggle_help: *value
+                .get(&TuiCommandItem::ToggleHelp)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
+            up: *value
+                .get(&TuiCommandItem::PreviousHop)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Up)),
+            down: *value
+                .get(&TuiCommandItem::NextHop)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Down)),
+            left: *value
+                .get(&TuiCommandItem::PreviousTrace)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Left)),
+            right: *value
+                .get(&TuiCommandItem::NextTrace)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
+            address_mode_ip: *value
+                .get(&TuiCommandItem::AddressModeIp)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('i'))),
+            address_mode_host: *value
+                .get(&TuiCommandItem::AddressModeHost)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('n'))),
+            address_mode_both: *value
+                .get(&TuiCommandItem::AddressModeBoth)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('b'))),
+            toggle_freeze: *value
+                .get(&TuiCommandItem::ToggleFreeze)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('f'))),
+            toggle_chart: *value
+                .get(&TuiCommandItem::ToggleChart)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('c'))),
+            expand_hosts: *value
+                .get(&TuiCommandItem::ExpandHosts)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(']'))),
+            contract_hosts: *value
+                .get(&TuiCommandItem::ContractHosts)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('['))),
+            expand_hosts_max: *value
+                .get(&TuiCommandItem::ExpandHostsMax)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('}'))),
+            contract_hosts_min: *value
+                .get(&TuiCommandItem::ContractHostsMin)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('{'))),
+            chart_zoom_in: *value
+                .get(&TuiCommandItem::ChartZoomIn)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('='))),
+            chart_zoom_out: *value
+                .get(&TuiCommandItem::ChartZoomOut)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('-'))),
+            clear_trace_data: *value.get(&TuiCommandItem::ClearTraceData).unwrap_or(
+                &TuiKeyBinding::new_with_modifier(KeyCode::Char('r'), KeyModifiers::CONTROL),
+            ),
+            clear_dns_cache: *value.get(&TuiCommandItem::ClearDnsCache).unwrap_or(
+                &TuiKeyBinding::new_with_modifier(KeyCode::Char('k'), KeyModifiers::CONTROL),
+            ),
+            clear_selection: *value
+                .get(&TuiCommandItem::ClearSelection)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Esc)),
+            toggle_as_info: *value
+                .get(&TuiCommandItem::ToggleASInfo)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('z'))),
+            quit: *value
+                .get(&TuiCommandItem::Quit)
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('q'))),
+        }
+    }
+}
+
+/// Tui key binding.
+#[derive(Debug, Clone, Copy)]
+pub struct TuiKeyBinding {
+    pub code: KeyCode,
+    pub modifier: KeyModifiers,
+}
+
+impl TuiKeyBinding {
+    pub fn new(code: KeyCode) -> Self {
+        Self {
+            code,
+            modifier: KeyModifiers::NONE,
+        }
+    }
+
+    pub fn new_with_modifier(code: KeyCode, modifier: KeyModifiers) -> Self {
+        Self { code, modifier }
+    }
+}
+
+impl TryFrom<&str> for TuiKeyBinding {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        const ALL_MODIFIERS: [(&str, KeyModifiers); 6] = [
+            ("shift", KeyModifiers::SHIFT),
+            ("ctrl", KeyModifiers::CONTROL),
+            ("alt", KeyModifiers::ALT),
+            ("super", KeyModifiers::SUPER),
+            ("hyper", KeyModifiers::HYPER),
+            ("meta", KeyModifiers::META),
+        ];
+        const ALL_SPECIAL_KEYS: [(&str, KeyCode); 16] = [
+            ("backspace", KeyCode::Backspace),
+            ("enter", KeyCode::Enter),
+            ("left", KeyCode::Left),
+            ("right", KeyCode::Right),
+            ("up", KeyCode::Up),
+            ("down", KeyCode::Down),
+            ("home", KeyCode::Home),
+            ("end", KeyCode::End),
+            ("pageup", KeyCode::PageUp),
+            ("pagedown", KeyCode::PageDown),
+            ("tab", KeyCode::Tab),
+            ("backtab", KeyCode::BackTab),
+            ("delete", KeyCode::Delete),
+            ("insert", KeyCode::Insert),
+            ("null", KeyCode::Null),
+            ("esc", KeyCode::Esc),
+        ];
+        fn parse_keycode(value: &str) -> anyhow::Result<KeyCode> {
+            Ok(if value.len() == 1 {
+                KeyCode::Char(char::from_str(value)?.to_ascii_lowercase())
+            } else {
+                ALL_SPECIAL_KEYS
+                    .iter()
+                    .find_map(|(keycode_str, keycode)| {
+                        if keycode_str.eq_ignore_ascii_case(value) {
+                            Some(*keycode)
+                        } else {
+                            None
+                        }
+                    })
+                    .ok_or_else(|| anyhow!("unknown key binding '{}'", value))?
+            })
+        }
+        fn parse_modifiers(modifiers: &str) -> anyhow::Result<KeyModifiers> {
+            modifiers
+                .split('+')
+                .fold(Ok(KeyModifiers::NONE), |key_modifiers, token| {
+                    key_modifiers.and_then(|modifiers| {
+                        ALL_MODIFIERS
+                            .iter()
+                            .find_map(|(modifier_token, modifier)| {
+                                if modifier_token.eq_ignore_ascii_case(token) {
+                                    Some(modifiers | *modifier)
+                                } else {
+                                    None
+                                }
+                            })
+                            .ok_or_else(|| anyhow!("unknown modifier '{}'", token,))
+                    })
+                })
+        }
+        match value.rsplit_once('+') {
+            Some((modifiers, value)) => Ok(Self {
+                code: parse_keycode(value)?,
+                modifier: parse_modifiers(modifiers)?,
+            }),
+            None => Ok(Self {
+                code: parse_keycode(value)?,
+                modifier: KeyModifiers::NONE,
+            }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case("c", KeyCode::Char('c'), KeyModifiers::NONE; "char without any modifier")]
+    #[test_case("1", KeyCode::Char('1'), KeyModifiers::NONE; "number without any modifier")]
+    #[test_case(",", KeyCode::Char(','), KeyModifiers::NONE; "punctuation without any modifier")]
+    #[test_case("backspace", KeyCode::Backspace, KeyModifiers::NONE; "backspace without any modifier")]
+    #[test_case("enter", KeyCode::Enter, KeyModifiers::NONE; "enter without any modifier")]
+    #[test_case("left", KeyCode::Left, KeyModifiers::NONE; "left without any modifier")]
+    #[test_case("right", KeyCode::Right, KeyModifiers::NONE; "right without any modifier")]
+    #[test_case("up", KeyCode::Up, KeyModifiers::NONE; "up without any modifier")]
+    #[test_case("down", KeyCode::Down, KeyModifiers::NONE; "down without any modifier")]
+    #[test_case("home", KeyCode::Home, KeyModifiers::NONE; "home without any modifier")]
+    #[test_case("end", KeyCode::End, KeyModifiers::NONE; "end without any modifier")]
+    #[test_case("pageup", KeyCode::PageUp, KeyModifiers::NONE; "pageup without any modifier")]
+    #[test_case("pagedown", KeyCode::PageDown, KeyModifiers::NONE; "pagedown without any modifier")]
+    #[test_case("tab", KeyCode::Tab, KeyModifiers::NONE; "tab without any modifier")]
+    #[test_case("backtab", KeyCode::BackTab, KeyModifiers::NONE; "backtab without any modifier")]
+    #[test_case("delete", KeyCode::Delete, KeyModifiers::NONE; "delete without any modifier")]
+    #[test_case("insert", KeyCode::Insert, KeyModifiers::NONE; "insert without any modifier")]
+    #[test_case("null", KeyCode::Null, KeyModifiers::NONE; "null without any modifier")]
+    #[test_case("esc", KeyCode::Esc, KeyModifiers::NONE; "escape without any modifier")]
+    #[test_case("shift+c", KeyCode::Char('c'), KeyModifiers::SHIFT; "with shift modifier")]
+    #[test_case("ctrl+i", KeyCode::Char('i'), KeyModifiers::CONTROL; "i with ctrl modifier")]
+    #[test_case("shift+I", KeyCode::Char('i'), KeyModifiers::SHIFT; "I with shift modifier")]
+    #[test_case("alt+c", KeyCode::Char('c'), KeyModifiers::ALT; "with alt modifier")]
+    #[test_case("super+c", KeyCode::Char('c'), KeyModifiers::SUPER; "with super modifier")]
+    #[test_case("hyper+c", KeyCode::Char('c'), KeyModifiers::HYPER; "with hyper modifier")]
+    #[test_case("meta+c", KeyCode::Char('c'), KeyModifiers::META; "with meta modifier")]
+    #[test_case("alt+shift+k", KeyCode::Char('k'), KeyModifiers::ALT | KeyModifiers::SHIFT; "with alt shift modifier")]
+    #[test_case("ctrl+up", KeyCode::Up, KeyModifiers::CONTROL; "up with ctrl modifier")]
+    #[test_case("shift+ctrl+alt+super+hyper+meta+k", KeyCode::Char('k'), KeyModifiers::all(); "with all modifiers")]
+    fn test_key_binding(input: &str, code: KeyCode, modifiers: KeyModifiers) -> anyhow::Result<()> {
+        let binding = TuiKeyBinding::try_from(input)?;
+        assert_eq!(binding.code, code);
+        assert_eq!(binding.modifier, modifiers);
+        Ok(())
+    }
+
+    #[test]
+    fn test_unknown_modifier() {
+        let binding = TuiKeyBinding::try_from("foo+c");
+        assert!(binding.is_err());
+        assert_eq!(&binding.unwrap_err().to_string(), "unknown modifier 'foo'");
+    }
+
+    #[test]
+    fn test_unknown_second_modifier() {
+        let binding = TuiKeyBinding::try_from("alt+foo+c");
+        assert!(binding.is_err());
+        assert_eq!(&binding.unwrap_err().to_string(), "unknown modifier 'foo'");
+    }
+
+    #[test]
+    fn test_unknown_key() {
+        let binding = TuiKeyBinding::try_from("foo");
+        assert!(binding.is_err());
+        assert_eq!(
+            &binding.unwrap_err().to_string(),
+            "unknown key binding 'foo'"
+        );
+    }
+}
+
+/// A Tui command that can be bound to a key.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, EnumVariantNames)]
+#[strum(serialize_all = "kebab-case")]
+#[allow(clippy::enum_variant_names)]
+pub enum TuiCommandItem {
+    /// Toggle the help dialog.
+    ToggleHelp,
+    /// Move down to the next hop.
+    NextHop,
+    /// Move up to the previous hop.
+    PreviousHop,
+    /// Move right to the next trace.
+    NextTrace,
+    /// Move left to the previous trace.
+    PreviousTrace,
+    /// Show IP address mode.
+    AddressModeIp,
+    /// Show hostname mode.
+    AddressModeHost,
+    /// Show hostname and IP address mode.
+    AddressModeBoth,
+    /// Toggle freezing the display.
+    ToggleFreeze,
+    /// Toggle the chart.
+    ToggleChart,
+    /// Expand hosts.
+    ExpandHosts,
+    /// Expand hosts to max.
+    ExpandHostsMax,
+    /// Contract hosts.
+    ContractHosts,
+    /// Contract hosts to min.
+    ContractHostsMin,
+    /// Zoom chart in.
+    ChartZoomIn,
+    /// Zoom chart out.
+    ChartZoomOut,
+    /// Clear all tracing data.
+    ClearTraceData,
+    /// Clear DNS cache.
+    ClearDnsCache,
+    /// Clear hop selection.
+    ClearSelection,
+    /// Toggle AS info.
+    ToggleASInfo,
+    /// Quit the application.
+    Quit,
+}
+
 impl TryFrom<(Args, u16)> for TrippyConfig {
     type Error = anyhow::Error;
 
@@ -527,6 +854,13 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             println!(
                 "TUI theme color items: {}",
                 TuiThemeItem::VARIANTS.join(", ")
+            );
+            process::exit(0);
+        }
+        if args.print_tui_binding_commands {
+            println!(
+                "TUI binding commands: {}",
+                TuiCommandItem::VARIANTS.join(", ")
             );
             process::exit(0);
         }
@@ -610,6 +944,11 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                 .into_iter()
                 .collect::<HashMap<TuiThemeItem, TuiColor>>(),
         );
+        let tui_bindings = TuiBindings::from(
+            args.tui_key_bindings
+                .into_iter()
+                .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>(),
+        );
         Ok(Self {
             targets: args.targets,
             protocol,
@@ -638,6 +977,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tui_address_mode: args.tui_address_mode,
             tui_max_addrs: args.tui_max_addrs,
             tui_theme,
+            tui_bindings,
             mode: args.mode,
             report_cycles: args.report_cycles,
             max_rounds,

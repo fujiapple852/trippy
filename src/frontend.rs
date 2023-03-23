@@ -1,9 +1,11 @@
 use crate::backend::Hop;
-use crate::config::{AddressMode, DnsResolveMethod, TuiColor, TuiTheme};
+use crate::config::{
+    AddressMode, DnsResolveMethod, TuiBindings, TuiColor, TuiKeyBinding, TuiTheme,
+};
 use crate::dns::{DnsEntry, Resolved};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
-use crossterm::event::KeyModifiers;
+use crossterm::event::{KeyEvent, KeyModifiers};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -81,6 +83,93 @@ const HELP_LINES: [&str; 16] = [
     "h                - toggle help",
     "q                - quit",
 ];
+
+/// Tui key bindings.
+#[derive(Debug, Clone, Copy)]
+pub struct Bindings {
+    toggle_help: KeyBinding,
+    up: KeyBinding,
+    down: KeyBinding,
+    left: KeyBinding,
+    right: KeyBinding,
+    address_mode_ip: KeyBinding,
+    address_mode_host: KeyBinding,
+    address_mode_both: KeyBinding,
+    toggle_freeze: KeyBinding,
+    toggle_chart: KeyBinding,
+    expand_hosts: KeyBinding,
+    contract_hosts: KeyBinding,
+    expand_hosts_max: KeyBinding,
+    contract_hosts_min: KeyBinding,
+    chart_zoom_in: KeyBinding,
+    chart_zoom_out: KeyBinding,
+    clear_trace_data: KeyBinding,
+    clear_dns_cache: KeyBinding,
+    clear_selection: KeyBinding,
+    toggle_as_info: KeyBinding,
+    quit: KeyBinding,
+}
+
+impl From<TuiBindings> for Bindings {
+    fn from(value: TuiBindings) -> Self {
+        Self {
+            toggle_help: KeyBinding::from(value.toggle_help),
+            up: KeyBinding::from(value.up),
+            down: KeyBinding::from(value.down),
+            left: KeyBinding::from(value.left),
+            right: KeyBinding::from(value.right),
+            address_mode_ip: KeyBinding::from(value.address_mode_ip),
+            address_mode_host: KeyBinding::from(value.address_mode_host),
+            address_mode_both: KeyBinding::from(value.address_mode_both),
+            toggle_freeze: KeyBinding::from(value.toggle_freeze),
+            toggle_chart: KeyBinding::from(value.toggle_chart),
+            expand_hosts: KeyBinding::from(value.expand_hosts),
+            contract_hosts: KeyBinding::from(value.contract_hosts),
+            expand_hosts_max: KeyBinding::from(value.expand_hosts_max),
+            contract_hosts_min: KeyBinding::from(value.contract_hosts_min),
+            chart_zoom_in: KeyBinding::from(value.chart_zoom_in),
+            chart_zoom_out: KeyBinding::from(value.chart_zoom_out),
+            clear_trace_data: KeyBinding::from(value.clear_trace_data),
+            clear_dns_cache: KeyBinding::from(value.clear_dns_cache),
+            clear_selection: KeyBinding::from(value.clear_selection),
+            toggle_as_info: KeyBinding::from(value.toggle_as_info),
+            quit: KeyBinding::from(value.quit),
+        }
+    }
+}
+
+const CTRL_C: KeyBinding = KeyBinding {
+    code: KeyCode::Char('c'),
+    modifiers: KeyModifiers::CONTROL,
+};
+
+/// Tui key binding.
+#[derive(Debug, Clone, Copy)]
+pub struct KeyBinding {
+    pub code: KeyCode,
+    pub modifiers: KeyModifiers,
+}
+
+impl KeyBinding {
+    pub fn check(&self, event: KeyEvent) -> bool {
+        let code_match = match (event.code, self.code) {
+            (KeyCode::Char(c1), KeyCode::Char(c2)) => {
+                c1.to_ascii_lowercase() == c2.to_ascii_lowercase()
+            }
+            (c1, c2) => c1 == c2,
+        };
+        code_match && self.modifiers == event.modifiers
+    }
+}
+
+impl From<TuiKeyBinding> for KeyBinding {
+    fn from(value: TuiKeyBinding) -> Self {
+        Self {
+            code: value.code,
+            modifiers: value.modifier,
+        }
+    }
+}
 
 /// Tui color theme.
 #[derive(Debug, Clone, Copy)]
@@ -191,9 +280,12 @@ pub struct TuiConfig {
     max_samples: usize,
     /// The Tui color theme.
     theme: Theme,
+    /// The Tui keyboard bindings.
+    bindings: Bindings,
 }
 
 impl TuiConfig {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         refresh_rate: Duration,
         preserve_screen: bool,
@@ -202,6 +294,7 @@ impl TuiConfig {
         max_addrs: Option<u8>,
         max_samples: usize,
         tui_theme: TuiTheme,
+        tui_bindings: TuiBindings,
     ) -> Self {
         Self {
             refresh_rate,
@@ -211,6 +304,7 @@ impl TuiConfig {
             max_addrs,
             max_samples,
             theme: Theme::from(tui_theme),
+            bindings: Bindings::from(tui_bindings),
         }
     }
 }
@@ -339,7 +433,13 @@ impl TuiApp {
     }
 
     fn toggle_asinfo(&mut self) {
-        self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
+        match self.resolver.config().resolve_method {
+            DnsResolveMethod::Resolv | DnsResolveMethod::Google | DnsResolveMethod::Cloudflare => {
+                self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
+                self.resolver.flush();
+            }
+            DnsResolveMethod::System => {}
+        }
     }
 
     fn expand_hosts(&mut self) {
@@ -428,63 +528,59 @@ fn run_app<B: Backend>(
         terminal.draw(|f| render_app(f, &mut app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
+                let bindings = &app.tui_config.bindings;
                 if app.show_help {
-                    match key.code {
-                        KeyCode::Char('q' | 'h') | KeyCode::Esc => app.toggle_help(),
-                        _ => {}
+                    if bindings.toggle_help.check(key)
+                        || bindings.clear_selection.check(key)
+                        || bindings.quit.check(key)
+                    {
+                        app.toggle_help();
                     }
-                } else {
-                    match (key.code, key.modifiers) {
-                        (KeyCode::Char('h'), _) => app.toggle_help(),
-                        (KeyCode::Char('q'), _) | (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
-                            return Ok(())
-                        }
-                        (KeyCode::Char('f'), _) => app.toggle_freeze(),
-                        (KeyCode::Char('c'), _) => app.toggle_chart(),
-                        (KeyCode::Char('r'), KeyModifiers::CONTROL) => {
-                            app.clear();
-                            app.clear_trace_data();
-                        }
-                        (KeyCode::Char('k'), KeyModifiers::CONTROL) => {
-                            app.resolver.flush();
-                        }
-                        (KeyCode::Down, _) => app.next_hop(),
-                        (KeyCode::Up, _) => app.previous_hop(),
-                        (KeyCode::Esc, _) => app.clear(),
-                        (KeyCode::Left, _) => {
-                            app.previous_trace();
-                            app.clear();
-                        }
-                        (KeyCode::Right, _) => {
-                            app.next_trace();
-                            app.clear();
-                        }
-                        (KeyCode::Char('i'), _) => {
-                            app.tui_config.address_mode = AddressMode::IP;
-                        }
-                        (KeyCode::Char('n'), _) => {
-                            app.tui_config.address_mode = AddressMode::Host;
-                        }
-                        (KeyCode::Char('b'), _) => {
-                            app.tui_config.address_mode = AddressMode::Both;
-                        }
-                        (KeyCode::Char('z'), _) => match app.resolver.config().resolve_method {
-                            DnsResolveMethod::Resolv
-                            | DnsResolveMethod::Google
-                            | DnsResolveMethod::Cloudflare => {
-                                app.toggle_asinfo();
-                                app.resolver.flush();
-                            }
-                            DnsResolveMethod::System => {}
-                        },
-                        (KeyCode::Char('{'), _) => app.contract_hosts_min(),
-                        (KeyCode::Char('}'), _) => app.expand_hosts_max(),
-                        (KeyCode::Char('['), _) => app.contract_hosts(),
-                        (KeyCode::Char(']'), _) => app.expand_hosts(),
-                        (KeyCode::Char('+' | '='), _) => app.zoom_in(),
-                        (KeyCode::Char('-'), _) => app.zoom_out(),
-                        _ => {}
-                    }
+                } else if bindings.toggle_help.check(key) {
+                    app.toggle_help();
+                } else if bindings.down.check(key) {
+                    app.next_hop();
+                } else if bindings.up.check(key) {
+                    app.previous_hop();
+                } else if bindings.left.check(key) {
+                    app.previous_trace();
+                    app.clear();
+                } else if bindings.right.check(key) {
+                    app.next_trace();
+                    app.clear();
+                } else if bindings.address_mode_ip.check(key) {
+                    app.tui_config.address_mode = AddressMode::IP;
+                } else if bindings.address_mode_host.check(key) {
+                    app.tui_config.address_mode = AddressMode::Host;
+                } else if bindings.address_mode_both.check(key) {
+                    app.tui_config.address_mode = AddressMode::Both;
+                } else if bindings.toggle_freeze.check(key) {
+                    app.toggle_freeze();
+                } else if bindings.toggle_chart.check(key) {
+                    app.toggle_chart();
+                } else if bindings.contract_hosts_min.check(key) {
+                    app.contract_hosts_min();
+                } else if bindings.expand_hosts_max.check(key) {
+                    app.expand_hosts_max();
+                } else if bindings.contract_hosts.check(key) {
+                    app.contract_hosts();
+                } else if bindings.expand_hosts.check(key) {
+                    app.expand_hosts();
+                } else if bindings.chart_zoom_in.check(key) {
+                    app.zoom_in();
+                } else if bindings.chart_zoom_out.check(key) {
+                    app.zoom_out();
+                } else if bindings.clear_trace_data.check(key) {
+                    app.clear();
+                    app.clear_trace_data();
+                } else if bindings.clear_dns_cache.check(key) {
+                    app.resolver.flush();
+                } else if bindings.clear_selection.check(key) {
+                    app.clear();
+                } else if bindings.toggle_as_info.check(key) {
+                    app.toggle_asinfo();
+                } else if bindings.quit.check(key) || CTRL_C.check(key) {
+                    return Ok(());
                 }
             }
         }
@@ -1232,7 +1328,7 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
 /// Render help
 fn render_help<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     let block = Block::default()
-        .title(" Controls ")
+        .title(" Default Controls ")
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .style(Style::default().bg(app.tui_config.theme.help_dialog_bg_color))
