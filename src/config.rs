@@ -269,8 +269,8 @@ pub struct Args {
     pub tui_refresh_rate: String,
 
     /// The TUI theme color overrides [item1=color,item2=color]
-    #[clap(long, value_delimiter(','), value_parser = parse_tui_color_value, display_order = 31)]
-    pub tui_color: Vec<(TuiItem, TuiColor)>,
+    #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 31)]
+    pub tui_color: Vec<(TuiThemeItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
     #[clap(long, display_order = 32)]
@@ -286,11 +286,11 @@ pub struct Args {
     pub report_cycles: usize,
 }
 
-fn parse_tui_color_value(value: &str) -> anyhow::Result<(TuiItem, TuiColor)> {
+fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, TuiColor)> {
     let pos = value
         .find('=')
         .ok_or_else(|| anyhow!("invalid theme value: expected format `item=value`"))?;
-    let item = TuiItem::try_from(&value[..pos])?;
+    let item = TuiThemeItem::try_from(&value[..pos])?;
     let color = TuiColor::try_from(&value[pos + 1..])?;
     Ok((item, color))
 }
@@ -372,50 +372,50 @@ pub struct TuiTheme {
     pub help_dialog_text_color: TuiColor,
 }
 
-impl From<HashMap<TuiItem, TuiColor>> for TuiTheme {
-    fn from(value: HashMap<TuiItem, TuiColor>) -> Self {
+impl From<HashMap<TuiThemeItem, TuiColor>> for TuiTheme {
+    fn from(value: HashMap<TuiThemeItem, TuiColor>) -> Self {
         Self {
-            bg_color: *value.get(&TuiItem::BgColor).unwrap_or(&TuiColor::Black),
-            border_color: *value.get(&TuiItem::BorderColor).unwrap_or(&TuiColor::Gray),
-            text_color: *value.get(&TuiItem::TextColor).unwrap_or(&TuiColor::Gray),
+            bg_color: *value.get(&TuiThemeItem::BgColor).unwrap_or(&TuiColor::Black),
+            border_color: *value.get(&TuiThemeItem::BorderColor).unwrap_or(&TuiColor::Gray),
+            text_color: *value.get(&TuiThemeItem::TextColor).unwrap_or(&TuiColor::Gray),
             tab_text_color: *value
-                .get(&TuiItem::TabTextColor)
+                .get(&TuiThemeItem::TabTextColor)
                 .unwrap_or(&TuiColor::Green),
             hops_table_header_bg_color: *value
-                .get(&TuiItem::HopsTableHeaderBgColor)
+                .get(&TuiThemeItem::HopsTableHeaderBgColor)
                 .unwrap_or(&TuiColor::White),
             hops_table_header_text_color: *value
-                .get(&TuiItem::HopsTableHeaderTextColor)
+                .get(&TuiThemeItem::HopsTableHeaderTextColor)
                 .unwrap_or(&TuiColor::Black),
             hops_table_row_active_text_color: *value
-                .get(&TuiItem::HopsTableRowActiveTextColor)
+                .get(&TuiThemeItem::HopsTableRowActiveTextColor)
                 .unwrap_or(&TuiColor::Gray),
             hops_table_row_inactive_text_color: *value
-                .get(&TuiItem::HopsTableRowInactiveTextColor)
+                .get(&TuiThemeItem::HopsTableRowInactiveTextColor)
                 .unwrap_or(&TuiColor::DarkGray),
             hops_chart_selected_color: *value
-                .get(&TuiItem::HopsChartSelectedColor)
+                .get(&TuiThemeItem::HopsChartSelectedColor)
                 .unwrap_or(&TuiColor::Green),
             hops_chart_unselected_color: *value
-                .get(&TuiItem::HopsChartUnselectedColor)
+                .get(&TuiThemeItem::HopsChartUnselectedColor)
                 .unwrap_or(&TuiColor::Gray),
             hops_chart_axis_color: *value
-                .get(&TuiItem::HopsChartAxisColor)
+                .get(&TuiThemeItem::HopsChartAxisColor)
                 .unwrap_or(&TuiColor::DarkGray),
             frequency_chart_bar_color: *value
-                .get(&TuiItem::FrequencyChartBarColor)
+                .get(&TuiThemeItem::FrequencyChartBarColor)
                 .unwrap_or(&TuiColor::Green),
             frequency_chart_text_color: *value
-                .get(&TuiItem::FrequencyChartTextColor)
+                .get(&TuiThemeItem::FrequencyChartTextColor)
                 .unwrap_or(&TuiColor::Gray),
             samples_chart_color: *value
-                .get(&TuiItem::SamplesChartColor)
+                .get(&TuiThemeItem::SamplesChartColor)
                 .unwrap_or(&TuiColor::Yellow),
             help_dialog_bg_color: *value
-                .get(&TuiItem::HelpDialogBgColor)
+                .get(&TuiThemeItem::HelpDialogBgColor)
                 .unwrap_or(&TuiColor::Blue),
             help_dialog_text_color: *value
-                .get(&TuiItem::HelpDialogTextColor)
+                .get(&TuiThemeItem::HelpDialogTextColor)
                 .unwrap_or(&TuiColor::Gray),
         }
     }
@@ -425,7 +425,7 @@ impl From<HashMap<TuiItem, TuiColor>> for TuiTheme {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "kebab-case")]
 #[allow(clippy::enum_variant_names)]
-pub enum TuiItem {
+pub enum TuiThemeItem {
     /// The default background color.
     BgColor,
     /// The default color of borders.
@@ -523,7 +523,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
         if args.print_tui_items {
-            println!("TUI theme color items: {}", TuiItem::VARIANTS.join(", "));
+            println!("TUI theme color items: {}", TuiThemeItem::VARIANTS.join(", "));
             process::exit(0);
         }
         let protocol = match (args.udp, args.tcp, args.protocol) {
@@ -604,7 +604,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let tui_theme = TuiTheme::from(
             args.tui_color
                 .into_iter()
-                .collect::<HashMap<TuiItem, TuiColor>>(),
+                .collect::<HashMap<TuiThemeItem, TuiColor>>(),
         );
         Ok(Self {
             targets: args.targets,
