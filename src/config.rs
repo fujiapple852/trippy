@@ -274,7 +274,7 @@ pub struct Args {
 
     /// Print all TUI theme items and exit
     #[clap(long, display_order = 32)]
-    pub print_tui_items: bool,
+    pub print_tui_theme_items: bool,
 
     /// The number of report cycles to run
     #[clap(short = 'c', long, default_value_t = 10, display_order = 33)]
@@ -523,7 +523,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
     #[allow(clippy::too_many_lines)]
     fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
         let (args, pid) = data;
-        if args.print_tui_items {
+        if args.print_tui_theme_items {
             println!(
                 "TUI theme color items: {}",
                 TuiThemeItem::VARIANTS.join(", ")
