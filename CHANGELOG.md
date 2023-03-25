@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.7.0] - 2023-03-25
+
+### Added
+
 - Added support for Windows (`icmp`, `udp` & `tcp`
   for `IPv4` &`IPv6`) ([#98](https://github.com/fujiapple852/trippy/issues/98))
 - Added support for custom Tui key bindings ([#448](https://github.com/fujiapple852/trippy/issues/448))
@@ -16,9 +24,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added RPM packaging ([#95](https://github.com/fujiapple852/trippy/issues/95))
 - Added DEB packaging ([#94](https://github.com/fujiapple852/trippy/issues/94))
 
-### Changed
-
-### Fixed
 
 - Variable Equal Cost Multi-path Routing (ECMP) causing truncated
   trace ([#269](https://github.com/fujiapple852/trippy/issues/269))
@@ -174,6 +179,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.7.0]: https://github.com/fujiapple852/trippy/compare/0.6.0...0.7.0
 
 [0.6.0]: https://github.com/fujiapple852/trippy/compare/0.5.0...0.6.0
 
