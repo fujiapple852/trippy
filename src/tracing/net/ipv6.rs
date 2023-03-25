@@ -136,7 +136,7 @@ pub fn dispatch_tcp_probe(
     process_result(local_addr, socket.bind(local_addr))?;
     socket.set_unicast_hops_v6(probe.ttl.0)?;
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
-    process_result(remote_addr, socket.bind(remote_addr))?;
+    process_result(remote_addr, socket.connect(remote_addr))?;
     Ok(socket)
 }
 
