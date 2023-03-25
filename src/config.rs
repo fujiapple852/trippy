@@ -268,7 +268,7 @@ pub struct Args {
     #[clap(long, default_value = "100ms", display_order = 30)]
     pub tui_refresh_rate: String,
 
-    /// The TUI theme colors [item1=color,item2=color]
+    /// The TUI theme colors [item=color,item=color,..]
     #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 31)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
