@@ -7,7 +7,8 @@
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
     clippy::redundant_pub_crate,
-    clippy::struct_excessive_bools
+    clippy::struct_excessive_bools,
+    clippy::cognitive_complexity
 )]
 #![forbid(unsafe_code)]
 use crate::backend::Trace;
