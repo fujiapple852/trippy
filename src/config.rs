@@ -1,12 +1,20 @@
+use crate::config::TuiCommandItem::{
+    AddressModeBoth, AddressModeHost, AddressModeIp, ChartZoomIn, ChartZoomOut, ClearDnsCache,
+    ClearSelection, ClearTraceData, ContractHosts, ContractHostsMin, ExpandHosts, ExpandHostsMax,
+    NextHop, NextTrace, PreviousHop, PreviousTrace, Quit, ToggleASInfo, ToggleChart, ToggleFreeze,
+    ToggleHelp,
+};
 use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
 use crossterm::event::{KeyCode, KeyModifiers};
+use itertools::Itertools;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::process;
 use std::str::FromStr;
 use std::time::Duration;
-use strum::{EnumString, EnumVariantNames, VariantNames};
+use strum::{AsRefStr, EnumString, EnumVariantNames, VariantNames};
 use trippy::tracing::{MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol};
 
 /// The maximum number of hops we allow.
@@ -562,6 +570,55 @@ pub struct TuiBindings {
     pub quit: TuiKeyBinding,
 }
 
+impl TuiBindings {
+    /// Validate the bindings.
+    ///
+    /// Returns any duplicate bindings.
+    pub fn find_duplicates(&self) -> Vec<String> {
+        let (_, duplicates) = [
+            (self.toggle_help, ToggleHelp),
+            (self.up, PreviousHop),
+            (self.down, NextHop),
+            (self.left, PreviousTrace),
+            (self.right, NextTrace),
+            (self.address_mode_ip, AddressModeIp),
+            (self.address_mode_host, AddressModeHost),
+            (self.address_mode_both, AddressModeBoth),
+            (self.toggle_freeze, ToggleFreeze),
+            (self.toggle_chart, ToggleChart),
+            (self.expand_hosts, ExpandHosts),
+            (self.expand_hosts_max, ExpandHostsMax),
+            (self.contract_hosts, ContractHosts),
+            (self.contract_hosts_min, ContractHostsMin),
+            (self.chart_zoom_in, ChartZoomIn),
+            (self.chart_zoom_out, ChartZoomOut),
+            (self.clear_trace_data, ClearTraceData),
+            (self.clear_dns_cache, ClearDnsCache),
+            (self.clear_selection, ClearSelection),
+            (self.toggle_as_info, ToggleASInfo),
+            (self.quit, Quit),
+        ]
+        .iter()
+        .fold(
+            (HashMap::<TuiKeyBinding, TuiCommandItem>::new(), Vec::new()),
+            |(mut all, mut dups), (binding, item)| {
+                if let Some(existing) = all.get(binding) {
+                    dups.push(format!(
+                        "{}: [{} and {}]",
+                        binding,
+                        item.as_ref(),
+                        existing.as_ref()
+                    ));
+                } else {
+                    all.insert(*binding, *item);
+                }
+                (all, dups)
+            },
+        );
+        duplicates
+    }
+}
+
 impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
     fn from(value: HashMap<TuiCommandItem, TuiKeyBinding>) -> Self {
         Self {
@@ -633,7 +690,7 @@ impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
 }
 
 /// Tui key binding.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct TuiKeyBinding {
     pub code: KeyCode,
     pub modifier: KeyModifiers,
@@ -795,9 +852,53 @@ mod tests {
     }
 }
 
+impl Display for TuiKeyBinding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.modifier.contains(KeyModifiers::SHIFT) {
+            write!(f, "shift+")?;
+        }
+        if self.modifier.contains(KeyModifiers::CONTROL) {
+            write!(f, "ctrl+")?;
+        }
+        if self.modifier.contains(KeyModifiers::ALT) {
+            write!(f, "alt+")?;
+        }
+        if self.modifier.contains(KeyModifiers::SUPER) {
+            write!(f, "super+")?;
+        }
+        if self.modifier.contains(KeyModifiers::HYPER) {
+            write!(f, "hyper+")?;
+        }
+        if self.modifier.contains(KeyModifiers::META) {
+            write!(f, "meta+")?;
+        }
+        match self.code {
+            KeyCode::Backspace => write!(f, "backspace"),
+            KeyCode::Enter => write!(f, "enter"),
+            KeyCode::Left => write!(f, "left"),
+            KeyCode::Right => write!(f, "right"),
+            KeyCode::Up => write!(f, "up"),
+            KeyCode::Down => write!(f, "down"),
+            KeyCode::Home => write!(f, "home"),
+            KeyCode::End => write!(f, "end"),
+            KeyCode::PageUp => write!(f, "pageup"),
+            KeyCode::PageDown => write!(f, "pagedown"),
+            KeyCode::Tab => write!(f, "tab"),
+            KeyCode::BackTab => write!(f, "backtab"),
+            KeyCode::Delete => write!(f, "delete"),
+            KeyCode::Insert => write!(f, "insert"),
+            KeyCode::Char(c) => write!(f, "{c}"),
+            KeyCode::Null => write!(f, "null"),
+            KeyCode::Esc => write!(f, "esc"),
+            _ => write!(f, "unknown"),
+        }
+    }
+}
+
 /// A Tui command that can be bound to a key.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "kebab-case")]
+#[derive(AsRefStr)]
 #[allow(clippy::enum_variant_names)]
 pub enum TuiCommandItem {
     /// Toggle the help dialog.
@@ -949,6 +1050,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                 .into_iter()
                 .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>(),
         );
+        validate_bindings(&tui_bindings)?;
         Ok(Self {
             targets: args.targets,
             protocol,
@@ -1140,5 +1242,16 @@ pub fn validate_dns(
             "AS lookup not supported by resolver `system` (use '-r' to choose another resolver)"
         )),
         _ => Ok(()),
+    }
+}
+
+/// Validate key bindings.
+pub fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
+    let duplicates = bindings.find_duplicates();
+    if duplicates.is_empty() {
+        Ok(())
+    } else {
+        let dup_str = duplicates.iter().join(", ");
+        Err(anyhow!("Duplicate key bindings: {dup_str}"))
     }
 }
