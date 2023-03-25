@@ -623,67 +623,67 @@ impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
     fn from(value: HashMap<TuiCommandItem, TuiKeyBinding>) -> Self {
         Self {
             toggle_help: *value
-                .get(&TuiCommandItem::ToggleHelp)
+                .get(&ToggleHelp)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
             up: *value
-                .get(&TuiCommandItem::PreviousHop)
+                .get(&PreviousHop)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Up)),
             down: *value
-                .get(&TuiCommandItem::NextHop)
+                .get(&NextHop)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Down)),
             left: *value
-                .get(&TuiCommandItem::PreviousTrace)
+                .get(&PreviousTrace)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Left)),
             right: *value
-                .get(&TuiCommandItem::NextTrace)
+                .get(&NextTrace)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
             address_mode_ip: *value
-                .get(&TuiCommandItem::AddressModeIp)
+                .get(&AddressModeIp)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('i'))),
             address_mode_host: *value
-                .get(&TuiCommandItem::AddressModeHost)
+                .get(&AddressModeHost)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('n'))),
             address_mode_both: *value
-                .get(&TuiCommandItem::AddressModeBoth)
+                .get(&AddressModeBoth)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('b'))),
             toggle_freeze: *value
-                .get(&TuiCommandItem::ToggleFreeze)
+                .get(&ToggleFreeze)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('f'))),
             toggle_chart: *value
-                .get(&TuiCommandItem::ToggleChart)
+                .get(&ToggleChart)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('c'))),
             expand_hosts: *value
-                .get(&TuiCommandItem::ExpandHosts)
+                .get(&ExpandHosts)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(']'))),
             contract_hosts: *value
-                .get(&TuiCommandItem::ContractHosts)
+                .get(&ContractHosts)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('['))),
             expand_hosts_max: *value
-                .get(&TuiCommandItem::ExpandHostsMax)
+                .get(&ExpandHostsMax)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('}'))),
             contract_hosts_min: *value
-                .get(&TuiCommandItem::ContractHostsMin)
+                .get(&ContractHostsMin)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('{'))),
             chart_zoom_in: *value
-                .get(&TuiCommandItem::ChartZoomIn)
+                .get(&ChartZoomIn)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('='))),
             chart_zoom_out: *value
-                .get(&TuiCommandItem::ChartZoomOut)
+                .get(&ChartZoomOut)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('-'))),
-            clear_trace_data: *value.get(&TuiCommandItem::ClearTraceData).unwrap_or(
+            clear_trace_data: *value.get(&ClearTraceData).unwrap_or(
                 &TuiKeyBinding::new_with_modifier(KeyCode::Char('r'), KeyModifiers::CONTROL),
             ),
-            clear_dns_cache: *value.get(&TuiCommandItem::ClearDnsCache).unwrap_or(
+            clear_dns_cache: *value.get(&ClearDnsCache).unwrap_or(
                 &TuiKeyBinding::new_with_modifier(KeyCode::Char('k'), KeyModifiers::CONTROL),
             ),
             clear_selection: *value
-                .get(&TuiCommandItem::ClearSelection)
+                .get(&ClearSelection)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Esc)),
             toggle_as_info: *value
-                .get(&TuiCommandItem::ToggleASInfo)
+                .get(&ToggleASInfo)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('z'))),
             quit: *value
-                .get(&TuiCommandItem::Quit)
+                .get(&Quit)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('q'))),
         }
     }
