@@ -24,6 +24,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added RPM packaging ([#95](https://github.com/fujiapple852/trippy/issues/95))
 - Added DEB packaging ([#94](https://github.com/fujiapple852/trippy/issues/94))
 
+### Fixed
 
 - Variable Equal Cost Multi-path Routing (ECMP) causing truncated
   trace ([#269](https://github.com/fujiapple852/trippy/issues/269))
