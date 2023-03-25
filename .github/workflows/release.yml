@@ -39,14 +39,11 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [linux-gnu, linux-musl, linux-arm, macos, netbsd, win-msvc]
+        build: [linux-gnu, linux-arm, macos, netbsd, win-msvc]
         include:
           - build: linux-gnu
             os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-          - build: linux-musl
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
           - build: linux-arm
             os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
