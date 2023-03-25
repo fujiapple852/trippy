@@ -11,6 +11,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for Windows (`icmp`, `udp` & `tcp`
   for `IPv4` &`IPv6`) ([#98](https://github.com/fujiapple852/trippy/issues/98))
+- Added support for custom Tui key bindings ([#448](https://github.com/fujiapple852/trippy/issues/448))
+- Added support for custom Tui color themes ([#411](https://github.com/fujiapple852/trippy/issues/411))
+- Added RPM packaging ([#95](https://github.com/fujiapple852/trippy/issues/95))
+- Added DEB packaging ([#94](https://github.com/fujiapple852/trippy/issues/94))
 
 ### Changed
 
@@ -22,6 +26,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   responses ([#407](https://github.com/fujiapple852/trippy/issues/407))
 - Tracer panics with large `--initial-sequence` and delayed TCP probe
   response ([#435](https://github.com/fujiapple852/trippy/issues/435))
+- Trippy Docker fails to start ([#277](https://github.com/fujiapple852/trippy/issues/277))
 
 ## [0.6.0] - 2022-08-19
 
