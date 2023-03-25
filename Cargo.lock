@@ -1251,7 +1251,7 @@ dependencies = [
 
 [[package]]
 name = "trippy"
-version = "0.7.0-dev"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "arrayvec",
