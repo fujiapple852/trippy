@@ -255,7 +255,7 @@ Customize the color theme:
 trip www.bitwizard.nl --tui-theme-colors bg-color=blue,text-color=ffff00
 ```
 
-List all Tui items that can have a custom color theme: 
+List all Tui items that can have a custom color theme:
 
 ```shell
 trip www.bitwizard.nl --print-tui-theme-items
@@ -273,7 +273,7 @@ List all Tui commands that can have a custo key binding:
 trip www.bitwizard.nl --print-tui-binding-commands
 ```
 
-## Reference
+## Command Reference
 
 ```shell
 Usage: trip [OPTIONS] <TARGETS>...
@@ -401,10 +401,72 @@ Options:
           Print version
 ```
 
+## Theme Reference
+
+The following table lists the default Tui color theme. These can be overridden with the `--tui-theme-colors` command
+line option.
+
+| Item                                 | Description                                          | Default    |
+|--------------------------------------|------------------------------------------------------|------------|
+| `bg-color`                           | The default background color                         | `Black`    |
+| `border-color`                       | The default color of borders                         | `Gray`     |
+| `text-color`                         | The default color of text                            | `Gray`     |
+| `tab-text-color`                     | The color of the text in traces tabs                 | `Green`    |
+| `hops-table-header-bg-color`         | The background color of the hops table header        | `White`    |
+| `hops-table-header-text-color`       | The color of text in the hops table header           | `Black`    |
+| `hops-table-row-active-text-color`   | The color of text of active rows in the hops table   | `Gray`     |
+| `hops-table-row-inactive-text-color` | The color of text of inactive rows in the hops table | `DarkGray` |
+| `hops-chart-selected-color`          | The color of the selected series in the hops chart   | `Green`    |
+| `hops-chart-unselected-color`        | The color of the unselected series in the hops chart | `Gray`     |
+| `hops-chart-axis-color`              | The color of the axis in the hops chart              | `DarkGray` |
+| `frequency-chart-bar-color`          | The color of bars in the frequency chart             | `Green`    |
+| `frequency-chart-text-color`         | The color of text in the bars of the frequency chart | `Gray`     |
+| `samples-chart-color`                | The color of the samples chart                       | `Yellow`   |
+| `help-dialog-bg-color`               | The background color of the help dialog              | `Blue`     |
+| `help-dialog-text-color`             | The color of the text in the help dialog             | `Gray`     |
+
+The supported colors are:
+
+- `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`, `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
+
+Color names are case insensitive and may contain dashes. Raw hex values, such as `ffffff` for white, may also be used.
+
+## Key Bindings Reference
+
+The following table lists the default Tui command key bindings. These can be overridden with the `--tui-key-bindings`
+command line option.
+
+| Command              | Description                                     | Default  |
+|----------------------|-------------------------------------------------|----------|
+| `toggle-help`        | Toggle help                                     | `h`      |
+| `next-hop`           | Select next hop                                 | `down`   |
+| `previous-hop`       | Select previous hop                             | `up`     |
+| `next-trace`         | Select next trace                               | `right`  |
+| `previous-trace`     | Select previous trace                           | `left`   | 
+| `address-mode-ip`    | Show IP address only                            | `i`      |
+| `address-mode-host`  | Show hostname only                              | `n`      |
+| `address-mode-both`  | Show both IP address and hostname               | `b`      |
+| `toggle-freeze`      | Toggle freezing the display                     | `f`      |
+| `toggle-chart`       | Toggle the chart                                | `c`      |
+| `expand-hosts`       | Expand the hosts shown per hop                  | `]`      |
+| `expand-hosts-max`   | Expand the hosts shown per hop to the maximum   | `}`      |
+| `contract-hosts`     | Contract the hosts shown per hop                | `[`      |
+| `contract-hosts-min` | Contract the hosts shown per hop to the minimum | `{`      |
+| `chart-zoom-in`      | Zoom in the chart                               | `=`      |
+| `chart-zoom-out`     | Zoom out the chart                              | `-`      |
+| `clear-trace-data`   | Clear all trace data                            | `ctrl-r` |
+| `clear-dns-cache`    | Flash the DNS cache                             | `ctrl-k` |
+| `clear-selection`    | Clear the current selection                     | `esc`    |
+| `toggle-as-info`     | Toggle AS info display                          | `z`      |
+| `quit`               | Quit the application                            | `q`      |
+
+The supported modifiers are: `shift`, `ctrl`, `alt`, `super`, `hyper` & `meta`. Multiple modifiers may be specified, for
+example `ctrl-shift-b`.
+
 ## Acknowledgements
 
-Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs)
-, [crossterm](https://github.com/crossterm-rs/crossterm) as well
+Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs),
+[crossterm](https://github.com/crossterm-rs/crossterm) as well
 as [several](https://github.com/fujiapple852/trippy/blob/master/Cargo.toml) foundational Rust libraries.
 
 Trippy draws heavily from [mtr](https://github.com/traviscross/mtr) and also incorporates ideas
