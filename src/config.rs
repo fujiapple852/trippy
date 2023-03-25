@@ -463,8 +463,6 @@ pub enum TuiThemeItem {
     /// The color of the text in traces tabs.
     TabTextColor,
     /// The background color of the hops table header.
-    HopsTableBgColor,
-    /// The background color of the hops table header.
     HopsTableHeaderBgColor,
     /// The color of text in the hops table header.
     HopsTableHeaderTextColor,
