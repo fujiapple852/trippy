@@ -437,7 +437,7 @@ The supported colors are:
 
 - `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`, `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
 
-Color names are case insensitive and may contain dashes. Raw hex values, such as `ffffff` for white, may also be used.
+Color names are case-insensitive and may contain dashes. Raw hex values, such as `ffffff` for white, may also be used.
 
 ## Key Bindings Reference
 
@@ -462,14 +462,14 @@ command line option.
 | `contract-hosts-min` | Contract the hosts shown per hop to the minimum | `{`      |
 | `chart-zoom-in`      | Zoom in the chart                               | `=`      |
 | `chart-zoom-out`     | Zoom out the chart                              | `-`      |
-| `clear-trace-data`   | Clear all trace data                            | `ctrl-r` |
-| `clear-dns-cache`    | Flash the DNS cache                             | `ctrl-k` |
+| `clear-trace-data`   | Clear all trace data                            | `ctrl+r` |
+| `clear-dns-cache`    | Flush the DNS cache                             | `ctrl+k` |
 | `clear-selection`    | Clear the current selection                     | `esc`    |
 | `toggle-as-info`     | Toggle AS info display                          | `z`      |
 | `quit`               | Quit the application                            | `q`      |
 
 The supported modifiers are: `shift`, `ctrl`, `alt`, `super`, `hyper` & `meta`. Multiple modifiers may be specified, for
-example `ctrl-shift-b`.
+example `ctrl+shift+b`.
 
 ## Acknowledgements
 
