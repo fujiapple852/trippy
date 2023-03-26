@@ -43,14 +43,80 @@ pub fn drop_caps() -> anyhow::Result<()> {
 
 // Windows
 
-#[cfg(not(unix))]
+#[cfg(windows)]
 #[allow(clippy::unnecessary_wraps)]
 /// Ensure the effective user is `root`.
 pub fn ensure_caps() -> anyhow::Result<()> {
+    macro_rules! syscall {
+        ($p: path, $fn: ident ( $($arg: expr),* $(,)* ) ) => {{
+            #[allow(unsafe_code)]
+            unsafe { paste::paste!(windows_sys::Win32::$p::$fn) ($($arg, )*) }
+        }};
+    }
+
+    /// Window elevated privilege checker.
+    pub struct Privileged {
+        handle: windows_sys::Win32::Foundation::HANDLE,
+    }
+
+    impl Privileged {
+        /// Create a new `ElevationChecker` for the current process.
+        pub fn current_process() -> anyhow::Result<Self> {
+            use windows_sys::Win32::Security::TOKEN_QUERY;
+            let mut handle: windows_sys::Win32::Foundation::HANDLE = 0;
+            let current_process = syscall!(System::Threading, GetCurrentProcess());
+            let res = syscall!(
+                System::Threading,
+                OpenProcessToken(current_process, TOKEN_QUERY, std::ptr::addr_of_mut!(handle))
+            );
+            if res == 0 {
+                Err(anyhow::anyhow!("OpenProcessToken failed"))
+            } else {
+                Ok(Self { handle })
+            }
+        }
+
+        /// Check if the current process has elevated privileged.
+        pub fn is_elevated(&self) -> anyhow::Result<bool> {
+            use windows_sys::Win32::Security::TokenElevation;
+            use windows_sys::Win32::Security::TOKEN_ELEVATION;
+            let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
+            let size = std::mem::size_of::<TOKEN_ELEVATION>();
+            let mut ret_size = 0u32;
+            let ret = syscall!(
+                Security,
+                GetTokenInformation(
+                    self.handle,
+                    TokenElevation,
+                    std::ptr::addr_of_mut!(elevation).cast(),
+                    size as u32,
+                    std::ptr::addr_of_mut!(ret_size),
+                )
+            );
+            if ret == 0 {
+                Err(anyhow::anyhow!("GetTokenInformation failed"))
+            } else {
+                Ok(elevation.TokenIsElevated != 0)
+            }
+        }
+    }
+
+    impl Drop for Privileged {
+        fn drop(&mut self) {
+            if self.handle != 0 {
+                syscall!(Foundation, CloseHandle(self.handle));
+            }
+        }
+    }
+
+    if !Privileged::current_process()?.is_elevated()? {
+        eprintln!("administrator capability is required, see https://github.com/fujiapple852/trippy#privileges");
+        std::process::exit(-1);
+    }
     Ok(())
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
 #[allow(clippy::unnecessary_wraps)]
 /// Drop all capabilities.
 ///
