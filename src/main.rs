@@ -11,7 +11,7 @@
     clippy::cognitive_complexity,
     clippy::option_option
 )]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 use crate::backend::Trace;
 use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{Mode, TrippyConfig};
