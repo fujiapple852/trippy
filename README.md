@@ -63,6 +63,14 @@ cargo install trippy
 brew install trippy
 ```
 
+### Scoop (Windows)
+
+[![scoop](https://img.shields.io/badge/scoop-0.7.0-blue)](https://trippy.cli.rs/scoop/trippy.json)
+
+```shell
+scoop install https://trippy.cli.rs/scoop/trippy.json
+```
+
 ### NetBSD
 
 [![pkgsrc current package](https://repology.org/badge/version-for-repo/pkgsrc_current/trippy.svg)](https://repology.org/project/trippy/versions)
