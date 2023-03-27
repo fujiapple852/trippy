@@ -1,9 +1,12 @@
 use self::state::TracerState;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::Network;
-use crate::tracing::probe::ProbeResponse;
-use crate::tracing::types::{MaxInflight, MaxRounds, Sequence, TimeToLive, TraceId};
-use crate::tracing::TracerProtocol;
+use crate::tracing::probe::{
+    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
+    ProbeResponseSeqUdp,
+};
+use crate::tracing::types::{Sequence, TimeToLive, TraceId};
+use crate::tracing::{MultipathStrategy, PortDirection, TracerProtocol};
 use crate::tracing::{Probe, TracerConfig};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -42,34 +45,14 @@ pub enum CompletionReason {
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
-    target_addr: IpAddr,
-    protocol: TracerProtocol,
-    trace_identifier: TraceId,
-    max_rounds: Option<MaxRounds>,
-    first_ttl: TimeToLive,
-    max_ttl: TimeToLive,
-    grace_duration: Duration,
-    max_inflight: MaxInflight,
-    initial_sequence: Sequence,
-    min_round_duration: Duration,
-    max_round_duration: Duration,
+    config: TracerConfig,
     publish: F,
 }
 
 impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     pub fn new(config: &TracerConfig, publish: F) -> Self {
         Self {
-            target_addr: config.target_addr,
-            protocol: config.protocol,
-            trace_identifier: config.trace_identifier,
-            max_rounds: config.max_rounds,
-            first_ttl: config.first_ttl,
-            max_ttl: config.max_ttl,
-            grace_duration: config.grace_duration,
-            max_inflight: config.max_inflight,
-            initial_sequence: config.initial_sequence,
-            min_round_duration: config.min_round_duration,
-            max_round_duration: config.max_round_duration,
+            config: *config,
             publish,
         }
     }
@@ -78,8 +61,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// TODO describe algorithm
     pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
-        let mut state = TracerState::new(self.first_ttl, self.initial_sequence);
-        while !state.finished(self.max_rounds) {
+        let mut state = TracerState::new(self.config);
+        while !state.finished(self.config.max_rounds) {
             self.send_request(&mut network, &mut state)?;
             self.recv_response(&mut network, &mut state)?;
             self.update_round(&mut state);
@@ -101,10 +84,11 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
-            st.ttl() - st.max_received_ttl().unwrap_or_default() < TimeToLive(self.max_inflight.0)
+            st.ttl() - st.max_received_ttl().unwrap_or_default()
+                < TimeToLive(self.config.max_inflight.0)
         };
-        if !st.target_found() && st.ttl() <= self.max_ttl && can_send_ttl {
-            match self.protocol {
+        if !st.target_found() && st.ttl() <= self.config.max_ttl && can_send_ttl {
+            match self.config.protocol {
                 TracerProtocol::Icmp => {
                     network.send_probe(st.next_probe())?;
                 }
@@ -153,38 +137,26 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         let next = network.recv_probe()?;
         match next {
             Some(ProbeResponse::TimeExceeded(data)) => {
-                let sequence = Sequence(data.sequence);
-                let received = data.recv;
-                let host = data.addr;
-                let is_target = host == self.target_addr;
-                let trace_id = TraceId(data.identifier);
+                let (trace_id, sequence, received, host) = self.extract(&data);
+                let is_target = host == self.config.target_addr;
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_time_exceeded(sequence, host, received, is_target);
                 }
             }
             Some(ProbeResponse::DestinationUnreachable(data)) => {
-                let sequence = Sequence(data.sequence);
-                let received = data.recv;
-                let host = data.addr;
-                let trace_id = TraceId(data.identifier);
+                let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_unreachable(sequence, host, received);
                 }
             }
             Some(ProbeResponse::EchoReply(data)) => {
-                let sequence = Sequence(data.sequence);
-                let received = data.recv;
-                let host = data.addr;
-                let trace_id = TraceId(data.identifier);
+                let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_echo_reply(sequence, host, received);
                 }
             }
             Some(ProbeResponse::TcpReply(data) | ProbeResponse::TcpRefused(data)) => {
-                let sequence = Sequence(data.sequence);
-                let received = data.recv;
-                let host = data.addr;
-                let trace_id = TraceId(data.identifier);
+                let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_other(sequence, host, received);
                 }
@@ -206,13 +178,13 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     fn update_round(&self, st: &mut TracerState) {
         let now = SystemTime::now();
         let round_duration = now.duration_since(st.round_start()).unwrap_or_default();
-        let round_min = round_duration > self.min_round_duration;
-        let grace_exceeded = exceeds(st.received_time(), now, self.grace_duration);
-        let round_max = round_duration > self.max_round_duration;
+        let round_min = round_duration > self.config.min_round_duration;
+        let grace_exceeded = exceeds(st.received_time(), now, self.config.grace_duration);
+        let round_max = round_duration > self.config.max_round_duration;
         let target_found = st.target_found();
         if round_min && grace_exceeded && target_found || round_max {
             self.publish_trace(st);
-            st.advance_round(self.first_ttl);
+            st.advance_round(self.config.first_ttl);
         }
     }
 
@@ -245,7 +217,46 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// A special value of `0` is accepted for `udp` and `tcp` which do not have an identifier.
     fn check_trace_id(&self, trace_id: TraceId) -> bool {
-        self.trace_identifier == trace_id || trace_id == TraceId(0)
+        self.config.trace_identifier == trace_id || trace_id == TraceId(0)
+    }
+
+    /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in a protocol specific way.
+    fn extract(&self, resp: &ProbeResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
+        match resp.resp_seq {
+            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                identifier,
+                sequence,
+            }) => (
+                TraceId(identifier),
+                Sequence(sequence),
+                resp.recv,
+                resp.addr,
+            ),
+            ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                identifier,
+                src_port,
+                dest_port,
+                checksum,
+            }) => {
+                let sequence = match (self.config.multipath_strategy, self.config.port_direction) {
+                    (MultipathStrategy::Classic, PortDirection::FixedDest(_)) => src_port,
+                    (MultipathStrategy::Classic, _) => dest_port,
+                    (MultipathStrategy::Paris, _) => checksum,
+                    (MultipathStrategy::Dublin, _) => identifier,
+                };
+                (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
+            }
+            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                src_port,
+                dest_port,
+            }) => {
+                let sequence = match self.config.port_direction {
+                    PortDirection::FixedSrc(_) => dest_port,
+                    _ => src_port,
+                };
+                (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
+            }
+        }
     }
 }
 
@@ -255,8 +266,11 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 /// `TracerState` struct.
 mod state {
     use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
-    use crate::tracing::types::{MaxRounds, Round, Sequence, TimeToLive};
-    use crate::tracing::{IcmpPacketType, Probe, ProbeStatus};
+    use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
+    use crate::tracing::{
+        IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus, TracerConfig,
+        TracerProtocol,
+    };
     use std::net::IpAddr;
     use std::time::SystemTime;
 
@@ -287,10 +301,10 @@ mod state {
     /// Mutable state needed for the tracing algorithm.
     #[derive(Debug)]
     pub struct TracerState {
+        /// Tracer configuration.
+        config: TracerConfig,
         /// The state of all `Probe` requests and responses.
         buffer: [Probe; BUFFER_SIZE as usize],
-        /// The initial sequence number configuration, used to reset sequence when it wraps around.
-        initial_sequence: Sequence,
         /// An increasing sequence number for every `EchoRequest`.
         sequence: Sequence,
         /// The starting sequence number of the current round.
@@ -315,13 +329,13 @@ mod state {
     }
 
     impl TracerState {
-        pub fn new(first_ttl: TimeToLive, initial_sequence: Sequence) -> Self {
+        pub fn new(config: TracerConfig) -> Self {
             Self {
+                config,
                 buffer: [Probe::default(); BUFFER_SIZE as usize],
-                initial_sequence,
-                sequence: initial_sequence,
-                round_sequence: initial_sequence,
-                ttl: first_ttl,
+                sequence: config.initial_sequence,
+                round_sequence: config.initial_sequence,
+                ttl: config.first_ttl,
                 round: Round(0),
                 round_start: SystemTime::now(),
                 target_found: false,
@@ -390,7 +404,16 @@ mod state {
         /// We post-increment `ttl` here and so in practice we only allow `ttl` values in the range `1..254` to allow
         /// us to use a `u8`.
         pub fn next_probe(&mut self) -> Probe {
-            let probe = Probe::new(self.sequence, self.ttl, self.round, SystemTime::now());
+            let (src_port, dest_port, identifier) = self.probe_data();
+            let probe = Probe::new(
+                self.sequence,
+                identifier,
+                src_port,
+                dest_port,
+                self.ttl,
+                self.round,
+                SystemTime::now(),
+            );
             self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive(1);
@@ -409,8 +432,12 @@ mod state {
         /// - A new `Probe` will be created at sequence `4` with a `ttl` of `5`
         pub fn reissue_probe(&mut self) -> Probe {
             self.buffer[usize::from(self.sequence - self.round_sequence) - 1] = Probe::default();
+            let (src_port, dest_port, identifier) = self.probe_data();
             let probe = Probe::new(
                 self.sequence,
+                identifier,
+                src_port,
+                dest_port,
                 self.ttl - TimeToLive(1),
                 self.round,
                 SystemTime::now(),
@@ -419,6 +446,69 @@ mod state {
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
+        }
+
+        /// Determine the `src_port`, `dest_port` and `identifier` for the current probe.
+        ///
+        /// This will differ depending on the `TracerProtocol`, `MultipathStrategy` & `PortDirection`.
+        fn probe_data(&self) -> (Port, Port, TraceId) {
+            match self.config.protocol {
+                TracerProtocol::Icmp => self.probe_icmp_data(),
+                TracerProtocol::Udp => self.probe_udp_data(),
+                TracerProtocol::Tcp => self.probe_tcp_data(),
+            }
+        }
+
+        /// Determine the `src_port`, `dest_port` and `identifier` for the current ICMP probe.
+        fn probe_icmp_data(&self) -> (Port, Port, TraceId) {
+            (Port(0), Port(0), self.config.trace_identifier)
+        }
+
+        /// Determine the `src_port`, `dest_port` and `identifier` for the current UDP probe.
+        fn probe_udp_data(&self) -> (Port, Port, TraceId) {
+            match self.config.multipath_strategy {
+                MultipathStrategy::Classic => match self.config.port_direction {
+                    PortDirection::FixedSrc(src_port) => {
+                        (Port(src_port.0), Port(self.sequence.0), TraceId(0))
+                    }
+                    PortDirection::FixedDest(dest_port) => {
+                        (Port(self.sequence.0), Port(dest_port.0), TraceId(0))
+                    }
+                    PortDirection::FixedBoth(_, _) | PortDirection::None => {
+                        unimplemented!()
+                    }
+                },
+                MultipathStrategy::Paris => unimplemented!(),
+                MultipathStrategy::Dublin => {
+                    let round_port = ((self.config.initial_sequence.0 as usize + self.round.0)
+                        % usize::from(u16::MAX)) as u16;
+                    match self.config.port_direction {
+                        PortDirection::FixedSrc(src_port) => {
+                            (Port(src_port.0), Port(round_port), TraceId(self.sequence.0))
+                        }
+                        PortDirection::FixedDest(dest_port) => (
+                            Port(round_port),
+                            Port(dest_port.0),
+                            TraceId(self.sequence.0),
+                        ),
+                        PortDirection::FixedBoth(src_port, dest_port) => (
+                            Port(src_port.0),
+                            Port(dest_port.0),
+                            TraceId(self.sequence.0),
+                        ),
+                        PortDirection::None => unimplemented!(),
+                    }
+                }
+            }
+        }
+        /// Determine the `src_port`, `dest_port` and `identifier` for the current TCP probe.
+        fn probe_tcp_data(&self) -> (Port, Port, TraceId) {
+            let (src_port, dest_port) = match self.config.port_direction {
+                PortDirection::FixedSrc(src_port) => (src_port.0, self.sequence.0),
+                PortDirection::FixedDest(dest_port) => (self.sequence.0, dest_port.0),
+                PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
+            };
+            (Port(src_port), Port(dest_port), TraceId(0))
         }
 
         /// Mark the `Probe` at `sequence` completed as `TimeExceeded` and update the round state.
@@ -539,7 +629,7 @@ mod state {
         /// problematic.
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
             if self.sequence >= MAX_SEQUENCE {
-                self.sequence = self.initial_sequence;
+                self.sequence = self.config.initial_sequence;
             }
             self.target_found = false;
             self.round_sequence = self.sequence;
@@ -555,9 +645,11 @@ mod state {
     mod tests {
         use super::*;
         use crate::tracing::probe::IcmpPacketType;
+        use crate::tracing::types::{MaxInflight, PacketSize, PayloadPattern};
         use crate::tracing::ProbeStatus;
         use rand::Rng;
         use std::net::{IpAddr, Ipv4Addr};
+        use std::time::Duration;
 
         #[allow(
             clippy::cognitive_complexity,
@@ -566,7 +658,7 @@ mod state {
         )]
         #[test]
         fn test_state() {
-            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
+            let mut state = TracerState::new(cfg(Sequence(33000)));
 
             // Validate the initial TracerState
             assert_eq!(state.round, Round(0));
@@ -727,7 +819,7 @@ mod state {
         fn test_sequence_wrap1() {
             // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
             let initial_sequence = Sequence(65278);
-            let mut state = TracerState::new(TimeToLive(1), initial_sequence);
+            let mut state = TracerState::new(cfg(initial_sequence));
             assert_eq!(state.round, Round(0));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
@@ -767,7 +859,7 @@ mod state {
         fn test_sequence_wrap2() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
+            let mut state = TracerState::new(cfg(Sequence(33000)));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     let _probe = state.next_probe();
@@ -783,7 +875,7 @@ mod state {
         fn test_sequence_wrap3() {
             let total_rounds = 2000;
             let max_probe_per_round = 20;
-            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
+            let mut state = TracerState::new(cfg(Sequence(33000)));
             let mut rng = rand::thread_rng();
             for _ in 0..total_rounds {
                 for _ in 0..rng.gen_range(0..max_probe_per_round) {
@@ -797,7 +889,7 @@ mod state {
         fn test_sequence_wrap_with_skip() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(TimeToLive(1), Sequence(33000));
+            let mut state = TracerState::new(cfg(Sequence(33000)));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     _ = state.next_probe();
@@ -812,7 +904,7 @@ mod state {
 
         #[test]
         fn test_in_round() {
-            let state = TracerState::new(TimeToLive(1), Sequence(33000));
+            let state = TracerState::new(cfg(Sequence(33000)));
             assert!(state.in_round(Sequence(33000)));
             assert!(state.in_round(Sequence(34023)));
             assert!(!state.in_round(Sequence(34024)));
@@ -821,12 +913,33 @@ mod state {
         #[test]
         #[should_panic]
         fn test_in_delayed_probe_not_in_round() {
-            let mut state = TracerState::new(TimeToLive(1), Sequence(64000));
+            let mut state = TracerState::new(cfg(Sequence(64000)));
             for _ in 0..55 {
                 _ = state.next_probe();
             }
             state.advance_round(TimeToLive(1));
             assert!(!state.in_round(Sequence(64491)));
+        }
+
+        fn cfg(initial_sequence: Sequence) -> TracerConfig {
+            TracerConfig {
+                target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                protocol: TracerProtocol::Icmp,
+                trace_identifier: TraceId::default(),
+                max_rounds: None,
+                first_ttl: TimeToLive(1),
+                max_ttl: TimeToLive(24),
+                grace_duration: Duration::default(),
+                max_inflight: MaxInflight::default(),
+                initial_sequence,
+                multipath_strategy: MultipathStrategy::Classic,
+                port_direction: PortDirection::None,
+                read_timeout: Duration::default(),
+                min_round_duration: Duration::default(),
+                max_round_duration: Duration::default(),
+                packet_size: PacketSize::default(),
+                payload_pattern: PayloadPattern::default(),
+            }
         }
     }
 }

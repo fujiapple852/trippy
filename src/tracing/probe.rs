@@ -1,4 +1,4 @@
-use crate::tracing::types::{Round, Sequence, TimeToLive};
+use crate::tracing::types::{Port, Round, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
@@ -7,6 +7,12 @@ use std::time::{Duration, SystemTime};
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
+    /// The trace identifier.
+    pub identifier: TraceId,
+    /// The source port (UDP/TCP only)
+    pub src_port: Port,
+    /// The destination port (UDP/TCP only)
+    pub dest_port: Port,
     /// The TTL of the probe.
     pub ttl: TimeToLive,
     /// Which round the probe belongs to.
@@ -25,9 +31,20 @@ pub struct Probe {
 
 impl Probe {
     #[must_use]
-    pub const fn new(sequence: Sequence, ttl: TimeToLive, round: Round, sent: SystemTime) -> Self {
+    pub const fn new(
+        sequence: Sequence,
+        identifier: TraceId,
+        src_port: Port,
+        dest_port: Port,
+        ttl: TimeToLive,
+        round: Round,
+        sent: SystemTime,
+    ) -> Self {
         Self {
             sequence,
+            identifier,
+            src_port,
+            dest_port,
             ttl,
             round,
             sent: Some(sent),
@@ -122,19 +139,76 @@ pub enum ProbeResponse {
 /// The data in the probe response.
 #[derive(Debug, Copy, Clone)]
 pub struct ProbeResponseData {
+    /// Timestamp of the probe response.
     pub recv: SystemTime,
+    /// The IpAddr that responded to the probe.
     pub addr: IpAddr,
+    /// Information about the sequence number of the probe response.
+    pub resp_seq: ProbeResponseSeq,
+}
+
+impl ProbeResponseData {
+    pub fn new(recv: SystemTime, addr: IpAddr, resp_seq: ProbeResponseSeq) -> Self {
+        Self {
+            recv,
+            addr,
+            resp_seq,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum ProbeResponseSeq {
+    Icmp(ProbeResponseSeqIcmp),
+    Udp(ProbeResponseSeqUdp),
+    Tcp(ProbeResponseSeqTcp),
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct ProbeResponseSeqIcmp {
     pub identifier: u16,
     pub sequence: u16,
 }
 
-impl ProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, identifier: u16, sequence: u16) -> Self {
+impl ProbeResponseSeqIcmp {
+    pub fn new(identifier: u16, sequence: u16) -> Self {
         Self {
-            recv,
-            addr,
             identifier,
             sequence,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct ProbeResponseSeqUdp {
+    pub identifier: u16,
+    pub src_port: u16,
+    pub dest_port: u16,
+    pub checksum: u16,
+}
+
+impl ProbeResponseSeqUdp {
+    pub fn new(identifier: u16, src_port: u16, dest_port: u16, checksum: u16) -> Self {
+        Self {
+            identifier,
+            src_port,
+            dest_port,
+            checksum,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct ProbeResponseSeqTcp {
+    pub src_port: u16,
+    pub dest_port: u16,
+}
+
+impl ProbeResponseSeqTcp {
+    pub fn new(src_port: u16, dest_port: u16) -> Self {
+        Self {
+            src_port,
+            dest_port,
         }
     }
 }

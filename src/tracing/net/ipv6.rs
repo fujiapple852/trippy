@@ -13,10 +13,13 @@ use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
-use crate::tracing::probe::{ProbeResponse, ProbeResponseData};
+use crate::tracing::probe::{
+    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
+    ProbeResponseSeqUdp,
+};
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{PortDirection, Probe, TracerProtocol};
+use crate::tracing::{Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -38,7 +41,6 @@ pub fn dispatch_icmp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
 ) -> TraceResult<()> {
@@ -51,7 +53,7 @@ pub fn dispatch_icmp_probe(
         &mut icmp_buf,
         src_addr,
         dest_addr,
-        identifier,
+        probe.identifier,
         probe.sequence,
         icmp_payload_size(packet_size),
         payload_pattern,
@@ -68,7 +70,6 @@ pub fn dispatch_udp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    port_direction: PortDirection,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
 ) -> TraceResult<()> {
@@ -77,17 +78,12 @@ pub fn dispatch_udp_probe(
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
-    let (src_port, dest_port) = match port_direction {
-        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
-        PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
-        PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
-    };
     let udp = make_udp_packet(
         &mut udp_buf,
         src_addr,
         dest_addr,
-        src_port,
-        dest_port,
+        probe.src_port.0,
+        probe.dest_port.0,
         udp_payload_size(packet_size),
         payload_pattern,
     )?;
@@ -103,7 +99,7 @@ pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    port_direction: PortDirection,
+    // port_direction: PortDirection,
 ) -> TraceResult<Socket> {
     fn process_result(addr: SocketAddr, res: std::io::Result<()>) -> TraceResult<()> {
         match res {
@@ -126,16 +122,11 @@ pub fn dispatch_tcp_probe(
             }
         }
     }
-    let (src_port, dest_port) = match port_direction {
-        PortDirection::FixedSrc(src_port) => (src_port.0, probe.sequence.0),
-        PortDirection::FixedDest(dest_port) => (probe.sequence.0, dest_port.0),
-        PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
-    };
     let mut socket = Socket::new_stream_socket_ipv6()?;
-    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), src_port);
+    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
     process_result(local_addr, socket.bind(local_addr))?;
     socket.set_unicast_hops_v6(probe.ttl.0)?;
-    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), dest_port);
+    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), probe.dest_port.0);
     process_result(remote_addr, socket.connect(remote_addr))?;
     Ok(socket)
 }
@@ -143,7 +134,6 @@ pub fn dispatch_tcp_probe(
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
-    direction: PortDirection,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
@@ -155,9 +145,7 @@ pub fn recv_icmp_probe(
                 SocketAddr::V4(_) => panic!(),
             };
 
-            Ok(extract_probe_resp(
-                protocol, direction, &icmp_v6, *src_addr,
-            )?)
+            Ok(extract_probe_resp(protocol, &icmp_v6, *src_addr)?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -171,6 +159,7 @@ pub fn recv_tcp_socket(
     sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
+    let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
     match tcp_socket.take_error()? {
         None => {
             let addr = tcp_socket.peer_addr()?.req()?.ip();
@@ -178,8 +167,7 @@ pub fn recv_tcp_socket(
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
                 addr,
-                0,
-                sequence.0,
+                resp_seq,
             ))));
         }
         Some(err) => {
@@ -188,8 +176,7 @@ pub fn recv_tcp_socket(
                     return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
                         SystemTime::now(),
                         dest_addr,
-                        0,
-                        sequence.0,
+                        resp_seq,
                     ))));
                 }
                 if platform::is_host_unreachable_error(code) {
@@ -197,8 +184,7 @@ pub fn recv_tcp_socket(
                     return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                         SystemTime::now(),
                         error_addr,
-                        0,
-                        sequence.0,
+                        resp_seq,
                     ))));
                 }
             }
@@ -265,7 +251,6 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 fn extract_probe_resp(
     protocol: TracerProtocol,
-    direction: PortDirection,
     icmp_v6: &IcmpPacket<'_>,
     src: Ipv6Addr,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -274,16 +259,16 @@ fn extract_probe_resp(
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
-            let (id, seq) = extract_time_exceeded(&packet, protocol, direction)?;
+            let resp_seq = extract_time_exceeded(&packet, protocol)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                recv, ip, id, seq,
+                recv, ip, resp_seq,
             )))
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
-            let (id, seq) = extract_dest_unreachable(&packet, protocol, direction)?;
+            let resp_seq = extract_dest_unreachable(&packet, protocol)?;
             Some(ProbeResponse::DestinationUnreachable(
-                ProbeResponseData::new(recv, ip, id, seq),
+                ProbeResponseData::new(recv, ip, resp_seq),
             ))
         }
         IcmpType::EchoReply => match protocol {
@@ -291,8 +276,9 @@ fn extract_probe_resp(
                 let packet = EchoReplyPacket::new_view(icmp_v6.packet()).req()?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
+                let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
                 Some(ProbeResponse::EchoReply(ProbeResponseData::new(
-                    recv, ip, id, seq,
+                    recv, ip, resp_seq,
                 )))
             }
             TracerProtocol::Udp | TracerProtocol::Tcp => None,
@@ -304,25 +290,19 @@ fn extract_probe_resp(
 fn extract_time_exceeded(
     packet: &TimeExceededPacket<'_>,
     protocol: TracerProtocol,
-    direction: PortDirection,
-) -> TraceResult<(u16, u16)> {
+) -> TraceResult<ProbeResponseSeq> {
     Ok(match protocol {
-        TracerProtocol::Icmp => extract_echo_request(packet.payload())?,
+        TracerProtocol::Icmp => {
+            let (identifier, sequence) = extract_echo_request(packet.payload())?;
+            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
+        }
         TracerProtocol::Udp => {
-            let (src, dest) = extract_udp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedDest(_) => src,
-                _ => dest,
-            };
-            (0, sequence)
+            let (src_port, dest_port) = extract_udp_packet(packet.payload())?;
+            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(0, src_port, dest_port, 0))
         }
         TracerProtocol::Tcp => {
-            let (src, dest) = extract_tcp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedSrc(_) => dest,
-                _ => src,
-            };
-            (0, sequence)
+            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
+            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
     })
 }
@@ -330,25 +310,19 @@ fn extract_time_exceeded(
 fn extract_dest_unreachable(
     packet: &DestinationUnreachablePacket<'_>,
     protocol: TracerProtocol,
-    direction: PortDirection,
-) -> TraceResult<(u16, u16)> {
+) -> TraceResult<ProbeResponseSeq> {
     Ok(match protocol {
-        TracerProtocol::Icmp => extract_echo_request(packet.payload())?,
+        TracerProtocol::Icmp => {
+            let (identifier, sequence) = extract_echo_request(packet.payload())?;
+            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
+        }
         TracerProtocol::Udp => {
-            let (src, dest) = extract_udp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedDest(_) => src,
-                _ => dest,
-            };
-            (0, sequence)
+            let (src_port, dest_port) = extract_udp_packet(packet.payload())?;
+            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(0, src_port, dest_port, 0))
         }
         TracerProtocol::Tcp => {
-            let (src, dest) = extract_tcp_packet(packet.payload())?;
-            let sequence = match direction {
-                PortDirection::FixedSrc(_) => dest,
-                _ => src,
-            };
-            (0, sequence)
+            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
+            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
     })
 }

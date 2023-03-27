@@ -3,10 +3,8 @@ use crate::tracing::net::platform::Socket;
 use crate::tracing::net::socket::TracerSocket as _;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
-use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
-use crate::tracing::{
-    MultipathStrategy, PortDirection, Probe, TracerChannelConfig, TracerProtocol,
-};
+use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
+use crate::tracing::{Probe, TracerChannelConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::net::IpAddr;
@@ -24,13 +22,9 @@ pub struct TracerChannel {
     src_addr: IpAddr,
     ipv4_length_order: platform::PlatformIpv4FieldByteOrder,
     dest_addr: IpAddr,
-    identifier: TraceId,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     tos: TypeOfService,
-    initial_sequence: Sequence,
-    multipath_strategy: MultipathStrategy,
-    port_direction: PortDirection,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
     icmp_send_socket: Socket,
@@ -60,13 +54,9 @@ impl TracerChannel {
             src_addr: config.source_addr,
             ipv4_length_order,
             dest_addr: config.target_addr,
-            identifier: config.identifier,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
             tos: config.tos,
-            initial_sequence: config.initial_sequence,
-            multipath_strategy: config.multipath_strategy,
-            port_direction: config.port_direction,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             icmp_send_socket,
@@ -106,7 +96,6 @@ impl TracerChannel {
                 probe,
                 src_addr,
                 dest_addr,
-                self.identifier,
                 self.packet_size,
                 self.payload_pattern,
                 self.ipv4_length_order,
@@ -116,7 +105,6 @@ impl TracerChannel {
                 probe,
                 src_addr,
                 dest_addr,
-                self.identifier,
                 self.packet_size,
                 self.payload_pattern,
             ),
@@ -132,9 +120,6 @@ impl TracerChannel {
                 probe,
                 src_addr,
                 dest_addr,
-                self.initial_sequence,
-                self.multipath_strategy,
-                self.port_direction,
                 self.packet_size,
                 self.payload_pattern,
                 self.ipv4_length_order,
@@ -144,7 +129,6 @@ impl TracerChannel {
                 probe,
                 src_addr,
                 dest_addr,
-                self.port_direction,
                 self.packet_size,
                 self.payload_pattern,
             ),
@@ -156,10 +140,10 @@ impl TracerChannel {
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction, self.tos)
+                ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.tos)
             }
             (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr, self.port_direction)
+                ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr)
             }
             _ => unreachable!(),
         }?;
@@ -172,15 +156,8 @@ impl TracerChannel {
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
-                IpAddr::V4(_) => ipv4::recv_icmp_probe(
-                    &mut self.recv_socket,
-                    self.protocol,
-                    self.multipath_strategy,
-                    self.port_direction,
-                ),
-                IpAddr::V6(_) => {
-                    ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol, self.port_direction)
-                }
+                IpAddr::V4(_) => ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol),
+                IpAddr::V6(_) => ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol),
             }
         } else {
             Ok(None)

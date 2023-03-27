@@ -96,7 +96,7 @@ fn start_tracer(
         Some(addr) => SourceAddr::validate(addr)?,
     };
     let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
-    let channel_config = make_channel_config(cfg, source_addr, target_addr, trace_identifier);
+    let channel_config = make_channel_config(cfg, source_addr, target_addr);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
     {
         let trace_data = trace_data.clone();
@@ -149,6 +149,8 @@ fn make_tracer_config(
         args.grace_duration,
         args.max_inflight,
         args.initial_sequence,
+        args.multipath_strategy,
+        args.port_direction,
         args.read_timeout,
         args.min_round_duration,
         args.max_round_duration,
@@ -162,20 +164,15 @@ fn make_channel_config(
     args: &TrippyConfig,
     source_addr: IpAddr,
     target_addr: IpAddr,
-    trace_identifier: u16,
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
         args.protocol,
         args.addr_family,
         source_addr,
         target_addr,
-        trace_identifier,
         args.packet_size,
         args.payload_pattern,
         args.tos,
-        args.initial_sequence,
-        args.multipath_strategy,
-        args.port_direction,
         args.read_timeout,
         args.min_round_duration,
     )
