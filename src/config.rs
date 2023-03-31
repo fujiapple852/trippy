@@ -1018,7 +1018,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             }
             (_, Some(_), Some(_), _) => {
                 return Err(anyhow!(
-                    "only one of source-port and target-port may be fixed (except IPv6/udp protocol with dublin strategy)"
+                    "only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin strategy)"
                 ));
             }
         };
