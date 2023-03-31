@@ -58,8 +58,6 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     }
 
     /// Run a continuous trace and publish results.
-    ///
-    /// TODO describe algorithm
     pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
         let mut state = TracerState::new(self.config);
         while !state.finished(self.config.max_rounds) {
