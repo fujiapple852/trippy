@@ -13,6 +13,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+## [0.7.1] - 2023-03-31
+
+### Fixed
+
+- Generate `zip` archive for Windows releases as needed
+  by `winget` ([#474](https://github.com/fujiapple852/trippy/issues/474))
+
 ## [0.7.0] - 2023-03-25
 
 ### Added
@@ -180,6 +187,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.7.1]: https://github.com/fujiapple852/trippy/compare/0.7.0...0.7.1
 
 [0.7.0]: https://github.com/fujiapple852/trippy/compare/0.6.0...0.7.0
 
