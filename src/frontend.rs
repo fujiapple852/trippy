@@ -2,7 +2,7 @@ use crate::backend::Hop;
 use crate::config::{
     AddressMode, DnsResolveMethod, TuiBindings, TuiColor, TuiKeyBinding, TuiTheme,
 };
-use crate::dns::{DnsEntry, Resolved};
+use crate::dns::{DnsEntry, Resolved, Unresolved};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
 use crossterm::event::{KeyEvent, KeyModifiers};
@@ -1122,13 +1122,20 @@ fn render_hostname_cell(
         match dns_entry {
             DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),
             DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
-                if lookup_as_info {
+                if lookup_as_info && !asinfo.asn.is_empty() {
                     format!("AS{} {}", asinfo.asn, hosts.join(" "))
                 } else {
                     hosts.join(" ")
                 }
             }
-            DnsEntry::Pending(ip) | DnsEntry::NotFound(ip) => format!("{ip}"),
+            DnsEntry::NotFound(Unresolved::Normal(ip)) | DnsEntry::Pending(ip) => format!("{ip}"),
+            DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
+                if lookup_as_info && !asinfo.asn.is_empty() {
+                    format!("AS{} {}", asinfo.asn, ip)
+                } else {
+                    format!("{ip}")
+                }
+            }
             DnsEntry::Failed(ip) => format!("Failed: {ip}"),
             DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
         }

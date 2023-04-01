@@ -13,7 +13,7 @@ pub enum DnsEntry {
     /// The reverse DNS resolution of `IpAddr` has resolved.
     Resolved(Resolved),
     /// The `IpAddr` could not be resolved.
-    NotFound(IpAddr),
+    NotFound(Unresolved),
     /// The reverse DNS resolution of `IpAddr` failed.
     Failed(IpAddr),
     /// The reverse DNS resolution of `IpAddr` timed out.
@@ -29,6 +29,15 @@ pub enum Resolved {
     WithAsInfo(IpAddr, Vec<String>, AsInfo),
 }
 
+/// Information about an unresolved `IpAddr`.
+#[derive(Debug, Clone)]
+pub enum Unresolved {
+    /// Unresolved without AsInfo.
+    Normal(IpAddr),
+    /// Unresolved with AsInfo.
+    WithAsInfo(IpAddr, AsInfo),
+}
+
 impl Display for DnsEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_same_arms)]
@@ -38,9 +47,12 @@ impl Display for DnsEntry {
                 write!(f, "AS{} {}", asinfo.asn, hosts.join(" "))
             }
             Self::Pending(ip) => write!(f, "{ip}"),
-            Self::NotFound(ip) => write!(f, "{ip}"),
-            Self::Failed(ip) => write!(f, "Failed: {ip}"),
             Self::Timeout(ip) => write!(f, "Timeout: {ip}"),
+            Self::NotFound(Unresolved::Normal(ip)) => write!(f, "{ip}"),
+            Self::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
+                write!(f, "AS{} {}", asinfo.asn, ip)
+            }
+            Self::Failed(ip) => write!(f, "Failed: {ip}"),
         }
     }
 }
@@ -141,7 +153,7 @@ impl DnsResolver {
 /// Private impl of resolver.
 mod inner {
     use crate::dns::{
-        AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, IpAddrFamily, Resolved,
+        AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, IpAddrFamily, Resolved, Unresolved,
     };
     use anyhow::anyhow;
     use crossbeam::channel::{bounded, Receiver, Sender};
@@ -313,7 +325,7 @@ mod inner {
                     // failures are `DnsEntry::NotFound`.
                     match dns_lookup::lookup_addr(&addr) {
                         Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])),
-                        Err(_) => DnsEntry::NotFound(addr),
+                        Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr)),
                     }
                 }
                 DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
@@ -334,7 +346,14 @@ mod inner {
                         }
                     }
                     Err(err) => match err.kind() {
-                        ResolveErrorKind::NoRecordsFound { .. } => DnsEntry::NotFound(addr),
+                        ResolveErrorKind::NoRecordsFound { .. } => {
+                            if with_asinfo {
+                                let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
+                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info))
+                            } else {
+                                DnsEntry::NotFound(Unresolved::Normal(addr))
+                            }
+                        }
                         ResolveErrorKind::Timeout => DnsEntry::Timeout(addr),
                         _ => DnsEntry::Failed(addr),
                     },
