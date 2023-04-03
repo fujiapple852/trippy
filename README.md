@@ -374,7 +374,11 @@ Options:
   -a, --tui-address-mode <TUI_ADDRESS_MODE>
           How to render addresses [default: host] [possible values: ip, host,
           both]
-          
+        
+  --tui-as-mode <TUI_AS_MODE>
+          How to render AS information [default: asn] [possible values: asn,
+          prefix, country-code, registry, allocated, name]
+                  
   -M, --tui-max-addrs <TUI_MAX_ADDRS>
           The maximum number of addresses to show per hop
           
