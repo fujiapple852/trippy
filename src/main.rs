@@ -209,6 +209,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_preserve_screen,
         args.tui_address_mode,
         args.dns_lookup_as_info,
+        args.tui_as_mode,
         args.tui_max_addrs,
         args.tui_max_samples,
         args.tui_theme,

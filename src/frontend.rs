@@ -1,8 +1,8 @@
 use crate::backend::Hop;
 use crate::config::{
-    AddressMode, DnsResolveMethod, TuiBindings, TuiColor, TuiKeyBinding, TuiTheme,
+    AddressMode, AsMode, DnsResolveMethod, TuiBindings, TuiColor, TuiKeyBinding, TuiTheme,
 };
-use crate::dns::{DnsEntry, Resolved, Unresolved};
+use crate::dns::{AsInfo, DnsEntry, Resolved, Unresolved};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
 use crossterm::event::{KeyEvent, KeyModifiers};
@@ -274,6 +274,8 @@ pub struct TuiConfig {
     address_mode: AddressMode,
     /// Lookup `AS` information.
     lookup_as_info: bool,
+    /// The to render AS data.
+    as_mode: AsMode,
     /// The maximum number of addresses to show per hop.
     max_addrs: Option<u8>,
     /// The maximum number of samples to record per hop.
@@ -291,6 +293,7 @@ impl TuiConfig {
         preserve_screen: bool,
         address_mode: AddressMode,
         lookup_as_info: bool,
+        as_mode: AsMode,
         max_addrs: Option<u8>,
         max_samples: usize,
         tui_theme: TuiTheme,
@@ -301,6 +304,7 @@ impl TuiConfig {
             preserve_screen,
             address_mode,
             lookup_as_info,
+            as_mode,
             max_addrs,
             max_samples,
             theme: Theme::from(tui_theme),
@@ -1048,6 +1052,7 @@ fn render_table_row(
         dns,
         config.address_mode,
         config.lookup_as_info,
+        config.as_mode,
         config.max_addrs,
     );
     let loss_pct_cell = render_loss_pct_cell(hop);
@@ -1115,15 +1120,28 @@ fn render_hostname_cell(
     dns: &DnsResolver,
     address_mode: AddressMode,
     lookup_as_info: bool,
+    as_mode: AsMode,
     max_addr: Option<u8>,
 ) -> Cell<'static> {
+    /// Format `AsInfo` based on the `ASDisplayMode`.
+    fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
+        match as_mode {
+            AsMode::Asn => format!("AS{}", asinfo.asn),
+            AsMode::Prefix => format!("AS{} [{}]", asinfo.asn, asinfo.prefix),
+            AsMode::CountryCode => format!("AS{} [{}]", asinfo.asn, asinfo.cc),
+            AsMode::Registry => format!("AS{} [{}]", asinfo.asn, asinfo.registry),
+            AsMode::Allocated => format!("AS{} [{}]", asinfo.asn, asinfo.allocated),
+            AsMode::Name => format!("AS{} [{}]", asinfo.asn, asinfo.name),
+        }
+    }
+
     /// Format a `DnsEntry` with or without `AS` information (if available)
-    fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool) -> String {
+    fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) -> String {
         match dns_entry {
             DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),
             DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
                 if lookup_as_info && !asinfo.asn.is_empty() {
-                    format!("AS{} {}", asinfo.asn, hosts.join(" "))
+                    format!("{} {}", format_asinfo(&asinfo, as_mode), hosts.join(" "))
                 } else {
                     hosts.join(" ")
                 }
@@ -1131,7 +1149,7 @@ fn render_hostname_cell(
             DnsEntry::NotFound(Unresolved::Normal(ip)) | DnsEntry::Pending(ip) => format!("{ip}"),
             DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
                 if lookup_as_info && !asinfo.asn.is_empty() {
-                    format!("AS{} {}", asinfo.asn, ip)
+                    format!("{} {}", format_asinfo(&asinfo, as_mode), ip)
                 } else {
                     format!("{ip}")
                 }
@@ -1148,25 +1166,26 @@ fn render_hostname_cell(
         dns: &DnsResolver,
         address_mode: AddressMode,
         lookup_as_info: bool,
+        as_mode: AsMode,
     ) -> String {
         let addr_fmt = match address_mode {
             AddressMode::IP => addr.to_string(),
             AddressMode::Host => {
                 if lookup_as_info {
                     let entry = dns.reverse_lookup_with_asinfo(*addr);
-                    format_dns_entry(entry, true)
+                    format_dns_entry(entry, true, as_mode)
                 } else {
                     let entry = dns.reverse_lookup(*addr);
-                    format_dns_entry(entry, false)
+                    format_dns_entry(entry, false, as_mode)
                 }
             }
             AddressMode::Both => {
                 let hostname = if lookup_as_info {
                     let entry = dns.reverse_lookup_with_asinfo(*addr);
-                    format_dns_entry(entry, true)
+                    format_dns_entry(entry, true, as_mode)
                 } else {
                     let entry = dns.reverse_lookup(*addr);
-                    format_dns_entry(entry, false)
+                    format_dns_entry(entry, false, as_mode)
                 };
                 format!("{hostname} ({addr})")
             }
@@ -1188,7 +1207,7 @@ fn render_hostname_cell(
             None => hop
                 .addrs_with_counts()
                 .map(|(addr, &freq)| {
-                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info)
+                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info, as_mode)
                 })
                 .join("\n"),
             Some(max_addr) => hop
@@ -1197,7 +1216,7 @@ fn render_hostname_cell(
                 .rev()
                 .take(max_addr as usize)
                 .map(|(addr, &freq)| {
-                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info)
+                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info, as_mode)
                 })
                 .join("\n"),
         }
