@@ -9,7 +9,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added `--tui-as-mode` flag to control how AS information is
+  rendered ([#483](https://github.com/fujiapple852/trippy/issues/483))
+
 ### Changed
+
+- Show AS information for IP addresses without PTR record ([#479](https://github.com/fujiapple852/trippy/issues/479))
 
 ### Fixed
 
