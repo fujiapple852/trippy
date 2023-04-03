@@ -96,6 +96,23 @@ pub enum AddressMode {
     Both,
 }
 
+/// How to render AS information.
+#[derive(Debug, Copy, Clone, ValueEnum)]
+pub enum AsMode {
+    /// Show the ASN.
+    Asn,
+    /// Display the AS prefix.
+    Prefix,
+    /// Display the country code.
+    CountryCode,
+    /// Display the registry name.
+    Registry,
+    /// Display the allocated date.
+    Allocated,
+    /// Display the AS name.
+    Name,
+}
+
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum DnsResolveMethod {
@@ -261,40 +278,44 @@ pub struct Args {
     )]
     pub tui_address_mode: AddressMode,
 
+    /// How to render AS information.
+    #[clap(value_enum, long, default_value = "asn", display_order = 27)]
+    pub tui_as_mode: AsMode,
+
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 27)]
+    #[clap(short = 'M', long, display_order = 28)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 28)]
+    #[clap(long, short = 's', default_value_t = 256, display_order = 29)]
     pub tui_max_samples: usize,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 29)]
+    #[clap(long, display_order = 30)]
     pub tui_preserve_screen: bool,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 30)]
+    #[clap(long, default_value = "100ms", display_order = 31)]
     pub tui_refresh_rate: String,
 
     /// The TUI theme colors [item=color,item=color,..]
-    #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 31)]
+    #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 32)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
-    #[clap(long, display_order = 32)]
+    #[clap(long, display_order = 33)]
     pub print_tui_theme_items: bool,
 
     /// The TUI key bindings [command=key,command=key,..]
-    #[clap(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 33)]
+    #[clap(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 34)]
     pub tui_key_bindings: Vec<(TuiCommandItem, TuiKeyBinding)>,
 
     /// Print all TUI commands that can be bound and exit
-    #[clap(long, display_order = 34)]
+    #[clap(long, display_order = 35)]
     pub print_tui_binding_commands: bool,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 35)]
+    #[clap(short = 'c', long, default_value_t = 10, display_order = 36)]
     pub report_cycles: usize,
 }
 
@@ -343,6 +364,7 @@ pub struct TrippyConfig {
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
     pub tui_address_mode: AddressMode,
+    pub tui_as_mode: AsMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
@@ -1075,6 +1097,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tui_preserve_screen: args.tui_preserve_screen,
             tui_refresh_rate,
             tui_address_mode: args.tui_address_mode,
+            tui_as_mode: args.tui_as_mode,
             tui_max_addrs: args.tui_max_addrs,
             tui_theme,
             tui_bindings,
