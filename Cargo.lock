@@ -1326,7 +1326,7 @@ dependencies = [
  "trust-dns-resolver",
  "tui",
  "widestring 1.0.2",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
