@@ -15,6 +15,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Show AS information for IP addresses without PTR record ([#479](https://github.com/fujiapple852/trippy/issues/479))
+- Re-enabled musl release builds ([#456](https://github.com/fujiapple852/trippy/issues/456))
 
 ### Fixed
 
