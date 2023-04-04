@@ -375,7 +375,7 @@ Options:
           How to render addresses [default: host] [possible values: ip, host,
           both]
         
-  --tui-as-mode <TUI_AS_MODE>
+      --tui-as-mode <TUI_AS_MODE>
           How to render AS information [default: asn] [possible values: asn,
           prefix, country-code, registry, allocated, name]
                   
