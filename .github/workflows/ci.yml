@@ -20,18 +20,23 @@ jobs:
         include:
           - build: linux-stable
             os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
             rust: stable
           - build: linux-beta
             os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
             rust: beta
           - build: linux-nightly
             os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
             rust: nightly
           - build: macos-stable
             os: macos-latest
+            target: x86_64-apple-darwin
             rust: nightly
           - build: windows-stable
             os: windows-latest
+            target: x86_64-pc-windows-msvc
             rust: stable
     steps:
       - uses: actions/checkout@v2
@@ -40,11 +45,12 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
+          target: ${{ matrix.target }}
       - name: test --workspace --all-features
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --workspace --all-features
+          args: --workspace --all-features --target ${{ matrix.target }}
 
   fmt:
     runs-on: ubuntu-22.04
