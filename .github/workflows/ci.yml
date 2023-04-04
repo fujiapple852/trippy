@@ -22,10 +22,10 @@ jobs:
             os: ubuntu-20.04
             rust: stable
           - build: linux-beta
-            os: ubuntu-latest
+            os: ubuntu-22.04
             rust: beta
           - build: linux-nightly
-            os: ubuntu-latest
+            os: ubuntu-22.04
             rust: nightly
           - build: macos-stable
             os: macos-latest
@@ -47,7 +47,7 @@ jobs:
           args: --workspace --all-features
 
   fmt:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         rust: [ stable, beta, nightly, 1.63.0 ]
@@ -66,7 +66,7 @@ jobs:
           args: --all -- --check
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -82,7 +82,7 @@ jobs:
           args: --workspace --all-features --tests -- -Dwarnings
 
   cargo-deny:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: EmbarkStudios/cargo-deny-action@v1
