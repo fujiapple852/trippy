@@ -1,0 +1,18 @@
+PackageIdentifier: fujiapple852.trippy
+PackageVersion: 0.7.0
+PackageLocale: en-US
+Publisher: fujiapple852
+PackageName: trippy
+License: Apache
+ShortDescription: A network diagnostic tool
+Installers:
+  - Architecture: x64
+    NestedInstallerType: portable
+    NestedInstallerFiles:
+      - RelativeFilePath: trippy-0.7.0-x86_64-pc-windows-msvc\trip.exe
+        PortableCommandAlias: trip
+    InstallerType: zip
+    InstallerUrl: https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-pc-windows-msvc.zip
+    InstallerSha256: C97282F1266719AC28DC364C4BF6257DF6408EC59A6ABA5C608139146B3B6CA5
+ManifestType: singleton
+ManifestVersion: 1.4.0
