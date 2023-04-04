@@ -13,6 +13,7 @@ jobs:
       matrix:
         build:
           - linux-stable
+          - linux-musl-stable
           - linux-beta
           - linux-nightly
           - macos-stable
@@ -21,6 +22,10 @@ jobs:
           - build: linux-stable
             os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
+            rust: stable
+          - build: linux-musl-stable
+            os: ubuntu-20.04
+            target: x86_64-unknown-linux-musl
             rust: stable
           - build: linux-beta
             os: ubuntu-22.04
