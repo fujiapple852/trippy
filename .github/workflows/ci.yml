@@ -33,7 +33,7 @@ jobs:
           - build: macos-stable
             os: macos-latest
             target: x86_64-apple-darwin
-            rust: nightly
+            rust: stable
           - build: windows-stable
             os: windows-latest
             target: x86_64-pc-windows-msvc
