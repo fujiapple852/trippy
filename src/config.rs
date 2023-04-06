@@ -1,3 +1,4 @@
+use crate::config::config_file::{ConfigBindings, ConfigFile, ConfigThemeColors};
 use crate::config::TuiCommandItem::{
     AddressModeBoth, AddressModeHost, AddressModeIp, ChartZoomIn, ChartZoomOut, ClearDnsCache,
     ClearSelection, ClearTraceData, ContractHosts, ContractHostsMin, ExpandHosts, ExpandHostsMax,
@@ -8,6 +9,7 @@ use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -40,6 +42,75 @@ const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
 /// The maximum grace duration.
 const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 
+/// The default value for `mode`.
+const DEFAULT_MODE: Mode = Mode::Tui;
+
+/// The default value for `protocol`.
+const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
+
+/// The default value for `min-round-duration`.
+const DEFAULT_STRATEGY_MIN_ROUND_DURATION: &str = "1s";
+
+/// The default value for `max-round-duration`.
+const DEFAULT_STRATEGY_MAX_ROUND_DURATION: &str = "1s";
+
+/// The default value for `initial-sequence`.
+const DEFAULT_STRATEGY_INITIAL_SEQUENCE: u16 = 33000;
+
+/// The default value for `multipath-strategy`.
+const DEFAULT_STRATEGY_MULTIPATH: MultipathStrategyConfig = MultipathStrategyConfig::Classic;
+
+/// The default value for `grace-duration`.
+const DEFAULT_STRATEGY_GRACE_DURATION: &str = "100ms";
+
+/// The default value for `max-inflight`.
+const DEFAULT_STRATEGY_MAX_INFLIGHT: u8 = 24;
+
+/// The default value for `first-ttl`.
+const DEFAULT_STRATEGY_FIRST_TTL: u8 = 1;
+
+/// The default value for `max-ttl`.
+const DEFAULT_STRATEGY_MAX_TTL: u8 = 64;
+
+/// The default value for `packet-size`.
+const DEFAULT_STRATEGY_PACKET_SIZE: u16 = 84;
+
+/// The default value for `payload-pattern`.
+const DEFAULT_STRATEGY_PAYLOAD_PATTERN: u8 = 0;
+
+/// The default value for `tos`.
+const DEFAULT_STRATEGY_TOS: u8 = 0;
+
+/// The default value for `read-timeout`.
+const DEFAULT_STRATEGY_READ_TIMEOUT: &str = "10ms";
+
+/// The default value for `tui-max-samples`.
+const DEFAULT_TUI_MAX_SAMPLES: usize = 256;
+
+/// The default value for `tui-preserve-screen`.
+const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
+
+/// The default value for `tui-as-mode`.
+const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
+
+/// The default value for `tui-address-mode`.
+const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
+
+/// The default value for `tui-refresh-rate`.
+const DEFAULT_TUI_REFRESH_RATE: &str = "100ms";
+
+/// The default value for `dns-resolve-method`.
+const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethod = DnsResolveMethod::System;
+
+/// The default value for `dns-lookup-as-info`.
+const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;
+
+/// The default value for `dns-timeout`.
+const DEFAULT_DNS_TIMEOUT: &str = "5s";
+
+/// The default value for `report-cycles`.
+const DEFAULT_REPORT_CYCLES: usize = 10;
+
 /// The minimum packet size we allow.
 const MIN_PACKET_SIZE: u16 = 28;
 
@@ -47,7 +118,8 @@ const MIN_PACKET_SIZE: u16 = 28;
 const MAX_PACKET_SIZE: u16 = 1024;
 
 /// The tool mode.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Mode {
     /// Display interactive TUI.
     Tui,
@@ -64,7 +136,8 @@ pub enum Mode {
 }
 
 /// The tracing protocol.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Protocol {
     /// Internet Control Message Protocol
     Icmp,
@@ -74,8 +147,19 @@ pub enum Protocol {
     Tcp,
 }
 
+/// The address family.
+#[derive(Debug, Copy, Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AddressFamily {
+    /// Internet Protocol V4
+    Ipv4,
+    /// Internet Protocol V6
+    Ipv6,
+}
+
 /// The strategy Equal-cost Multi-Path routing strategy.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum MultipathStrategyConfig {
     /// The src or dest port is used to store the sequence number.
     Classic,
@@ -86,7 +170,8 @@ pub enum MultipathStrategyConfig {
 }
 
 /// How to render the addresses.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum AddressMode {
     /// Show IP address only.
     IP,
@@ -97,7 +182,8 @@ pub enum AddressMode {
 }
 
 /// How to render AS information.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum AsMode {
     /// Show the ASN.
     Asn,
@@ -114,7 +200,8 @@ pub enum AsMode {
 }
 
 /// How DNS queries will be resolved.
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum DnsResolveMethod {
     /// Resolve using the OS resolver.
     System,
@@ -134,25 +221,17 @@ pub struct Args {
     #[clap(required = true)]
     pub targets: Vec<String>,
 
-    /// Output mode
-    #[clap(
-        value_enum,
-        short = 'm',
-        long,
-        default_value = "tui",
-        display_order = 1
-    )]
-    pub mode: Mode,
+    /// Config file
+    #[clap(value_enum, short = 'c', long, display_order = 0)]
+    pub config_file: Option<String>,
 
-    /// Tracing protocol
-    #[clap(
-        value_enum,
-        short = 'p',
-        long,
-        default_value = "icmp",
-        display_order = 2
-    )]
-    pub protocol: Protocol,
+    /// Output mode
+    #[clap(value_enum, short = 'm', long, display_order = 1)]
+    pub mode: Option<Mode>,
+
+    /// Tracing protocol [default: icmp]
+    #[clap(value_enum, short = 'p', long, display_order = 2)]
+    pub protocol: Option<Protocol>,
 
     /// Trace using the UDP protocol
     #[clap(
@@ -196,107 +275,89 @@ pub struct Args {
     #[clap(short = 'I', long, display_order = 10)]
     pub interface: Option<String>,
 
-    /// The minimum duration of every round
-    #[clap(short = 'i', long, default_value = "1s", display_order = 11)]
-    pub min_round_duration: String,
+    /// The minimum duration of every round [default: 1s]
+    #[clap(short = 'i', long, display_order = 11)]
+    pub min_round_duration: Option<String>,
 
-    /// The maximum duration of every round
-    #[clap(short = 'T', long, default_value = "1s", display_order = 12)]
-    pub max_round_duration: String,
+    /// The maximum duration of every round [default: 1s]
+    #[clap(short = 'T', long, display_order = 12)]
+    pub max_round_duration: Option<String>,
 
-    /// The initial sequence number
-    #[clap(long, default_value_t = 33000, display_order = 13)]
-    pub initial_sequence: u16,
+    /// The period of time to wait for additional ICMP responses after the target has responded [default: 100ms]
+    #[clap(short = 'g', long, display_order = 13)]
+    pub grace_duration: Option<String>,
 
-    /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only).
-    #[clap(
-        value_enum,
-        short = 'R',
-        long,
-        default_value = "classic",
-        display_order = 14
-    )]
-    pub multipath_strategy: MultipathStrategyConfig,
+    /// The initial sequence number [default: 33000]
+    #[clap(long, display_order = 14)]
+    pub initial_sequence: Option<u16>,
 
-    /// The period of time to wait for additional ICMP responses after the target has responded
-    #[clap(short = 'g', long, default_value = "100ms", display_order = 15)]
-    pub grace_duration: String,
+    /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default: classic]
+    #[clap(value_enum, short = 'R', long, display_order = 15)]
+    pub multipath_strategy: Option<MultipathStrategyConfig>,
 
-    /// The maximum number of in-flight ICMP echo requests
-    #[clap(short = 'U', long, default_value_t = 24, display_order = 16)]
-    pub max_inflight: u8,
+    /// The maximum number of in-flight ICMP echo requests [default: 24]
+    #[clap(short = 'U', long, display_order = 16)]
+    pub max_inflight: Option<u8>,
 
-    /// The TTL to start from
-    #[clap(short = 'f', long, default_value_t = 1, display_order = 17)]
-    pub first_ttl: u8,
+    /// The TTL to start from [default: 1]
+    #[clap(short = 'f', long, display_order = 17)]
+    pub first_ttl: Option<u8>,
 
-    /// The maximum number of TTL hops
-    #[clap(short = 't', long, default_value_t = 64, display_order = 18)]
-    pub max_ttl: u8,
+    /// The maximum number of TTL hops [default: 64]
+    #[clap(short = 't', long, display_order = 18)]
+    pub max_ttl: Option<u8>,
 
-    /// The size of IP packet to send (IP header + ICMP header + payload)
-    #[clap(long, default_value_t = 84, display_order = 19)]
-    pub packet_size: u16,
+    /// The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
+    #[clap(long, display_order = 19)]
+    pub packet_size: Option<u16>,
 
-    /// The repeating pattern in the payload of the ICMP packet
-    #[clap(long, default_value_t = 0, display_order = 20)]
-    pub payload_pattern: u8,
+    /// The repeating pattern in the payload of the ICMP packet [default: 0]
+    #[clap(long, display_order = 20)]
+    pub payload_pattern: Option<u8>,
 
-    /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only)
-    #[clap(short = 'Q', long, default_value_t = 0, display_order = 21)]
-    pub tos: u8,
+    /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+    #[clap(short = 'Q', long, display_order = 21)]
+    pub tos: Option<u8>,
 
-    /// The socket read timeout
-    #[clap(long, default_value = "10ms", display_order = 22)]
-    pub read_timeout: String,
+    /// The socket read timeout [default: 10ms]
+    #[clap(long, display_order = 22)]
+    pub read_timeout: Option<String>,
 
     /// How to perform DNS queries.
-    #[clap(
-        value_enum,
-        short = 'r',
-        long,
-        default_value = "system",
-        display_order = 23
-    )]
-    pub dns_resolve_method: DnsResolveMethod,
+    #[clap(value_enum, short = 'r', long, display_order = 23)]
+    pub dns_resolve_method: Option<DnsResolveMethod>,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, default_value = "5s", display_order = 24)]
-    pub dns_timeout: String,
+    #[clap(long, display_order = 24)]
+    pub dns_timeout: Option<String>,
 
     /// Lookup autonomous system (AS) information during DNS queries.
     #[clap(long, short = 'z', display_order = 25)]
-    pub dns_lookup_as_info: bool,
+    pub dns_lookup_as_info: Option<bool>,
 
     /// How to render addresses.
-    #[clap(
-        value_enum,
-        short = 'a',
-        long,
-        default_value = "host",
-        display_order = 26
-    )]
-    pub tui_address_mode: AddressMode,
+    #[clap(value_enum, short = 'a', long, display_order = 26)]
+    pub tui_address_mode: Option<AddressMode>,
 
     /// How to render AS information.
-    #[clap(value_enum, long, default_value = "asn", display_order = 27)]
-    pub tui_as_mode: AsMode,
+    #[clap(value_enum, long, display_order = 27)]
+    pub tui_as_mode: Option<AsMode>,
 
     /// The maximum number of addresses to show per hop
     #[clap(short = 'M', long, display_order = 28)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', default_value_t = 256, display_order = 29)]
-    pub tui_max_samples: usize,
+    #[clap(long, short = 's', display_order = 29)]
+    pub tui_max_samples: Option<usize>,
 
     /// Preserve the screen on exit
     #[clap(long, display_order = 30)]
-    pub tui_preserve_screen: bool,
+    pub tui_preserve_screen: Option<bool>,
 
     /// The TUI refresh rate
-    #[clap(long, default_value = "100ms", display_order = 31)]
-    pub tui_refresh_rate: String,
+    #[clap(long, display_order = 31)]
+    pub tui_refresh_rate: Option<String>,
 
     /// The TUI theme colors [item=color,item=color,..]
     #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 32)]
@@ -315,8 +376,8 @@ pub struct Args {
     pub print_tui_binding_commands: bool,
 
     /// The number of report cycles to run
-    #[clap(short = 'C', long, default_value_t = 10, display_order = 36)]
-    pub report_cycles: usize,
+    #[clap(short = 'C', long, display_order = 36)]
+    pub report_cycles: Option<usize>,
 }
 
 fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, TuiColor)> {
@@ -416,56 +477,73 @@ pub struct TuiTheme {
     pub help_dialog_text_color: TuiColor,
 }
 
-impl From<HashMap<TuiThemeItem, TuiColor>> for TuiTheme {
-    fn from(value: HashMap<TuiThemeItem, TuiColor>) -> Self {
+impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
+    fn from(value: (HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)) -> Self {
+        let (color_map, cfg) = value;
         Self {
-            bg_color: *value
+            bg_color: *color_map
                 .get(&TuiThemeItem::BgColor)
+                .or(cfg.bg_color.as_ref())
                 .unwrap_or(&TuiColor::Black),
-            border_color: *value
+            border_color: *color_map
                 .get(&TuiThemeItem::BorderColor)
+                .or(cfg.border_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
-            text_color: *value
+            text_color: *color_map
                 .get(&TuiThemeItem::TextColor)
+                .or(cfg.text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
-            tab_text_color: *value
+            tab_text_color: *color_map
                 .get(&TuiThemeItem::TabTextColor)
+                .or(cfg.tab_text_color.as_ref())
                 .unwrap_or(&TuiColor::Green),
-            hops_table_header_bg_color: *value
+            hops_table_header_bg_color: *color_map
                 .get(&TuiThemeItem::HopsTableHeaderBgColor)
+                .or(cfg.hops_table_header_bg_color.as_ref())
                 .unwrap_or(&TuiColor::White),
-            hops_table_header_text_color: *value
+            hops_table_header_text_color: *color_map
                 .get(&TuiThemeItem::HopsTableHeaderTextColor)
+                .or(cfg.hops_table_header_text_color.as_ref())
                 .unwrap_or(&TuiColor::Black),
-            hops_table_row_active_text_color: *value
+            hops_table_row_active_text_color: *color_map
                 .get(&TuiThemeItem::HopsTableRowActiveTextColor)
+                .or(cfg.hops_table_row_active_text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
-            hops_table_row_inactive_text_color: *value
+            hops_table_row_inactive_text_color: *color_map
                 .get(&TuiThemeItem::HopsTableRowInactiveTextColor)
+                .or(cfg.hops_table_row_inactive_text_color.as_ref())
                 .unwrap_or(&TuiColor::DarkGray),
-            hops_chart_selected_color: *value
+            hops_chart_selected_color: *color_map
                 .get(&TuiThemeItem::HopsChartSelectedColor)
+                .or(cfg.hops_chart_selected_color.as_ref())
                 .unwrap_or(&TuiColor::Green),
-            hops_chart_unselected_color: *value
+            hops_chart_unselected_color: *color_map
                 .get(&TuiThemeItem::HopsChartUnselectedColor)
+                .or(cfg.hops_chart_unselected_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
-            hops_chart_axis_color: *value
+            hops_chart_axis_color: *color_map
                 .get(&TuiThemeItem::HopsChartAxisColor)
+                .or(cfg.hops_chart_axis_color.as_ref())
                 .unwrap_or(&TuiColor::DarkGray),
-            frequency_chart_bar_color: *value
+            frequency_chart_bar_color: *color_map
                 .get(&TuiThemeItem::FrequencyChartBarColor)
+                .or(cfg.frequency_chart_bar_color.as_ref())
                 .unwrap_or(&TuiColor::Green),
-            frequency_chart_text_color: *value
+            frequency_chart_text_color: *color_map
                 .get(&TuiThemeItem::FrequencyChartTextColor)
+                .or(cfg.frequency_chart_text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
-            samples_chart_color: *value
+            samples_chart_color: *color_map
                 .get(&TuiThemeItem::SamplesChartColor)
+                .or(cfg.samples_chart_color.as_ref())
                 .unwrap_or(&TuiColor::Yellow),
-            help_dialog_bg_color: *value
+            help_dialog_bg_color: *color_map
                 .get(&TuiThemeItem::HelpDialogBgColor)
+                .or(cfg.help_dialog_bg_color.as_ref())
                 .unwrap_or(&TuiColor::Blue),
-            help_dialog_text_color: *value
+            help_dialog_text_color: *color_map
                 .get(&TuiThemeItem::HelpDialogTextColor)
+                .or(cfg.help_dialog_text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
         }
     }
@@ -511,7 +589,8 @@ pub enum TuiThemeItem {
 }
 
 /// A TUI color.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(try_from = "String")]
 pub enum TuiColor {
     Black,
     Red,
@@ -530,6 +609,14 @@ pub enum TuiColor {
     LightCyan,
     White,
     Rgb(u8, u8, u8),
+}
+
+impl TryFrom<String> for TuiColor {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_ref())
+    }
 }
 
 impl TryFrom<&str> for TuiColor {
@@ -639,78 +726,107 @@ impl TuiBindings {
     }
 }
 
-impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
-    fn from(value: HashMap<TuiCommandItem, TuiKeyBinding>) -> Self {
+impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindings {
+    fn from(value: (HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)) -> Self {
+        let (cmd_items, cfg) = value;
         Self {
-            toggle_help: *value
+            toggle_help: *cmd_items
                 .get(&ToggleHelp)
+                .or(cfg.toggle_help.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
-            previous_hop: *value
+            previous_hop: *cmd_items
                 .get(&PreviousHop)
+                .or(cfg.previous_hop.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Up)),
-            next_hop: *value
+            next_hop: *cmd_items
                 .get(&NextHop)
+                .or(cfg.next_hop.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Down)),
-            previous_trace: *value
+            previous_trace: *cmd_items
                 .get(&PreviousTrace)
+                .or(cfg.previous_trace.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Left)),
-            next_trace: *value
+            next_trace: *cmd_items
                 .get(&NextTrace)
+                .or(cfg.next_trace.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
-            address_mode_ip: *value
+            address_mode_ip: *cmd_items
                 .get(&AddressModeIp)
+                .or(cfg.address_mode_ip.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('i'))),
-            address_mode_host: *value
+            address_mode_host: *cmd_items
                 .get(&AddressModeHost)
+                .or(cfg.address_mode_host.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('n'))),
-            address_mode_both: *value
+            address_mode_both: *cmd_items
                 .get(&AddressModeBoth)
+                .or(cfg.address_mode_both.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('b'))),
-            toggle_freeze: *value
+            toggle_freeze: *cmd_items
                 .get(&ToggleFreeze)
+                .or(cfg.toggle_freeze.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('f'))),
-            toggle_chart: *value
+            toggle_chart: *cmd_items
                 .get(&ToggleChart)
+                .or(cfg.toggle_chart.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('c'))),
-            expand_hosts: *value
+            expand_hosts: *cmd_items
                 .get(&ExpandHosts)
+                .or(cfg.expand_hosts.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(']'))),
-            contract_hosts: *value
+            contract_hosts: *cmd_items
                 .get(&ContractHosts)
+                .or(cfg.contract_hosts.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('['))),
-            expand_hosts_max: *value
+            expand_hosts_max: *cmd_items
                 .get(&ExpandHostsMax)
+                .or(cfg.expand_hosts_max.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('}'))),
-            contract_hosts_min: *value
+            contract_hosts_min: *cmd_items
                 .get(&ContractHostsMin)
+                .or(cfg.contract_hosts_min.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('{'))),
-            chart_zoom_in: *value
+            chart_zoom_in: *cmd_items
                 .get(&ChartZoomIn)
+                .or(cfg.chart_zoom_in.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('='))),
-            chart_zoom_out: *value
+            chart_zoom_out: *cmd_items
                 .get(&ChartZoomOut)
+                .or(cfg.chart_zoom_out.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('-'))),
-            clear_trace_data: *value.get(&ClearTraceData).unwrap_or(
-                &TuiKeyBinding::new_with_modifier(KeyCode::Char('r'), KeyModifiers::CONTROL),
-            ),
-            clear_dns_cache: *value.get(&ClearDnsCache).unwrap_or(
-                &TuiKeyBinding::new_with_modifier(KeyCode::Char('k'), KeyModifiers::CONTROL),
-            ),
-            clear_selection: *value
+            clear_trace_data: *cmd_items
+                .get(&ClearTraceData)
+                .or(cfg.clear_trace_data.as_ref())
+                .unwrap_or(&TuiKeyBinding::new_with_modifier(
+                    KeyCode::Char('r'),
+                    KeyModifiers::CONTROL,
+                )),
+            clear_dns_cache: *cmd_items
+                .get(&ClearDnsCache)
+                .or(cfg.clear_dns_cache.as_ref())
+                .unwrap_or(&TuiKeyBinding::new_with_modifier(
+                    KeyCode::Char('k'),
+                    KeyModifiers::CONTROL,
+                )),
+            clear_selection: *cmd_items
                 .get(&ClearSelection)
+                .or(cfg.clear_selection.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Esc)),
-            toggle_as_info: *value
+            toggle_as_info: *cmd_items
                 .get(&ToggleASInfo)
+                .or(cfg.toggle_as_info.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('z'))),
-            quit: *value
+            quit: *cmd_items
                 .get(&Quit)
+                .or(cfg.quit.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('q'))),
         }
     }
 }
 
 /// Tui key binding.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Deserialize)]
+#[serde(try_from = "String")]
 pub struct TuiKeyBinding {
     pub code: KeyCode,
     pub modifier: KeyModifiers,
@@ -726,6 +842,14 @@ impl TuiKeyBinding {
 
     pub fn new_with_modifier(code: KeyCode, modifier: KeyModifiers) -> Self {
         Self { code, modifier }
+    }
+}
+
+impl TryFrom<String> for TuiKeyBinding {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_ref())
     }
 }
 
@@ -965,6 +1089,200 @@ pub enum TuiCommandItem {
     Quit,
 }
 
+pub mod config_file {
+    use crate::config::{
+        AddressFamily, AddressMode, AsMode, DnsResolveMethod, Mode, MultipathStrategyConfig,
+        Protocol, TuiColor, TuiKeyBinding,
+    };
+    use anyhow::Context;
+    use serde::Deserialize;
+    use std::fs::File;
+    use std::io::read_to_string;
+    use std::path::{Path, PathBuf};
+
+    const DEFAULT_CONFIG_FILE: &str = "trippy.toml";
+    const DEFAULT_HIDDEN_CONFIG_FILE: &str = ".trippy.toml";
+
+    /// Read the config from the default location of user config for the platform.
+    ///
+    /// Returns the parsed `Some(ConfigFile)` if the config file exists, `None` otherwise.
+    ///
+    /// Trippy will attempt to locate a `trippy.toml` or `.trippy.toml`
+    /// config file in one of the following platform specific locations:
+    ///     - the current directory
+    ///     - the user home directory
+    ///     - the user config direction
+    ///
+    /// For example, on Linux the Trippy will attempt to locate the following
+    /// files (in order):
+    ///     - `./trippy.toml`
+    ///     - `./.trippy.toml`
+    ///     - `$HOME/trippy.toml`
+    ///     - `$HOME/.trippy.toml`
+    ///     - `$HOME/.config/trippy.toml`
+    ///     - `$HOME/.config/.trippy.toml`
+    ///
+    /// See [here](https://github.com/dirs-dev/dirs-rs) for platform specific directory
+    /// information.
+    ///
+    /// Note that only the first config file found is used, no attempt is
+    /// made to merge the values from multiple files.
+    pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
+        if let Some(file) = read_file(|| Some(PathBuf::new()), DEFAULT_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(|| Some(PathBuf::new()), DEFAULT_HIDDEN_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dirs::home_dir, DEFAULT_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dirs::home_dir, DEFAULT_HIDDEN_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dirs::config_dir, DEFAULT_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dirs::config_dir, DEFAULT_HIDDEN_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Read the config from the given path.
+    pub fn read_config_file<P: AsRef<Path>>(path: P) -> anyhow::Result<ConfigFile> {
+        println!("{:?}", path.as_ref());
+        let file = File::open(path.as_ref())
+            .with_context(|| format!("config file not found: {:?}", path.as_ref()))?;
+        Ok(toml::from_str(&read_to_string(file)?)?)
+    }
+
+    fn read_file<F: FnOnce() -> Option<PathBuf>>(
+        dir: F,
+        file: &str,
+    ) -> anyhow::Result<Option<ConfigFile>> {
+        if let Some(mut path) = dir() {
+            path.push(file);
+            if path.exists() {
+                Ok(Some(read_config_file(path)?))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigFile {
+        pub trippy: Option<ConfigTrippy>,
+        pub strategy: Option<ConfigStrategy>,
+        pub theme_colors: Option<ConfigThemeColors>,
+        pub bindings: Option<ConfigBindings>,
+        pub tui: Option<ConfigTui>,
+        pub dns: Option<ConfigDns>,
+        pub report: Option<ConfigReport>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigTrippy {
+        pub mode: Option<Mode>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigStrategy {
+        pub protocol: Option<Protocol>,
+        pub addr_family: Option<AddressFamily>,
+        pub target_port: Option<u16>,
+        pub source_port: Option<u16>,
+        pub source_address: Option<String>,
+        pub interface: Option<String>,
+        pub min_round_duration: Option<String>,
+        pub max_round_duration: Option<String>,
+        pub initial_sequence: Option<u16>,
+        pub multipath_strategy: Option<MultipathStrategyConfig>,
+        pub grace_duration: Option<String>,
+        pub max_inflight: Option<u8>,
+        pub first_ttl: Option<u8>,
+        pub max_ttl: Option<u8>,
+        pub packet_size: Option<u16>,
+        pub payload_pattern: Option<u8>,
+        pub tos: Option<u8>,
+        pub read_timeout: Option<String>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigDns {
+        pub dns_resolve_method: Option<DnsResolveMethod>,
+        pub dns_lookup_as_info: Option<bool>,
+        pub dns_timeout: Option<String>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigReport {
+        pub report_cycles: Option<usize>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigTui {
+        pub tui_max_samples: Option<usize>,
+        pub tui_preserve_screen: Option<bool>,
+        pub tui_refresh_rate: Option<String>,
+        pub tui_address_mode: Option<AddressMode>,
+        pub tui_as_mode: Option<AsMode>,
+        pub tui_max_addrs: Option<u8>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigThemeColors {
+        pub bg_color: Option<TuiColor>,
+        pub border_color: Option<TuiColor>,
+        pub text_color: Option<TuiColor>,
+        pub tab_text_color: Option<TuiColor>,
+        pub hops_table_header_bg_color: Option<TuiColor>,
+        pub hops_table_header_text_color: Option<TuiColor>,
+        pub hops_table_row_active_text_color: Option<TuiColor>,
+        pub hops_table_row_inactive_text_color: Option<TuiColor>,
+        pub hops_chart_selected_color: Option<TuiColor>,
+        pub hops_chart_unselected_color: Option<TuiColor>,
+        pub hops_chart_axis_color: Option<TuiColor>,
+        pub frequency_chart_bar_color: Option<TuiColor>,
+        pub frequency_chart_text_color: Option<TuiColor>,
+        pub samples_chart_color: Option<TuiColor>,
+        pub help_dialog_bg_color: Option<TuiColor>,
+        pub help_dialog_text_color: Option<TuiColor>,
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+    pub struct ConfigBindings {
+        pub toggle_help: Option<TuiKeyBinding>,
+        pub previous_hop: Option<TuiKeyBinding>,
+        pub next_hop: Option<TuiKeyBinding>,
+        pub previous_trace: Option<TuiKeyBinding>,
+        pub next_trace: Option<TuiKeyBinding>,
+        pub address_mode_ip: Option<TuiKeyBinding>,
+        pub address_mode_host: Option<TuiKeyBinding>,
+        pub address_mode_both: Option<TuiKeyBinding>,
+        pub toggle_freeze: Option<TuiKeyBinding>,
+        pub toggle_chart: Option<TuiKeyBinding>,
+        pub expand_hosts: Option<TuiKeyBinding>,
+        pub contract_hosts: Option<TuiKeyBinding>,
+        pub expand_hosts_max: Option<TuiKeyBinding>,
+        pub contract_hosts_min: Option<TuiKeyBinding>,
+        pub chart_zoom_in: Option<TuiKeyBinding>,
+        pub chart_zoom_out: Option<TuiKeyBinding>,
+        pub clear_trace_data: Option<TuiKeyBinding>,
+        pub clear_dns_cache: Option<TuiKeyBinding>,
+        pub clear_selection: Option<TuiKeyBinding>,
+        pub toggle_as_info: Option<TuiKeyBinding>,
+        pub quit: Option<TuiKeyBinding>,
+    }
+}
+
 impl TryFrom<(Args, u16)> for TrippyConfig {
     type Error = anyhow::Error;
 
@@ -985,29 +1303,155 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             );
             process::exit(0);
         }
-        let protocol = match (args.udp, args.tcp, args.protocol) {
+        let cfg_file = if let Some(cfg) = args.config_file {
+            config_file::read_config_file(cfg)?
+        } else if let Some(cfg) = config_file::read_default_config_file()? {
+            cfg
+        } else {
+            ConfigFile::default()
+        };
+        let cfg_file_trace = cfg_file.trippy.unwrap_or_default();
+        let cfg_file_strategy = cfg_file.strategy.unwrap_or_default();
+        let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
+        let cfg_file_tui_theme_colors = cfg_file.theme_colors.unwrap_or_default();
+        let cfg_file_tui = cfg_file.tui.unwrap_or_default();
+        let cfg_file_dns = cfg_file.dns.unwrap_or_default();
+        let cfg_file_report = cfg_file.report.unwrap_or_default();
+        let mode = cfg_layer(args.mode, cfg_file_trace.mode, DEFAULT_MODE);
+        let protocol = cfg_layer(
+            args.protocol,
+            cfg_file_strategy.protocol,
+            DEFAULT_STRATEGY_PROTOCOL,
+        );
+        let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
+        let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
+        let source_address = cfg_layer_opt(args.source_address, cfg_file_strategy.source_address);
+        let interface = cfg_layer_opt(args.interface, cfg_file_strategy.interface);
+        let min_round_duration = cfg_layer(
+            args.min_round_duration,
+            cfg_file_strategy.min_round_duration,
+            String::from(DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+        );
+        let max_round_duration = cfg_layer(
+            args.max_round_duration,
+            cfg_file_strategy.max_round_duration,
+            String::from(DEFAULT_STRATEGY_MAX_ROUND_DURATION),
+        );
+        let initial_sequence = cfg_layer(
+            args.initial_sequence,
+            cfg_file_strategy.initial_sequence,
+            DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+        );
+        let multipath_strategy_cfg = cfg_layer(
+            args.multipath_strategy,
+            cfg_file_strategy.multipath_strategy,
+            DEFAULT_STRATEGY_MULTIPATH,
+        );
+        let grace_duration = cfg_layer(
+            args.grace_duration,
+            cfg_file_strategy.grace_duration,
+            String::from(DEFAULT_STRATEGY_GRACE_DURATION),
+        );
+        let max_inflight = cfg_layer(
+            args.max_inflight,
+            cfg_file_strategy.max_inflight,
+            DEFAULT_STRATEGY_MAX_INFLIGHT,
+        );
+        let first_ttl = cfg_layer(
+            args.first_ttl,
+            cfg_file_strategy.first_ttl,
+            DEFAULT_STRATEGY_FIRST_TTL,
+        );
+        let max_ttl = cfg_layer(
+            args.max_ttl,
+            cfg_file_strategy.max_ttl,
+            DEFAULT_STRATEGY_MAX_TTL,
+        );
+        let packet_size = cfg_layer(
+            args.packet_size,
+            cfg_file_strategy.packet_size,
+            DEFAULT_STRATEGY_PACKET_SIZE,
+        );
+        let payload_pattern = cfg_layer(
+            args.payload_pattern,
+            cfg_file_strategy.payload_pattern,
+            DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+        );
+        let tos = cfg_layer(args.tos, cfg_file_strategy.tos, DEFAULT_STRATEGY_TOS);
+        let read_timeout = cfg_layer(
+            args.read_timeout,
+            cfg_file_strategy.read_timeout,
+            String::from(DEFAULT_STRATEGY_READ_TIMEOUT),
+        );
+        let tui_max_samples = cfg_layer(
+            args.tui_max_samples,
+            cfg_file_tui.tui_max_samples,
+            DEFAULT_TUI_MAX_SAMPLES,
+        );
+        let tui_preserve_screen = cfg_layer(
+            args.tui_preserve_screen,
+            cfg_file_tui.tui_preserve_screen,
+            DEFAULT_TUI_PRESERVE_SCREEN,
+        );
+        let tui_refresh_rate = cfg_layer(
+            args.tui_refresh_rate,
+            cfg_file_tui.tui_refresh_rate,
+            String::from(DEFAULT_TUI_REFRESH_RATE),
+        );
+        let tui_address_mode = cfg_layer(
+            args.tui_address_mode,
+            cfg_file_tui.tui_address_mode,
+            DEFAULT_TUI_ADDRESS_MODE,
+        );
+        let tui_as_mode = cfg_layer(
+            args.tui_as_mode,
+            cfg_file_tui.tui_as_mode,
+            DEFAULT_TUI_AS_MODE,
+        );
+        let tui_max_addrs = cfg_layer_opt(args.tui_max_addrs, cfg_file_tui.tui_max_addrs);
+        let dns_resolve_method = cfg_layer(
+            args.dns_resolve_method,
+            cfg_file_dns.dns_resolve_method,
+            DEFAULT_DNS_RESOLVE_METHOD,
+        );
+        let dns_lookup_as_info = cfg_layer(
+            args.dns_lookup_as_info,
+            cfg_file_dns.dns_lookup_as_info,
+            DEFAULT_DNS_LOOKUP_AS_INFO,
+        );
+        let dns_timeout = cfg_layer(
+            args.dns_timeout,
+            cfg_file_dns.dns_timeout,
+            String::from(DEFAULT_DNS_TIMEOUT),
+        );
+        let report_cycles = cfg_layer(
+            args.report_cycles,
+            cfg_file_report.report_cycles,
+            DEFAULT_REPORT_CYCLES,
+        );
+        let protocol = match (args.udp, args.tcp, protocol) {
             (false, false, Protocol::Icmp) => TracerProtocol::Icmp,
             (false, false, Protocol::Udp) | (true, _, _) => TracerProtocol::Udp,
             (false, false, Protocol::Tcp) | (_, true, _) => TracerProtocol::Tcp,
         };
-        let read_timeout = humantime::parse_duration(&args.read_timeout)?;
-        let min_round_duration = humantime::parse_duration(&args.min_round_duration)?;
-        let max_round_duration = humantime::parse_duration(&args.max_round_duration)?;
-        let grace_duration = humantime::parse_duration(&args.grace_duration)?;
-        let source_address = args
-            .source_address
+        let read_timeout = humantime::parse_duration(&read_timeout)?;
+        let min_round_duration = humantime::parse_duration(&min_round_duration)?;
+        let max_round_duration = humantime::parse_duration(&max_round_duration)?;
+        let grace_duration = humantime::parse_duration(&grace_duration)?;
+        let source_addr = source_address
             .as_ref()
             .map(|addr| {
                 IpAddr::from_str(addr)
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let addr_family = if args.ipv6 {
-            TracerAddrFamily::Ipv6
-        } else {
-            TracerAddrFamily::Ipv4
+        let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
+            (false, false, Some(AddressFamily::Ipv4) | None) | (true, _, _) => {
+                TracerAddrFamily::Ipv4
+            }
+            (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
         };
-        let multipath_strategy = match (args.multipath_strategy, addr_family) {
+        let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
             (MultipathStrategyConfig::Paris, _) => {
                 Err(anyhow!("Paris multipath strategy not implemented yet!"))
@@ -1019,12 +1463,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                 "Dublin multipath strategy not implemented for IPv6 yet!"
             )),
         }?;
-        let port_direction = match (
-            protocol,
-            args.source_port,
-            args.target_port,
-            args.multipath_strategy,
-        ) {
+        let port_direction = match (protocol, source_port, target_port, multipath_strategy_cfg) {
             (TracerProtocol::Icmp, _, _, _) => PortDirection::None,
             (TracerProtocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),
             (TracerProtocol::Udp, Some(src), None, _) => {
@@ -1044,67 +1483,85 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
                 ));
             }
         };
-        let tui_refresh_rate = humantime::parse_duration(&args.tui_refresh_rate)?;
-        let dns_timeout = humantime::parse_duration(&args.dns_timeout)?;
-        let max_rounds = match args.mode {
+        let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
+        let dns_timeout = humantime::parse_duration(&dns_timeout)?;
+        let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,
-            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(args.report_cycles),
+            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
         };
-        validate_multi(args.mode, protocol, &args.targets)?;
-        validate_ttl(args.first_ttl, args.max_ttl)?;
-        validate_max_inflight(args.max_inflight)?;
+        let tui_max_addrs = match tui_max_addrs {
+            Some(n) if n > 0 => Some(n),
+            _ => None,
+        };
+        validate_multi(mode, protocol, &args.targets)?;
+        validate_ttl(first_ttl, max_ttl)?;
+        validate_max_inflight(max_inflight)?;
         validate_read_timeout(read_timeout)?;
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
-        validate_packet_size(args.packet_size)?;
+        validate_packet_size(packet_size)?;
         validate_tui_refresh_rate(tui_refresh_rate)?;
-        validate_report_cycles(args.report_cycles)?;
-        validate_dns(args.dns_resolve_method, args.dns_lookup_as_info)?;
-        let tui_theme = TuiTheme::from(
-            args.tui_theme_colors
-                .into_iter()
-                .collect::<HashMap<TuiThemeItem, TuiColor>>(),
-        );
-        let tui_bindings = TuiBindings::from(
-            args.tui_key_bindings
-                .into_iter()
-                .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>(),
-        );
+        validate_report_cycles(report_cycles)?;
+        validate_dns(dns_resolve_method, dns_lookup_as_info)?;
+        let tui_theme_items = args
+            .tui_theme_colors
+            .into_iter()
+            .collect::<HashMap<TuiThemeItem, TuiColor>>();
+        let tui_theme = TuiTheme::from((tui_theme_items, cfg_file_tui_theme_colors));
+        let tui_binding_items = args
+            .tui_key_bindings
+            .into_iter()
+            .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>();
+        let tui_bindings = TuiBindings::from((tui_binding_items, cfg_file_tui_bindings));
         validate_bindings(&tui_bindings)?;
         Ok(Self {
             targets: args.targets,
             protocol,
             addr_family,
-            first_ttl: args.first_ttl,
-            max_ttl: args.max_ttl,
+            first_ttl,
+            max_ttl,
             min_round_duration,
             max_round_duration,
             grace_duration,
-            max_inflight: args.max_inflight,
-            initial_sequence: args.initial_sequence,
+            max_inflight,
+            initial_sequence,
             multipath_strategy,
             read_timeout,
-            packet_size: args.packet_size,
-            payload_pattern: args.payload_pattern,
-            tos: args.tos,
-            source_addr: source_address,
-            interface: args.interface,
+            packet_size,
+            payload_pattern,
+            tos,
+            source_addr,
+            interface,
             port_direction,
             dns_timeout,
-            dns_resolve_method: args.dns_resolve_method,
-            dns_lookup_as_info: args.dns_lookup_as_info,
-            tui_max_samples: args.tui_max_samples,
-            tui_preserve_screen: args.tui_preserve_screen,
+            dns_resolve_method,
+            dns_lookup_as_info,
+            tui_max_samples,
+            tui_preserve_screen,
             tui_refresh_rate,
-            tui_address_mode: args.tui_address_mode,
-            tui_as_mode: args.tui_as_mode,
-            tui_max_addrs: args.tui_max_addrs,
+            tui_address_mode,
+            tui_as_mode,
+            tui_max_addrs,
             tui_theme,
             tui_bindings,
-            mode: args.mode,
-            report_cycles: args.report_cycles,
+            mode,
+            report_cycles,
             max_rounds,
         })
+    }
+}
+
+fn cfg_layer<T>(fst: Option<T>, snd: Option<T>, def: T) -> T {
+    match (fst, snd) {
+        (Some(val), _) | (None, Some(val)) => val,
+        (None, None) => def,
+    }
+}
+
+fn cfg_layer_opt<T>(fst: Option<T>, snd: Option<T>) -> Option<T> {
+    match (fst, snd) {
+        (Some(val), _) | (None, Some(val)) => Some(val),
+        (None, None) => None,
     }
 }
 
