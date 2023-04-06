@@ -1,0 +1,278 @@
+# Sample config file for Trippy.
+#
+# Copy this template config file to your platform specific config dir.
+#
+# Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` config file
+# in one of the following platform specific locations:
+#   the current directory
+#   the user home directory
+#   the user config directory
+#
+# For example, on Linux the Trippy will attempt to locate the following
+# files (in order):
+#   `./trippy.toml`
+#   `./.trippy.toml`
+#   `$HOME/trippy.toml`
+#   `$HOME/.trippy.toml`
+#   `$HOME/.config/trippy.toml`
+#   `$HOME/.config/.trippy.toml`
+#
+# See https://github.com/dirs-dev/dirs-rs for platform specific directory
+# information.
+#
+# You may override the config file name and location by passing the `-c`
+# (`--config-file`) command line argument.
+#
+# All sections and all items within each section are non-mandatory.
+
+
+#
+# General Trippy configuraton.
+#
+[trippy]
+
+# The Trippy mode.
+#
+# Allowed values are:
+#   tui         - Display interactive Tui [default]
+#   stream      - Display a continuous stream of tracing data
+#   pretty      - Generate an pretty text table report for N cycles
+#   markdown    - Generate a markdown text table report for N cycles
+#   csv         - Generate a SCV report for N cycles
+#   json        - Generate a JSON report for N cycles
+mode = "tui"
+
+
+#
+# Tracing strategy configuration.
+#
+[strategy]
+
+# The tracing protocol.
+#
+# Allowed values are:
+#   icmp [default]
+#   udp
+#   tcp
+protocol = "icmp"
+
+# The address family.
+#
+# Allowed values are:
+#   ipv4 [default]
+#   ipv6
+addr-family = "ipv4"
+
+# The target port (TCP & UDP only) [default: 80]
+#
+# Applicable for TCP and UDP protocols only.
+#target-port = 80
+
+# The source port (TCP & UDP only) [default: auto]
+#
+# Applicable for TCP and UDP protocols only.
+#source-port = 1234
+
+# The source IP address [default: auto]
+#
+# If unspecified the source address wil be chosen automatically based on the tracing target.
+#source-address = "1.2.3.4"
+
+# The network interface [default: auto]
+#
+# If not specified the interface is chosen based on the source-address.
+#interface = "en0"
+
+# The minimum duration of every round [default: 1s]
+#
+# The minimum time that must elapse before a tracing round is considered
+# complete, regardless of whether the target is discovered or not.
+min-round-duration = "1000ms"
+
+# The maximum duration of every round [default: 1s]
+#
+# The maximum time that may elapse before a tracing round is considered
+# complete, regardless of whether the target is discovered or not.
+max-round-duration = "1000ms"
+
+# The round grace period [default: 100ms]
+#
+# The period of time to wait for additional probe responses after the target
+# has responded.
+grace-duration = "100ms"
+
+# The initial sequence number [default: 33000]
+initial-sequence = 33000
+
+# The Equal-cost Multi-Path routing strategy (IPv4/UDP only)
+#
+# Allowed value are:
+#   classic - The src or dest port is used to store the sequence number [default]
+#   paris   - The UDP `checksum` field is used to store the sequence number
+#   dublin  - The IP `identifier` field is used to store the sequence number
+#
+# See https://github.com/fujiapple852/trippy/issues/274 for more details.
+multipath-strategy = "classic"
+
+# The maximum number of in-flight ICMP echo requests [default: 24]
+#
+# The tracing stratgey operates a sliding window protocol and will allow a
+# maximum number of probes to be inflight (sent, and not received or lost)
+# at any given time.
+max-inflight = 24
+
+# The TTL to start from [default: 1]
+first-ttl = 1
+
+# The maximum number of TTL hops [default: 64]
+max-ttl = 64
+
+# The size of IP packet to send [default: 84]
+#
+# For icmp this is the sum of the IP header, ICMP header and the payload.
+# Trippy will adjust the size of the payload to fill up to the packet size.
+packet-size = 84
+
+# The repeating pattern in the payload of the ICMP packet [default: 0]
+payload-pattern = 0
+
+# The TOS IP header value (TCP and UDP only) [default: 0]
+#
+# This is also known as DSCP+ECN.
+tos = 0
+
+# The socket read timeout [default: 10ms]
+read-timeout = "10ms"
+
+
+#
+# DNS configuration.
+#
+[dns]
+
+# How DNS queries are resolved
+#
+# Allowed values are:
+#   system      - Resolve using the OS resolver [default]
+#   resolv      - Resolve using the `/etc/resolv.conf` DNS configuration
+#   google      - Resolve using the Google `8.8.8.8` DNS service
+#   cloudflare  - Resolve using the Cloudflare `1.1.1.1` DNS service
+dns-resolve-method = "system"
+
+# Whether to lookup AS information [default: false]
+#
+# If enabled, AS (autonomous system) information is retrived during DNS
+# queries.
+dns-lookup-as-info = false
+
+# The maximum time to wait to perform DNS queries [default: 5s]
+dns-timeout = "5s"
+
+
+#
+# Report generation configuration.
+#
+[report]
+
+# The number of report cycles to run [default: 10]
+#
+# Only applicable for modes pretty, markdown, csv and json.
+report-cycles = 10
+
+
+#
+# General Tui Configuration.
+#
+[tui]
+
+# How to render addresses.
+#
+# Allowed values are:
+#   ip - Show IP address only
+#   host - Show reverse-lookup DNS hostname only [default]
+#   both - Show both IP address and reverse-lookup DNS hostname
+tui-address-mode = "host"
+
+# How to render AS information.
+#
+# Allowed values are:
+#   asn             - Show the ASN [default]
+#   prefix          - Display the AS prefix
+#   country-code    - Display the country code
+#   registry        - Display the registry name
+#   allocated       - Display the allocated date
+#   name            - Display the AS name
+tui-as-mode = "asn"
+
+# The maximum number of addresses to show per hop [default: auto]
+#
+# Use a zero value for `auto`.
+tui-max-addrs = 0
+
+# The maximum number of samples to record per hop [default: 256]
+tui-max-samples = 256
+
+# Whether to preserve the screen on exit [default: false]
+tui-preserve-screen = false
+
+# The Tui refresh rate [default: 100ms]
+tui-refresh-rate = "100ms"
+
+
+# Tui color theme configure.
+#
+# The allowed colors values are:
+#   Black, Red, Green, Yellow, Blue, Magenta, Cyan, Gray, DarkGray, LightRed,
+#   LightGreen, LightYellow, LightBlue, LightMagenta, LightCyan, White
+#
+# Color names are case-insensitive and may contain dashes. Raw hex values,
+# such as ffffff for white, may also be used.
+#
+# See https://github.com/fujiapple852/trippy#theme-reference for details.
+[theme-colors]
+bg-color = "black"
+border-color = "gray"
+text-color = "gray"
+tab-text-color = "green"
+hops-table-header-bg-color = "white"
+hops-table-header-text-color = "black"
+hops-table-row-active-text-color = "gray"
+hops-table-row-inactive-text-color = "darkgray"
+hops-chart-selected-color = "green"
+hops-chart-unselected-color = "gray"
+hops-chart-axis-color = "darkgray"
+frequency-chart-bar-color = "green"
+frequency-chart-text-color = "gray"
+samples-chart-color = "yellow"
+help-dialog-bg-color = "blue"
+help-dialog-text-color = "gray"
+
+
+# Tui key bindings Configuration.
+#
+# The supported modifiers are: shift, ctrl, alt, super, hyper & meta. Multiple
+# modifiers may be specified, for example ctrl+shift+b.
+#
+# See https://github.com/fujiapple852/trippy#key-bindings-reference for details.
+[bindings]
+toggle-help = "h"
+next-hop = "down"
+previous-hop = "up"
+next-trace = "right"
+previous-trace = "left"
+address-mode-ip = "i"
+address-mode-host = "n"
+address-mode-both = "b"
+toggle-freeze = "f"
+toggle-chart = "c"
+expand-hosts = "]"
+expand-hosts-max = "}"
+contract-hosts = "["
+contract-hosts-min = "{"
+chart-zoom-in = "="
+chart-zoom-out = "-"
+clear-trace-data = "ctrl+r"
+clear-dns-cache = "ctrl+k"
+clear-selection = "esc"
+toggle-as-info = "z"
+quit = "q"
