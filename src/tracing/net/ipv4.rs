@@ -221,8 +221,7 @@ fn make_echo_request_icmp_packet(
     payload_size: usize,
     payload_pattern: PayloadPattern,
 ) -> TraceResult<EchoRequestPacket<'_>> {
-    let mut payload_buf = [0_u8; MAX_ICMP_PAYLOAD_BUF];
-    payload_buf.iter_mut().for_each(|x| *x = payload_pattern.0);
+    let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
     let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
