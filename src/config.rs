@@ -568,10 +568,10 @@ impl TryFrom<&str> for TuiColor {
 #[derive(Debug, Clone, Copy)]
 pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
-    pub up: TuiKeyBinding,
-    pub down: TuiKeyBinding,
-    pub left: TuiKeyBinding,
-    pub right: TuiKeyBinding,
+    pub previous_hop: TuiKeyBinding,
+    pub next_hop: TuiKeyBinding,
+    pub previous_trace: TuiKeyBinding,
+    pub next_trace: TuiKeyBinding,
     pub address_mode_ip: TuiKeyBinding,
     pub address_mode_host: TuiKeyBinding,
     pub address_mode_both: TuiKeyBinding,
@@ -597,10 +597,10 @@ impl TuiBindings {
     pub fn find_duplicates(&self) -> Vec<String> {
         let (_, duplicates) = [
             (self.toggle_help, ToggleHelp),
-            (self.up, PreviousHop),
-            (self.down, NextHop),
-            (self.left, PreviousTrace),
-            (self.right, NextTrace),
+            (self.previous_hop, PreviousHop),
+            (self.next_hop, NextHop),
+            (self.previous_trace, PreviousTrace),
+            (self.next_trace, NextTrace),
             (self.address_mode_ip, AddressModeIp),
             (self.address_mode_host, AddressModeHost),
             (self.address_mode_both, AddressModeBoth),
@@ -645,16 +645,16 @@ impl From<HashMap<TuiCommandItem, TuiKeyBinding>> for TuiBindings {
             toggle_help: *value
                 .get(&ToggleHelp)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
-            up: *value
+            previous_hop: *value
                 .get(&PreviousHop)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Up)),
-            down: *value
+            next_hop: *value
                 .get(&NextHop)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Down)),
-            left: *value
+            previous_trace: *value
                 .get(&PreviousTrace)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Left)),
-            right: *value
+            next_trace: *value
                 .get(&NextTrace)
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
             address_mode_ip: *value

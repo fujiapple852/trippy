@@ -88,10 +88,10 @@ const HELP_LINES: [&str; 16] = [
 #[derive(Debug, Clone, Copy)]
 pub struct Bindings {
     toggle_help: KeyBinding,
-    up: KeyBinding,
-    down: KeyBinding,
-    left: KeyBinding,
-    right: KeyBinding,
+    previous_hop: KeyBinding,
+    next_hop: KeyBinding,
+    previous_trace: KeyBinding,
+    next_trace: KeyBinding,
     address_mode_ip: KeyBinding,
     address_mode_host: KeyBinding,
     address_mode_both: KeyBinding,
@@ -114,10 +114,10 @@ impl From<TuiBindings> for Bindings {
     fn from(value: TuiBindings) -> Self {
         Self {
             toggle_help: KeyBinding::from(value.toggle_help),
-            up: KeyBinding::from(value.up),
-            down: KeyBinding::from(value.down),
-            left: KeyBinding::from(value.left),
-            right: KeyBinding::from(value.right),
+            previous_hop: KeyBinding::from(value.previous_hop),
+            next_hop: KeyBinding::from(value.next_hop),
+            previous_trace: KeyBinding::from(value.previous_trace),
+            next_trace: KeyBinding::from(value.next_trace),
             address_mode_ip: KeyBinding::from(value.address_mode_ip),
             address_mode_host: KeyBinding::from(value.address_mode_host),
             address_mode_both: KeyBinding::from(value.address_mode_both),
@@ -542,14 +542,14 @@ fn run_app<B: Backend>(
                     }
                 } else if bindings.toggle_help.check(key) {
                     app.toggle_help();
-                } else if bindings.down.check(key) {
+                } else if bindings.next_hop.check(key) {
                     app.next_hop();
-                } else if bindings.up.check(key) {
+                } else if bindings.previous_hop.check(key) {
                     app.previous_hop();
-                } else if bindings.left.check(key) {
+                } else if bindings.previous_trace.check(key) {
                     app.previous_trace();
                     app.clear();
-                } else if bindings.right.check(key) {
+                } else if bindings.next_trace.check(key) {
                     app.next_trace();
                     app.clear();
                 } else if bindings.address_mode_ip.check(key) {
