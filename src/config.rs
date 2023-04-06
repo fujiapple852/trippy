@@ -315,7 +315,7 @@ pub struct Args {
     pub print_tui_binding_commands: bool,
 
     /// The number of report cycles to run
-    #[clap(short = 'c', long, default_value_t = 10, display_order = 36)]
+    #[clap(short = 'C', long, default_value_t = 10, display_order = 36)]
     pub report_cycles: usize,
 }
 
