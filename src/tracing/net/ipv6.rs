@@ -99,7 +99,6 @@ pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    // port_direction: PortDirection,
 ) -> TraceResult<Socket> {
     fn process_result(addr: SocketAddr, res: std::io::Result<()>) -> TraceResult<()> {
         match res {
