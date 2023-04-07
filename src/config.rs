@@ -41,10 +41,10 @@ const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
 const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 
 /// The minimum packet size we allow.
-pub const MIN_PACKET_SIZE: u16 = 28;
+const MIN_PACKET_SIZE: u16 = 28;
 
 /// The maximum packet size we allow.
-pub const MAX_PACKET_SIZE: u16 = 1024;
+const MAX_PACKET_SIZE: u16 = 1024;
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ValueEnum)]
