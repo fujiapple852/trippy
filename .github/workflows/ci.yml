@@ -17,7 +17,6 @@ jobs:
           - linux-beta
           - linux-nightly
           - macos-stable
-          - windows-stable
         include:
           - build: linux-stable
             os: ubuntu-20.04
@@ -39,6 +38,20 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
             rust: stable
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+      - run: sudo -E env "PATH=$PATH" cargo test --workspace --all-features --target ${{ matrix.target }}
+  test-windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build:
+          - windows-stable
+        include:
           - build: windows-stable
             os: windows-latest
             target: x86_64-pc-windows-msvc
