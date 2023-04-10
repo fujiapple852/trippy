@@ -32,6 +32,7 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Chart of RTT for all hops in a trace with zooming capability
     - Customizable color theme & key bindings
+    - Configuration via both command line arguments and a configuration file
     - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
@@ -525,6 +526,32 @@ command line option.
 
 The supported modifiers are: `shift`, `ctrl`, `alt`, `super`, `hyper` & `meta`. Multiple modifiers may be specified, for
 example `ctrl+shift+b`.
+
+## Configuration Reference
+
+Trippy can be configured with via command line arguments or an optional configuration file.  If a given configuration 
+item is specified in both the configuration file and via a command line argument then the latter will take precedence.
+
+The configuration file location may be provided to trippy via the `-c` (`--config-file`) argument.  If not provided, 
+Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration file in one of the following platform 
+specific locations:
+
+- The current directory
+- The user home directory 
+- The user config direction
+
+For example, on Linux Trippy will attempt to locate the following config files (in order):
+
+- `./trippy.toml`
+- `./.trippy.toml`
+- `$HOME/trippy.toml`
+- `$HOME/.trippy.toml`
+- `$HOME/.config/trippy.toml`
+- `$HOME/.config/.trippy.toml`
+
+See [here](https://github.com/dirs-dev/dirs-rs) for platform specific directory information.
+
+An annotated [template configuration file](trippy-config-sample.toml) is available.
 
 ## Acknowledgements
 
