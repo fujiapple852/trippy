@@ -241,7 +241,7 @@ trip www.bitwizard.nl -6
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
-trip www.bitwizard.nl -m json -c 5
+trip www.bitwizard.nl -m json -C 5
 ```
 
 Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, `resolv`):
@@ -275,10 +275,16 @@ Customize the key bindings:
 trip www.bitwizard.nl --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
 ```
 
-List all Tui commands that can have a custo key binding:
+List all Tui commands that can have a custom key binding:
 
 ```shell
 trip www.bitwizard.nl --print-tui-binding-commands
+```
+  
+Specify the location of the trippy config file:
+
+```shell
+trip www.bitwizard.nl --config-file /path/to/trippy.toml
 ```
 
 ## Command Reference
