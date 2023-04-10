@@ -1109,11 +1109,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
 }
 
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
-pub fn validate_multi(
-    mode: Mode,
-    protocol: TracerProtocol,
-    targets: &[String],
-) -> anyhow::Result<()> {
+fn validate_multi(mode: Mode, protocol: TracerProtocol, targets: &[String]) -> anyhow::Result<()> {
     match (mode, protocol) {
         (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
             if targets.len() > 1 =>
@@ -1130,7 +1126,7 @@ pub fn validate_multi(
 }
 
 /// Validate `first_ttl` and `max_ttl`.
-pub fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
+fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
     if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
         Err(anyhow!(
             "first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}"
@@ -1149,7 +1145,7 @@ pub fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
 }
 
 /// Validate `max_inflight`.
-pub fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
+fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
     if max_inflight == 0 {
         Err(anyhow!(
             "max_inflight ({}) must be greater than zero",
@@ -1161,7 +1157,7 @@ pub fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
 }
 
 /// Validate `read_timeout`.
-pub fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
+fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
     if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
         Err(anyhow!(
             "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
@@ -1175,7 +1171,7 @@ pub fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
 }
 
 /// Validate `min_round_duration` and `max_round_duration`.
-pub fn validate_round_duration(
+fn validate_round_duration(
     min_round_duration: Duration,
     max_round_duration: Duration,
 ) -> anyhow::Result<()> {
@@ -1191,7 +1187,7 @@ pub fn validate_round_duration(
 }
 
 /// Validate `grace_duration`.
-pub fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
+fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
     if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
         Err(anyhow!(
             "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
@@ -1205,7 +1201,7 @@ pub fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
 }
 
 /// Validate `packet_size`.
-pub fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
+fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
     if (MIN_PACKET_SIZE..=MAX_PACKET_SIZE).contains(&packet_size) {
         Ok(())
     } else {
@@ -1219,7 +1215,7 @@ pub fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
 }
 
 /// Validate `source_port`.
-pub fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
+fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
     if source_port < 1024 {
         Err(anyhow!("source_port ({}) must be >= 1024", source_port))
     } else {
@@ -1228,7 +1224,7 @@ pub fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
 }
 
 /// Validate `tui_refresh_rate`.
-pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
+fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
     if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
         Err(anyhow!(
             "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
@@ -1242,7 +1238,7 @@ pub fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<(
 }
 
 /// Validate `report_cycles`.
-pub fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
+fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
     if report_cycles == 0 {
         Err(anyhow!(
             "report_cycles ({}) must be greater than zero",
@@ -1254,7 +1250,7 @@ pub fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
 }
 
 /// Validate `dns_resolve_method` and `dns_lookup_as_info`.
-pub fn validate_dns(
+fn validate_dns(
     dns_resolve_method: DnsResolveMethod,
     dns_lookup_as_info: bool,
 ) -> anyhow::Result<()> {
@@ -1267,7 +1263,7 @@ pub fn validate_dns(
 }
 
 /// Validate key bindings.
-pub fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
+fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
     let duplicates = bindings.find_duplicates();
     if duplicates.is_empty() {
         Ok(())
