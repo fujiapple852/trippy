@@ -287,128 +287,173 @@ trip www.bitwizard.nl --print-tui-binding-commands
 Usage: trip [OPTIONS] <TARGETS>...
 
 Arguments:
-  <TARGETS>...  A space delimited list of hostnames and IPs to trace
+  <TARGETS>...
+          A space delimited list of hostnames and IPs to trace
 
 Options:
+  -c, --config-file <CONFIG_FILE>
+          Config file
+
   -m, --mode <MODE>
-          Output mode [default: tui] [possible values: tui, stream, pretty,
-          markdown, csv, json]
-          
+          Output mode [default: tui]
+
+          Possible values:
+          - tui:      Display interactive TUI
+          - stream:   Display a continuous stream of tracing data
+          - pretty:   Generate an pretty text table report for N cycles
+          - markdown: Generate a markdown text table report for N cycles
+          - csv:      Generate a SCV report for N cycles
+          - json:     Generate a JSON report for N cycles
+
   -p, --protocol <PROTOCOL>
-          Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
-          
+          Tracing protocol [default: icmp]
+
+          Possible values:
+          - icmp: Internet Control Message Protocol
+          - udp:  User Datagram Protocol
+          - tcp:  Transmission Control Protocol
+
       --udp
           Trace using the UDP protocol
-          
+
       --tcp
           Trace using the TCP protocol
-          
+
   -4, --ipv4
           use IPv4 only
-          
+
   -6, --ipv6
           Use IPv6 only
-          
+
   -P, --target-port <TARGET_PORT>
           The target port (TCP & UDP only) [default: 80]
-          
+
   -S, --source-port <SOURCE_PORT>
           The source port (TCP & UDP only) [default: auto]
-          
+
   -A, --source-address <SOURCE_ADDRESS>
           The source IP address [default: auto]
-          
+
   -I, --interface <INTERFACE>
           The network interface [default: auto]
-          
+
   -i, --min-round-duration <MIN_ROUND_DURATION>
           The minimum duration of every round [default: 1s]
-          
+
   -T, --max-round-duration <MAX_ROUND_DURATION>
           The maximum duration of every round [default: 1s]
-          
-      --initial-sequence <INITIAL_SEQUENCE>
-          The initial sequence number [default: 33000]
-          
-  -R, --multipath-strategy <MULTIPATH_STRATEGY>
-          The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default:
-          classic] [possible values: classic, paris, dublin]
-          
+
   -g, --grace-duration <GRACE_DURATION>
           The period of time to wait for additional ICMP responses after the
           target has responded [default: 100ms]
-          
+
+      --initial-sequence <INITIAL_SEQUENCE>
+          The initial sequence number [default: 33000]
+
+  -R, --multipath-strategy <MULTIPATH_STRATEGY>
+          The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default:
+          classic]
+
+          Possible values:
+          - classic:
+            The src or dest port is used to store the sequence number
+          - paris:
+            The UDP `checksum` field is used to store the sequence number
+          - dublin:
+            The IP `identifier` field is used to store the sequence number
+
   -U, --max-inflight <MAX_INFLIGHT>
           The maximum number of in-flight ICMP echo requests [default: 24]
-          
+
   -f, --first-ttl <FIRST_TTL>
           The TTL to start from [default: 1]
-          
+
   -t, --max-ttl <MAX_TTL>
           The maximum number of TTL hops [default: 64]
-          
+
       --packet-size <PACKET_SIZE>
-          The size of IP packet to send (IP header + ICMP header + payload) [default:
-          84]
-          
+          The size of IP packet to send (IP header + ICMP header + payload)
+          [default: 84]
+
       --payload-pattern <PAYLOAD_PATTERN>
           The repeating pattern in the payload of the ICMP packet [default: 0]
-          
+
   -Q, --tos <TOS>
           The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default:
           0]
-          
+
       --read-timeout <READ_TIMEOUT>
           The socket read timeout [default: 10ms]
-          
+
   -r, --dns-resolve-method <DNS_RESOLVE_METHOD>
-          How to perform DNS queries [default: system] [possible values: 
-          system, resolv, google, cloudflare]
-          
+          How to perform DNS queries [default: system]
+
+          Possible values:
+          - system:     Resolve using the OS resolver
+          - resolv:     Resolve using the `/etc/resolv.conf` DNS configuration
+          - google:     Resolve using the Google `8.8.8.8` DNS service
+          - cloudflare: Resolve using the Cloudflare `1.1.1.1` DNS service
+
       --dns-timeout <DNS_TIMEOUT>
           The maximum time to wait to perform DNS queries [default: 5s]
-          
-  -z, --dns-lookup-as-info
-          Lookup autonomous system (AS) information during DNS queries
-          
+
+  -z, --dns-lookup-as-info <DNS_LOOKUP_AS_INFO>
+          Lookup autonomous system (AS) information during DNS queries [default:
+          false]
+
+          [possible values: true, false]
+
   -a, --tui-address-mode <TUI_ADDRESS_MODE>
-          How to render addresses [default: host] [possible values: ip, host,
-          both]
-        
+          How to render addresses [default: host]
+
+          Possible values:
+          - ip:   Show IP address only
+          - host: Show reverse-lookup DNS hostname only
+          - both: Show both IP address and reverse-lookup DNS hostname
+
       --tui-as-mode <TUI_AS_MODE>
-          How to render AS information [default: asn] [possible values: asn,
-          prefix, country-code, registry, allocated, name]
-                  
+          How to render AS information [default: asn]
+
+          Possible values:
+          - asn:          Show the ASN
+          - prefix:       Display the AS prefix
+          - country-code: Display the country code
+          - registry:     Display the registry name
+          - allocated:    Display the allocated date
+          - name:         Display the AS name
+
   -M, --tui-max-addrs <TUI_MAX_ADDRS>
-          The maximum number of addresses to show per hop
-          
+          The maximum number of addresses to show per hop [default: auto]
+
   -s, --tui-max-samples <TUI_MAX_SAMPLES>
           The maximum number of samples to record per hop [default: 256]
-          
-      --tui-preserve-screen
-          Preserve the screen on exit
-          
+
+      --tui-preserve-screen <TUI_PRESERVE_SCREEN>
+          Preserve the screen on exit [default: false]
+
+          [possible values: true, false]
+
       --tui-refresh-rate <TUI_REFRESH_RATE>
-          The TUI refresh rate [default: 100ms]
-          
+          The Tui refresh rate [default: 100ms]
+
       --tui-theme-colors <TUI_THEME_COLORS>
           The TUI theme colors [item=color,item=color,..]
-          
+
       --print-tui-theme-items
           Print all TUI theme items and exit
-          
+
       --tui-key-bindings <TUI_KEY_BINDINGS>
           The TUI key bindings [command=key,command=key,..]
-          
+
       --print-tui-binding-commands
           Print all TUI commands that can be bound and exit
-          
-  -c, --report-cycles <REPORT_CYCLES>
+
+  -C, --report-cycles <REPORT_CYCLES>
           The number of report cycles to run [default: 10]
-          
+
   -h, --help
-          Print help (see more with '--help')
-          
+          Print help (see a summary with '-h')
+
   -V, --version
           Print version
 ```
