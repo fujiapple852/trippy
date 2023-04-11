@@ -225,7 +225,7 @@ pub struct Args {
     #[arg(value_enum, short = 'c', long, display_order = 0)]
     pub config_file: Option<String>,
 
-    /// Output mode
+    /// Output mode [default: tui]
     #[arg(value_enum, short = 'm', long, display_order = 1)]
     pub mode: Option<Mode>,
 
@@ -323,39 +323,39 @@ pub struct Args {
     #[arg(long, display_order = 22)]
     pub read_timeout: Option<String>,
 
-    /// How to perform DNS queries.
+    /// How to perform DNS queries [default: system]
     #[arg(value_enum, short = 'r', long, display_order = 23)]
     pub dns_resolve_method: Option<DnsResolveMethod>,
 
-    /// The maximum time to wait to perform DNS queries.
+    /// The maximum time to wait to perform DNS queries [default: 5s]
     #[arg(long, display_order = 24)]
     pub dns_timeout: Option<String>,
 
-    /// Lookup autonomous system (AS) information during DNS queries.
+    /// Lookup autonomous system (AS) information during DNS queries [default: false]
     #[arg(long, short = 'z', display_order = 25)]
     pub dns_lookup_as_info: Option<bool>,
 
-    /// How to render addresses.
+    /// How to render addresses [default: host]
     #[arg(value_enum, short = 'a', long, display_order = 26)]
     pub tui_address_mode: Option<AddressMode>,
 
-    /// How to render AS information.
+    /// How to render AS information [default: asn]
     #[arg(value_enum, long, display_order = 27)]
     pub tui_as_mode: Option<AsMode>,
 
-    /// The maximum number of addresses to show per hop
+    /// The maximum number of addresses to show per hop [default: auto]
     #[arg(short = 'M', long, display_order = 28)]
     pub tui_max_addrs: Option<u8>,
 
-    /// The maximum number of samples to record per hop
+    /// The maximum number of samples to record per hop [default: 256]
     #[arg(long, short = 's', display_order = 29)]
     pub tui_max_samples: Option<usize>,
 
-    /// Preserve the screen on exit
+    /// Preserve the screen on exit [default: false]
     #[arg(long, display_order = 30)]
     pub tui_preserve_screen: Option<bool>,
 
-    /// The TUI refresh rate
+    /// The Tui refresh rate [default: 100ms]
     #[arg(long, display_order = 31)]
     pub tui_refresh_rate: Option<String>,
 
@@ -375,7 +375,7 @@ pub struct Args {
     #[arg(long, display_order = 35)]
     pub print_tui_binding_commands: bool,
 
-    /// The number of report cycles to run
+    /// The number of report cycles to run [default: 10]
     #[arg(short = 'C', long, display_order = 36)]
     pub report_cycles: Option<usize>,
 }
