@@ -11,11 +11,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added `--tui-as-mode` flag to control how AS information is
   rendered ([#483](https://github.com/fujiapple852/trippy/issues/483))
+- Added support for configuration files and added a `-c` (`--config-file`)
+  flag ([#412](https://github.com/fujiapple852/trippy/issues/412))
 
 ### Changed
 
 - Show AS information for IP addresses without PTR record ([#479](https://github.com/fujiapple852/trippy/issues/479))
 - Re-enabled musl release builds ([#456](https://github.com/fujiapple852/trippy/issues/456))
+- [BREAKING CHANGE] Renamed short config flag for `report-cycles` from `-c`
+  to `-C` ([#491](https://github.com/fujiapple852/trippy/issues/491))
 
 ### Fixed
 
