@@ -218,23 +218,23 @@ pub enum DnsResolveMethod {
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
-    #[clap(required = true)]
+    #[arg(required = true)]
     pub targets: Vec<String>,
 
     /// Config file
-    #[clap(value_enum, short = 'c', long, display_order = 0)]
+    #[arg(value_enum, short = 'c', long, display_order = 0)]
     pub config_file: Option<String>,
 
     /// Output mode
-    #[clap(value_enum, short = 'm', long, display_order = 1)]
+    #[arg(value_enum, short = 'm', long, display_order = 1)]
     pub mode: Option<Mode>,
 
     /// Tracing protocol [default: icmp]
-    #[clap(value_enum, short = 'p', long, display_order = 2)]
+    #[arg(value_enum, short = 'p', long, display_order = 2)]
     pub protocol: Option<Protocol>,
 
     /// Trace using the UDP protocol
-    #[clap(
+    #[arg(
         long,
         display_order = 3,
         conflicts_with = "protocol",
@@ -243,7 +243,7 @@ pub struct Args {
     pub udp: bool,
 
     /// Trace using the TCP protocol
-    #[clap(
+    #[arg(
         long,
         display_order = 4,
         conflicts_with = "protocol",
@@ -252,131 +252,131 @@ pub struct Args {
     pub tcp: bool,
 
     /// use IPv4 only
-    #[clap(short = '4', long, display_order = 5, conflicts_with = "ipv6")]
+    #[arg(short = '4', long, display_order = 5, conflicts_with = "ipv6")]
     pub ipv4: bool,
 
     /// Use IPv6 only
-    #[clap(short = '6', long, display_order = 6, conflicts_with = "ipv4")]
+    #[arg(short = '6', long, display_order = 6, conflicts_with = "ipv4")]
     pub ipv6: bool,
 
     /// The target port (TCP & UDP only) [default: 80]
-    #[clap(long, short = 'P', display_order = 7)]
+    #[arg(long, short = 'P', display_order = 7)]
     pub target_port: Option<u16>,
 
     /// The source port (TCP & UDP only) [default: auto]
-    #[clap(long, short = 'S', display_order = 8)]
+    #[arg(long, short = 'S', display_order = 8)]
     pub source_port: Option<u16>,
 
     /// The source IP address [default: auto]
-    #[clap(short = 'A', long, display_order = 9, conflicts_with = "interface")]
+    #[arg(short = 'A', long, display_order = 9, conflicts_with = "interface")]
     pub source_address: Option<String>,
 
     /// The network interface [default: auto]
-    #[clap(short = 'I', long, display_order = 10)]
+    #[arg(short = 'I', long, display_order = 10)]
     pub interface: Option<String>,
 
     /// The minimum duration of every round [default: 1s]
-    #[clap(short = 'i', long, display_order = 11)]
+    #[arg(short = 'i', long, display_order = 11)]
     pub min_round_duration: Option<String>,
 
     /// The maximum duration of every round [default: 1s]
-    #[clap(short = 'T', long, display_order = 12)]
+    #[arg(short = 'T', long, display_order = 12)]
     pub max_round_duration: Option<String>,
 
     /// The period of time to wait for additional ICMP responses after the target has responded [default: 100ms]
-    #[clap(short = 'g', long, display_order = 13)]
+    #[arg(short = 'g', long, display_order = 13)]
     pub grace_duration: Option<String>,
 
     /// The initial sequence number [default: 33000]
-    #[clap(long, display_order = 14)]
+    #[arg(long, display_order = 14)]
     pub initial_sequence: Option<u16>,
 
     /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default: classic]
-    #[clap(value_enum, short = 'R', long, display_order = 15)]
+    #[arg(value_enum, short = 'R', long, display_order = 15)]
     pub multipath_strategy: Option<MultipathStrategyConfig>,
 
     /// The maximum number of in-flight ICMP echo requests [default: 24]
-    #[clap(short = 'U', long, display_order = 16)]
+    #[arg(short = 'U', long, display_order = 16)]
     pub max_inflight: Option<u8>,
 
     /// The TTL to start from [default: 1]
-    #[clap(short = 'f', long, display_order = 17)]
+    #[arg(short = 'f', long, display_order = 17)]
     pub first_ttl: Option<u8>,
 
     /// The maximum number of TTL hops [default: 64]
-    #[clap(short = 't', long, display_order = 18)]
+    #[arg(short = 't', long, display_order = 18)]
     pub max_ttl: Option<u8>,
 
     /// The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
-    #[clap(long, display_order = 19)]
+    #[arg(long, display_order = 19)]
     pub packet_size: Option<u16>,
 
     /// The repeating pattern in the payload of the ICMP packet [default: 0]
-    #[clap(long, display_order = 20)]
+    #[arg(long, display_order = 20)]
     pub payload_pattern: Option<u8>,
 
     /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
-    #[clap(short = 'Q', long, display_order = 21)]
+    #[arg(short = 'Q', long, display_order = 21)]
     pub tos: Option<u8>,
 
     /// The socket read timeout [default: 10ms]
-    #[clap(long, display_order = 22)]
+    #[arg(long, display_order = 22)]
     pub read_timeout: Option<String>,
 
     /// How to perform DNS queries.
-    #[clap(value_enum, short = 'r', long, display_order = 23)]
+    #[arg(value_enum, short = 'r', long, display_order = 23)]
     pub dns_resolve_method: Option<DnsResolveMethod>,
 
     /// The maximum time to wait to perform DNS queries.
-    #[clap(long, display_order = 24)]
+    #[arg(long, display_order = 24)]
     pub dns_timeout: Option<String>,
 
     /// Lookup autonomous system (AS) information during DNS queries.
-    #[clap(long, short = 'z', display_order = 25)]
+    #[arg(long, short = 'z', display_order = 25)]
     pub dns_lookup_as_info: Option<bool>,
 
     /// How to render addresses.
-    #[clap(value_enum, short = 'a', long, display_order = 26)]
+    #[arg(value_enum, short = 'a', long, display_order = 26)]
     pub tui_address_mode: Option<AddressMode>,
 
     /// How to render AS information.
-    #[clap(value_enum, long, display_order = 27)]
+    #[arg(value_enum, long, display_order = 27)]
     pub tui_as_mode: Option<AsMode>,
 
     /// The maximum number of addresses to show per hop
-    #[clap(short = 'M', long, display_order = 28)]
+    #[arg(short = 'M', long, display_order = 28)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop
-    #[clap(long, short = 's', display_order = 29)]
+    #[arg(long, short = 's', display_order = 29)]
     pub tui_max_samples: Option<usize>,
 
     /// Preserve the screen on exit
-    #[clap(long, display_order = 30)]
+    #[arg(long, display_order = 30)]
     pub tui_preserve_screen: Option<bool>,
 
     /// The TUI refresh rate
-    #[clap(long, display_order = 31)]
+    #[arg(long, display_order = 31)]
     pub tui_refresh_rate: Option<String>,
 
     /// The TUI theme colors [item=color,item=color,..]
-    #[clap(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 32)]
+    #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 32)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
-    #[clap(long, display_order = 33)]
+    #[arg(long, display_order = 33)]
     pub print_tui_theme_items: bool,
 
     /// The TUI key bindings [command=key,command=key,..]
-    #[clap(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 34)]
+    #[arg(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 34)]
     pub tui_key_bindings: Vec<(TuiCommandItem, TuiKeyBinding)>,
 
     /// Print all TUI commands that can be bound and exit
-    #[clap(long, display_order = 35)]
+    #[arg(long, display_order = 35)]
     pub print_tui_binding_commands: bool,
 
     /// The number of report cycles to run
-    #[clap(short = 'C', long, display_order = 36)]
+    #[arg(short = 'C', long, display_order = 36)]
     pub report_cycles: Option<usize>,
 }
 
