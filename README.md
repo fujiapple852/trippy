@@ -12,6 +12,24 @@ A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr)
 
 Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
 
+## Navigation
+
+<!-- TOC -->
+* [Trippy](#trippy)
+  * [Features](#features)
+  * [Distributions](#distributions)
+  * [Platforms](#platforms)
+  * [Equal Cost Multi-path Routing](#equal-cost-multi-path-routing)
+  * [Privileges](#privileges)
+  * [Usage Examples](#usage-examples)
+  * [Command Reference](#command-reference)
+  * [Theme Reference](#theme-reference)
+  * [Key Bindings Reference](#key-bindings-reference)
+  * [Configuration Reference](#configuration-reference)
+  * [Acknowledgements](#acknowledgements)
+  * [License](#license)
+<!-- TOC -->
+
 ## Features
 
 - Trace using multiple protocols:
