@@ -878,6 +878,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
+
+[[package]]
 name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1413,6 +1419,7 @@ dependencies = [
  "itertools",
  "nix",
  "parking_lot",
+ "paste",
  "rand",
  "serde",
  "serde_json",
