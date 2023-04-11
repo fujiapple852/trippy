@@ -67,12 +67,13 @@ features = [
 
 [target.'cfg(windows)'.dependencies]
 widestring = "1.0.2"
+paste = "1.0.12"
 
 [dev-dependencies]
 rand = "0.8.5"
 test-case = "3.1.0"
 
-#cargo-generate-rpm dependencies
+# cargo-generate-rpm dependencies
 [package.metadata.generate-rpm]
 assets = [
   { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
