@@ -2,8 +2,8 @@ use crate::config::config_file::{ConfigBindings, ConfigFile, ConfigThemeColors};
 use crate::config::TuiCommandItem::{
     AddressModeBoth, AddressModeHost, AddressModeIp, ChartZoomIn, ChartZoomOut, ClearDnsCache,
     ClearSelection, ClearTraceData, ContractHosts, ContractHostsMin, ExpandHosts, ExpandHostsMax,
-    NextHop, NextTrace, PreviousHop, PreviousTrace, Quit, ToggleASInfo, ToggleChart, ToggleFreeze,
-    ToggleHelp,
+    NextHop, NextHopAddress, NextTrace, PreviousHop, PreviousHopAddress, PreviousTrace, Quit,
+    ToggleASInfo, ToggleChart, ToggleFreeze, ToggleHelp, ToggleHopDetails,
 };
 use anyhow::anyhow;
 use clap::{Command, CommandFactory, Parser, ValueEnum};
@@ -664,6 +664,8 @@ pub struct TuiBindings {
     pub next_hop: TuiKeyBinding,
     pub previous_trace: TuiKeyBinding,
     pub next_trace: TuiKeyBinding,
+    pub previous_hop_address: TuiKeyBinding,
+    pub next_hop_address: TuiKeyBinding,
     pub address_mode_ip: TuiKeyBinding,
     pub address_mode_host: TuiKeyBinding,
     pub address_mode_both: TuiKeyBinding,
@@ -679,6 +681,7 @@ pub struct TuiBindings {
     pub clear_dns_cache: TuiKeyBinding,
     pub clear_selection: TuiKeyBinding,
     pub toggle_as_info: TuiKeyBinding,
+    pub toggle_hop_details: TuiKeyBinding,
     pub quit: TuiKeyBinding,
 }
 
@@ -693,6 +696,8 @@ impl TuiBindings {
             (self.next_hop, NextHop),
             (self.previous_trace, PreviousTrace),
             (self.next_trace, NextTrace),
+            (self.previous_hop_address, PreviousHopAddress),
+            (self.next_hop_address, NextHopAddress),
             (self.address_mode_ip, AddressModeIp),
             (self.address_mode_host, AddressModeHost),
             (self.address_mode_both, AddressModeBoth),
@@ -708,6 +713,7 @@ impl TuiBindings {
             (self.clear_dns_cache, ClearDnsCache),
             (self.clear_selection, ClearSelection),
             (self.toggle_as_info, ToggleASInfo),
+            (self.toggle_hop_details, ToggleHopDetails),
             (self.quit, Quit),
         ]
         .iter()
@@ -732,6 +738,7 @@ impl TuiBindings {
 }
 
 impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindings {
+    #[allow(clippy::too_many_lines)]
     fn from(value: (HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)) -> Self {
         let (cmd_items, cfg) = value;
         Self {
@@ -755,6 +762,14 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&NextTrace)
                 .or(cfg.next_trace.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
+            previous_hop_address: *cmd_items
+                .get(&PreviousHopAddress)
+                .or(cfg.previous_hop_address.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(','))),
+            next_hop_address: *cmd_items
+                .get(&NextHopAddress)
+                .or(cfg.next_hop_address.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('.'))),
             address_mode_ip: *cmd_items
                 .get(&AddressModeIp)
                 .or(cfg.address_mode_ip.as_ref())
@@ -821,6 +836,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&ToggleASInfo)
                 .or(cfg.toggle_as_info.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('z'))),
+            toggle_hop_details: *cmd_items
+                .get(&ToggleHopDetails)
+                .or(cfg.toggle_hop_details.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('d'))),
             quit: *cmd_items
                 .get(&Quit)
                 .or(cfg.quit.as_ref())
@@ -1060,6 +1079,10 @@ pub enum TuiCommandItem {
     NextTrace,
     /// Move left to the previous trace.
     PreviousTrace,
+    /// Move to the next hop address.
+    NextHopAddress,
+    /// Move to the previous hop address.
+    PreviousHopAddress,
     /// Show IP address mode.
     AddressModeIp,
     /// Show hostname mode.
@@ -1090,6 +1113,8 @@ pub enum TuiCommandItem {
     ClearSelection,
     /// Toggle AS info.
     ToggleASInfo,
+    /// Toggle hop details.
+    ToggleHopDetails,
     /// Quit the application.
     Quit,
 }
@@ -1268,6 +1293,8 @@ pub mod config_file {
         pub next_hop: Option<TuiKeyBinding>,
         pub previous_trace: Option<TuiKeyBinding>,
         pub next_trace: Option<TuiKeyBinding>,
+        pub previous_hop_address: Option<TuiKeyBinding>,
+        pub next_hop_address: Option<TuiKeyBinding>,
         pub address_mode_ip: Option<TuiKeyBinding>,
         pub address_mode_host: Option<TuiKeyBinding>,
         pub address_mode_both: Option<TuiKeyBinding>,
@@ -1283,6 +1310,7 @@ pub mod config_file {
         pub clear_dns_cache: Option<TuiKeyBinding>,
         pub clear_selection: Option<TuiKeyBinding>,
         pub toggle_as_info: Option<TuiKeyBinding>,
+        pub toggle_hop_details: Option<TuiKeyBinding>,
         pub quit: Option<TuiKeyBinding>,
     }
 }

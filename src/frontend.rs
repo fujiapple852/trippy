@@ -92,6 +92,8 @@ pub struct Bindings {
     next_hop: KeyBinding,
     previous_trace: KeyBinding,
     next_trace: KeyBinding,
+    previous_hop_address: KeyBinding,
+    next_hop_address: KeyBinding,
     address_mode_ip: KeyBinding,
     address_mode_host: KeyBinding,
     address_mode_both: KeyBinding,
@@ -107,6 +109,7 @@ pub struct Bindings {
     clear_dns_cache: KeyBinding,
     clear_selection: KeyBinding,
     toggle_as_info: KeyBinding,
+    toggle_hop_details: KeyBinding,
     quit: KeyBinding,
 }
 
@@ -118,6 +121,8 @@ impl From<TuiBindings> for Bindings {
             next_hop: KeyBinding::from(value.next_hop),
             previous_trace: KeyBinding::from(value.previous_trace),
             next_trace: KeyBinding::from(value.next_trace),
+            previous_hop_address: KeyBinding::from(value.previous_hop_address),
+            next_hop_address: KeyBinding::from(value.next_hop_address),
             address_mode_ip: KeyBinding::from(value.address_mode_ip),
             address_mode_host: KeyBinding::from(value.address_mode_host),
             address_mode_both: KeyBinding::from(value.address_mode_both),
@@ -133,6 +138,7 @@ impl From<TuiBindings> for Bindings {
             clear_dns_cache: KeyBinding::from(value.clear_dns_cache),
             clear_selection: KeyBinding::from(value.clear_selection),
             toggle_as_info: KeyBinding::from(value.toggle_as_info),
+            toggle_hop_details: KeyBinding::from(value.toggle_hop_details),
             quit: KeyBinding::from(value.quit),
         }
     }
@@ -297,7 +303,7 @@ impl TuiConfig {
         max_addrs: Option<u8>,
         max_samples: usize,
         tui_theme: TuiTheme,
-        tui_bindings: TuiBindings,
+        tui_bindings: &TuiBindings,
     ) -> Self {
         Self {
             refresh_rate,
@@ -308,7 +314,7 @@ impl TuiConfig {
             max_addrs,
             max_samples,
             theme: Theme::from(tui_theme),
-            bindings: Bindings::from(tui_bindings),
+            bindings: Bindings::from(*tui_bindings),
         }
     }
 }
@@ -319,8 +325,13 @@ struct TuiApp {
     tui_config: TuiConfig,
     table_state: TableState,
     trace_selected: usize,
+    /// The index of the current address to show for the selected hop.
+    ///
+    /// Only used in detail mode.
+    selected_hop_address: usize,
     resolver: DnsResolver,
     show_help: bool,
+    show_hop_details: bool,
     show_chart: bool,
     frozen_start: Option<SystemTime>,
     zoom_factor: usize,
@@ -334,8 +345,10 @@ impl TuiApp {
             tui_config,
             table_state: TableState::default(),
             trace_selected: 0,
+            selected_hop_address: 0,
             resolver,
             show_help: false,
+            show_hop_details: false,
             show_chart: false,
             frozen_start: None,
             zoom_factor: 1,
@@ -353,6 +366,19 @@ impl TuiApp {
     fn clear_trace_data(&mut self) {
         *self.trace_info[self.trace_selected].data.write() =
             Trace::new(self.tui_config.max_samples);
+    }
+
+    pub fn selected_hop_or_target(&self) -> &Hop {
+        self.table_state.selected().map_or_else(
+            || self.tracer_data().target_hop(),
+            |s| &self.tracer_data().hops()[s],
+        )
+    }
+
+    pub fn selected_hop(&self) -> Option<&Hop> {
+        self.table_state
+            .selected()
+            .map(|s| &self.tracer_data().hops()[s])
     }
 
     fn tracer_config(&self) -> &TraceInfo {
@@ -385,6 +411,7 @@ impl TuiApp {
             None => 0,
         };
         self.table_state.select(Some(i));
+        self.selected_hop_address = 0;
     }
 
     fn previous_hop(&mut self) {
@@ -403,6 +430,7 @@ impl TuiApp {
             None => 0.max(hop_count.saturating_sub(1)),
         };
         self.table_state.select(Some(i));
+        self.selected_hop_address = 0;
     }
 
     fn next_trace(&mut self) {
@@ -417,12 +445,36 @@ impl TuiApp {
         };
     }
 
+    fn next_hop_address(&mut self) {
+        if let Some(hop) = self.selected_hop() {
+            if self.selected_hop_address < hop.addr_count() - 1 {
+                self.selected_hop_address += 1;
+            }
+        }
+    }
+
+    fn previous_hop_address(&mut self) {
+        if self.selected_hop().is_some() && self.selected_hop_address > 0 {
+            self.selected_hop_address -= 1;
+        }
+    }
+
     fn clear(&mut self) {
         self.table_state.select(None);
+        self.selected_hop_address = 0;
     }
 
     fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
+    }
+
+    fn toggle_hop_details(&mut self) {
+        if self.show_hop_details {
+            self.tui_config.max_addrs = None;
+        } else {
+            self.tui_config.max_addrs = Some(1);
+        }
+        self.show_hop_details = !self.show_hop_details;
     }
 
     fn toggle_freeze(&mut self) {
@@ -552,6 +604,10 @@ fn run_app<B: Backend>(
                 } else if bindings.next_trace.check(key) {
                     app.next_trace();
                     app.clear();
+                } else if bindings.next_hop_address.check(key) {
+                    app.next_hop_address();
+                } else if bindings.previous_hop_address.check(key) {
+                    app.previous_hop_address();
                 } else if bindings.address_mode_ip.check(key) {
                     app.tui_config.address_mode = AddressMode::IP;
                 } else if bindings.address_mode_host.check(key) {
@@ -583,6 +639,8 @@ fn run_app<B: Backend>(
                     app.clear();
                 } else if bindings.toggle_as_info.check(key) {
                     app.toggle_asinfo();
+                } else if bindings.toggle_hop_details.check(key) {
+                    app.toggle_hop_details();
                 } else if bindings.quit.check(key) || CTRL_C.check(key) {
                     return Ok(());
                 }
@@ -999,15 +1057,11 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
 fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app.tracer_data().hops().iter().map(|hop| {
-        render_table_row(
-            hop,
-            &app.resolver,
-            app.tracer_data().is_target(hop),
-            app.tracer_data().is_in_round(hop),
-            &app.tui_config,
-        )
-    });
+    let rows = app
+        .tracer_data()
+        .hops()
+        .iter()
+        .map(|hop| render_table_row(app, hop, &app.resolver, &app.tui_config));
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -1040,21 +1094,23 @@ fn render_table_header(theme: Theme) -> Row<'static> {
 
 /// Render a single row in the table of hops.
 fn render_table_row(
+    app: &TuiApp,
     hop: &Hop,
     dns: &DnsResolver,
-    is_target: bool,
-    is_in_round: bool,
     config: &TuiConfig,
 ) -> Row<'static> {
+    let is_selected_hop = app
+        .selected_hop()
+        .map(|h| h.ttl() == hop.ttl())
+        .unwrap_or_default();
+    let is_target = app.tracer_data().is_target(hop);
+    let is_in_round = app.tracer_data().is_in_round(hop);
     let ttl_cell = render_ttl_cell(hop);
-    let hostname_cell = render_hostname_cell(
-        hop,
-        dns,
-        config.address_mode,
-        config.lookup_as_info,
-        config.as_mode,
-        config.max_addrs,
-    );
+    let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
+        render_hostname_with_details(app, hop, dns, config)
+    } else {
+        render_hostname(hop, dns, config)
+    };
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
     let total_recv_cell = render_total_recv_cell(hop);
@@ -1077,9 +1133,6 @@ fn render_table_row(
         stddev_cell,
         status_cell,
     ];
-    let row_height = hop
-        .addr_count()
-        .clamp(1, config.max_addrs.unwrap_or(u8::MAX) as usize) as u16;
     let row_color = if is_in_round {
         config.theme.hops_table_row_active_text_color
     } else {
@@ -1112,116 +1165,6 @@ fn render_avg_cell(hop: &Hop) -> Cell<'static> {
         format!("{:.1}", hop.avg_ms())
     } else {
         String::default()
-    })
-}
-
-fn render_hostname_cell(
-    hop: &Hop,
-    dns: &DnsResolver,
-    address_mode: AddressMode,
-    lookup_as_info: bool,
-    as_mode: AsMode,
-    max_addr: Option<u8>,
-) -> Cell<'static> {
-    /// Format `AsInfo` based on the `ASDisplayMode`.
-    fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
-        match as_mode {
-            AsMode::Asn => format!("AS{}", asinfo.asn),
-            AsMode::Prefix => format!("AS{} [{}]", asinfo.asn, asinfo.prefix),
-            AsMode::CountryCode => format!("AS{} [{}]", asinfo.asn, asinfo.cc),
-            AsMode::Registry => format!("AS{} [{}]", asinfo.asn, asinfo.registry),
-            AsMode::Allocated => format!("AS{} [{}]", asinfo.asn, asinfo.allocated),
-            AsMode::Name => format!("AS{} [{}]", asinfo.asn, asinfo.name),
-        }
-    }
-
-    /// Format a `DnsEntry` with or without `AS` information (if available)
-    fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) -> String {
-        match dns_entry {
-            DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),
-            DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
-                if lookup_as_info && !asinfo.asn.is_empty() {
-                    format!("{} {}", format_asinfo(&asinfo, as_mode), hosts.join(" "))
-                } else {
-                    hosts.join(" ")
-                }
-            }
-            DnsEntry::NotFound(Unresolved::Normal(ip)) | DnsEntry::Pending(ip) => format!("{ip}"),
-            DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
-                if lookup_as_info && !asinfo.asn.is_empty() {
-                    format!("{} {}", format_asinfo(&asinfo, as_mode), ip)
-                } else {
-                    format!("{ip}")
-                }
-            }
-            DnsEntry::Failed(ip) => format!("Failed: {ip}"),
-            DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
-        }
-    }
-    /// Perform a reverse DNS lookup for an address and format the result.
-    fn format_address(
-        addr: &IpAddr,
-        freq: usize,
-        hop: &Hop,
-        dns: &DnsResolver,
-        address_mode: AddressMode,
-        lookup_as_info: bool,
-        as_mode: AsMode,
-    ) -> String {
-        let addr_fmt = match address_mode {
-            AddressMode::IP => addr.to_string(),
-            AddressMode::Host => {
-                if lookup_as_info {
-                    let entry = dns.reverse_lookup_with_asinfo(*addr);
-                    format_dns_entry(entry, true, as_mode)
-                } else {
-                    let entry = dns.reverse_lookup(*addr);
-                    format_dns_entry(entry, false, as_mode)
-                }
-            }
-            AddressMode::Both => {
-                let hostname = if lookup_as_info {
-                    let entry = dns.reverse_lookup_with_asinfo(*addr);
-                    format_dns_entry(entry, true, as_mode)
-                } else {
-                    let entry = dns.reverse_lookup(*addr);
-                    format_dns_entry(entry, false, as_mode)
-                };
-                format!("{hostname} ({addr})")
-            }
-        };
-
-        if hop.addr_count() > 1 {
-            format!(
-                "{} [{:.1}%]",
-                addr_fmt,
-                (freq as f64 / hop.total_recv() as f64) * 100_f64
-            )
-        } else {
-            addr_fmt
-        }
-    }
-
-    Cell::from(if hop.total_recv() > 0 {
-        match max_addr {
-            None => hop
-                .addrs_with_counts()
-                .map(|(addr, &freq)| {
-                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info, as_mode)
-                })
-                .join("\n"),
-            Some(max_addr) => hop
-                .addrs_with_counts()
-                .sorted_unstable_by_key(|(_, &cnt)| cnt)
-                .rev()
-                .take(max_addr as usize)
-                .map(|(addr, &freq)| {
-                    format_address(addr, freq, hop, dns, address_mode, lookup_as_info, as_mode)
-                })
-                .join("\n"),
-        }
-    } else {
-        String::from("No response")
     })
 }
 
@@ -1268,6 +1211,270 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
     })
 }
 
+/// Render hostname table cell (normal mode).
+fn render_hostname(hop: &Hop, dns: &DnsResolver, config: &TuiConfig) -> (Cell<'static>, u16) {
+    let (hostname, count) = if hop.total_recv() > 0 {
+        match config.max_addrs {
+            None => {
+                let hostnames = hop
+                    .addrs_with_counts()
+                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, config))
+                    .join("\n");
+                let count = hop.addr_count().clamp(1, u8::MAX as usize);
+                (hostnames, count as u16)
+            }
+            Some(max_addr) => {
+                let hostnames = hop
+                    .addrs_with_counts()
+                    .sorted_unstable_by_key(|(_, &cnt)| cnt)
+                    .rev()
+                    .take(max_addr as usize)
+                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, config))
+                    .join("\n");
+                let count = hop.addr_count().clamp(1, max_addr as usize);
+                (hostnames, count as u16)
+            }
+        }
+    } else {
+        (String::from("No response"), 1)
+    };
+    (Cell::from(hostname), count)
+}
+
+/// Perform a reverse DNS lookup for an address and format the result.
+fn format_address(
+    addr: &IpAddr,
+    freq: usize,
+    hop: &Hop,
+    dns: &DnsResolver,
+    config: &TuiConfig,
+) -> String {
+    let addr_fmt = match config.address_mode {
+        AddressMode::IP => addr.to_string(),
+        AddressMode::Host => {
+            if config.lookup_as_info {
+                let entry = dns.reverse_lookup_with_asinfo(*addr);
+                format_dns_entry(entry, true, config.as_mode)
+            } else {
+                let entry = dns.reverse_lookup(*addr);
+                format_dns_entry(entry, false, config.as_mode)
+            }
+        }
+        AddressMode::Both => {
+            let hostname = if config.lookup_as_info {
+                let entry = dns.reverse_lookup_with_asinfo(*addr);
+                format_dns_entry(entry, true, config.as_mode)
+            } else {
+                let entry = dns.reverse_lookup(*addr);
+                format_dns_entry(entry, false, config.as_mode)
+            };
+            format!("{hostname} ({addr})")
+        }
+    };
+    if hop.addr_count() > 1 {
+        format!(
+            "{} [{:.1}%]",
+            addr_fmt,
+            (freq as f64 / hop.total_recv() as f64) * 100_f64
+        )
+    } else {
+        addr_fmt
+    }
+}
+
+/// Format a `DnsEntry` with or without `AS` information (if available)
+fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) -> String {
+    match dns_entry {
+        DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),
+        DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
+            if lookup_as_info && !asinfo.asn.is_empty() {
+                format!("{} {}", format_asinfo(&asinfo, as_mode), hosts.join(" "))
+            } else {
+                hosts.join(" ")
+            }
+        }
+        DnsEntry::NotFound(Unresolved::Normal(ip)) | DnsEntry::Pending(ip) => format!("{ip}"),
+        DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
+            if lookup_as_info && !asinfo.asn.is_empty() {
+                format!("{} {}", format_asinfo(&asinfo, as_mode), ip)
+            } else {
+                format!("{ip}")
+            }
+        }
+        DnsEntry::Failed(ip) => format!("Failed: {ip}"),
+        DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
+    }
+}
+
+/// Format `AsInfo` based on the `ASDisplayMode`.
+fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
+    match as_mode {
+        AsMode::Asn => format!("AS{}", asinfo.asn),
+        AsMode::Prefix => format!("AS{} [{}]", asinfo.asn, asinfo.prefix),
+        AsMode::CountryCode => format!("AS{} [{}]", asinfo.asn, asinfo.cc),
+        AsMode::Registry => format!("AS{} [{}]", asinfo.asn, asinfo.registry),
+        AsMode::Allocated => format!("AS{} [{}]", asinfo.asn, asinfo.allocated),
+        AsMode::Name => format!("AS{} [{}]", asinfo.asn, asinfo.name),
+    }
+}
+
+/// Render hostname table cell (detailed mode).
+fn render_hostname_with_details(
+    app: &TuiApp,
+    hop: &Hop,
+    dns: &DnsResolver,
+    config: &TuiConfig,
+) -> (Cell<'static>, u16) {
+    let (rendered, count) = if hop.total_recv() > 0 {
+        let index = app.selected_hop_address;
+        format_details(hop, index, dns, config)
+    } else {
+        (String::from("No response"), 1)
+    };
+    let cell = Cell::from(rendered);
+    (cell, count)
+}
+
+/// Format hop details.
+fn format_details(
+    hop: &Hop,
+    offset: usize,
+    dns: &DnsResolver,
+    config: &TuiConfig,
+) -> (String, u16) {
+    let Some(addr) = hop.addrs().nth(offset) else {
+        return (format!("Error: no addr for index {offset}"), 1);
+    };
+    let count = hop.addr_count();
+    let index = offset + 1;
+    if config.lookup_as_info {
+        let dns_entry = dns.reverse_lookup_with_asinfo(*addr);
+        match dns_entry {
+            DnsEntry::Pending(addr) => {
+                let details = fmt_details_with_asn(addr, index, count, None, None);
+                (details, 4)
+            }
+            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
+                let details = fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo));
+                (details, 4)
+            }
+            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => {
+                let details = fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo));
+                (details, 4)
+            }
+            DnsEntry::Failed(ip) => {
+                let details = format!("Failed: {ip}");
+                (details, 1)
+            }
+            DnsEntry::Timeout(ip) => {
+                let details = format!("Timeout: {ip}");
+                (details, 1)
+            }
+            DnsEntry::Resolved(Resolved::Normal(_, _))
+            | DnsEntry::NotFound(Unresolved::Normal(_)) => unreachable!(),
+        }
+    } else {
+        let dns_entry = dns.reverse_lookup(*addr);
+        match dns_entry {
+            DnsEntry::Pending(addr) => {
+                let details = fmt_details_no_asn(addr, index, count, None);
+                (details, 2)
+            }
+            DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
+                let details = fmt_details_no_asn(addr, index, count, Some(hosts));
+                (details, 2)
+            }
+            DnsEntry::NotFound(Unresolved::Normal(addr)) => {
+                let details = fmt_details_no_asn(addr, index, count, Some(vec![]));
+                (details, 2)
+            }
+            DnsEntry::Failed(ip) => {
+                let details = format!("Failed: {ip}");
+                (details, 1)
+            }
+            DnsEntry::Timeout(ip) => {
+                let details = format!("Timeout: {ip}");
+                (details, 1)
+            }
+            DnsEntry::Resolved(Resolved::WithAsInfo(_, _, _))
+            | DnsEntry::NotFound(Unresolved::WithAsInfo(_, _)) => unreachable!(),
+        }
+    }
+}
+
+/// Format hostname details with AS information.
+///
+/// Format as follows:
+///
+/// ```
+/// 172.217.24.78 [1 of 2]
+/// Host: hkg07s50-in-f14.1e100.net
+/// AS Name: AS15169 GOOGLE, US
+/// AS Info: 142.250.0.0/15 arin 2012-05-24
+/// ```
+///
+/// If `hostnames` or `asinfo` is `None` it is rendered as `<pending>`
+/// If `hostnames` or `asinfo` is `Some(vec![])` it is rendered as `<not found>`
+fn fmt_details_with_asn(
+    addr: IpAddr,
+    index: usize,
+    count: usize,
+    hostnames: Option<Vec<String>>,
+    asinfo: Option<AsInfo>,
+) -> String {
+    let as_formatted = if let Some(info) = asinfo {
+        if info.asn.is_empty() {
+            "AS Name: <not found>\nAS Info: <not found>".to_string()
+        } else {
+            format!(
+                "AS Name: AS{} {}\nAS Info: {} {} {}",
+                info.asn, info.name, info.prefix, info.registry, info.allocated
+            )
+        }
+    } else {
+        "AS Name: <awaited>\nAS Info: <awaited>".to_string()
+    };
+    let hosts_rendered = if let Some(hosts) = hostnames {
+        if hosts.is_empty() {
+            "Host: <not found>".to_string()
+        } else {
+            format!("Host: {}", hosts.join(" "))
+        }
+    } else {
+        "Host: <awaited>".to_string()
+    };
+    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}")
+}
+
+/// Format hostname details without AS information.
+///
+/// Format as follows:
+///
+/// ```
+/// 172.217.24.78 [1 of 2]
+/// Host: hkg07s50-in-f14.1e100.net
+/// ```
+///
+/// If `hostnames` is `None` it is rendered as `<pending>`
+/// If `hostnames` is `Some(vec![])` it is rendered as `<not found>`
+fn fmt_details_no_asn(
+    addr: IpAddr,
+    index: usize,
+    count: usize,
+    hostnames: Option<Vec<String>>,
+) -> String {
+    let hosts_rendered = if let Some(hosts) = hostnames {
+        if hosts.is_empty() {
+            "Host: <not found>".to_string()
+        } else {
+            format!("Host: {}", hosts.join(" "))
+        }
+    } else {
+        "Host: <awaited>".to_string()
+    };
+    format!("{addr} [{index} of {count}]\n{hosts_rendered}")
+}
+
 /// Render the footer.
 ///
 /// This contains the history and frequency charts.
@@ -1285,11 +1492,8 @@ fn render_footer<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) 
 
 /// Render the ping history for the final hop which is typically the target.
 fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
-    let target_hop = app.table_state.selected().map_or_else(
-        || app.tracer_data().target_hop(),
-        |s| &app.tracer_data().hops()[s],
-    );
-    let data = target_hop
+    let selected_hop = app.selected_hop_or_target();
+    let data = selected_hop
         .samples()
         .iter()
         .take(rect.width as usize)
@@ -1298,7 +1502,7 @@ fn render_history<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("Samples #{}", target_hop.ttl()))
+                .title(format!("Samples #{}", selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg_color)
