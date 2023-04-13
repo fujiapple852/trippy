@@ -1160,8 +1160,7 @@ dependencies = [
 [[package]]
 name = "socket2"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc8d618c6641ae355025c449427f9e96b98abf99a772be3cef6708d15c77147a"
+source = "git+https://github.com/fujiapple852/socket2#b85ad4064e56fa9cf5bdefce30ba8f1e9a9f17cc"
 dependencies = [
  "libc",
  "windows-sys 0.45.0",
