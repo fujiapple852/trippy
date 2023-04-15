@@ -476,6 +476,11 @@ Options:
   -C, --report-cycles <REPORT_CYCLES>
           The number of report cycles to run [default: 10]
 
+      --generate <GENERATE>
+          Generate shell completion
+
+          [possible values: bash, elvish, fish, powershell, zsh]
+
   -h, --help
           Print help (see a summary with '-h')
 
