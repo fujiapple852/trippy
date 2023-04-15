@@ -25,6 +25,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Do not require passing targets for certain command line
+  flags ([#500](https://github.com/fujiapple852/trippy/issues/500))
+
 ## [0.7.0] - 2023-03-25
 
 ### Added
