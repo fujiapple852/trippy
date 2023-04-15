@@ -306,6 +306,12 @@ Specify the location of the trippy config file:
 trip www.bitwizard.nl --config-file /path/to/trippy.toml
 ```
 
+Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
+
+```shell
+trip www.bitwizard.nl --generate bash
+```
+
 ## Command Reference
 
 ```shell
