@@ -6,7 +6,8 @@ use crate::config::TuiCommandItem::{
     ToggleHelp,
 };
 use anyhow::anyhow;
-use clap::{Parser, ValueEnum};
+use clap::{Command, CommandFactory, Parser, ValueEnum};
+use clap_complete::{generate, Generator, Shell};
 use crossterm::event::{KeyCode, KeyModifiers};
 use itertools::Itertools;
 use serde::Deserialize;
@@ -215,7 +216,7 @@ pub enum DnsResolveMethod {
 
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(name = "trip", author, version, about, long_about = None)]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
     #[arg(required = true)]
@@ -378,6 +379,10 @@ pub struct Args {
     /// The number of report cycles to run [default: 10]
     #[arg(short = 'C', long, display_order = 36)]
     pub report_cycles: Option<usize>,
+
+    /// Generate shell completion
+    #[arg(long, display_order = 37)]
+    pub generate: Option<Shell>,
 }
 
 fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, TuiColor)> {
@@ -1303,6 +1308,11 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             );
             process::exit(0);
         }
+        if let Some(generator) = args.generate {
+            let mut cmd = Args::command();
+            print_completions(generator, &mut cmd);
+            process::exit(0);
+        }
         let cfg_file = if let Some(cfg) = args.config_file {
             config_file::read_config_file(cfg)?
         } else if let Some(cfg) = config_file::read_default_config_file()? {
@@ -1549,6 +1559,10 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             max_rounds,
         })
     }
+}
+
+fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
+    generate(gen, cmd, cmd.get_name().to_string(), &mut std::io::stdout());
 }
 
 fn cfg_layer<T>(fst: Option<T>, snd: Option<T>, def: T) -> T {
