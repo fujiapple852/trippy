@@ -285,7 +285,7 @@ trip www.bitwizard.nl --tui-theme-colors bg-color=blue,text-color=ffff00
 List all Tui items that can have a custom color theme:
 
 ```shell
-trip www.bitwizard.nl --print-tui-theme-items
+trip --print-tui-theme-items
 ```
 
 Customize the key bindings:
@@ -297,7 +297,7 @@ trip www.bitwizard.nl --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
 List all Tui commands that can have a custom key binding:
 
 ```shell
-trip www.bitwizard.nl --print-tui-binding-commands
+trip --print-tui-binding-commands
 ```
   
 Specify the location of the trippy config file:
@@ -309,7 +309,7 @@ trip www.bitwizard.nl --config-file /path/to/trippy.toml
 Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
 
 ```shell
-trip www.bitwizard.nl --generate bash
+trip --generate bash
 ```
 
 ## Command Reference
