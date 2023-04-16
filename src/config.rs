@@ -1152,7 +1152,6 @@ pub mod config_file {
 
     /// Read the config from the given path.
     pub fn read_config_file<P: AsRef<Path>>(path: P) -> anyhow::Result<ConfigFile> {
-        println!("{:?}", path.as_ref());
         let file = File::open(path.as_ref())
             .with_context(|| format!("config file not found: {:?}", path.as_ref()))?;
         Ok(toml::from_str(&read_to_string(file)?)?)
