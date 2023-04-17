@@ -1426,6 +1426,7 @@ dependencies = [
  "dirs",
  "dns-lookup",
  "humantime",
+ "indexmap",
  "itertools",
  "nix",
  "parking_lot",
