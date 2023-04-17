@@ -1,7 +1,7 @@
 use crate::caps::drop_caps;
 use crate::config::MAX_HOPS;
+use indexmap::IndexMap;
 use parking_lot::RwLock;
-use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -153,7 +153,7 @@ impl Trace {
 #[derive(Debug, Clone)]
 pub struct Hop {
     ttl: u8,
-    addrs: HashMap<IpAddr, usize>,
+    addrs: IndexMap<IpAddr, usize>,
     total_sent: usize,
     total_recv: usize,
     total_time: Duration,
@@ -248,7 +248,7 @@ impl Default for Hop {
     fn default() -> Self {
         Self {
             ttl: 0,
-            addrs: HashMap::default(),
+            addrs: IndexMap::default(),
             total_sent: 0,
             total_recv: 0,
             total_time: Duration::default(),
