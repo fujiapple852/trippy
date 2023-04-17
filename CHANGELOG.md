@@ -14,6 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for configuration files and added a `-c` (`--config-file`)
   flag ([#412](https://github.com/fujiapple852/trippy/issues/412))
 - Added `--generate` flag for generating shell completions ([#86](https://github.com/fujiapple852/trippy/issues/86))
+- Added support for showing and navigating host detail ([#70](https://github.com/fujiapple852/trippy/issues/70))
 
 ### Changed
 
