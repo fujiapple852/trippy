@@ -45,6 +45,7 @@ strum = { version = "0.24.1", features = [ "derive" ] }
 dirs = "5.0.0"
 toml = "0.7.3"
 indexmap = "1.9.3"
+maxminddb = "0.23.0"
 
 # Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
