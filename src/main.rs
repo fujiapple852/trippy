@@ -17,6 +17,7 @@ use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{Mode, TrippyConfig};
 use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::frontend::TuiConfig;
+use crate::geoip::GeoIpLookup;
 use anyhow::{anyhow, Error};
 use clap::Parser;
 use config::Args;
@@ -36,12 +37,14 @@ mod caps;
 mod config;
 mod dns;
 mod frontend;
+mod geoip;
 mod report;
 
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
     let resolver = start_dns_resolver(&cfg)?;
+    let geoip_lookup = create_geoip_lookup(&cfg)?;
     ensure_caps()?;
     let traces: Vec<_> = cfg
         .targets
@@ -50,7 +53,7 @@ fn main() -> anyhow::Result<()> {
         .map(|(i, target_host)| start_tracer(&cfg, target_host, pid + i as u16, &resolver))
         .collect::<anyhow::Result<Vec<_>>>()?;
     drop_caps()?;
-    run_frontend(&cfg, resolver, traces)?;
+    run_frontend(&cfg, resolver, geoip_lookup, traces)?;
     Ok(())
 }
 
@@ -66,6 +69,14 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
             cfg.dns_timeout,
         ))?,
     })
+}
+
+fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
+    if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
+        GeoIpLookup::from_file(path)
+    } else {
+        Ok(GeoIpLookup::empty())
+    }
 }
 
 /// Start a tracer to a given target.
@@ -121,10 +132,11 @@ fn start_tracer(
 fn run_frontend(
     args: &TrippyConfig,
     resolver: DnsResolver,
+    geoip_lookup: GeoIpLookup,
     traces: Vec<TraceInfo>,
 ) -> anyhow::Result<()> {
     match args.mode {
-        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver)?,
+        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
         Mode::Stream => report::run_report_stream(&traces[0])?,
         Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver)?,
         Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver)?,
@@ -211,6 +223,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_address_mode,
         args.dns_lookup_as_info,
         args.tui_as_mode,
+        args.tui_geoip_mode,
         args.tui_max_addrs,
         args.tui_max_samples,
         args.tui_theme,

@@ -204,6 +204,15 @@ tui-address-mode = "host"
 #   name            - Display the AS name
 tui-as-mode = "asn"
 
+# How to render GeoIp information.
+#
+# Allowed values are:
+#   off - Do not show GeoIp information
+#   short - Show short format GeoIp information
+#   long - Show long format GeoIp information
+#   location - Show latitude and Longitude format GeoIp information
+tui-geoip-mode = "short"
+
 # The maximum number of addresses to show per hop [default: auto]
 #
 # Use a zero value for `auto`.

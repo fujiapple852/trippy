@@ -1,8 +1,10 @@
 use crate::backend::Hop;
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethod, TuiBindings, TuiColor, TuiKeyBinding, TuiTheme,
+    AddressMode, AsMode, DnsResolveMethod, GeoIpMode, TuiBindings, TuiColor, TuiKeyBinding,
+    TuiTheme,
 };
 use crate::dns::{AsInfo, DnsEntry, Resolved, Unresolved};
+use crate::geoip::{GeoIpCity, GeoIpLookup};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
 use crossterm::event::{KeyEvent, KeyModifiers};
@@ -15,6 +17,7 @@ use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::io;
 use std::net::IpAddr;
+use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::{PortDirection, TracerProtocol};
 use tui::layout::{Alignment, Direction, Rect};
@@ -280,8 +283,10 @@ pub struct TuiConfig {
     address_mode: AddressMode,
     /// Lookup `AS` information.
     lookup_as_info: bool,
-    /// The to render AS data.
+    /// How to render AS data.
     as_mode: AsMode,
+    /// How to render GeoIp data.
+    geoip_mode: GeoIpMode,
     /// The maximum number of addresses to show per hop.
     max_addrs: Option<u8>,
     /// The maximum number of samples to record per hop.
@@ -300,6 +305,7 @@ impl TuiConfig {
         address_mode: AddressMode,
         lookup_as_info: bool,
         as_mode: AsMode,
+        geoip_mode: GeoIpMode,
         max_addrs: Option<u8>,
         max_samples: usize,
         tui_theme: TuiTheme,
@@ -311,6 +317,7 @@ impl TuiConfig {
             address_mode,
             lookup_as_info,
             as_mode,
+            geoip_mode,
             max_addrs,
             max_samples,
             theme: Theme::from(tui_theme),
@@ -330,6 +337,7 @@ struct TuiApp {
     /// Only used in detail mode.
     selected_hop_address: usize,
     resolver: DnsResolver,
+    geoip_lookup: GeoIpLookup,
     show_help: bool,
     show_hop_details: bool,
     show_chart: bool,
@@ -338,7 +346,12 @@ struct TuiApp {
 }
 
 impl TuiApp {
-    fn new(tui_config: TuiConfig, resolver: DnsResolver, trace_info: Vec<TraceInfo>) -> Self {
+    fn new(
+        tui_config: TuiConfig,
+        resolver: DnsResolver,
+        geoip_lookup: GeoIpLookup,
+        trace_info: Vec<TraceInfo>,
+    ) -> Self {
         Self {
             selected_tracer_data: Trace::new(tui_config.max_samples),
             trace_info,
@@ -347,6 +360,7 @@ impl TuiApp {
             trace_selected: 0,
             selected_hop_address: 0,
             resolver,
+            geoip_lookup,
             show_help: false,
             show_hop_details: false,
             show_chart: false,
@@ -550,6 +564,7 @@ pub fn run_frontend(
     traces: Vec<TraceInfo>,
     tui_config: TuiConfig,
     resolver: DnsResolver,
+    geoip_lookup: GeoIpLookup,
 ) -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -557,7 +572,7 @@ pub fn run_frontend(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let preserve_screen = tui_config.preserve_screen;
-    let res = run_app(&mut terminal, traces, tui_config, resolver);
+    let res = run_app(&mut terminal, traces, tui_config, resolver, geoip_lookup);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -574,8 +589,9 @@ fn run_app<B: Backend>(
     trace_info: Vec<TraceInfo>,
     tui_config: TuiConfig,
     resolver: DnsResolver,
+    geoip_lookup: GeoIpLookup,
 ) -> io::Result<()> {
-    let mut app = TuiApp::new(tui_config, resolver, trace_info);
+    let mut app = TuiApp::new(tui_config, resolver, geoip_lookup, trace_info);
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
@@ -1057,11 +1073,10 @@ fn render_splash<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
 fn render_table<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app
-        .tracer_data()
-        .hops()
-        .iter()
-        .map(|hop| render_table_row(app, hop, &app.resolver, &app.tui_config));
+    let rows =
+        app.tracer_data().hops().iter().map(|hop| {
+            render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config)
+        });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -1097,6 +1112,7 @@ fn render_table_row(
     app: &TuiApp,
     hop: &Hop,
     dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> Row<'static> {
     let is_selected_hop = app
@@ -1107,9 +1123,9 @@ fn render_table_row(
     let is_in_round = app.tracer_data().is_in_round(hop);
     let ttl_cell = render_ttl_cell(hop);
     let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
-        render_hostname_with_details(app, hop, dns, config)
+        render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
-        render_hostname(hop, dns, config)
+        render_hostname(hop, dns, geoip_lookup, config)
     };
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
@@ -1212,13 +1228,18 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
 }
 
 /// Render hostname table cell (normal mode).
-fn render_hostname(hop: &Hop, dns: &DnsResolver, config: &TuiConfig) -> (Cell<'static>, u16) {
+fn render_hostname(
+    hop: &Hop,
+    dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
+    config: &TuiConfig,
+) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
         match config.max_addrs {
             None => {
                 let hostnames = hop
                     .addrs_with_counts()
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, config))
+                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
                     .join("\n");
                 let count = hop.addr_count().clamp(1, u8::MAX as usize);
                 (hostnames, count as u16)
@@ -1229,7 +1250,7 @@ fn render_hostname(hop: &Hop, dns: &DnsResolver, config: &TuiConfig) -> (Cell<'s
                     .sorted_unstable_by_key(|(_, &cnt)| cnt)
                     .rev()
                     .take(max_addr as usize)
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, config))
+                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
                     .join("\n");
                 let count = hop.addr_count().clamp(1, max_addr as usize);
                 (hostnames, count as u16)
@@ -1247,6 +1268,7 @@ fn format_address(
     freq: usize,
     hop: &Hop,
     dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> String {
     let addr_fmt = match config.address_mode {
@@ -1271,14 +1293,41 @@ fn format_address(
             format!("{hostname} ({addr})")
         }
     };
-    if hop.addr_count() > 1 {
-        format!(
-            "{} [{:.1}%]",
-            addr_fmt,
-            (freq as f64 / hop.total_recv() as f64) * 100_f64
-        )
-    } else {
-        addr_fmt
+    let geo_fmt = match config.geoip_mode {
+        GeoIpMode::Off => None,
+        GeoIpMode::Short => geoip_lookup
+            .lookup(*addr)
+            .unwrap_or_default()
+            .map(|geo| geo.short_name()),
+        GeoIpMode::Long => geoip_lookup
+            .lookup(*addr)
+            .unwrap_or_default()
+            .map(|geo| geo.long_name()),
+        GeoIpMode::Location => geoip_lookup
+            .lookup(*addr)
+            .unwrap_or_default()
+            .map(|geo| geo.location()),
+    };
+    match geo_fmt {
+        Some(geo) if hop.addr_count() > 1 => {
+            format!(
+                "{} [{}] [{:.1}%]",
+                addr_fmt,
+                geo,
+                (freq as f64 / hop.total_recv() as f64) * 100_f64
+            )
+        }
+        Some(geo) => {
+            format!("{addr_fmt} [{geo}]")
+        }
+        None if hop.addr_count() > 1 => {
+            format!(
+                "{} [{:.1}%]",
+                addr_fmt,
+                (freq as f64 / hop.total_recv() as f64) * 100_f64
+            )
+        }
+        None => addr_fmt,
     }
 }
 
@@ -1323,11 +1372,12 @@ fn render_hostname_with_details(
     app: &TuiApp,
     hop: &Hop,
     dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let (rendered, count) = if hop.total_recv() > 0 {
         let index = app.selected_hop_address;
-        format_details(hop, index, dns, config)
+        format_details(hop, index, dns, geoip_lookup, config)
     } else {
         (String::from("No response"), 1)
     };
@@ -1340,6 +1390,7 @@ fn format_details(
     hop: &Hop,
     offset: usize,
     dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (String, u16) {
     let Some(addr) = hop.addrs().nth(offset) else {
@@ -1347,20 +1398,24 @@ fn format_details(
     };
     let count = hop.addr_count();
     let index = offset + 1;
+    let geoip = geoip_lookup.lookup(*addr).unwrap_or_default();
+
     if config.lookup_as_info {
         let dns_entry = dns.reverse_lookup_with_asinfo(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
-                let details = fmt_details_with_asn(addr, index, count, None, None);
-                (details, 4)
+                let details = fmt_details_with_asn(addr, index, count, None, None, geoip);
+                (details, 5)
             }
             DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
-                let details = fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo));
-                (details, 4)
+                let details =
+                    fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo), geoip);
+                (details, 5)
             }
             DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => {
-                let details = fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo));
-                (details, 4)
+                let details =
+                    fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo), geoip);
+                (details, 5)
             }
             DnsEntry::Failed(ip) => {
                 let details = format!("Failed: {ip}");
@@ -1377,15 +1432,15 @@ fn format_details(
         let dns_entry = dns.reverse_lookup(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
-                let details = fmt_details_no_asn(addr, index, count, None);
+                let details = fmt_details_no_asn(addr, index, count, None, geoip);
                 (details, 2)
             }
             DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(hosts));
+                let details = fmt_details_no_asn(addr, index, count, Some(hosts), geoip);
                 (details, 2)
             }
             DnsEntry::NotFound(Unresolved::Normal(addr)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(vec![]));
+                let details = fmt_details_no_asn(addr, index, count, Some(vec![]), geoip);
                 (details, 2)
             }
             DnsEntry::Failed(ip) => {
@@ -1421,6 +1476,7 @@ fn fmt_details_with_asn(
     count: usize,
     hostnames: Option<Vec<String>>,
     asinfo: Option<AsInfo>,
+    geoip: Option<Rc<GeoIpCity>>,
 ) -> String {
     let as_formatted = if let Some(info) = asinfo {
         if info.asn.is_empty() {
@@ -1443,7 +1499,12 @@ fn fmt_details_with_asn(
     } else {
         "Host: <awaited>".to_string()
     };
-    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}")
+    let geoip_formatted = if let Some(geo) = geoip {
+        format!("Geo: {}", geo.long_name())
+    } else {
+        "Geo: <not found>".to_string()
+    };
+    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}")
 }
 
 /// Format hostname details without AS information.
@@ -1462,6 +1523,7 @@ fn fmt_details_no_asn(
     index: usize,
     count: usize,
     hostnames: Option<Vec<String>>,
+    geoip: Option<Rc<GeoIpCity>>,
 ) -> String {
     let hosts_rendered = if let Some(hosts) = hostnames {
         if hosts.is_empty() {
@@ -1472,7 +1534,12 @@ fn fmt_details_no_asn(
     } else {
         "Host: <awaited>".to_string()
     };
-    format!("{addr} [{index} of {count}]\n{hosts_rendered}")
+    let geoip_formatted = if let Some(geo) = geoip {
+        format!("Geo: {}", geo.long_name())
+    } else {
+        "Geo: <not found>".to_string()
+    };
+    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{geoip_formatted}")
 }
 
 /// Render the footer.
