@@ -94,6 +94,9 @@ const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 /// The default value for `tui-as-mode`.
 const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 
+/// The default value for `tui-geoip-mode`.
+const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Short;
+
 /// The default value for `tui-address-mode`.
 const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 
@@ -200,6 +203,34 @@ pub enum AsMode {
     Name,
 }
 
+/// How to render `GeoIp` information in the hop table.
+///
+/// Note that the hop details view is always shown using the `Long` representation.
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GeoIpMode {
+    /// Do not display GeoIp data.
+    Off,
+    /// Show short format.
+    ///
+    /// The `city` name is shown, `subdivision` and `country` codes are shown, `continent` is not displayed.
+    ///
+    /// For example:
+    ///
+    /// `Los Angeles, CA, US`
+    Short,
+    /// Show long format.
+    ///
+    /// The `city`, `subdivision`, `country` and `continent` names are shown.
+    ///
+    /// `Los Angeles, California, United States, North America`
+    Long,
+    /// Show latitude and Longitude format.
+    ///
+    /// `lat=34.0544, long=-118.2441`
+    Location,
+}
+
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -223,7 +254,7 @@ pub struct Args {
     pub targets: Vec<String>,
 
     /// Config file
-    #[arg(value_enum, short = 'c', long, display_order = 0)]
+    #[arg(value_enum, short = 'c', long, display_order = 0, value_hint = clap::ValueHint::FilePath)]
     pub config_file: Option<String>,
 
     /// Output mode [default: tui]
@@ -344,44 +375,52 @@ pub struct Args {
     #[arg(value_enum, long, display_order = 27)]
     pub tui_as_mode: Option<AsMode>,
 
+    /// How to render GeoIp information [default: compact]
+    #[arg(value_enum, long, display_order = 28)]
+    pub tui_geoip_mode: Option<GeoIpMode>,
+
     /// The maximum number of addresses to show per hop [default: auto]
-    #[arg(short = 'M', long, display_order = 28)]
+    #[arg(short = 'M', long, display_order = 29)]
     pub tui_max_addrs: Option<u8>,
 
     /// The maximum number of samples to record per hop [default: 256]
-    #[arg(long, short = 's', display_order = 29)]
+    #[arg(long, short = 's', display_order = 30)]
     pub tui_max_samples: Option<usize>,
 
     /// Preserve the screen on exit [default: false]
-    #[arg(long, display_order = 30)]
+    #[arg(long, display_order = 31)]
     pub tui_preserve_screen: Option<bool>,
 
     /// The Tui refresh rate [default: 100ms]
-    #[arg(long, display_order = 31)]
+    #[arg(long, display_order = 32)]
     pub tui_refresh_rate: Option<String>,
 
     /// The TUI theme colors [item=color,item=color,..]
-    #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 32)]
+    #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, display_order = 33)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
     /// Print all TUI theme items and exit
-    #[arg(long, display_order = 33)]
+    #[arg(long, display_order = 34)]
     pub print_tui_theme_items: bool,
 
     /// The TUI key bindings [command=key,command=key,..]
-    #[arg(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 34)]
+    #[arg(long, value_delimiter(','), value_parser = parse_tui_binding_value, display_order = 35)]
     pub tui_key_bindings: Vec<(TuiCommandItem, TuiKeyBinding)>,
 
     /// Print all TUI commands that can be bound and exit
-    #[arg(long, display_order = 35)]
+    #[arg(long, display_order = 36)]
     pub print_tui_binding_commands: bool,
 
     /// The number of report cycles to run [default: 10]
-    #[arg(short = 'C', long, display_order = 36)]
+    #[arg(short = 'C', long, display_order = 37)]
     pub report_cycles: Option<usize>,
 
+    /// The MaxMind City GeoLite2 mmdb file
+    #[arg(short = 'G', long, display_order = 38, value_hint = clap::ValueHint::FilePath)]
+    pub geoip_mmdb_file: Option<String>,
+
     /// Generate shell completion
-    #[arg(long, display_order = 37)]
+    #[arg(long, display_order = 39)]
     pub generate: Option<Shell>,
 }
 
@@ -431,11 +470,13 @@ pub struct TrippyConfig {
     pub tui_refresh_rate: Duration,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
+    pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
     pub report_cycles: usize,
+    pub geoip_mmdb_file: Option<String>,
     pub max_rounds: Option<usize>,
 }
 
@@ -1121,8 +1162,8 @@ pub enum TuiCommandItem {
 
 pub mod config_file {
     use crate::config::{
-        AddressFamily, AddressMode, AsMode, DnsResolveMethod, Mode, MultipathStrategyConfig,
-        Protocol, TuiColor, TuiKeyBinding,
+        AddressFamily, AddressMode, AsMode, DnsResolveMethod, GeoIpMode, Mode,
+        MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
     };
     use anyhow::Context;
     use serde::Deserialize;
@@ -1261,7 +1302,9 @@ pub mod config_file {
         pub tui_refresh_rate: Option<String>,
         pub tui_address_mode: Option<AddressMode>,
         pub tui_as_mode: Option<AsMode>,
+        pub tui_geoip_mode: Option<GeoIpMode>,
         pub tui_max_addrs: Option<u8>,
+        pub geoip_mmdb_file: Option<String>,
     }
 
     #[derive(Debug, Default, Deserialize)]
@@ -1445,6 +1488,11 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             cfg_file_tui.tui_as_mode,
             DEFAULT_TUI_AS_MODE,
         );
+        let tui_geoip_mode = cfg_layer(
+            args.tui_geoip_mode,
+            cfg_file_tui.tui_geoip_mode,
+            DEFAULT_TUI_GEOIP_MODE,
+        );
         let tui_max_addrs = cfg_layer_opt(args.tui_max_addrs, cfg_file_tui.tui_max_addrs);
         let dns_resolve_method = cfg_layer(
             args.dns_resolve_method,
@@ -1466,6 +1514,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             cfg_file_report.report_cycles,
             DEFAULT_REPORT_CYCLES,
         );
+        let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, protocol) {
             (false, false, Protocol::Icmp) => TracerProtocol::Icmp,
             (false, false, Protocol::Udp) | (true, _, _) => TracerProtocol::Udp,
@@ -1540,6 +1589,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         validate_tui_refresh_rate(tui_refresh_rate)?;
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
+        validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
         let tui_theme_items = args
             .tui_theme_colors
             .into_iter()
@@ -1578,11 +1628,13 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             tui_refresh_rate,
             tui_address_mode,
             tui_as_mode,
+            tui_geoip_mode,
             tui_max_addrs,
             tui_theme,
             tui_bindings,
             mode,
             report_cycles,
+            geoip_mmdb_file,
             max_rounds,
         })
     }
@@ -1757,6 +1809,23 @@ fn validate_dns(
             "AS lookup not supported by resolver `system` (use '-r' to choose another resolver)"
         )),
         _ => Ok(()),
+    }
+}
+
+fn validate_geoip(
+    tui_geoip_mode: GeoIpMode,
+    geoip_mmdb_file: &Option<String>,
+) -> anyhow::Result<()> {
+    if matches!(
+        tui_geoip_mode,
+        GeoIpMode::Short | GeoIpMode::Long | GeoIpMode::Location
+    ) && geoip_mmdb_file.is_none()
+    {
+        Err(anyhow!(
+            "geoip_mmdb_file must be given for tui_geoip_mode of `{tui_geoip_mode:?}`"
+        ))
+    } else {
+        Ok(())
     }
 }
 
