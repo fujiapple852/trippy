@@ -276,6 +276,12 @@ see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 trip www.bitwizard.nl -r google -z
 ```
 
+Lookup and display `short` (or `long` or `location` or `off`) GeoIp information from a `mmdb` file:
+
+```shell
+trip www.bitwizard.nl --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
+```
+
 Customize the color theme:
 
 ```shell
