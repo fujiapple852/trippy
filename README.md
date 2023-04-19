@@ -55,9 +55,11 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
 - DNS:
-    - use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
+    - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
     - Lazy reverse DNS queries
     - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
+- GenIp:
+    - Lookup and display GeoIp information from local `mmdb` files
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
     - configurable reporting cycles
