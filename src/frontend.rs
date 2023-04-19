@@ -15,16 +15,17 @@ use crossterm::{
 };
 use humantime::format_duration;
 use itertools::Itertools;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::{PortDirection, TracerProtocol};
-use tui::layout::{Alignment, Direction, Rect};
+use tui::layout::{Alignment, Direction, Margin, Rect};
 use tui::symbols::Marker;
 use tui::text::{Span, Spans};
+use tui::widgets::canvas::{Canvas, Context, Map, MapResolution, Painter, Rectangle, Shape};
 use tui::widgets::{
     Axis, BarChart, BorderType, Chart, Clear, Dataset, GraphType, Paragraph, Sparkline, TableState,
     Tabs,
@@ -43,7 +44,7 @@ const TABLE_HEADER: [&str; 11] = [
 
 /// The name and number of items for each tabs in the setting dialog.
 const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 7),
+    ("Tui", 8),
     ("Trace", 14),
     ("Dns", 3),
     ("GeoIp", 1),
@@ -87,15 +88,22 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
     Constraint::Length(6),
 ];
 
+const MAP_LAYOUT: [Constraint; 3] = [
+    Constraint::Min(1),
+    Constraint::Length(3),
+    Constraint::Length(1),
+];
+
 const MAX_ZOOM_FACTOR: usize = 16;
 
-const HELP_LINES: [&str; 19] = [
+const HELP_LINES: [&str; 20] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
     ", & .            - select hop address",
     "[esc]            - clear selection",
     "d                - toggle hop details",
     "c                - toggle chart",
+    "m                - toggle map",
     "f                - toggle freeze display",
     "Ctrl+r           - reset statistics",
     "Ctrl+k           - flush DNS cache",
@@ -127,6 +135,7 @@ pub struct Bindings {
     address_mode_both: KeyBinding,
     toggle_freeze: KeyBinding,
     toggle_chart: KeyBinding,
+    toggle_map: KeyBinding,
     expand_hosts: KeyBinding,
     contract_hosts: KeyBinding,
     expand_hosts_max: KeyBinding,
@@ -157,6 +166,7 @@ impl From<TuiBindings> for Bindings {
             address_mode_both: KeyBinding::from(value.address_mode_both),
             toggle_freeze: KeyBinding::from(value.toggle_freeze),
             toggle_chart: KeyBinding::from(value.toggle_chart),
+            toggle_map: KeyBinding::from(value.toggle_map),
             expand_hosts: KeyBinding::from(value.expand_hosts),
             contract_hosts: KeyBinding::from(value.contract_hosts),
             expand_hosts_max: KeyBinding::from(value.expand_hosts_max),
@@ -305,6 +315,18 @@ pub struct Theme {
     settings_table_header_bg_color: Color,
     /// The color of text of rows in the settings table.
     settings_table_row_text_color: Color,
+    /// The color of the map world diagram.
+    map_world_color: Color,
+    /// The color of the map accuracy radius circle.
+    map_radius_color: Color,
+    /// The color of the map selected item box.
+    map_selected_color: Color,
+    /// The color of border of the map info panel.
+    map_info_panel_border_color: Color,
+    /// The background color of the map info panel.
+    map_info_panel_bg_color: Color,
+    /// The color of text in the map info panel.
+    map_info_panel_text_color: Color,
 }
 
 impl From<TuiTheme> for Theme {
@@ -333,6 +355,12 @@ impl From<TuiTheme> for Theme {
             settings_table_header_text_color: Color::from(value.settings_table_header_text_color),
             settings_table_header_bg_color: Color::from(value.settings_table_header_bg_color),
             settings_table_row_text_color: Color::from(value.settings_table_row_text_color),
+            map_world_color: Color::from(value.map_world_color),
+            map_radius_color: Color::from(value.map_radius_color),
+            map_selected_color: Color::from(value.map_selected_color),
+            map_info_panel_border_color: Color::from(value.map_info_panel_border_color),
+            map_info_panel_bg_color: Color::from(value.map_info_panel_bg_color),
+            map_info_panel_text_color: Color::from(value.map_info_panel_text_color),
         }
     }
 }
@@ -460,6 +488,7 @@ struct TuiApp {
     show_settings: bool,
     show_hop_details: bool,
     show_chart: bool,
+    show_map: bool,
     frozen_start: Option<SystemTime>,
     zoom_factor: usize,
 }
@@ -486,6 +515,7 @@ impl TuiApp {
             show_settings: false,
             show_hop_details: false,
             show_chart: false,
+            show_map: false,
             frozen_start: None,
             zoom_factor: 1,
         }
@@ -671,6 +701,12 @@ impl TuiApp {
 
     fn toggle_chart(&mut self) {
         self.show_chart = !self.show_chart;
+        self.show_map = false;
+    }
+
+    fn toggle_map(&mut self) {
+        self.show_map = !self.show_map;
+        self.show_chart = false;
     }
 
     fn toggle_asinfo(&mut self) {
@@ -823,6 +859,8 @@ fn run_app<B: Backend>(
                         app.toggle_freeze();
                     } else if bindings.toggle_chart.check(key) {
                         app.toggle_chart();
+                    } else if bindings.toggle_map.check(key) {
+                        app.toggle_map();
                     } else if bindings.contract_hosts_min.check(key) {
                         app.contract_hosts_min();
                     } else if bindings.expand_hosts_max.check(key) {
@@ -1129,9 +1167,240 @@ fn render_body<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
         render_splash(f, app, rec);
     } else if app.show_chart {
         render_chart(f, app, rec);
+    } else if app.show_map {
+        render_map(f, app, rec);
     } else {
         render_table(f, app, rec);
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct CircleWidget {
+    pub x: f64,
+    pub y: f64,
+    pub radius: f64,
+    pub color: Color,
+}
+
+impl CircleWidget {
+    pub fn new(x: f64, y: f64, radius: f64, color: Color) -> Self {
+        Self {
+            x,
+            y,
+            radius,
+            color,
+        }
+    }
+}
+
+impl Shape for CircleWidget {
+    fn draw(&self, painter: &mut Painter<'_, '_>) {
+        for angle in 0..360 {
+            let radians = f64::from(angle).to_radians();
+            let circle_x = self.radius.mul_add(radians.cos(), self.x);
+            let circle_y = self.radius.mul_add(radians.sin(), self.y);
+            if let Some((x, y)) = painter.get_point(circle_x, circle_y) {
+                painter.paint(x, y, self.color);
+            }
+        }
+    }
+}
+
+/// Render the `GeoIp` map.
+fn render_map<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let entries = build_map_entries(app);
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(MAP_LAYOUT)
+        .split(rect);
+    let info_rect = chunks[1].inner(&Margin {
+        vertical: 0,
+        horizontal: 16,
+    });
+    render_map_canvas(f, app, rect, &entries);
+    render_map_info_panel(f, app, info_rect, &entries);
+}
+
+/// Render the map canvas.
+fn render_map_canvas<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &TuiApp,
+    rect: Rect,
+    entries: &[MapEntry],
+) {
+    let theme = app.tui_config.theme;
+    let map = Canvas::default()
+        .background_color(app.tui_config.theme.bg_color)
+        .block(
+            Block::default()
+                .title("Map")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(app.tui_config.theme.border_color))
+                .style(
+                    Style::default()
+                        .bg(app.tui_config.theme.bg_color)
+                        .fg(app.tui_config.theme.text_color),
+                ),
+        )
+        .paint(|ctx| {
+            render_map_canvas_world(ctx, theme.map_world_color);
+            ctx.layer();
+            for entry in entries {
+                render_map_canvas_pin(ctx, entry);
+                render_map_canvas_radius(ctx, entry, theme.map_radius_color);
+                render_map_canvas_selected(
+                    ctx,
+                    entry,
+                    app.selected_hop_or_target(),
+                    theme.map_selected_color,
+                );
+            }
+        })
+        .marker(Marker::Braille)
+        .x_bounds([-180.0, 180.0])
+        .y_bounds([-90.0, 90.0]);
+    f.render_widget(Clear, rect);
+    f.render_widget(map, rect);
+}
+
+/// Render the map canvas world.
+fn render_map_canvas_world(ctx: &mut Context<'_>, color: Color) {
+    ctx.draw(&Map {
+        color,
+        resolution: MapResolution::High,
+    });
+}
+
+/// Render the map canvas pin.
+fn render_map_canvas_pin(ctx: &mut Context<'_>, entry: &MapEntry) {
+    let MapEntry {
+        latitude,
+        longitude,
+        ..
+    } = entry;
+    ctx.print(*longitude, *latitude, Span::styled("📍", Style::default()));
+}
+
+/// Render the map canvas accuracy radius circle.
+fn render_map_canvas_radius(ctx: &mut Context<'_>, entry: &MapEntry, color: Color) {
+    let MapEntry {
+        latitude,
+        longitude,
+        radius,
+        ..
+    } = entry;
+    let radius_degrees = f64::from(*radius) / 110_f64;
+    if radius_degrees > 2_f64 {
+        let circle_widget = CircleWidget::new(*longitude, *latitude, radius_degrees, color);
+        ctx.draw(&circle_widget);
+    }
+}
+
+/// Render the map canvas selected item box.
+fn render_map_canvas_selected(
+    ctx: &mut Context<'_>,
+    entry: &MapEntry,
+    selected_hop: &Hop,
+    color: Color,
+) {
+    let MapEntry {
+        latitude,
+        longitude,
+        hops,
+        ..
+    } = entry;
+    if hops.contains(&selected_hop.ttl()) {
+        ctx.draw(&Rectangle {
+            x: longitude - 5.0_f64,
+            y: latitude - 5.0_f64,
+            width: 10.0_f64,
+            height: 10.0_f64,
+            color,
+        });
+    }
+}
+
+/// Render the map info panel.
+fn render_map_info_panel<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &TuiApp,
+    rect: Rect,
+    entries: &[MapEntry],
+) {
+    let theme = app.tui_config.theme;
+    let selected_hop = app.selected_hop_or_target();
+    let locations = entries
+        .iter()
+        .filter_map(|entry| {
+            if entry.hops.contains(&selected_hop.ttl()) {
+                Some(format!("{} [{}]", entry.long_name, entry.location))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    let info = match locations.as_slice() {
+        _ if app.tracer_config().geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
+        [] if selected_hop.addr_count() > 0 => format!(
+            "No GeoIp data for hop {} ({})",
+            selected_hop.ttl(),
+            selected_hop.addrs().join(", ")
+        ),
+        [] => format!("No GeoIp data for hop {}", selected_hop.ttl()),
+        [loc] => loc.to_string(),
+        _ => format!("Multiple GeoIp locations for hop {}", selected_hop.ttl()),
+    };
+    let info_panel = Paragraph::new(info)
+        .block(
+            Block::default()
+                .title(format!("Hop {}", selected_hop.ttl()))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(theme.map_info_panel_border_color))
+                .style(
+                    Style::default()
+                        .bg(theme.map_info_panel_bg_color)
+                        .fg(theme.map_info_panel_text_color),
+                ),
+        )
+        .alignment(Alignment::Left);
+    f.render_widget(Clear, rect);
+    f.render_widget(info_panel, rect);
+}
+
+/// An entry to render on the map.
+struct MapEntry {
+    long_name: String,
+    location: String,
+    latitude: f64,
+    longitude: f64,
+    radius: u16,
+    hops: Vec<u8>,
+}
+
+/// Build a vec of `MapEntry` for all hops.
+///
+/// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
+fn build_map_entries(app: &mut TuiApp) -> Vec<MapEntry> {
+    let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
+    for hop in app.tracer_data().hops() {
+        for addr in hop.addrs() {
+            if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
+                if let Some((latitude, longitude, radius)) = geo.coordinates() {
+                    let entry = geo_map.entry(geo.long_name()).or_insert(MapEntry {
+                        long_name: geo.long_name(),
+                        location: format!("{latitude}, {longitude} ~{radius}km"),
+                        latitude,
+                        longitude,
+                        radius,
+                        hops: vec![],
+                    });
+                    entry.hops.push(hop.ttl());
+                }
+            };
+        }
+    }
+    geo_map.into_values().collect_vec()
 }
 
 /// Render the ping history for all hops as a chart.
@@ -1221,7 +1490,7 @@ fn render_chart<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) 
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(app.tui_config.theme.border_color))
-                .title("Hops"),
+                .title("Chart"),
         );
     f.render_widget(chart, rect);
 }
@@ -2157,6 +2426,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("address-mode-both", format!("{}", binds.address_mode_both)),
         SettingsItem::new("toggle-freeze", format!("{}", binds.toggle_freeze)),
         SettingsItem::new("toggle-chart", format!("{}", binds.toggle_chart)),
+        SettingsItem::new("toggle-map", format!("{}", binds.toggle_map)),
         SettingsItem::new("expand-hosts", format!("{}", binds.expand_hosts)),
         SettingsItem::new("expand-hosts-max", format!("{}", binds.expand_hosts_max)),
         SettingsItem::new("contract-hosts", format!("{}", binds.contract_hosts)),

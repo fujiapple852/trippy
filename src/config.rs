@@ -3,7 +3,8 @@ use crate::config::TuiCommandItem::{
     AddressModeBoth, AddressModeHost, AddressModeIp, ChartZoomIn, ChartZoomOut, ClearDnsCache,
     ClearSelection, ClearTraceData, ContractHosts, ContractHostsMin, ExpandHosts, ExpandHostsMax,
     NextHop, NextHopAddress, NextTrace, PreviousHop, PreviousHopAddress, PreviousTrace, Quit,
-    ToggleASInfo, ToggleChart, ToggleFreeze, ToggleHelp, ToggleHopDetails, ToggleSettings,
+    ToggleASInfo, ToggleChart, ToggleFreeze, ToggleHelp, ToggleHopDetails, ToggleMap,
+    ToggleSettings,
 };
 use anyhow::anyhow;
 use clap::{Command, CommandFactory, Parser, ValueEnum};
@@ -531,9 +532,22 @@ pub struct TuiTheme {
     pub settings_table_header_bg_color: TuiColor,
     /// The color of text of rows in the settings table.
     pub settings_table_row_text_color: TuiColor,
+    /// The color of the map world diagram.
+    pub map_world_color: TuiColor,
+    /// The color of the map accuracy radius circle.
+    pub map_radius_color: TuiColor,
+    /// The color of the map selected item box.
+    pub map_selected_color: TuiColor,
+    /// The color of border of the map info panel.
+    pub map_info_panel_border_color: TuiColor,
+    /// The background color of the map info panel.
+    pub map_info_panel_bg_color: TuiColor,
+    /// The color of text in the map info panel.
+    pub map_info_panel_text_color: TuiColor,
 }
 
 impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
+    #[allow(clippy::too_many_lines)]
     fn from(value: (HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)) -> Self {
         let (color_map, cfg) = value;
         Self {
@@ -621,6 +635,30 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::SettingsTableRowTextColor)
                 .or(cfg.settings_table_row_text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
+            map_world_color: *color_map
+                .get(&TuiThemeItem::MapWorldColor)
+                .or(cfg.map_world_color.as_ref())
+                .unwrap_or(&TuiColor::White),
+            map_radius_color: *color_map
+                .get(&TuiThemeItem::MapRadiusColor)
+                .or(cfg.map_radius_color.as_ref())
+                .unwrap_or(&TuiColor::Yellow),
+            map_selected_color: *color_map
+                .get(&TuiThemeItem::MapSelectedColor)
+                .or(cfg.map_selected_color.as_ref())
+                .unwrap_or(&TuiColor::Green),
+            map_info_panel_border_color: *color_map
+                .get(&TuiThemeItem::MapInfoPanelBorderColor)
+                .or(cfg.map_info_panel_border_color.as_ref())
+                .unwrap_or(&TuiColor::Gray),
+            map_info_panel_bg_color: *color_map
+                .get(&TuiThemeItem::MapInfoPanelBgColor)
+                .or(cfg.map_info_panel_bg_color.as_ref())
+                .unwrap_or(&TuiColor::Black),
+            map_info_panel_text_color: *color_map
+                .get(&TuiThemeItem::MapInfoPanelTextColor)
+                .or(cfg.map_info_panel_text_color.as_ref())
+                .unwrap_or(&TuiColor::Gray),
         }
     }
 }
@@ -672,6 +710,18 @@ pub enum TuiThemeItem {
     SettingsTableHeaderBgColor,
     /// The color of text of rows in the settings table.
     SettingsTableRowTextColor,
+    /// The color of the map world diagram.
+    MapWorldColor,
+    /// The color of the map accuracy radius circle.
+    MapRadiusColor,
+    /// The color of the map selected item box.
+    MapSelectedColor,
+    /// The color of border of the map info panel.
+    MapInfoPanelBorderColor,
+    /// The background color of the map info panel.
+    MapInfoPanelBgColor,
+    /// The color of text in the map info panel.
+    MapInfoPanelTextColor,
 }
 
 /// A TUI color.
@@ -753,6 +803,7 @@ pub struct TuiBindings {
     pub address_mode_both: TuiKeyBinding,
     pub toggle_freeze: TuiKeyBinding,
     pub toggle_chart: TuiKeyBinding,
+    pub toggle_map: TuiKeyBinding,
     pub expand_hosts: TuiKeyBinding,
     pub contract_hosts: TuiKeyBinding,
     pub expand_hosts_max: TuiKeyBinding,
@@ -786,6 +837,7 @@ impl TuiBindings {
             (self.address_mode_both, AddressModeBoth),
             (self.toggle_freeze, ToggleFreeze),
             (self.toggle_chart, ToggleChart),
+            (self.toggle_map, ToggleMap),
             (self.expand_hosts, ExpandHosts),
             (self.expand_hosts_max, ExpandHostsMax),
             (self.contract_hosts, ContractHosts),
@@ -877,6 +929,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&ToggleChart)
                 .or(cfg.toggle_chart.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('c'))),
+            toggle_map: *cmd_items
+                .get(&ToggleMap)
+                .or(cfg.toggle_map.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('m'))),
             expand_hosts: *cmd_items
                 .get(&ExpandHosts)
                 .or(cfg.expand_hosts.as_ref())
@@ -1182,6 +1238,8 @@ pub enum TuiCommandItem {
     ToggleFreeze,
     /// Toggle the chart.
     ToggleChart,
+    /// Toggle the map.
+    ToggleMap,
     /// Expand hosts.
     ExpandHosts,
     /// Expand hosts to max.
@@ -1379,6 +1437,12 @@ pub mod config_file {
         pub settings_table_header_text_color: Option<TuiColor>,
         pub settings_table_header_bg_color: Option<TuiColor>,
         pub settings_table_row_text_color: Option<TuiColor>,
+        pub map_world_color: Option<TuiColor>,
+        pub map_radius_color: Option<TuiColor>,
+        pub map_selected_color: Option<TuiColor>,
+        pub map_info_panel_border_color: Option<TuiColor>,
+        pub map_info_panel_bg_color: Option<TuiColor>,
+        pub map_info_panel_text_color: Option<TuiColor>,
     }
 
     #[derive(Debug, Default, Deserialize)]
@@ -1397,6 +1461,7 @@ pub mod config_file {
         pub address_mode_both: Option<TuiKeyBinding>,
         pub toggle_freeze: Option<TuiKeyBinding>,
         pub toggle_chart: Option<TuiKeyBinding>,
+        pub toggle_map: Option<TuiKeyBinding>,
         pub expand_hosts: Option<TuiKeyBinding>,
         pub contract_hosts: Option<TuiKeyBinding>,
         pub expand_hosts_max: Option<TuiKeyBinding>,
