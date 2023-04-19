@@ -375,7 +375,7 @@ pub struct Args {
     #[arg(value_enum, long, display_order = 27)]
     pub tui_as_mode: Option<AsMode>,
 
-    /// How to render GeoIp information [default: compact]
+    /// How to render GeoIp information [default: short]
     #[arg(value_enum, long, display_order = 28)]
     pub tui_geoip_mode: Option<GeoIpMode>,
 

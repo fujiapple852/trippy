@@ -38,7 +38,7 @@
 #   stream      - Display a continuous stream of tracing data
 #   pretty      - Generate an pretty text table report for N cycles
 #   markdown    - Generate a markdown text table report for N cycles
-#   csv         - Generate a SCV report for N cycles
+#   csv         - Generate a CSV report for N cycles
 #   json        - Generate a JSON report for N cycles
 mode = "tui"
 
