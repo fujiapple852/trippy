@@ -565,6 +565,7 @@ command line option.
 | `address-mode-both`    | Show both IP address and hostname               | `b`      |
 | `toggle-freeze`        | Toggle freezing the display                     | `f`      |
 | `toggle-chart`         | Toggle the chart                                | `c`      |
+| `toggle-map`           | Toggle the GeoIp map                            | `m`      |
 | `expand-hosts`         | Expand the hosts shown per hop                  | `]`      |
 | `expand-hosts-max`     | Expand the hosts shown per hop to the maximum   | `}`      |
 | `contract-hosts`       | Contract the hosts shown per hop                | `[`      |
