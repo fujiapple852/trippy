@@ -68,10 +68,12 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
 
 const MAX_ZOOM_FACTOR: usize = 16;
 
-const HELP_LINES: [&str; 16] = [
+const HELP_LINES: [&str; 18] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
+    ", & .            - select hop address",
     "[esc]            - clear selection",
+    "d                - toggle hop details",
     "c                - toggle chart",
     "f                - toggle freeze display",
     "Ctrl+r           - reset statistics",
