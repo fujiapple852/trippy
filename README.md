@@ -315,10 +315,10 @@ trip --generate bash
 ## Command Reference
 
 ```shell
-Usage: trip [OPTIONS] <TARGETS>...
+Usage: trip [OPTIONS] [TARGETS]...
 
 Arguments:
-  <TARGETS>...
+  [TARGETS]...
           A space delimited list of hostnames and IPs to trace
 
 Options:
@@ -453,6 +453,15 @@ Options:
           - allocated:    Display the allocated date
           - name:         Display the AS name
 
+      --tui-geoip-mode <TUI_GEOIP_MODE>
+          How to render GeoIp information [default: compact]
+
+          Possible values:
+          - off:      Do not display GeoIp data
+          - short:    Show short format
+          - long:     Show long format
+          - location: Show latitude and Longitude format
+
   -M, --tui-max-addrs <TUI_MAX_ADDRS>
           The maximum number of addresses to show per hop [default: auto]
 
@@ -481,6 +490,9 @@ Options:
 
   -C, --report-cycles <REPORT_CYCLES>
           The number of report cycles to run [default: 10]
+
+  -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>
+          The MaxMind City GeoLite2 mmdb file
 
       --generate <GENERATE>
           Generate shell completion
