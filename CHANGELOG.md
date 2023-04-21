@@ -30,6 +30,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Do not require passing targets for certain command line
   flags ([#500](https://github.com/fujiapple852/trippy/issues/500))
+- Key press registering two events on Windows ([#513](https://github.com/fujiapple852/trippy/issues/513))
 
 ## [0.7.0] - 2023-03-25
 
