@@ -211,7 +211,7 @@ tui-as-mode = "asn"
 #   short - Show short format GeoIp information
 #   long - Show long format GeoIp information
 #   location - Show latitude and Longitude format GeoIp information
-tui-geoip-mode = "short"
+tui-geoip-mode = "off"
 
 # The maximum number of addresses to show per hop [default: auto]
 #

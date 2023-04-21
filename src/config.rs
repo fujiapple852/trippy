@@ -95,7 +95,7 @@ const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 
 /// The default value for `tui-geoip-mode`.
-const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Short;
+const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Off;
 
 /// The default value for `tui-address-mode`.
 const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
