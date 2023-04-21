@@ -552,6 +552,7 @@ command line option.
 | Command                | Description                                     | Default  |
 |------------------------|-------------------------------------------------|----------|
 | `toggle-help`          | Toggle help                                     | `h`      |
+| `toggle-settings`      | Toggle settings                                 | `s`      |
 | `next-hop`             | Select next hop                                 | `down`   |
 | `previous-hop`         | Select previous hop                             | `up`     |
 | `next-trace`           | Select next trace                               | `right`  |
