@@ -1437,15 +1437,15 @@ fn format_details(
         match dns_entry {
             DnsEntry::Pending(addr) => {
                 let details = fmt_details_no_asn(addr, index, count, None, geoip);
-                (details, 2)
+                (details, 3)
             }
             DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
                 let details = fmt_details_no_asn(addr, index, count, Some(hosts), geoip);
-                (details, 2)
+                (details, 3)
             }
             DnsEntry::NotFound(Unresolved::Normal(addr)) => {
                 let details = fmt_details_no_asn(addr, index, count, Some(vec![]), geoip);
-                (details, 2)
+                (details, 3)
             }
             DnsEntry::Failed(ip) => {
                 let details = format!("Failed: {ip}");
