@@ -7,7 +7,7 @@ use crate::dns::{AsInfo, DnsEntry, Resolved, Unresolved};
 use crate::geoip::{GeoIpCity, GeoIpLookup};
 use crate::{DnsResolver, Trace, TraceInfo};
 use chrono::SecondsFormat;
-use crossterm::event::{KeyEvent, KeyModifiers};
+use crossterm::event::{KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -602,65 +602,67 @@ fn run_app<B: Backend>(
         terminal.draw(|f| render_app(f, &mut app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
-                let bindings = &app.tui_config.bindings;
-                if app.show_help {
-                    if bindings.toggle_help.check(key)
-                        || bindings.clear_selection.check(key)
-                        || bindings.quit.check(key)
-                    {
+                if key.kind == KeyEventKind::Press {
+                    let bindings = &app.tui_config.bindings;
+                    if app.show_help {
+                        if bindings.toggle_help.check(key)
+                            || bindings.clear_selection.check(key)
+                            || bindings.quit.check(key)
+                        {
+                            app.toggle_help();
+                        }
+                    } else if bindings.toggle_help.check(key) {
                         app.toggle_help();
+                    } else if bindings.next_hop.check(key) {
+                        app.next_hop();
+                    } else if bindings.previous_hop.check(key) {
+                        app.previous_hop();
+                    } else if bindings.previous_trace.check(key) {
+                        app.previous_trace();
+                        app.clear();
+                    } else if bindings.next_trace.check(key) {
+                        app.next_trace();
+                        app.clear();
+                    } else if bindings.next_hop_address.check(key) {
+                        app.next_hop_address();
+                    } else if bindings.previous_hop_address.check(key) {
+                        app.previous_hop_address();
+                    } else if bindings.address_mode_ip.check(key) {
+                        app.tui_config.address_mode = AddressMode::IP;
+                    } else if bindings.address_mode_host.check(key) {
+                        app.tui_config.address_mode = AddressMode::Host;
+                    } else if bindings.address_mode_both.check(key) {
+                        app.tui_config.address_mode = AddressMode::Both;
+                    } else if bindings.toggle_freeze.check(key) {
+                        app.toggle_freeze();
+                    } else if bindings.toggle_chart.check(key) {
+                        app.toggle_chart();
+                    } else if bindings.contract_hosts_min.check(key) {
+                        app.contract_hosts_min();
+                    } else if bindings.expand_hosts_max.check(key) {
+                        app.expand_hosts_max();
+                    } else if bindings.contract_hosts.check(key) {
+                        app.contract_hosts();
+                    } else if bindings.expand_hosts.check(key) {
+                        app.expand_hosts();
+                    } else if bindings.chart_zoom_in.check(key) {
+                        app.zoom_in();
+                    } else if bindings.chart_zoom_out.check(key) {
+                        app.zoom_out();
+                    } else if bindings.clear_trace_data.check(key) {
+                        app.clear();
+                        app.clear_trace_data();
+                    } else if bindings.clear_dns_cache.check(key) {
+                        app.resolver.flush();
+                    } else if bindings.clear_selection.check(key) {
+                        app.clear();
+                    } else if bindings.toggle_as_info.check(key) {
+                        app.toggle_asinfo();
+                    } else if bindings.toggle_hop_details.check(key) {
+                        app.toggle_hop_details();
+                    } else if bindings.quit.check(key) || CTRL_C.check(key) {
+                        return Ok(());
                     }
-                } else if bindings.toggle_help.check(key) {
-                    app.toggle_help();
-                } else if bindings.next_hop.check(key) {
-                    app.next_hop();
-                } else if bindings.previous_hop.check(key) {
-                    app.previous_hop();
-                } else if bindings.previous_trace.check(key) {
-                    app.previous_trace();
-                    app.clear();
-                } else if bindings.next_trace.check(key) {
-                    app.next_trace();
-                    app.clear();
-                } else if bindings.next_hop_address.check(key) {
-                    app.next_hop_address();
-                } else if bindings.previous_hop_address.check(key) {
-                    app.previous_hop_address();
-                } else if bindings.address_mode_ip.check(key) {
-                    app.tui_config.address_mode = AddressMode::IP;
-                } else if bindings.address_mode_host.check(key) {
-                    app.tui_config.address_mode = AddressMode::Host;
-                } else if bindings.address_mode_both.check(key) {
-                    app.tui_config.address_mode = AddressMode::Both;
-                } else if bindings.toggle_freeze.check(key) {
-                    app.toggle_freeze();
-                } else if bindings.toggle_chart.check(key) {
-                    app.toggle_chart();
-                } else if bindings.contract_hosts_min.check(key) {
-                    app.contract_hosts_min();
-                } else if bindings.expand_hosts_max.check(key) {
-                    app.expand_hosts_max();
-                } else if bindings.contract_hosts.check(key) {
-                    app.contract_hosts();
-                } else if bindings.expand_hosts.check(key) {
-                    app.expand_hosts();
-                } else if bindings.chart_zoom_in.check(key) {
-                    app.zoom_in();
-                } else if bindings.chart_zoom_out.check(key) {
-                    app.zoom_out();
-                } else if bindings.clear_trace_data.check(key) {
-                    app.clear();
-                    app.clear_trace_data();
-                } else if bindings.clear_dns_cache.check(key) {
-                    app.resolver.flush();
-                } else if bindings.clear_selection.check(key) {
-                    app.clear();
-                } else if bindings.toggle_as_info.check(key) {
-                    app.toggle_asinfo();
-                } else if bindings.toggle_hop_details.check(key) {
-                    app.toggle_hop_details();
-                } else if bindings.quit.check(key) || CTRL_C.check(key) {
-                    return Ok(());
                 }
             }
         }
