@@ -13,8 +13,10 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use humantime::format_duration;
 use itertools::Itertools;
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::io;
 use std::net::IpAddr;
 use std::rc::Rc;
@@ -39,6 +41,19 @@ const TABLE_HEADER: [&str; 11] = [
     "#", "Host", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StDev", "Sts",
 ];
 
+/// The name and number of items for each tabs in the setting dialog.
+const SETTINGS_TABS: [(&str, usize); 6] = [
+    ("Tui", 7),
+    ("Trace", 14),
+    ("Dns", 3),
+    ("GeoIp", 1),
+    ("Bindings", 25),
+    ("Theme", 21),
+];
+
+/// The settings table header.
+const SETTINGS_TABLE_HEADER: [&str; 2] = ["Setting", "Value"];
+
 const TABLE_WIDTH: [Constraint; 11] = [
     Constraint::Percentage(3),
     Constraint::Percentage(42),
@@ -51,6 +66,12 @@ const TABLE_WIDTH: [Constraint; 11] = [
     Constraint::Percentage(5),
     Constraint::Percentage(5),
     Constraint::Percentage(5),
+];
+
+const SETTINGS_TABLE_WIDTH: [Constraint; 3] = [
+    Constraint::Length(3),
+    Constraint::Min(1),
+    Constraint::Length(4),
 ];
 
 const LAYOUT_WITHOUT_TABS: [Constraint; 3] = [
@@ -68,7 +89,7 @@ const LAYOUT_WITH_TABS: [Constraint; 4] = [
 
 const MAX_ZOOM_FACTOR: usize = 16;
 
-const HELP_LINES: [&str; 18] = [
+const HELP_LINES: [&str; 19] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
     ", & .            - select hop address",
@@ -86,6 +107,7 @@ const HELP_LINES: [&str; 18] = [
     "+ & -            - zoom chart in and out",
     "z                - toggle AS information (if available)",
     "h                - toggle help",
+    "s                - toggle settings",
     "q                - quit",
 ];
 
@@ -93,6 +115,7 @@ const HELP_LINES: [&str; 18] = [
 #[derive(Debug, Clone, Copy)]
 pub struct Bindings {
     toggle_help: KeyBinding,
+    toggle_settings: KeyBinding,
     previous_hop: KeyBinding,
     next_hop: KeyBinding,
     previous_trace: KeyBinding,
@@ -122,6 +145,7 @@ impl From<TuiBindings> for Bindings {
     fn from(value: TuiBindings) -> Self {
         Self {
             toggle_help: KeyBinding::from(value.toggle_help),
+            toggle_settings: KeyBinding::from(value.toggle_settings),
             previous_hop: KeyBinding::from(value.previous_hop),
             next_hop: KeyBinding::from(value.next_hop),
             previous_trace: KeyBinding::from(value.previous_trace),
@@ -182,6 +206,54 @@ impl From<TuiKeyBinding> for KeyBinding {
     }
 }
 
+impl Display for KeyBinding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let modifiers = &[
+            self.modifiers
+                .contains(KeyModifiers::SHIFT)
+                .then_some("shift"),
+            self.modifiers
+                .contains(KeyModifiers::CONTROL)
+                .then_some("ctrl"),
+            self.modifiers.contains(KeyModifiers::ALT).then_some("alt"),
+            self.modifiers
+                .contains(KeyModifiers::SUPER)
+                .then_some("super"),
+            self.modifiers
+                .contains(KeyModifiers::HYPER)
+                .then_some("hyper"),
+            self.modifiers
+                .contains(KeyModifiers::META)
+                .then_some("meta"),
+        ]
+        .into_iter()
+        .flatten()
+        .join("+");
+        if !modifiers.is_empty() {
+            write!(f, "{modifiers}+")?;
+        }
+        match self.code {
+            KeyCode::Backspace => write!(f, "backspace"),
+            KeyCode::Enter => write!(f, "enter"),
+            KeyCode::Left => write!(f, "left"),
+            KeyCode::Right => write!(f, "right"),
+            KeyCode::Up => write!(f, "up"),
+            KeyCode::Down => write!(f, "down"),
+            KeyCode::Home => write!(f, "home"),
+            KeyCode::End => write!(f, "end"),
+            KeyCode::PageUp => write!(f, "pageup"),
+            KeyCode::PageDown => write!(f, "pagedown"),
+            KeyCode::Tab => write!(f, "tab"),
+            KeyCode::BackTab => write!(f, "backtab"),
+            KeyCode::Delete => write!(f, "delete"),
+            KeyCode::Insert => write!(f, "insert"),
+            KeyCode::Char(c) => write!(f, "{c}"),
+            KeyCode::Esc => write!(f, "esc"),
+            _ => write!(f, "unknown"),
+        }
+    }
+}
+
 /// Tui color theme.
 #[derive(Debug, Clone, Copy)]
 pub struct Theme {
@@ -223,6 +295,16 @@ pub struct Theme {
     help_dialog_bg_color: Color,
     /// The color of the text in the help dialog.
     help_dialog_text_color: Color,
+    /// The background color of the settings dialog.
+    settings_dialog_bg_color: Color,
+    /// The color of the text in settings dialog tabs.
+    settings_tab_text_color: Color,
+    /// The color of text in the settings table header.
+    settings_table_header_text_color: Color,
+    /// The background color of the settings table header.
+    settings_table_header_bg_color: Color,
+    /// The color of text of rows in the settings table.
+    settings_table_row_text_color: Color,
 }
 
 impl From<TuiTheme> for Theme {
@@ -246,6 +328,11 @@ impl From<TuiTheme> for Theme {
             samples_chart_color: Color::from(value.samples_chart_color),
             help_dialog_bg_color: Color::from(value.help_dialog_bg_color),
             help_dialog_text_color: Color::from(value.help_dialog_text_color),
+            settings_dialog_bg_color: Color::from(value.settings_dialog_bg_color),
+            settings_tab_text_color: Color::from(value.settings_tab_text_color),
+            settings_table_header_text_color: Color::from(value.settings_table_header_text_color),
+            settings_table_header_bg_color: Color::from(value.settings_table_header_bg_color),
+            settings_table_row_text_color: Color::from(value.settings_table_row_text_color),
         }
     }
 }
@@ -271,6 +358,29 @@ impl From<TuiColor> for Color {
             TuiColor::White => Self::White,
             TuiColor::Rgb(r, g, b) => Self::Rgb(r, g, b),
         }
+    }
+}
+
+fn fmt_color(color: Color) -> String {
+    match color {
+        Color::Black => "black".to_string(),
+        Color::Red => "red".to_string(),
+        Color::Green => "green".to_string(),
+        Color::Yellow => "yellow".to_string(),
+        Color::Blue => "blue".to_string(),
+        Color::Magenta => "magenta".to_string(),
+        Color::Cyan => "cyan".to_string(),
+        Color::Gray => "gray".to_string(),
+        Color::DarkGray => "darkgray".to_string(),
+        Color::LightRed => "lightred".to_string(),
+        Color::LightGreen => "lightgreen".to_string(),
+        Color::LightYellow => "lightyellow".to_string(),
+        Color::LightBlue => "lightblue".to_string(),
+        Color::LightMagenta => "lightmagenta".to_string(),
+        Color::LightCyan => "lightcyan".to_string(),
+        Color::White => "white".to_string(),
+        Color::Rgb(r, g, b) => format!("{r:02x}{g:02x}{b:02x}"),
+        _ => "unknown".to_string(),
     }
 }
 
@@ -332,8 +442,14 @@ struct TuiApp {
     selected_tracer_data: Trace,
     trace_info: Vec<TraceInfo>,
     tui_config: TuiConfig,
+    /// The state of the hop table.
     table_state: TableState,
+    /// The state of the settings table.
+    setting_table_state: TableState,
+    /// The selected trace.
     trace_selected: usize,
+    /// The selected tab in the settings dialog.
+    settings_tab_selected: usize,
     /// The index of the current address to show for the selected hop.
     ///
     /// Only used in detail mode.
@@ -341,6 +457,7 @@ struct TuiApp {
     resolver: DnsResolver,
     geoip_lookup: GeoIpLookup,
     show_help: bool,
+    show_settings: bool,
     show_hop_details: bool,
     show_chart: bool,
     frozen_start: Option<SystemTime>,
@@ -359,11 +476,14 @@ impl TuiApp {
             trace_info,
             tui_config,
             table_state: TableState::default(),
+            setting_table_state: TableState::default(),
             trace_selected: 0,
+            settings_tab_selected: 0,
             selected_hop_address: 0,
             resolver,
             geoip_lookup,
             show_help: false,
+            show_settings: false,
             show_hop_details: false,
             show_chart: false,
             frozen_start: None,
@@ -475,6 +595,51 @@ impl TuiApp {
         }
     }
 
+    fn next_settings_tab(&mut self) {
+        if self.settings_tab_selected < SETTINGS_TABS.len() - 1 {
+            self.settings_tab_selected += 1;
+        }
+        self.setting_table_state.select(Some(0));
+    }
+
+    fn previous_settings_tab(&mut self) {
+        if self.settings_tab_selected > 0 {
+            self.settings_tab_selected -= 1;
+        };
+        self.setting_table_state.select(Some(0));
+    }
+
+    fn next_settings_item(&mut self) {
+        let count = SETTINGS_TABS[self.settings_tab_selected].1;
+        let max_index = 0.max(count.saturating_sub(1));
+        let i = match self.setting_table_state.selected() {
+            Some(i) => {
+                if i < max_index {
+                    i + 1
+                } else {
+                    i
+                }
+            }
+            None => 0,
+        };
+        self.setting_table_state.select(Some(i));
+    }
+
+    fn previous_settings_item(&mut self) {
+        let count = SETTINGS_TABS[self.settings_tab_selected].1;
+        let i = match self.setting_table_state.selected() {
+            Some(i) => {
+                if i > 0 {
+                    i - 1
+                } else {
+                    i
+                }
+            }
+            None => 0.max(count.saturating_sub(1)),
+        };
+        self.setting_table_state.select(Some(i));
+    }
+
     fn clear(&mut self) {
         self.table_state.select(None);
         self.selected_hop_address = 0;
@@ -482,6 +647,10 @@ impl TuiApp {
 
     fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
+    }
+
+    fn toggle_settings(&mut self) {
+        self.show_settings = !self.show_settings;
     }
 
     fn toggle_hop_details(&mut self) {
@@ -611,8 +780,25 @@ fn run_app<B: Backend>(
                         {
                             app.toggle_help();
                         }
+                    } else if app.show_settings {
+                        if bindings.toggle_settings.check(key)
+                            || bindings.clear_selection.check(key)
+                            || bindings.quit.check(key)
+                        {
+                            app.toggle_settings();
+                        } else if bindings.previous_trace.check(key) {
+                            app.previous_settings_tab();
+                        } else if bindings.next_trace.check(key) {
+                            app.next_settings_tab();
+                        } else if bindings.next_hop.check(key) {
+                            app.next_settings_item();
+                        } else if bindings.previous_hop.check(key) {
+                            app.previous_settings_item();
+                        }
                     } else if bindings.toggle_help.check(key) {
                         app.toggle_help();
+                    } else if bindings.toggle_settings.check(key) {
+                        app.toggle_settings();
                     } else if bindings.next_hop.check(key) {
                         app.next_hop();
                     } else if bindings.previous_hop.check(key) {
@@ -681,7 +867,7 @@ fn run_app<B: Backend>(
 /// |                                    |
 /// |                                    |
 /// |                                    |
-/// |               Hops                 |
+/// |            Hops / Chart            |
 /// |                                    |
 /// |                                    |
 /// |                                    |
@@ -716,6 +902,11 @@ fn render_app<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         render_body(f, chunks[1], app);
         render_footer(f, chunks[2], app);
     }
+    if app.show_settings {
+        render_settings(f, app);
+    } else if app.show_help {
+        render_help(f, app);
+    }
 }
 
 /// Render the title, config, target, clock and keyboard controls.
@@ -736,6 +927,8 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
     let help_span = Spans::from(vec![
         Span::styled("h", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw("elp "),
+        Span::styled("s", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw("ettings "),
         Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw("uit"),
     ]);
@@ -753,7 +946,11 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         ),
         TracerProtocol::Tcp => format!("tcp({})", app.tracer_config().addr_family),
     };
-    let dns = format_dns_method(app.resolver.config().resolve_method);
+    let details = if app.show_hop_details {
+        String::from("on")
+    } else {
+        String::from("off")
+    };
     let as_info = match app.resolver.config().resolve_method {
         DnsResolveMethod::System => String::from("n/a"),
         DnsResolveMethod::Resolv | DnsResolveMethod::Google | DnsResolveMethod::Cloudflare => {
@@ -764,10 +961,6 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
             }
         }
     };
-    let interval = humantime::format_duration(app.tracer_config().min_round_duration);
-    let grace = humantime::format_duration(app.tracer_config().grace_duration);
-    let first_ttl = app.tracer_config().first_ttl;
-    let max_ttl = app.tracer_config().max_ttl;
     let max_hosts = app
         .tui_config
         .max_addrs
@@ -782,7 +975,10 @@ fn render_header<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect)
         ]),
         Spans::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!("protocol={protocol} dns={dns} as-info={as_info} interval={interval} grace={grace} start-ttl={first_ttl} max-ttl={max_ttl} max-hosts={max_hosts}"))]),
+            Span::raw(format!(
+                "protocol={protocol} as-info={as_info} details={details} max-hosts={max_hosts}"
+            )),
+        ]),
         Spans::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),
@@ -842,7 +1038,7 @@ fn render_status(app: &TuiApp) -> String {
     } else if let Some(start) = app.frozen_start {
         format!(
             "Frozen ({})",
-            humantime::format_duration(Duration::from_secs(
+            format_duration(Duration::from_secs(
                 start.elapsed().unwrap_or_default().as_secs()
             ))
         )
@@ -858,6 +1054,37 @@ fn format_dns_method(resolve_method: DnsResolveMethod) -> String {
         DnsResolveMethod::Resolv => String::from("resolv"),
         DnsResolveMethod::Google => String::from("google"),
         DnsResolveMethod::Cloudflare => String::from("cloudflare"),
+    }
+}
+
+/// Format the `AsMode`.
+fn format_as_mode(as_mode: AsMode) -> String {
+    match as_mode {
+        AsMode::Asn => "asn".to_string(),
+        AsMode::Prefix => "prefix".to_string(),
+        AsMode::CountryCode => "country-code".to_string(),
+        AsMode::Registry => "registry".to_string(),
+        AsMode::Allocated => "allocated".to_string(),
+        AsMode::Name => "name".to_string(),
+    }
+}
+
+/// Format the `AddressMode`.
+fn format_address_mode(address_mode: AddressMode) -> String {
+    match address_mode {
+        AddressMode::IP => "ip".to_string(),
+        AddressMode::Host => "host".to_string(),
+        AddressMode::Both => "both".to_string(),
+    }
+}
+
+/// Format the `GeoIpMode`.
+fn format_geoip_mode(geoip_mode: GeoIpMode) -> String {
+    match geoip_mode {
+        GeoIpMode::Off => "off".to_string(),
+        GeoIpMode::Short => "short".to_string(),
+        GeoIpMode::Long => "long".to_string(),
+        GeoIpMode::Location => "location".to_string(),
     }
 }
 
@@ -1556,9 +1783,6 @@ fn render_footer<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) 
         .split(rec);
     render_history(f, app, bottom_chunks[0]);
     render_ping_frequency(f, app, bottom_chunks[1]);
-    if app.show_help {
-        render_help(f, app);
-    }
 }
 
 /// Render the ping history for the final hop which is typically the target.
@@ -1626,7 +1850,7 @@ fn render_ping_frequency<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rec
     f.render_widget(barchart, rect);
 }
 
-/// Render help
+/// Render help dialog.
 fn render_help<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     let block = Block::default()
         .title(" Default Controls ")
@@ -1639,10 +1863,381 @@ fn render_help<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .style(Style::default().fg(app.tui_config.theme.help_dialog_text_color))
         .block(block.clone())
         .alignment(Alignment::Left);
-    let area = centered_rect(50, 50, f.size());
+    let area = centered_rect(60, 60, f.size());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
     f.render_widget(control, area);
+}
+
+/// Render settings dialog.
+fn render_settings<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+    let all_settings = format_all_settings(app);
+    let (name, info, items) = &all_settings[app.settings_tab_selected];
+    let area = centered_rect(60, 60, f.size());
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(SETTINGS_TABLE_WIDTH.as_ref())
+        .split(area);
+    f.render_widget(Clear, area);
+    render_settings_tabs(f, app, chunks[0]);
+    render_settings_table(f, app, chunks[1], name, items);
+    render_settings_info(f, app, chunks[2], info);
+}
+
+/// Render settings tabs.
+fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+    let titles: Vec<_> = SETTINGS_TABS
+        .iter()
+        .map(|(title, _)| {
+            Spans::from(Span::styled(
+                *title,
+                Style::default().fg(app.tui_config.theme.settings_tab_text_color),
+            ))
+        })
+        .collect();
+    let tabs = Tabs::new(titles)
+        .block(
+            Block::default()
+                .title(" Settings ")
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL)
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .border_type(BorderType::Double),
+        )
+        .select(app.settings_tab_selected)
+        .style(Style::default())
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+    f.render_widget(tabs, rect);
+}
+
+/// Render settings table.
+fn render_settings_table<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &mut TuiApp,
+    rect: Rect,
+    name: &str,
+    items: &[SettingsItem],
+) {
+    let header_cells = SETTINGS_TABLE_HEADER.iter().map(|h| {
+        Cell::from(*h)
+            .style(Style::default().fg(app.tui_config.theme.settings_table_header_text_color))
+    });
+    let header = Row::new(header_cells)
+        .style(Style::default().bg(app.tui_config.theme.settings_table_header_bg_color))
+        .height(1)
+        .bottom_margin(0);
+    let rows = items.iter().map(|item| {
+        Row::new(vec![Cell::from(item.item), Cell::from(item.value.as_str())])
+            .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
+    });
+    let item_width = items
+        .iter()
+        .map(|item| item.item.len() as u16)
+        .max()
+        .unwrap_or_default()
+        .max(30);
+    let table_widths = [Constraint::Min(item_width), Constraint::Length(60)];
+    let table = Table::new(rows)
+        .header(header)
+        .block(
+            Block::default()
+                .title(format!(" {name} "))
+                .title_alignment(Alignment::Left)
+                .borders(Borders::ALL)
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .border_type(BorderType::Plain),
+        )
+        .style(
+            Style::default()
+                .bg(app.tui_config.theme.bg_color)
+                .fg(app.tui_config.theme.text_color),
+        )
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        .widths(&table_widths);
+    f.render_stateful_widget(table, rect, &mut app.setting_table_state);
+}
+
+/// Render settings info footer.
+fn render_settings_info<B: Backend>(
+    f: &mut Frame<'_, B>,
+    app: &mut TuiApp,
+    rect: Rect,
+    info: &str,
+) {
+    let info = Paragraph::new(info)
+        .style(Style::default())
+        .block(
+            Block::default()
+                .title(" Info ")
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL)
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .border_type(BorderType::Plain),
+        )
+        .alignment(Alignment::Left);
+    f.render_widget(info, rect);
+}
+
+struct SettingsItem {
+    item: &'static str,
+    value: String,
+}
+
+impl SettingsItem {
+    pub fn new(item: &'static str, value: String) -> Self {
+        Self { item, value }
+    }
+}
+
+/// Format all settings.
+fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<SettingsItem>)> {
+    let tui_settings = format_tui_settings(app);
+    let trace_settings = format_trace_settings(app);
+    let dns_settings = format_dns_settings(app);
+    let geoip_settings = format_geoip_settings(app);
+    let bindings_settings = format_binding_settings(app);
+    let theme_settings = format_theme_settings(app);
+    vec![
+        (
+            "Tui",
+            "Settings which control how data is displayed in this Tui",
+            tui_settings,
+        ),
+        (
+            "Trace",
+            "Settings which control the tracing strategy",
+            trace_settings,
+        ),
+        (
+            "Dns",
+            "Settings which control how DNS lookups are performed",
+            dns_settings,
+        ),
+        ("GeoIp", "Settings relating to GeoIp", geoip_settings),
+        ("Bindings", "Tui key bindings", bindings_settings),
+        ("Theme", "Tui theme colors", theme_settings),
+    ]
+}
+
+/// Format Tui settings.
+fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    vec![
+        SettingsItem::new("tui-max-samples", format!("{}", app.tui_config.max_samples)),
+        SettingsItem::new(
+            "tui-preserve-screen",
+            format!("{}", app.tui_config.preserve_screen),
+        ),
+        SettingsItem::new(
+            "tui-refresh-rate",
+            format!("{}", format_duration(app.tui_config.refresh_rate)),
+        ),
+        SettingsItem::new(
+            "tui-address-mode",
+            format_address_mode(app.tui_config.address_mode),
+        ),
+        SettingsItem::new("tui-as-mode", format_as_mode(app.tui_config.as_mode)),
+        SettingsItem::new(
+            "tui-geoip-mode",
+            format_geoip_mode(app.tui_config.geoip_mode),
+        ),
+        SettingsItem::new(
+            "tui-max-addrs",
+            app.tui_config
+                .max_addrs
+                .map_or_else(|| String::from("auto"), |m| m.to_string()),
+        ),
+    ]
+}
+
+/// Format trace settings.
+fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    let cfg = app.tracer_config();
+    let interface = if let Some(iface) = cfg.interface.as_deref() {
+        iface.to_string()
+    } else {
+        "auto".to_string()
+    };
+    let (src_port, dst_port) = match cfg.port_direction {
+        PortDirection::None => ("n/a".to_string(), "n/a".to_string()),
+        PortDirection::FixedDest(dst) => ("auto".to_string(), format!("{}", dst.0)),
+        PortDirection::FixedSrc(src) => (format!("{}", src.0), "auto".to_string()),
+        PortDirection::FixedBoth(src, dst) => (format!("{}", src.0), format!("{}", dst.0)),
+    };
+    vec![
+        SettingsItem::new("first-ttl", format!("{}", cfg.first_ttl)),
+        SettingsItem::new("max-ttl", format!("{}", cfg.max_ttl)),
+        SettingsItem::new(
+            "min-round-duration",
+            format!("{}", format_duration(cfg.min_round_duration)),
+        ),
+        SettingsItem::new(
+            "max-round-duration",
+            format!("{}", format_duration(cfg.max_round_duration)),
+        ),
+        SettingsItem::new(
+            "grace-duration",
+            format!("{}", format_duration(cfg.grace_duration)),
+        ),
+        SettingsItem::new("max-inflight", format!("{}", cfg.max_inflight)),
+        SettingsItem::new("initial-sequence", format!("{}", cfg.initial_sequence)),
+        SettingsItem::new(
+            "read-timeout",
+            format!("{}", format_duration(cfg.read_timeout)),
+        ),
+        SettingsItem::new("packet-size", format!("{}", cfg.packet_size)),
+        SettingsItem::new("payload-pattern", format!("{}", cfg.payload_pattern)),
+        SettingsItem::new("interface", interface),
+        SettingsItem::new("multipath-strategy", cfg.multipath_strategy.to_string()),
+        SettingsItem::new("target-port", dst_port),
+        SettingsItem::new("source-port", src_port),
+    ]
+}
+
+/// Format DNS settings.
+fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    vec![
+        SettingsItem::new(
+            "dns-timeout",
+            format!("{}", format_duration(app.resolver.config().timeout)),
+        ),
+        SettingsItem::new(
+            "dns-resolve-method",
+            format_dns_method(app.resolver.config().resolve_method),
+        ),
+        SettingsItem::new(
+            "dns-lookup-as-info",
+            format!("{}", app.tui_config.lookup_as_info),
+        ),
+    ]
+}
+
+/// Format `GeoIp` settings.
+fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    vec![SettingsItem::new(
+        "geoip-mmdb-file",
+        app.tracer_config()
+            .geoip_mmdb_file
+            .as_deref()
+            .unwrap_or("none")
+            .to_string(),
+    )]
+}
+
+/// Format binding settings.
+fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    let binds = &app.tui_config.bindings;
+    vec![
+        SettingsItem::new("toggle-help", format!("{}", binds.toggle_help)),
+        SettingsItem::new("toggle-settings", format!("{}", binds.toggle_settings)),
+        SettingsItem::new("next-hop", format!("{}", binds.next_hop)),
+        SettingsItem::new("previous-hop", format!("{}", binds.previous_hop)),
+        SettingsItem::new("next-trace", format!("{}", binds.next_trace)),
+        SettingsItem::new("previous-trace", format!("{}", binds.previous_trace)),
+        SettingsItem::new("next-hop-address", format!("{}", binds.next_hop_address)),
+        SettingsItem::new(
+            "previous-hop-address",
+            format!("{}", binds.previous_hop_address),
+        ),
+        SettingsItem::new("address-mode-ip", format!("{}", binds.address_mode_ip)),
+        SettingsItem::new("address-mode-host", format!("{}", binds.address_mode_host)),
+        SettingsItem::new("address-mode-both", format!("{}", binds.address_mode_both)),
+        SettingsItem::new("toggle-freeze", format!("{}", binds.toggle_freeze)),
+        SettingsItem::new("toggle-chart", format!("{}", binds.toggle_chart)),
+        SettingsItem::new("expand-hosts", format!("{}", binds.expand_hosts)),
+        SettingsItem::new("expand-hosts-max", format!("{}", binds.expand_hosts_max)),
+        SettingsItem::new("contract-hosts", format!("{}", binds.contract_hosts)),
+        SettingsItem::new(
+            "contract-hosts-min",
+            format!("{}", binds.contract_hosts_min),
+        ),
+        SettingsItem::new("chart-zoom-in", format!("{}", binds.chart_zoom_in)),
+        SettingsItem::new("chart-zoom-out", format!("{}", binds.chart_zoom_out)),
+        SettingsItem::new("clear-trace-data", format!("{}", binds.clear_trace_data)),
+        SettingsItem::new("clear-dns-cache", format!("{}", binds.clear_dns_cache)),
+        SettingsItem::new("clear-selection", format!("{}", binds.clear_selection)),
+        SettingsItem::new("toggle-as-info", format!("{}", binds.toggle_as_info)),
+        SettingsItem::new(
+            "toggle-hop-details",
+            format!("{}", binds.toggle_hop_details),
+        ),
+        SettingsItem::new("quit", format!("{}", binds.quit)),
+    ]
+}
+
+/// Format theme settings.
+fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    let theme = &app.tui_config.theme;
+    vec![
+        SettingsItem::new("bg-color", fmt_color(theme.bg_color)),
+        SettingsItem::new("border-color", fmt_color(theme.border_color)),
+        SettingsItem::new("text-color", fmt_color(theme.text_color)),
+        SettingsItem::new("tab-text-color", fmt_color(theme.tab_text_color)),
+        SettingsItem::new(
+            "hops-table-header-bg-color",
+            fmt_color(theme.hops_table_header_bg_color),
+        ),
+        SettingsItem::new(
+            "hops-table-header-text-color",
+            fmt_color(theme.hops_table_header_text_color),
+        ),
+        SettingsItem::new(
+            "hops-table-row-active-text-color",
+            fmt_color(theme.hops_table_row_active_text_color),
+        ),
+        SettingsItem::new(
+            "hops-table-row-inactive-text-color",
+            fmt_color(theme.hops_table_row_inactive_text_color),
+        ),
+        SettingsItem::new(
+            "hops-chart-selected-color",
+            fmt_color(theme.hops_chart_selected_color),
+        ),
+        SettingsItem::new(
+            "hops-chart-unselected-color",
+            fmt_color(theme.hops_chart_unselected_color),
+        ),
+        SettingsItem::new(
+            "hops-chart-axis-color",
+            fmt_color(theme.hops_chart_axis_color),
+        ),
+        SettingsItem::new(
+            "frequency-chart-bar-color",
+            fmt_color(theme.frequency_chart_bar_color),
+        ),
+        SettingsItem::new(
+            "frequency-chart-text-color",
+            fmt_color(theme.frequency_chart_text_color),
+        ),
+        SettingsItem::new("samples-chart-color ", fmt_color(theme.samples_chart_color)),
+        SettingsItem::new(
+            "help-dialog-bg-color",
+            fmt_color(theme.help_dialog_bg_color),
+        ),
+        SettingsItem::new(
+            "help-dialog-text-color",
+            fmt_color(theme.help_dialog_text_color),
+        ),
+        SettingsItem::new(
+            "settings-dialog-bg-color",
+            fmt_color(theme.settings_dialog_bg_color),
+        ),
+        SettingsItem::new(
+            "settings-tab-text-color",
+            fmt_color(theme.settings_tab_text_color),
+        ),
+        SettingsItem::new(
+            "settings-table-header-text-color",
+            fmt_color(theme.settings_table_header_text_color),
+        ),
+        SettingsItem::new(
+            "settings-table-header-bg-color",
+            fmt_color(theme.settings_table_header_bg_color),
+        ),
+        SettingsItem::new(
+            "settings-table-row-text-color",
+            fmt_color(theme.settings_table_row_text_color),
+        ),
+    ]
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
