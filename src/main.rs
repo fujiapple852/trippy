@@ -212,6 +212,14 @@ fn make_trace_info(
         args.max_ttl,
         args.grace_duration,
         args.min_round_duration,
+        args.max_round_duration,
+        args.max_inflight,
+        args.initial_sequence,
+        args.read_timeout,
+        args.packet_size,
+        args.payload_pattern,
+        args.interface.clone(),
+        args.geoip_mmdb_file.clone(),
     )
 }
 
@@ -246,6 +254,14 @@ pub struct TraceInfo {
     pub max_ttl: u8,
     pub grace_duration: Duration,
     pub min_round_duration: Duration,
+    pub max_round_duration: Duration,
+    pub max_inflight: u8,
+    pub initial_sequence: u16,
+    pub read_timeout: Duration,
+    pub packet_size: u16,
+    pub payload_pattern: u8,
+    pub interface: Option<String>,
+    pub geoip_mmdb_file: Option<String>,
 }
 
 impl TraceInfo {
@@ -264,6 +280,14 @@ impl TraceInfo {
         max_ttl: u8,
         grace_duration: Duration,
         min_round_duration: Duration,
+        max_round_duration: Duration,
+        max_inflight: u8,
+        initial_sequence: u16,
+        read_timeout: Duration,
+        packet_size: u16,
+        payload_pattern: u8,
+        interface: Option<String>,
+        geoip_mmdb_file: Option<String>,
     ) -> Self {
         Self {
             data,
@@ -278,6 +302,14 @@ impl TraceInfo {
             max_ttl,
             grace_duration,
             min_round_duration,
+            max_round_duration,
+            max_inflight,
+            initial_sequence,
+            read_timeout,
+            packet_size,
+            payload_pattern,
+            interface,
+            geoip_mmdb_file,
         }
     }
 }

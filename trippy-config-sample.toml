@@ -255,7 +255,11 @@ frequency-chart-text-color = "gray"
 samples-chart-color = "yellow"
 help-dialog-bg-color = "blue"
 help-dialog-text-color = "gray"
-
+settings-dialog-bg-color = "blue"
+settings-tab-text-color = "green"
+settings-table-header-text-color = "black"
+settings-table-header-bg-color = "white"
+settings-table-row-text-color = "gray"
 
 # Tui key bindings Configuration.
 #
@@ -265,6 +269,7 @@ help-dialog-text-color = "gray"
 # See https://github.com/fujiapple852/trippy#key-bindings-reference for details.
 [bindings]
 toggle-help = "h"
+toggle-settings = "s"
 next-hop = "down"
 previous-hop = "up"
 next-trace = "right"

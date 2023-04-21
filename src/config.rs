@@ -3,7 +3,7 @@ use crate::config::TuiCommandItem::{
     AddressModeBoth, AddressModeHost, AddressModeIp, ChartZoomIn, ChartZoomOut, ClearDnsCache,
     ClearSelection, ClearTraceData, ContractHosts, ContractHostsMin, ExpandHosts, ExpandHostsMax,
     NextHop, NextHopAddress, NextTrace, PreviousHop, PreviousHopAddress, PreviousTrace, Quit,
-    ToggleASInfo, ToggleChart, ToggleFreeze, ToggleHelp, ToggleHopDetails,
+    ToggleASInfo, ToggleChart, ToggleFreeze, ToggleHelp, ToggleHopDetails, ToggleSettings,
 };
 use anyhow::anyhow;
 use clap::{Command, CommandFactory, Parser, ValueEnum};
@@ -521,6 +521,16 @@ pub struct TuiTheme {
     pub help_dialog_bg_color: TuiColor,
     /// The color of the text in the help dialog.
     pub help_dialog_text_color: TuiColor,
+    /// The background color of the settings dialog.
+    pub settings_dialog_bg_color: TuiColor,
+    /// The color of the text in settings dialog tabs.
+    pub settings_tab_text_color: TuiColor,
+    /// The color of text in the settings table header.
+    pub settings_table_header_text_color: TuiColor,
+    /// The background color of the settings table header.
+    pub settings_table_header_bg_color: TuiColor,
+    /// The color of text of rows in the settings table.
+    pub settings_table_row_text_color: TuiColor,
 }
 
 impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
@@ -591,6 +601,26 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::HelpDialogTextColor)
                 .or(cfg.help_dialog_text_color.as_ref())
                 .unwrap_or(&TuiColor::Gray),
+            settings_dialog_bg_color: *color_map
+                .get(&TuiThemeItem::SettingsDialogBgColor)
+                .or(cfg.settings_dialog_bg_color.as_ref())
+                .unwrap_or(&TuiColor::Blue),
+            settings_tab_text_color: *color_map
+                .get(&TuiThemeItem::SettingsTabTextColor)
+                .or(cfg.settings_tab_text_color.as_ref())
+                .unwrap_or(&TuiColor::Green),
+            settings_table_header_text_color: *color_map
+                .get(&TuiThemeItem::SettingsTableHeaderTextColor)
+                .or(cfg.settings_table_header_text_color.as_ref())
+                .unwrap_or(&TuiColor::Black),
+            settings_table_header_bg_color: *color_map
+                .get(&TuiThemeItem::SettingsTableHeaderBgColor)
+                .or(cfg.settings_table_header_bg_color.as_ref())
+                .unwrap_or(&TuiColor::White),
+            settings_table_row_text_color: *color_map
+                .get(&TuiThemeItem::SettingsTableRowTextColor)
+                .or(cfg.settings_table_row_text_color.as_ref())
+                .unwrap_or(&TuiColor::Gray),
         }
     }
 }
@@ -632,6 +662,16 @@ pub enum TuiThemeItem {
     HelpDialogBgColor,
     /// The color of the text in the help dialog.
     HelpDialogTextColor,
+    /// The color of the text in settings tabs.
+    SettingsTabTextColor,
+    /// The background color of the settings dialog.
+    SettingsDialogBgColor,
+    /// The color of text in the settings table header.
+    SettingsTableHeaderTextColor,
+    /// The background color of the settings table header.
+    SettingsTableHeaderBgColor,
+    /// The color of text of rows in the settings table.
+    SettingsTableRowTextColor,
 }
 
 /// A TUI color.
@@ -701,6 +741,7 @@ impl TryFrom<&str> for TuiColor {
 #[derive(Debug, Clone, Copy)]
 pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
+    pub toggle_settings: TuiKeyBinding,
     pub previous_hop: TuiKeyBinding,
     pub next_hop: TuiKeyBinding,
     pub previous_trace: TuiKeyBinding,
@@ -733,6 +774,7 @@ impl TuiBindings {
     pub fn find_duplicates(&self) -> Vec<String> {
         let (_, duplicates) = [
             (self.toggle_help, ToggleHelp),
+            (self.toggle_settings, ToggleSettings),
             (self.previous_hop, PreviousHop),
             (self.next_hop, NextHop),
             (self.previous_trace, PreviousTrace),
@@ -787,6 +829,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&ToggleHelp)
                 .or(cfg.toggle_help.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
+            toggle_settings: *cmd_items
+                .get(&ToggleSettings)
+                .or(cfg.toggle_settings.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('s'))),
             previous_hop: *cmd_items
                 .get(&PreviousHop)
                 .or(cfg.previous_hop.as_ref())
@@ -1112,6 +1158,8 @@ impl Display for TuiKeyBinding {
 pub enum TuiCommandItem {
     /// Toggle the help dialog.
     ToggleHelp,
+    /// Toggle the settings dialog.
+    ToggleSettings,
     /// Move down to the next hop.
     NextHop,
     /// Move up to the previous hop.
@@ -1326,12 +1374,18 @@ pub mod config_file {
         pub samples_chart_color: Option<TuiColor>,
         pub help_dialog_bg_color: Option<TuiColor>,
         pub help_dialog_text_color: Option<TuiColor>,
+        pub settings_dialog_bg_color: Option<TuiColor>,
+        pub settings_tab_text_color: Option<TuiColor>,
+        pub settings_table_header_text_color: Option<TuiColor>,
+        pub settings_table_header_bg_color: Option<TuiColor>,
+        pub settings_table_row_text_color: Option<TuiColor>,
     }
 
     #[derive(Debug, Default, Deserialize)]
     #[serde(rename_all = "kebab-case", deny_unknown_fields)]
     pub struct ConfigBindings {
         pub toggle_help: Option<TuiKeyBinding>,
+        pub toggle_settings: Option<TuiKeyBinding>,
         pub previous_hop: Option<TuiKeyBinding>,
         pub next_hop: Option<TuiKeyBinding>,
         pub previous_trace: Option<TuiKeyBinding>,
