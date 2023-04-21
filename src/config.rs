@@ -1679,15 +1679,15 @@ fn validate_multi(mode: Mode, protocol: TracerProtocol, targets: &[String]) -> a
 fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
     if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
         Err(anyhow!(
-            "first_ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}"
+            "first-ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}"
         ))
     } else if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
         Err(anyhow!(
-            "max_ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}"
+            "max-ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}"
         ))
     } else if first_ttl > max_ttl {
         Err(anyhow!(
-            "first_ttl ({first_ttl}) must be less than or equal to max_ttl ({max_ttl})"
+            "first-ttl ({first_ttl}) must be less than or equal to max-ttl ({max_ttl})"
         ))
     } else {
         Ok(())
@@ -1698,7 +1698,7 @@ fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
 fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
     if max_inflight == 0 {
         Err(anyhow!(
-            "max_inflight ({}) must be greater than zero",
+            "max-inflight ({}) must be greater than zero",
             max_inflight
         ))
     } else {
@@ -1710,7 +1710,7 @@ fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
 fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
     if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
         Err(anyhow!(
-            "read_timeout ({:?}) must be between {:?} and {:?} inclusive",
+            "read-timeout ({:?}) must be between {:?} and {:?} inclusive",
             read_timeout,
             MIN_READ_TIMEOUT_MS,
             MAX_READ_TIMEOUT_MS
@@ -1727,7 +1727,7 @@ fn validate_round_duration(
 ) -> anyhow::Result<()> {
     if min_round_duration > max_round_duration {
         Err(anyhow!(
-            "max_round_duration ({:?}) must not be less than min_round_duration ({:?})",
+            "max-round-duration ({:?}) must not be less than min-round-duration ({:?})",
             max_round_duration,
             min_round_duration
         ))
@@ -1740,7 +1740,7 @@ fn validate_round_duration(
 fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
     if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
         Err(anyhow!(
-            "grace_duration ({:?}) must be between {:?} and {:?} inclusive",
+            "grace-duration ({:?}) must be between {:?} and {:?} inclusive",
             grace_duration,
             MIN_GRACE_DURATION_MS,
             MAX_GRACE_DURATION_MS
@@ -1756,7 +1756,7 @@ fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
         Ok(())
     } else {
         Err(anyhow!(
-            "packet_size ({}) must be between {} and {} inclusive",
+            "packet-size ({}) must be between {} and {} inclusive",
             packet_size,
             MIN_PACKET_SIZE,
             MAX_PACKET_SIZE
@@ -1767,7 +1767,7 @@ fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
 /// Validate `source_port`.
 fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
     if source_port < 1024 {
-        Err(anyhow!("source_port ({}) must be >= 1024", source_port))
+        Err(anyhow!("source-port ({}) must be >= 1024", source_port))
     } else {
         Ok(())
     }
@@ -1777,7 +1777,7 @@ fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
 fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
     if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
         Err(anyhow!(
-            "tui_refresh_rate ({:?}) must be between {:?} and {:?} inclusive",
+            "tui-refresh-rate ({:?}) must be between {:?} and {:?} inclusive",
             tui_refresh_rate,
             TUI_MIN_REFRESH_RATE_MS,
             TUI_MAX_REFRESH_RATE_MS
@@ -1791,7 +1791,7 @@ fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
 fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
     if report_cycles == 0 {
         Err(anyhow!(
-            "report_cycles ({}) must be greater than zero",
+            "report-cycles ({}) must be greater than zero",
             report_cycles
         ))
     } else {
@@ -1822,7 +1822,7 @@ fn validate_geoip(
     ) && geoip_mmdb_file.is_none()
     {
         Err(anyhow!(
-            "geoip_mmdb_file must be given for tui_geoip_mode of `{tui_geoip_mode:?}`"
+            "geoip-mmdb-file must be given for tui-geoip-mode of `{tui_geoip_mode:?}`"
         ))
     } else {
         Ok(())
