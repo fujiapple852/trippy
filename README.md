@@ -537,6 +537,11 @@ line option.
 | `samples-chart-color`                | The color of the samples chart                       | `Yellow`   |
 | `help-dialog-bg-color`               | The background color of the help dialog              | `Blue`     |
 | `help-dialog-text-color`             | The color of the text in the help dialog             | `Gray`     |
+| `settings-dialog-bg-color`           | The background color of the settings dialog          | `blue`     |
+| `settings-tab-text-color`            | The color of the text in settings dialog tabs        | `green`    |
+| `settings-table-header-text-color`   | The color of text in the settings table header       | `black`    |
+| `settings-table-header-bg-color`     | The background color of the settings table header    | `white`    |
+| `settings-table-row-text-color`      | The color of text of rows in the settings table      | `gray`     |
 
 The supported colors are:
 
