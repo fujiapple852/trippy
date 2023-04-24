@@ -12,6 +12,7 @@ use std::rc::Rc;
 pub struct GeoIpCity {
     latitude: Option<f64>,
     longitude: Option<f64>,
+    accuracy_radius: Option<u16>,
     city: Option<String>,
     subdivision: Option<String>,
     subdivision_code: Option<String>,
@@ -43,12 +44,21 @@ impl GeoIpCity {
         .flatten()
         .join(", ")
     }
+
     pub fn location(&self) -> String {
         format!(
-            "lat={}, long={}",
+            "{}, {} (~{}km)",
             self.latitude.unwrap_or_default(),
-            self.longitude.unwrap_or_default()
+            self.longitude.unwrap_or_default(),
+            self.accuracy_radius.unwrap_or_default(),
         )
+    }
+
+    pub fn coordinates(&self) -> Option<(f64, f64, u16)> {
+        match (self.latitude, self.longitude, self.accuracy_radius) {
+            (Some(lat), Some(long), Some(raduis)) => Some((lat, long, raduis)),
+            _ => None,
+        }
     }
 }
 
@@ -98,9 +108,14 @@ impl From<City<'_>> for GeoIpCity {
             .location
             .as_ref()
             .and_then(|location| location.longitude);
+        let accuracy_radius = value
+            .location
+            .as_ref()
+            .and_then(|location| location.accuracy_radius);
         Self {
             latitude,
             longitude,
+            accuracy_radius,
             city,
             subdivision,
             subdivision_code,

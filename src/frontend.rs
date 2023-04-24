@@ -1636,17 +1636,17 @@ fn format_details(
         match dns_entry {
             DnsEntry::Pending(addr) => {
                 let details = fmt_details_with_asn(addr, index, count, None, None, geoip);
-                (details, 5)
+                (details, 6)
             }
             DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
                 let details =
                     fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo), geoip);
-                (details, 5)
+                (details, 6)
             }
             DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => {
                 let details =
                     fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo), geoip);
-                (details, 5)
+                (details, 6)
             }
             DnsEntry::Failed(ip) => {
                 let details = format!("Failed: {ip}");
@@ -1731,9 +1731,16 @@ fn fmt_details_with_asn(
         "Host: <awaited>".to_string()
     };
     let geoip_formatted = if let Some(geo) = geoip {
-        format!("Geo: {}", geo.long_name())
+        let (lat, long, radius) = geo.coordinates().unwrap_or_default();
+        format!(
+            "Geo: {}\nPos: {}, {} (~{}km)",
+            geo.long_name(),
+            lat,
+            long,
+            radius
+        )
     } else {
-        "Geo: <not found>".to_string()
+        "Geo: <not found>\nPos: <not found>".to_string()
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}")
 }
@@ -1766,9 +1773,16 @@ fn fmt_details_no_asn(
         "Host: <awaited>".to_string()
     };
     let geoip_formatted = if let Some(geo) = geoip {
-        format!("Geo: {}", geo.long_name())
+        let (lat, long, radius) = geo.coordinates().unwrap_or_default();
+        format!(
+            "Geo: {}\nPos: {}, {} (~{}km)",
+            geo.long_name(),
+            lat,
+            long,
+            radius
+        )
     } else {
-        "Geo: <not found>".to_string()
+        "Geo: <not found>\nPos: <not found>".to_string()
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{geoip_formatted}")
 }
