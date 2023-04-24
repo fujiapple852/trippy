@@ -462,7 +462,7 @@ Options:
           - name:         Display the AS name
 
       --tui-geoip-mode <TUI_GEOIP_MODE>
-          How to render GeoIp information [default: compact]
+          How to render GeoIp information [default: short]
 
           Possible values:
           - off:      Do not display GeoIp data
