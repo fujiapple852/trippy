@@ -100,6 +100,14 @@ scoop install https://trippy.cli.rs/scoop/trippy.json
 pkgin install trippy
 ```
 
+### FreeBSD
+
+[![FreeBSD port](https://img.shields.io/badge/FreeBSD%20port-0.7.0-blue)](https://www.freshports.org/net/trippy/)
+
+```shell
+pkg install trippy
+```
+
 ### Pacman (Arch Linux)
 
 [![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://repology.org/project/trippy/versions)
@@ -136,7 +144,7 @@ Trippy has been (lightly...) tested on the following platforms:
 | macOS    | ✅    | ✅   | ✅   |                                                               |
 | NetBSD   | ✅    | ✅   | ✅   |                                                               |
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
+| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
 | Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ### IPv6
@@ -147,7 +155,7 @@ Trippy has been (lightly...) tested on the following platforms:
 | macOS    | ✅    | ✅   | ✅   |                                                               |
 | NetBSD   | ✅    | ✅   | ✅   |                                                               |
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ⏳    | ⏳   | ⏳   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
+| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
 | Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ## Equal Cost Multi-path Routing
