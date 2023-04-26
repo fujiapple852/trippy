@@ -1,8 +1,6 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
 [![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.7.0)
 [![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
-[![Status](https://img.shields.io/badge/status-alpha-blue)](https://github.com/fujiapple852/trippy)
-[![Gitter](https://badges.gitter.im/trippy-rs/community.svg)](https://gitter.im/trippy-rs/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Trippy
 
@@ -15,19 +13,20 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 ## Navigation
 
 <!-- TOC -->
+
 * [Trippy](#trippy)
-  * [Features](#features)
-  * [Distributions](#distributions)
-  * [Platforms](#platforms)
-  * [Equal Cost Multi-path Routing](#equal-cost-multi-path-routing)
-  * [Privileges](#privileges)
-  * [Usage Examples](#usage-examples)
-  * [Command Reference](#command-reference)
-  * [Theme Reference](#theme-reference)
-  * [Key Bindings Reference](#key-bindings-reference)
-  * [Configuration Reference](#configuration-reference)
-  * [Acknowledgements](#acknowledgements)
-  * [License](#license)
+    * [Features](#features)
+    * [Distributions](#distributions)
+    * [Platforms](#platforms)
+    * [Privileges](#privileges)
+    * [Usage Examples](#usage-examples)
+    * [Command Reference](#command-reference)
+    * [Theme Reference](#theme-reference)
+    * [Key Bindings Reference](#key-bindings-reference)
+    * [Configuration Reference](#configuration-reference)
+    * [Acknowledgements](#acknowledgements)
+    * [License](#license)
+
 <!-- TOC -->
 
 ## Features
@@ -41,9 +40,11 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - minimum and maximum round duration
     - round end grace period & maximum number of unknown hops
     - source & destination port (`TCP` & `UDP`)
-    - Equal Cost Multi-path Routing strategies (`classic`, `paris` and `dublin`)
     - source address and source interface
     - `TOS` (aka `DSCP + ECN`)
+- Support for `classic`, `paris`
+  and `dublin` [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
+  strategies ([tracking issue](https://github.com/fujiapple852/trippy/issues/274))
 - Tui interface:
     - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
@@ -51,7 +52,8 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Chart of RTT for all hops in a trace with zooming capability
     - Customizable color theme & key bindings
     - Configuration via both command line arguments and a configuration file
-    - Multiple hosts per hop with ability to cap display to N hosts and show frequency %
+    - Show multiple hosts per hop with ability to cap display to N hosts and show frequency %
+    - Show hop details and navigate hosts within each hop
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
 - DNS:
@@ -76,7 +78,15 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
 cargo install trippy
 ```
 
-### Homebrew
+### Snap (Linux)
+
+[![trippy](https://snapcraft.io/trippy/badge.svg)](https://snapcraft.io/trippy)
+
+```shell
+snap install trippy
+```
+
+### Homebrew (MacOS)
 
 [![Homebrew package](https://repology.org/badge/version-for-repo/homebrew/trippy.svg)](https://formulae.brew.sh/formula/trippy)
 
@@ -116,14 +126,6 @@ pkg install trippy
 pacman -S trippy
 ```
 
-### Snap
-
-[![trippy](https://snapcraft.io/trippy/badge.svg)](https://snapcraft.io/trippy)
-
-```shell
-snap install trippy
-```
-
 ### Docker
 
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/fujiapple/trippy)](https://hub.docker.com/r/fujiapple/trippy/)
@@ -157,20 +159,6 @@ Trippy has been (lightly...) tested on the following platforms:
 | OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
 | FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
 | Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
-
-## Equal Cost Multi-path Routing
-
-Support for [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
-strategies are shown in the following table (see
-the [tracking issue](https://github.com/fujiapple852/trippy/issues/274)):
-
-| Strategy | Family      | Protocol  | Status |
-|----------|-------------|-----------|--------|
-| Classic  | IPv4 / IPv6 | UDP / TCP | ✅      |
-| Paris    | IPv4 / IPv6 | UDP / TCP | ❌      |
-| Dublin   | IPv4        | UDP       | ✅      |
-| Dublin   | IPv4        | TCP       | ❌      |
-| Dublin   | IPv6        | UDP / TCP | ❌      |
 
 ## Privileges
 
@@ -315,7 +303,7 @@ List all Tui commands that can have a custom key binding:
 ```shell
 trip --print-tui-binding-commands
 ```
-  
+
 Specify the location of the trippy config file:
 
 ```shell
@@ -595,15 +583,15 @@ example `ctrl+shift+b`.
 
 ## Configuration Reference
 
-Trippy can be configured with via command line arguments or an optional configuration file.  If a given configuration 
+Trippy can be configured with via command line arguments or an optional configuration file. If a given configuration
 item is specified in both the configuration file and via a command line argument then the latter will take precedence.
 
-The configuration file location may be provided to trippy via the `-c` (`--config-file`) argument.  If not provided, 
-Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration file in one of the following platform 
+The configuration file location may be provided to trippy via the `-c` (`--config-file`) argument. If not provided,
+Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration file in one of the following platform
 specific locations:
 
 - The current directory
-- The user home directory 
+- The user home directory
 - The user config direction
 
 For example, on Linux Trippy will attempt to locate the following config files (in order):
