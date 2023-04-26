@@ -538,6 +538,12 @@ line option.
 | `settings-table-header-text-color`   | The color of text in the settings table header       | `black`    |
 | `settings-table-header-bg-color`     | The background color of the settings table header    | `white`    |
 | `settings-table-row-text-color`      | The color of text of rows in the settings table      | `gray`     |
+| `map-world-color`                    | The color of the map world diagram                   | `white`    |
+| `map-radius-color`                   | The color of the map accuracy radius circle          | `yellow`   |
+| `map-selected-color`                 | The color of the map selected item box               | `green`    |
+| `map-info-panel-border-color`        | The color of border of the map info panel            | `gray`     |
+| `map-info-panel-bg-color`            | The background color of the map info panel           | `black`    |
+| `map-info-panel-text-color`          | The color of text in the map info panel              | `gray`     |
 
 The supported colors are:
 
