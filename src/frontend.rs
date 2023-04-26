@@ -49,7 +49,7 @@ const SETTINGS_TABS: [(&str, usize); 6] = [
     ("Dns", 3),
     ("GeoIp", 1),
     ("Bindings", 25),
-    ("Theme", 21),
+    ("Theme", 27),
 ];
 
 /// The settings table header.
@@ -2520,6 +2520,21 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new(
             "settings-table-row-text-color",
             fmt_color(theme.settings_table_row_text_color),
+        ),
+        SettingsItem::new("map-world-color", fmt_color(theme.map_world_color)),
+        SettingsItem::new("map-radius-color", fmt_color(theme.map_radius_color)),
+        SettingsItem::new("map-selected-color", fmt_color(theme.map_selected_color)),
+        SettingsItem::new(
+            "map-info-panel-border-color",
+            fmt_color(theme.map_info_panel_border_color),
+        ),
+        SettingsItem::new(
+            "map-info-panel-bg-color",
+            fmt_color(theme.map_info_panel_bg_color),
+        ),
+        SettingsItem::new(
+            "map-info-panel-text-color",
+            fmt_color(theme.map_info_panel_text_color),
         ),
     ]
 }
