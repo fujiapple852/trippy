@@ -18,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `--geoip-mmdb-file` and `--tui-geoip-mode` flags for looking up and displaying GeoIp information from `mmdb`
   files ([#503](https://github.com/fujiapple852/trippy/issues/503))
 - Added settings dialog and simplified Tui header display ([#521](https://github.com/fujiapple852/trippy/issues/521))
+- Added interactive GeoIp map display ([#505](https://github.com/fujiapple852/trippy/issues/505))
 
 ### Changed
 
