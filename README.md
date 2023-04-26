@@ -49,7 +49,8 @@ Trippy combines the functionality of traceroute and ping and is designed to assi
     - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
-    - Chart of RTT for all hops in a trace with zooming capability
+    - Interactive chart of RTT for all hops in a trace with zooming capability
+    - Interactive GeoIp world map
     - Customizable color theme & key bindings
     - Configuration via both command line arguments and a configuration file
     - Show multiple hosts per hop with ability to cap display to N hosts and show frequency %
