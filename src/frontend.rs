@@ -44,7 +44,7 @@ const TABLE_HEADER: [&str; 11] = [
 
 /// The name and number of items for each tabs in the setting dialog.
 const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 8),
+    ("Tui", 7),
     ("Trace", 14),
     ("Dns", 3),
     ("GeoIp", 1),
