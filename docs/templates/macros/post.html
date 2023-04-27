@@ -1,0 +1,103 @@
+{% macro content(page, summary) %}
+    {%- if summary and page.summary %}
+        <div class="post-content">
+            {{ page.summary | safe }}
+        </div>
+        <div>
+            <!-- &#xFE0E; -- force text style - some devices render this as emoji -->
+            <a class="read-more button" href="{{ page.permalink | safe }}">
+                <span class="button__text">Read more</span>&nbsp;
+                <span class="button__icon">&#8617;&#xFE0E;</span>
+            </a>
+        </div>
+    {% else %}
+        <div class="post-content">
+            {{ page.content | safe }}
+        </div>
+    {%- endif %}
+{% endmacro content %}
+
+
+{% macro date(page) %}
+    <span class="post-date">
+        {%- if page.date %}
+            {{ page.date | date(format="%Y-%m-%d") }}
+        {% endif -%}
+    </span>
+{% endmacro post_date %}
+
+
+{% macro earlier_later(page) %}
+    {%- if config.extra.enable_post_view_navigation and page.lower or page.higher %}
+        <div class="pagination">
+            <div class="pagination__title">
+                <span class="pagination__title-h">{{ config.extra.post_view_navigation_prompt }}</span>
+                <hr />
+            </div>
+            <div class="pagination__buttons">
+                {%- if page.higher %}
+                    <span class="button previous">
+                        <a href="{{ page.higher.permalink | safe }}">
+                            <span class="button__icon">←</span>&nbsp;
+                            <span class="button__text">{{ page.higher.title }}</span>
+                        </a>
+                    </span>
+                {% endif %}
+                {% if page.lower %}
+                    <span class="button next">
+                        <a href="{{ page.lower.permalink | safe }}">
+                            <span class="button__text">{{ page.lower.title }}</span>&nbsp;
+                            <span class="button__icon">→</span>
+                        </a>
+                    </span>
+                {% endif -%}
+            </div>
+        </div>
+    {% endif -%}
+{% endmacro earlier_later %}
+
+
+{% macro header(page) %}
+    <h1 class="post-title"><a href="{{ page.permalink | safe }}">{{ page.title }}</a></h1>
+    <div class="post-meta-inline">
+        {{ post_macros::date(page=page) }}
+    </div>
+
+    {{ post_macros::tags(page=page) }}
+{% endmacro header %}
+
+
+{% macro list_posts(pages) %}
+    <ul>
+    {%- for page in pages %}
+        {%- if page.draft %}
+            {% continue %}
+        {% endif -%}
+        <li class="post-list">
+            <a href="{{ page.permalink | safe }}">
+                <span class="post-date">{{ page.date }}</span>
+                :: <span class="post-list-title">{{ page.title }}</span></a>
+            {{ post_macros::tags(page=page, short=true) }}
+        </li>
+    {% endfor -%}
+    </ul>
+{% endmacro list_posts %}
+
+
+{% macro tags(page, short=false) %}
+    {%- if page.taxonomies and page.taxonomies.tags %}
+        <span class="post-tags-inline">
+            {%- if short %}
+                ::
+                {%- set sep = "," -%}
+            {% else %}
+                :: tags:&nbsp;
+                {%- set sep = "&nbsp;" -%}
+            {% endif -%}
+            {%- for tag in page.taxonomies.tags | sort | unique(case_sensitive=false) %}
+                <a class="post-tag" href="{{ get_taxonomy_url(kind='tags', name=tag) | safe }}">#{{ tag }}</a>
+                {%- if not loop.last %}{{ sep | safe }}{% endif -%}
+            {% endfor -%}
+        </span>
+    {% endif -%}
+{% endmacro tags %}
