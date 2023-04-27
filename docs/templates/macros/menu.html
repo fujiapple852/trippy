@@ -1,0 +1,52 @@
+{% macro menu(config, current_path) %}
+    {%- set current_item = false -%}
+    {%- if config.extra.menu_items %}
+        {%- set menu_items = config.extra.menu_items -%}
+
+            {%- for item in menu_items %}
+                {%- set abs_item_url = item.url | replace(from="$BASE_URL", to=config.base_url) -%}
+                {%- set is_current = current_url == abs_item_url ~ "/"
+                                     or current_url is starting_with(abs_item_url)
+                -%}
+                {%- set is_base = abs_item_url == config.base_url
+                                  or abs_item_url == config.base_url ~ "/"
+                -%}
+
+                {%- if is_base %}
+                    {%- set_global base_item = item -%}
+                {% endif -%}
+
+                {%- if is_current and not is_base %}
+                    {%- set_global current_item = item -%}
+                {% endif -%}
+            {% endfor -%}
+
+            {%- if not current_item and base_item %}
+                {# Did not match any menu URLs -- assume it's a blog post #}
+                {%- set current_item = base_item -%}
+            {% endif -%}
+
+            {{ menu_macros::menu_for(config=config, current_item=current_item) }}
+    {% endif -%}
+{% endmacro menu %}
+
+{% macro menu_for(config, current_item) %}
+    {%- if config.extra.menu_items %}
+        {%- set menu_items = config.extra.menu_items -%}
+
+        <nav class="menu">
+            <ul class="menu__inner">
+            {%- for item in menu_items %}
+                <li {%- if current_item and current_item == item %} class="active" {%- endif %}>
+                    {%- if item.newtab -%}
+                        <a href="{{ item.url | replace(from="$BASE_URL", to=config.base_url) | safe }}" target="_blank" rel="noopener noreferrer">{{ item.name | safe }}</a>
+                    {%- else -%}
+                        <a href="{{ item.url | replace(from="$BASE_URL", to=config.base_url) | safe }}">{{ item.name | safe }}</a>
+                    {%- endif -%}
+                </li>
+            {% endfor -%}
+            </ul>
+        </nav>
+    {% endif -%}
+{% endmacro menu %}
+
