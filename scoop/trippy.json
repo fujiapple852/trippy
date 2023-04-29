@@ -2,7 +2,7 @@
   "description": "A network diagnostic tool",
   "version": "0.7.0",
   "license": "Apache-2.0 license",
-  "notes": "You need to run trip with administrator privileges\n\nexample usage:\n\ntrip www.example.com\n",
+  "notes": "Administrator privileges are required to run trip\n\nexample usage:\n\ntrip www.example.com\n",
   "url": "https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-pc-windows-msvc.zip",
   "homepage": "trippy.cli.rs",
   "bin": "trippy-0.7.0-x86_64-pc-windows-msvc/trip.exe",

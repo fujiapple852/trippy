@@ -65,7 +65,7 @@ issues.
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
     - configurable reporting cycles
-- Runs on multiple platform (macOS, Linux, NetBSD, Windows)
+- Runs on multiple platform (macOS, Linux, NetBSD, FreeBSD, Windows)
 - Capabilities aware application (Linux only)
 
 ## Distributions
