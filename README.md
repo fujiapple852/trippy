@@ -4,11 +4,10 @@
 
 # Trippy
 
-A network diagnostic tool, inspired by [mtr](https://github.com/traviscross/mtr).
+Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking
+issues.
 
 <img src="assets/trippy-0.3.0-08-05-2022.gif" alt="trippy"/>
-
-Trippy combines the functionality of traceroute and ping and is designed to assist with the diagnosis of network issues.
 
 ## Navigation
 
@@ -169,7 +168,7 @@ ways, including:
 1: Run as `root` user via `sudo`:
 
 ```shell
-sudo trip www.bitwizard.nl
+sudo trip www.example.com
 ```
 
 2: `chown` `trip` as the `root` user and set the `setuid` bit:
@@ -192,99 +191,99 @@ set. Note that trippy will drop all capabilities after creating the raw socket.
 Basic usage with default parameters:
 
 ```shell
-trip www.bitwizard.nl
+trip www.example.com
 ```
 
 Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--udp` & `--tcp`):
 
 ```shell
-trip www.bitwizard.nl -p udp
+trip www.example.com -p udp
 ```
 
 Trace to multiple targets simultaneously (`icmp` protocol only,
 see [#72](https://github.com/fujiapple852/trippy/issues/72)):
 
 ```shell
-trip www.bitwizard.nl google.com crates.io
+trip www.example.com google.com crates.io
 ```
 
 Trace with a minimum round time of `250ms` and a grace period of `50ms`:
 
 ```shell
-trip www.bitwizard.nl -i 250ms -g 50ms
+trip www.example.com -i 250ms -g 50ms
 ```
 
 Trace with a custom first and maximum `time-to-live`:
 
 ```shell
-trip www.bitwizard.nl --first-ttl 2 --max-ttl 10
+trip www.example.com --first-ttl 2 --max-ttl 10
 ```
 
 Use custom destination port `443` for `tcp` tracing:
 
 ```shell
-trip www.bitwizard.nl -p tcp -P 443
+trip www.example.com -p tcp -P 443
 ```
 
 Use custom source port `5000` for `udp` tracing:
 
 ```shell
-trip www.bitwizard.nl -p udp -S 5000
+trip www.example.com -p udp -S 5000
 ```
 
 Use the `dublin` Equal Cost Multi-path Routing strategy for `udp` with fixed source and destination ports:
 
 ```shell
-trip www.bitwizard.nl -p udp -R dublin -S 5000 -P 3500
+trip www.example.com -p udp -R dublin -S 5000 -P 3500
 ```
 
 Trace with a custom source address:
 
 ```shell
-trip www.bitwizard.nl -p tcp -A 127.0.0.1
+trip www.example.com -p tcp -A 127.0.0.1
 ```
 
 Trace with a source address determined by the IPv4 address for interface `en0`:
 
 ```shell
-trip www.bitwizard.nl -p tcp -I en0
+trip www.example.com -p tcp -I en0
 ```
 
 Trace using `IPv6`:
 
 ```shell
-trip www.bitwizard.nl -6
+trip www.example.com -6
 ```
 
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
-trip www.bitwizard.nl -m json -C 5
+trip www.example.com -m json -C 5
 ```
 
 Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, `resolv`):
 
 ```shell
-trip www.bitwizard.nl -r google
+trip www.example.com -r google
 ```
 
 Lookup AS information for all discovered IP addresses (not yet available for the `system` resolver,
 see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
-trip www.bitwizard.nl -r google -z
+trip www.example.com -r google -z
 ```
 
 Lookup and display `short` (or `long` or `location` or `off`) GeoIp information from a `mmdb` file:
 
 ```shell
-trip www.bitwizard.nl --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
+trip www.example.com --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
 ```
 
 Customize the color theme:
 
 ```shell
-trip www.bitwizard.nl --tui-theme-colors bg-color=blue,text-color=ffff00
+trip www.example.com --tui-theme-colors bg-color=blue,text-color=ffff00
 ```
 
 List all Tui items that can have a custom color theme:
@@ -296,7 +295,7 @@ trip --print-tui-theme-items
 Customize the key bindings:
 
 ```shell
-trip www.bitwizard.nl --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
+trip www.example.com --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
 ```
 
 List all Tui commands that can have a custom key binding:
@@ -308,7 +307,7 @@ trip --print-tui-binding-commands
 Specify the location of the trippy config file:
 
 ```shell
-trip www.bitwizard.nl --config-file /path/to/trippy.toml
+trip www.example.com --config-file /path/to/trippy.toml
 ```
 
 Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
