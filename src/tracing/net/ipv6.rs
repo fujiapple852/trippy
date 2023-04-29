@@ -1,5 +1,5 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
-use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::Socket;
@@ -104,7 +104,7 @@ pub fn dispatch_tcp_probe(
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
 ) -> TraceResult<Socket> {
-    fn process_result(addr: SocketAddr, res: std::io::Result<()>) -> TraceResult<()> {
+    fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
         match res {
             Ok(_) => Ok(()),
             Err(err) => {
@@ -143,12 +143,10 @@ pub fn recv_icmp_probe(
     match recv_socket.recv_from(&mut buf) {
         Ok((_bytes_read, addr)) => {
             let icmp_v6 = IcmpPacket::new_view(&buf).req()?;
-
             let src_addr = match addr.as_ref().req()? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
             };
-
             Ok(extract_probe_resp(protocol, &icmp_v6, *src_addr)?)
         }
         Err(err) => match err.kind() {

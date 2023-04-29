@@ -1,5 +1,5 @@
 use crate::tracing::error::TracerError::AddressNotAvailable;
-use crate::tracing::error::{TraceResult, TracerError};
+use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform;
 use crate::tracing::net::platform::Socket;
@@ -152,7 +152,7 @@ pub fn dispatch_tcp_probe(
     dest_addr: Ipv4Addr,
     tos: TypeOfService,
 ) -> TraceResult<Socket> {
-    fn process_result(addr: SocketAddr, res: std::io::Result<()>) -> TraceResult<()> {
+    fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
         match res {
             Ok(_) => Ok(()),
             Err(err) => {
