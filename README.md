@@ -105,7 +105,7 @@ scoop install https://trippy.cli.rs/scoop/trippy.json
 
 ### NetBSD
 
-[![pkgsrc current package](https://repology.org/badge/version-for-repo/pkgsrc_current/trippy.svg)](https://repology.org/project/trippy/versions)
+[![pkgsrc current package](https://repology.org/badge/version-for-repo/pkgsrc_current/trippy.svg)](https://pkgsrc.se/net/trippy)
 
 ```shell
 pkgin install trippy
@@ -113,7 +113,7 @@ pkgin install trippy
 
 ### FreeBSD
 
-[![FreeBSD port](https://img.shields.io/badge/FreeBSD%20port-0.7.0-blue)](https://www.freshports.org/net/trippy/)
+[![FreeBSD port](https://repology.org/badge/version-for-repo/freebsd/trippy.svg)](https://www.freshports.org/net/trippy/)
 
 ```shell
 pkg install trippy
@@ -121,7 +121,7 @@ pkg install trippy
 
 ### Pacman (Arch Linux)
 
-[![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://repology.org/project/trippy/versions)
+[![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://archlinux.org/packages/community/x86_64/trippy)
 
 ```shell
 pacman -S trippy
