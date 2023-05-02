@@ -1272,10 +1272,11 @@ pub mod config_file {
         MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
     };
     use anyhow::Context;
+    use etcetera::BaseStrategy;
     use serde::Deserialize;
     use std::fs::File;
     use std::io::read_to_string;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     const DEFAULT_CONFIG_FILE: &str = "trippy.toml";
     const DEFAULT_HIDDEN_CONFIG_FILE: &str = ".trippy.toml";
@@ -1285,40 +1286,27 @@ pub mod config_file {
     /// Returns the parsed `Some(ConfigFile)` if the config file exists, `None` otherwise.
     ///
     /// Trippy will attempt to locate a `trippy.toml` or `.trippy.toml`
-    /// config file in one of the following platform specific locations:
+    /// config file in one of the following locations:
     ///     - the current directory
     ///     - the user home directory
-    ///     - the user config direction
-    ///
-    /// For example, on Linux the Trippy will attempt to locate the following
-    /// files (in order):
-    ///     - `./trippy.toml`
-    ///     - `./.trippy.toml`
-    ///     - `$HOME/trippy.toml`
-    ///     - `$HOME/.trippy.toml`
-    ///     - `$HOME/.config/trippy.toml`
-    ///     - `$HOME/.config/.trippy.toml`
-    ///
-    /// See [here](https://github.com/dirs-dev/dirs-rs) for platform specific directory
-    /// information.
+    ///     - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
+    ///     - the Windows data directory (Windows only): `%APPDATA%`
     ///
     /// Note that only the first config file found is used, no attempt is
     /// made to merge the values from multiple files.
     pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
-        if let Some(file) = read_file(|| Some(PathBuf::new()), DEFAULT_CONFIG_FILE)? {
-            Ok(Some(file))
-        } else if let Some(file) = read_file(|| Some(PathBuf::new()), DEFAULT_HIDDEN_CONFIG_FILE)? {
-            Ok(Some(file))
-        } else if let Some(file) = read_file(dirs::home_dir, DEFAULT_CONFIG_FILE)? {
-            Ok(Some(file))
-        } else if let Some(file) = read_file(dirs::home_dir, DEFAULT_HIDDEN_CONFIG_FILE)? {
-            Ok(Some(file))
-        } else if let Some(file) = read_file(dirs::config_dir, DEFAULT_CONFIG_FILE)? {
-            Ok(Some(file))
-        } else if let Some(file) = read_file(dirs::config_dir, DEFAULT_HIDDEN_CONFIG_FILE)? {
+        use etcetera::base_strategy as base;
+        if let Some(file) = read_files("")? {
             Ok(Some(file))
         } else {
-            Ok(None)
+            let basedirs = base::choose_base_strategy()?;
+            if let Some(file) = read_files(basedirs.home_dir())? {
+                Ok(Some(file))
+            } else if let Some(file) = read_files(basedirs.config_dir())? {
+                Ok(Some(file))
+            } else {
+                Ok(None)
+            }
         }
     }
 
@@ -1329,17 +1317,20 @@ pub mod config_file {
         Ok(toml::from_str(&read_to_string(file)?)?)
     }
 
-    fn read_file<F: FnOnce() -> Option<PathBuf>>(
-        dir: F,
-        file: &str,
-    ) -> anyhow::Result<Option<ConfigFile>> {
-        if let Some(mut path) = dir() {
-            path.push(file);
-            if path.exists() {
-                Ok(Some(read_config_file(path)?))
-            } else {
-                Ok(None)
-            }
+    fn read_files<P: AsRef<Path>>(dir: P) -> anyhow::Result<Option<ConfigFile>> {
+        if let Some(file) = read_file(dir.as_ref(), DEFAULT_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dir.as_ref(), DEFAULT_HIDDEN_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_file<P: AsRef<Path>>(dir: P, file: &str) -> anyhow::Result<Option<ConfigFile>> {
+        let path = dir.as_ref().join(file);
+        if path.exists() {
+            Ok(Some(read_config_file(path)?))
         } else {
             Ok(None)
         }
