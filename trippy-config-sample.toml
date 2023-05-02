@@ -3,22 +3,12 @@
 # Copy this template config file to your platform specific config dir.
 #
 # Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` config file
-# in one of the following platform specific locations:
+# in one of the following locations:
 #   the current directory
 #   the user home directory
-#   the user config directory
-#
-# For example, on Linux the Trippy will attempt to locate the following
-# files (in order):
-#   `./trippy.toml`
-#   `./.trippy.toml`
-#   `$HOME/trippy.toml`
-#   `$HOME/.trippy.toml`
-#   `$HOME/.config/trippy.toml`
-#   `$HOME/.config/.trippy.toml`
-#
-# See https://github.com/dirs-dev/dirs-rs for platform specific directory
-# information.
+#   the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
+#   the macOS data directory (macOS only): `~/Library/Application Support`
+#   the Windows data directory (Windows only): `%APPDATA%`
 #
 # You may override the config file name and location by passing the `-c`
 # (`--config-file`) command line argument.
