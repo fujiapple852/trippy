@@ -1290,35 +1290,21 @@ pub mod config_file {
     ///     - the current directory
     ///     - the user home directory
     ///     - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
-    ///     - the macOS data directory (macOS only): `~/Library/Application Support`
     ///     - the Windows data directory (Windows only): `%APPDATA%`
     ///
     /// Note that only the first config file found is used, no attempt is
     /// made to merge the values from multiple files.
     pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
-        if let Some(file) = read_file("")? {
-            return Ok(Some(file));
+        use etcetera::base_strategy as base;
+        if let Some(file) = read_files("")? {
+            Ok(Some(file))
+        } else if let Some(file) = read_files(base::choose_base_strategy()?.home_dir())? {
+            Ok(Some(file))
+        } else if let Some(file) = read_files(base::choose_base_strategy()?.config_dir())? {
+            Ok(Some(file))
+        } else {
+            Ok(None)
         }
-
-        let home_dir = etcetera::home_dir()?;
-        if let Some(file) = read_file(home_dir)? {
-            return Ok(Some(file));
-        }
-
-        let config_dir = etcetera::base_strategy::choose_base_strategy()?.config_dir();
-        if let Some(file) = read_file(config_dir)? {
-            return Ok(Some(file));
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            let data_dir = etcetera::base_strategy::Apple::new()?.data_dir();
-            if let Some(file) = read_file(data_dir)? {
-                return Ok(Some(file));
-            }
-        }
-
-        Ok(None)
     }
 
     /// Read the config from the given path.
@@ -1328,14 +1314,23 @@ pub mod config_file {
         Ok(toml::from_str(&read_to_string(file)?)?)
     }
 
-    fn read_file<P: AsRef<Path>>(dir: P) -> anyhow::Result<Option<ConfigFile>> {
-        for file in [DEFAULT_CONFIG_FILE, DEFAULT_HIDDEN_CONFIG_FILE] {
-            let path = dir.as_ref().join(file);
-            if path.exists() {
-                return Ok(Some(read_config_file(path)?));
-            }
+    fn read_files<P: AsRef<Path>>(dir: P) -> anyhow::Result<Option<ConfigFile>> {
+        if let Some(file) = read_file(dir.as_ref(), DEFAULT_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else if let Some(file) = read_file(dir.as_ref(), DEFAULT_HIDDEN_CONFIG_FILE)? {
+            Ok(Some(file))
+        } else {
+            Ok(None)
         }
-        Ok(None)
+    }
+
+    fn read_file<P: AsRef<Path>>(dir: P, file: &str) -> anyhow::Result<Option<ConfigFile>> {
+        let path = dir.as_ref().join(file);
+        if path.exists() {
+            Ok(Some(read_config_file(path)?))
+        } else {
+            Ok(None)
+        }
     }
 
     #[derive(Debug, Default, Deserialize)]

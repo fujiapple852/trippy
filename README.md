@@ -599,7 +599,6 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - The current directory
 - The user home directory
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
-- the macOS data directory (macOS only): `~/Library/Application Support`
 - the Windows data directory (Windows only): `%APPDATA%`
 
 An annotated [template configuration file](trippy-config-sample.toml) is available.
