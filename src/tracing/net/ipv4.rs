@@ -20,7 +20,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{Probe, TracerProtocol};
+use crate::tracing::{MultipathStrategy, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
@@ -88,6 +88,7 @@ pub fn dispatch_udp_probe(
     dest_addr: Ipv4Addr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    multipath_strategy: MultipathStrategy,
     ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
@@ -96,15 +97,26 @@ pub fn dispatch_udp_probe(
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
-    let udp = make_udp_packet(
+    let mut payload_buffer = [0_u8; MAX_UDP_PAYLOAD_BUF];
+    let payload = if multipath_strategy == MultipathStrategy::Paris {
+        payload_buffer.as_mut_slice()[0..2].copy_from_slice(&probe.sequence.0.to_be_bytes());
+        &payload_buffer[..2]
+    } else {
+        let payload_size = udp_payload_size(packet_size);
+        payload_buffer.as_mut_slice()[0..payload_size].fill(payload_pattern.0);
+        &payload_buffer[..payload_size]
+    };
+    let mut udp = make_udp_packet(
         &mut udp_buf,
         src_addr,
         dest_addr,
         probe.src_port.0,
         probe.dest_port.0,
-        udp_payload_size(packet_size),
-        payload_pattern,
+        payload,
     )?;
+    if matches!(multipath_strategy, MultipathStrategy::Paris) {
+        swap_checksum_and_payload(&mut udp);
+    }
     let ipv4 = make_ipv4_packet(
         &mut ipv4_buf,
         ipv4_byte_order,
@@ -118,6 +130,16 @@ pub fn dispatch_udp_probe(
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
     raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
     Ok(())
+}
+
+/// Swap the checksum and payload values.
+///
+/// Assumes that the payload is 2 bytes in length.
+fn swap_checksum_and_payload(udp: &mut UdpPacket<'_>) {
+    let checksum = udp.get_checksum().to_be_bytes();
+    let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
+    udp.set_checksum(payload);
+    udp.set_payload(&checksum);
 }
 
 pub fn dispatch_tcp_probe(
@@ -234,22 +256,20 @@ fn make_echo_request_icmp_packet(
 }
 
 /// Create a `UdpPacket`
-fn make_udp_packet(
-    udp_buf: &mut [u8],
+fn make_udp_packet<'a>(
+    udp_buf: &'a mut [u8],
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     src_port: u16,
     dest_port: u16,
-    payload_size: usize,
-    payload_pattern: PayloadPattern,
-) -> TraceResult<UdpPacket<'_>> {
-    let udp_payload_buf = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
-    let udp_packet_size = UdpPacket::minimum_packet_size() + payload_size;
+    payload: &'_ [u8],
+) -> TraceResult<UdpPacket<'a>> {
+    let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
     let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
-    udp.set_payload(&udp_payload_buf[..payload_size]);
+    udp.set_payload(payload);
     udp.set_checksum(udp_ipv4_checksum(udp.packet(), src_addr, dest_addr));
     Ok(udp)
 }

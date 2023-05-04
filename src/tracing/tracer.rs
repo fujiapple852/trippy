@@ -476,7 +476,22 @@ mod state {
                         unimplemented!()
                     }
                 },
-                MultipathStrategy::Paris => unimplemented!(),
+                MultipathStrategy::Paris => {
+                    let round_port = ((self.config.initial_sequence.0 as usize + self.round.0)
+                        % usize::from(u16::MAX)) as u16;
+                    match self.config.port_direction {
+                        PortDirection::FixedSrc(src_port) => {
+                            (Port(src_port.0), Port(round_port), TraceId(0))
+                        }
+                        PortDirection::FixedDest(dest_port) => {
+                            (Port(round_port), Port(dest_port.0), TraceId(0))
+                        }
+                        PortDirection::FixedBoth(src_port, dest_port) => {
+                            (Port(src_port.0), Port(dest_port.0), TraceId(0))
+                        }
+                        PortDirection::None => unimplemented!(),
+                    }
+                }
                 MultipathStrategy::Dublin => {
                     let round_port = ((self.config.initial_sequence.0 as usize + self.round.0)
                         % usize::from(u16::MAX)) as u16;

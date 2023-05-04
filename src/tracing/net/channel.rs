@@ -4,7 +4,7 @@ use crate::tracing::net::socket::TracerSocket as _;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
-use crate::tracing::{Probe, TracerChannelConfig, TracerProtocol};
+use crate::tracing::{MultipathStrategy, Probe, TracerChannelConfig, TracerProtocol};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::net::IpAddr;
@@ -24,6 +24,7 @@ pub struct TracerChannel {
     dest_addr: IpAddr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    multipath_strategy: MultipathStrategy,
     tos: TypeOfService,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
@@ -56,6 +57,7 @@ impl TracerChannel {
             dest_addr: config.target_addr,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
+            multipath_strategy: config.multipath_strategy,
             tos: config.tos,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
@@ -122,6 +124,7 @@ impl TracerChannel {
                 dest_addr,
                 self.packet_size,
                 self.payload_pattern,
+                self.multipath_strategy,
                 self.ipv4_length_order,
             ),
             (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => ipv6::dispatch_udp_probe(
