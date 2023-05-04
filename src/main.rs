@@ -185,6 +185,7 @@ fn make_channel_config(
         target_addr,
         args.packet_size,
         args.payload_pattern,
+        args.multipath_strategy,
         args.tos,
         args.read_timeout,
         args.min_round_duration,

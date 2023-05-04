@@ -48,7 +48,7 @@ impl Display for TracerProtocol {
 }
 
 /// The [Equal-cost Multi-Path](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing) routing strategy.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MultipathStrategy {
     /// The src or dest port is used to store the sequence number.
     ///
@@ -152,6 +152,7 @@ pub struct TracerChannelConfig {
     pub target_addr: IpAddr,
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
+    pub multipath_strategy: MultipathStrategy,
     pub tos: TypeOfService,
     pub read_timeout: Duration,
     pub tcp_connect_timeout: Duration,
@@ -167,6 +168,7 @@ impl TracerChannelConfig {
         target_addr: IpAddr,
         packet_size: u16,
         payload_pattern: u8,
+        multipath_strategy: MultipathStrategy,
         tos: u8,
         read_timeout: Duration,
         tcp_connect_timeout: Duration,
@@ -178,6 +180,7 @@ impl TracerChannelConfig {
             target_addr,
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
+            multipath_strategy,
             tos: TypeOfService(tos),
             read_timeout,
             tcp_connect_timeout,

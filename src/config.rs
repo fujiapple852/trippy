@@ -1649,9 +1649,12 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
-            (MultipathStrategyConfig::Paris, _) => {
-                Err(anyhow!("Paris multipath strategy not implemented yet!"))
+            (MultipathStrategyConfig::Paris, TracerAddrFamily::Ipv4) => {
+                Ok(MultipathStrategy::Paris)
             }
+            (MultipathStrategyConfig::Paris, TracerAddrFamily::Ipv6) => Err(anyhow!(
+                "Paris multipath strategy not implemented for IPv6 yet!"
+            )),
             (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv4) => {
                 Ok(MultipathStrategy::Dublin)
             }
@@ -1669,13 +1672,18 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             (TracerProtocol::Tcp, None, None, _) => PortDirection::new_fixed_dest(80),
             (TracerProtocol::Tcp, Some(src), None, _) => PortDirection::new_fixed_src(src),
             (_, None, Some(dest), _) => PortDirection::new_fixed_dest(dest),
-            (TracerProtocol::Udp, Some(src), Some(dest), MultipathStrategyConfig::Dublin) => {
+            (
+                TracerProtocol::Udp,
+                Some(src),
+                Some(dest),
+                MultipathStrategyConfig::Dublin | MultipathStrategyConfig::Paris,
+            ) => {
                 validate_source_port(src)?;
                 PortDirection::new_fixed_both(src, dest)
             }
             (_, Some(_), Some(_), _) => {
                 return Err(anyhow!(
-                    "only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin strategy)"
+                    "only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)"
                 ));
             }
         };
