@@ -231,7 +231,7 @@ Use custom source port `5000` for `udp` tracing:
 trip www.example.com -p udp -S 5000
 ```
 
-Use the `dublin` Equal Cost Multi-path Routing strategy for `udp` with fixed source and destination ports:
+Use the `dublin` (or `paris`) ECMP routing strategy for `udp` with fixed source and destination ports:
 
 ```shell
 trip www.example.com -p udp -R dublin -S 5000 -P 3500
