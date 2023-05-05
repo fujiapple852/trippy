@@ -126,6 +126,14 @@ pkg install trippy
 pacman -S trippy
 ```
 
+### Nix
+
+[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/networking/trippy/default.nix)
+
+```shell
+nix-env -iA trippy
+```
+
 ### Docker
 
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/fujiapple/trippy)](https://hub.docker.com/r/fujiapple/trippy/)
