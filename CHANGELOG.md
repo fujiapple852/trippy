@@ -19,6 +19,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   files ([#503](https://github.com/fujiapple852/trippy/issues/503))
 - Added settings dialog and simplified Tui header display ([#521](https://github.com/fujiapple852/trippy/issues/521))
 - Added interactive GeoIp map display ([#505](https://github.com/fujiapple852/trippy/issues/505))
+- Added support for the [paris](https://github.com/libparistraceroute/libparistraceroute) ECMP traceroute strategy
+  for `IPv4/udp` ([#542](https://github.com/fujiapple852/trippy/issues/542))
 
 ### Changed
 
