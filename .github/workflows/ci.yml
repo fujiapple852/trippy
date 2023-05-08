@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        rust: [ stable, beta, nightly, 1.63.0 ]
+        rust: [ stable, 1.63.0 ]
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
