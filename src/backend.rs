@@ -1,3 +1,5 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use crate::caps::drop_caps;
 use crate::config::MAX_HOPS;
 use indexmap::IndexMap;
@@ -7,8 +9,66 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::instrument;
 use trippy::tracing::{
-    Probe, ProbeStatus, Tracer, TracerChannel, TracerChannelConfig, TracerConfig, TracerRound,
+    Probe, ProbeStatus, Tracer, TracerChannel, TracerChannelConfig, TracerConfig, TracerRound
 };
+
+/// run dublin/paris mode, fix the src/dst ports for each round, currently we do this <- DONE
+/// for each round result, we'll have a single ipaddr per hop, we can compute fingerprint for the trace in that round
+/// we need to store stats per-hop-per-host (currently per hop)?  currently per hop
+
+// what does a trace fingerprint look like?
+
+fn fingerprint(addrs: impl Iterator<Item = (u8, Option<IpAddr>)>) -> u64 {
+    let hasher = addrs.fold(DefaultHasher::new(), |mut hasher, hop| {
+        hop.hash(&mut hasher);
+        hasher
+    });
+    hasher.finish()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+    use super::*;
+
+    #[test]
+    fn test_fingerprint_1() {
+        let hops = [
+            (1, Some(addr("192.168.1.1"))),
+            (2, Some(addr("10.193.232.14"))),
+            (3, Some(addr("10.193.232.21"))),
+            (4, Some(addr("218.102.40.26"))),
+            (5, Some(addr("10.195.41.17"))),
+            (6, Some(addr("63.218.1.105"))),
+            (7, Some(addr("63.223.60.126"))),
+            (8, Some(addr("213.248.97.220"))),
+            (9, Some(addr("62.115.118.110"))),
+            (10, None),
+            (11, Some(addr("62.115.140.43"))),
+            (12, Some(addr("62.115.115.173"))),
+            (13, Some(addr("62.115.45.195"))),
+            (14, Some(addr("185.74.76.23"))),
+            (15, Some(addr("89.18.162.17"))),
+            (16, Some(addr("213.189.4.73"))),
+
+        ];
+        assert_eq!(2435116302937406375, fingerprint(hops.into_iter()));
+    }
+
+    fn addr(addr: &str) -> IpAddr {
+        IpAddr::V4(Ipv4Addr::from_str(addr).unwrap())
+    }
+}
+
+// rather than a fingerprint, maybe we need to store Vec<(hop, ipaddr)>
+
+// for each round, we search for a previous round that contains the same hop/host
+// cases:
+//      round has hop/host not in round history
+//      round does not have hop/host in history <- so a subset,
+
+// option 3: we use src/dest addr/port quad to derive a hash
+// we store trace per hash, could be multiple hosts per hop
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
@@ -83,21 +143,29 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
+
+        let hash = fingerprint(round.probes.iter().map(|p| (p.ttl.0, p.host)));
+        println!("hash: {}", hash);
+
+
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
         self.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
-            self.update_from_probe(probe);
+            self.update_from_probe(probe, hash);
         }
     }
 
-    fn update_from_probe(&mut self, probe: &Probe) {
+    fn update_from_probe(&mut self, probe: &Probe, _hash: u64) {
         self.update_lowest_ttl(probe);
         self.update_round(probe);
         match probe.status {
             ProbeStatus::Complete => {
                 let index = usize::from(probe.ttl.0) - 1;
-                let hop = &mut self.hops[index];
-                hop.ttl = probe.ttl.0;
+
+                let hop_outer = &mut self.hops[index];
+                let hop = &mut hop_outer.inners.entry(0).or_insert_with( || HopInner::new());
+
+                hop_outer.ttl = probe.ttl.0;
                 hop.total_sent += 1;
                 hop.total_recv += 1;
                 let dur = probe.duration();
@@ -117,11 +185,16 @@ impl Trace {
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].ttl = probe.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
+
+                // TODO duplicated init code
+                let hop_outer = &mut self.hops[index];
+                let hop = &mut hop_outer.inners.entry(0).or_insert_with( || HopInner::new());
+
+                hop.total_sent += 1;
+                hop_outer.ttl = probe.ttl.0;
+                hop.samples.insert(0, Duration::default());
+                if hop.samples.len() > self.max_samples {
+                    hop.samples.pop();
                 }
             }
             ProbeStatus::NotSent => {}
@@ -150,10 +223,9 @@ impl Trace {
     }
 }
 
-/// Information about a single `Hop` within a `Trace`.
+/// Data about a single hop (single ttl)
 #[derive(Debug, Clone)]
-pub struct Hop {
-    ttl: u8,
+pub struct HopInner {
     addrs: IndexMap<IpAddr, usize>,
     total_sent: usize,
     total_recv: usize,
@@ -166,89 +238,9 @@ pub struct Hop {
     samples: Vec<Duration>,
 }
 
-impl Hop {
-    /// The time-to-live of this hop.
-    pub fn ttl(&self) -> u8 {
-        self.ttl
-    }
-
-    /// The set of addresses that have responded for this time-to-live.
-    pub fn addrs(&self) -> impl Iterator<Item = &IpAddr> {
-        self.addrs.keys()
-    }
-
-    pub fn addrs_with_counts(&self) -> impl Iterator<Item = (&IpAddr, &usize)> {
-        self.addrs.iter()
-    }
-
-    /// The number of unique address observed for this time-to-live.
-    pub fn addr_count(&self) -> usize {
-        self.addrs.len()
-    }
-
-    /// The total number of probes sent.
-    pub fn total_sent(&self) -> usize {
-        self.total_sent
-    }
-
-    /// The total number of probes responses received.
-    pub fn total_recv(&self) -> usize {
-        self.total_recv
-    }
-
-    /// The % of packets that are lost.
-    pub fn loss_pct(&self) -> f64 {
-        if self.total_sent > 0 {
-            let lost = self.total_sent - self.total_recv;
-            lost as f64 / self.total_sent as f64 * 100f64
-        } else {
-            0_f64
-        }
-    }
-
-    /// The duration of the last probe.
-    pub fn last_ms(&self) -> Option<f64> {
-        self.last.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The duration of the best probe observed.
-    pub fn best_ms(&self) -> Option<f64> {
-        self.best.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The duration of the worst probe observed.
-    pub fn worst_ms(&self) -> Option<f64> {
-        self.worst.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The average duration of all probes.
-    pub fn avg_ms(&self) -> f64 {
-        if self.total_recv() > 0 {
-            (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
-        } else {
-            0_f64
-        }
-    }
-
-    /// The standard deviation of all probes.
-    pub fn stddev_ms(&self) -> f64 {
-        if self.total_recv > 1 {
-            (self.m2 / (self.total_recv - 1) as f64).sqrt()
-        } else {
-            0_f64
-        }
-    }
-
-    /// The last N samples.
-    pub fn samples(&self) -> &[Duration] {
-        &self.samples
-    }
-}
-
-impl Default for Hop {
-    fn default() -> Self {
+impl HopInner {
+    pub fn new() -> Self {
         Self {
-            ttl: 0,
             addrs: IndexMap::default(),
             total_sent: 0,
             total_recv: 0,
@@ -259,6 +251,103 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+        }
+    }
+}
+
+/// Information about a single `Hop` for within a `Trace`.
+///
+/// 
+#[derive(Debug, Clone)]
+pub struct Hop {
+    ttl: u8,
+    inners: IndexMap<u64, HopInner>
+}
+
+impl Hop {
+    /// The time-to-live of this hop.
+    pub fn ttl(&self) -> u8 {
+        self.ttl
+    }
+
+    /// The set of addresses that have responded for this time-to-live.
+    pub fn addrs(&self) -> impl Iterator<Item = &IpAddr> {
+        self.inners.values().map(|inner| inner.addrs.keys()).flatten()
+    }
+
+    pub fn addrs_with_counts(&self) -> impl Iterator<Item = (&IpAddr, &usize)> {
+        self.inners.values().map(|inner| inner.addrs.iter()).flatten()
+    }
+
+    /// The number of unique address observed for this time-to-live.
+    pub fn addr_count(&self) -> usize {
+        self.inners.values().len()
+    }
+
+    /// The total number of probes sent.
+    pub fn total_sent(&self) -> usize {
+        self.inners[0].total_sent
+    }
+
+    /// The total number of probes responses received.
+    pub fn total_recv(&self) -> usize {
+        self.inners[0].total_recv
+    }
+
+    /// The % of packets that are lost.
+    pub fn loss_pct(&self) -> f64 {
+        if self.inners[0].total_sent > 0 {
+            let lost = self.inners[0].total_sent - self.inners[0].total_recv;
+            lost as f64 / self.inners[0].total_sent as f64 * 100f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The duration of the last probe.
+    pub fn last_ms(&self) -> Option<f64> {
+        self.inners[0].last.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The duration of the best probe observed.
+    pub fn best_ms(&self) -> Option<f64> {
+        self.inners[0].best.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The duration of the worst probe observed.
+    pub fn worst_ms(&self) -> Option<f64> {
+        self.inners[0].worst.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The average duration of all probes.
+    pub fn avg_ms(&self) -> f64 {
+        if self.total_recv() > 0 {
+            (self.inners[0].total_time.as_secs_f64() * 1000_f64) / self.inners[0].total_recv as f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The standard deviation of all probes.
+    pub fn stddev_ms(&self) -> f64 {
+        if self.inners[0].total_recv > 1 {
+            (self.inners[0].m2 / (self.inners[0].total_recv - 1) as f64).sqrt()
+        } else {
+            0_f64
+        }
+    }
+
+    /// The last N samples.
+    pub fn samples(&self) -> &[Duration] {
+        &self.inners[0].samples
+    }
+}
+
+impl Default for Hop {
+    fn default() -> Self {
+        Self {
+            ttl: 0,
+            inners: IndexMap::default(),
         }
     }
 }
