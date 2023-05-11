@@ -512,6 +512,29 @@ Options:
 
           [possible values: bash, elvish, fish, powershell, zsh]
 
+      --log-format <LOG_FORMAT>
+          The debug log format [default: pretty]
+
+          Possible values:
+          - compact: Display log data in a compact format
+          - pretty:  Display log data in a pretty format
+          - json:    Display log data in a json format
+          - chrome:  Display log data in Chrome trace format
+
+      --log-filter <LOG_FILTER>
+          The debug log filter [default: trippy=debug]
+
+      --log-span-events <LOG_SPAN_EVENTS>
+          The debug log format [default: off]
+
+          Possible values:
+          - off:    Do not display event spans
+          - active: Display enter and exit event spans
+          - full:   Display all event spans
+
+  -v, --verbose
+          Enable verbose debug logging
+
   -h, --help
           Print help (see a summary with '-h')
 
