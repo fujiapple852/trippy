@@ -32,6 +32,26 @@
 #   silent      - Do not generate any output for N cycles
 mode = "tui"
 
+# How to format log data.
+#
+# Allowed values are:
+#  compact      - Display log data in a compact format
+#  pretty       - Display log data in a pretty format [default]
+#  json         - Display log data in a json format
+#  chrome       - Display log data in Chrome trace format
+log-format = "pretty"
+
+# The debug log filter [default: trippy=debug]
+log-filter = "trippy=debug"
+
+# How to log event spans.
+#
+# Allowed values are:
+#  off          - Do not display event spans [defsult]
+#  active       - Display enter and exit event spans
+#  full         - Display all event spans
+log-span-events = "off"
+
 
 #
 # Tracing strategy configuration.

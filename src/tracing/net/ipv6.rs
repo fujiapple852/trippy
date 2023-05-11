@@ -23,6 +23,7 @@ use crate::tracing::{Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
+use tracing::instrument;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_size();
@@ -36,6 +37,7 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
+#[instrument(skip(icmp_send_socket, probe))]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
     probe: Probe,
@@ -65,6 +67,7 @@ pub fn dispatch_icmp_probe(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip(udp_send_socket, probe))]
 pub fn dispatch_udp_probe(
     udp_send_socket: &mut Socket,
     probe: Probe,
@@ -95,6 +98,7 @@ pub fn dispatch_udp_probe(
     Ok(())
 }
 
+#[instrument(skip(probe))]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv6Addr,
@@ -130,6 +134,7 @@ pub fn dispatch_tcp_probe(
     Ok(socket)
 }
 
+#[instrument(skip(recv_socket))]
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -153,6 +158,7 @@ pub fn recv_icmp_probe(
     }
 }
 
+#[instrument(skip(tcp_socket))]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     sequence: Sequence,

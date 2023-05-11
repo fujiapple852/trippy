@@ -10,6 +10,7 @@ use crate::tracing::{MultipathStrategy, PortDirection, TracerProtocol};
 use crate::tracing::{Probe, TracerConfig};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
+use tracing::instrument;
 
 /// The output from a round of tracing.
 #[derive(Debug, Clone)]
@@ -50,7 +51,9 @@ pub struct Tracer<F> {
 }
 
 impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
+    #[instrument(skip_all)]
     pub fn new(config: &TracerConfig, publish: F) -> Self {
+        tracing::debug!(?config);
         Self {
             config: *config,
             publish,
@@ -58,6 +61,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     }
 
     /// Run a continuous trace and publish results.
+    #[instrument(skip(self, network))]
     pub fn trace<N: Network>(self, mut network: N) -> TraceResult<()> {
         let mut state = TracerState::new(self.config);
         while !state.finished(self.config.max_rounds) {
@@ -78,6 +82,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///       - the next ttl is not greater than the ttl of the target host observed from the prior round
     ///     otherwise:
     ///       - the number of unknown-in-flight probes is lower than the maximum allowed
+    #[instrument(skip(self, network, st))]
     fn send_request<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
@@ -131,6 +136,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
     /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
     /// the algorithm will send `EchoRequest` with larger time-to-live values before the `EchoReply` is received.
+    #[instrument(skip(self, network, st))]
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
         match next {
@@ -173,6 +179,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// 3 - either:
     ///     A - the target has been found OR
     ///     B - the target has not been found and the round has exceeded the maximum round duration
+    #[instrument(skip(self, st))]
     fn update_round(&self, st: &mut TracerState) {
         let now = SystemTime::now();
         let round_duration = now.duration_since(st.round_start()).unwrap_or_default();
@@ -190,6 +197,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
     /// `Probe` which is assumed to represent the TTL of the target host.
+    #[instrument(skip(self, state))]
     fn publish_trace(&self, state: &TracerState) {
         let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
             target_ttl
@@ -214,11 +222,13 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// Check if the `TraceId` matches the expected value for this tracer.
     ///
     /// A special value of `0` is accepted for `udp` and `tcp` which do not have an identifier.
+    #[instrument(skip(self))]
     fn check_trace_id(&self, trace_id: TraceId) -> bool {
         self.config.trace_identifier == trace_id || trace_id == TraceId(0)
     }
 
     /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in a protocol specific way.
+    #[instrument(skip(self))]
     fn extract(&self, resp: &ProbeResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
         match resp.resp_seq {
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
@@ -271,6 +281,7 @@ mod state {
     };
     use std::net::IpAddr;
     use std::time::SystemTime;
+    use tracing::instrument;
 
     /// The maximum number of `Probe` entries in the buffer.
     ///
@@ -401,6 +412,7 @@ mod state {
         ///
         /// We post-increment `ttl` here and so in practice we only allow `ttl` values in the range `1..254` to allow
         /// us to use a `u8`.
+        #[instrument(skip(self))]
         pub fn next_probe(&mut self) -> Probe {
             let (src_port, dest_port, identifier) = self.probe_data();
             let probe = Probe::new(
@@ -428,6 +440,7 @@ mod state {
         /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method then afterwards:
         /// - The `Probe` at sequence `3` will be reset to default values (i.e. `NotSent` status)
         /// - A new `Probe` will be created at sequence `4` with a `ttl` of `5`
+        #[instrument(skip(self))]
         pub fn reissue_probe(&mut self) -> Probe {
             self.buffer[usize::from(self.sequence - self.round_sequence) - 1] = Probe::default();
             let (src_port, dest_port, identifier) = self.probe_data();
@@ -525,6 +538,7 @@ mod state {
         }
 
         /// Mark the `Probe` at `sequence` completed as `TimeExceeded` and update the round state.
+        #[instrument(skip(self))]
         pub fn complete_probe_time_exceeded(
             &mut self,
             sequence: Sequence,
@@ -542,6 +556,7 @@ mod state {
         }
 
         /// Mark the `Probe` at `sequence` completed as `Unreachable` and update the round state.
+        #[instrument(skip(self))]
         pub fn complete_probe_unreachable(
             &mut self,
             sequence: Sequence,
@@ -552,6 +567,7 @@ mod state {
         }
 
         /// Mark the `Probe` at `sequence` completed as `EchoReply` and update the round state.
+        #[instrument(skip(self))]
         pub fn complete_probe_echo_reply(
             &mut self,
             sequence: Sequence,
@@ -562,6 +578,7 @@ mod state {
         }
 
         /// Mark the `Probe` at `sequence` completed as `NotApplicable` and update the round state.
+        #[instrument(skip(self))]
         pub fn complete_probe_other(
             &mut self,
             sequence: Sequence,
@@ -589,6 +606,7 @@ mod state {
         /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid overwriting the state with
         /// stale values.  We may also receive multiple replies from the target host with differing time-to-live values
         /// and so must ensure we use the time-to-live with the lowest sequence number.
+        #[instrument(skip(self))]
         fn complete_probe(
             &mut self,
             sequence: Sequence,
@@ -640,6 +658,7 @@ mod state {
         /// If, during the rond which just completed, we went above the max sequence number then we reset it here.
         /// We do this here to avoid having to deal with the sequence number wrapping during a round, which is more
         /// problematic.
+        #[instrument(skip(self))]
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
             if self.sequence >= MAX_SEQUENCE {
                 self.sequence = self.config.initial_sequence;

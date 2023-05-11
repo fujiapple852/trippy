@@ -24,6 +24,7 @@ use crate::tracing::{MultipathStrategy, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
+use tracing::instrument;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();
@@ -43,6 +44,7 @@ const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_pa
 const DONT_FRAGMENT: u16 = 0x4000;
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip(icmp_send_socket, probe))]
 pub fn dispatch_icmp_probe(
     icmp_send_socket: &mut Socket,
     probe: Probe,
@@ -81,6 +83,7 @@ pub fn dispatch_icmp_probe(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip(raw_send_socket, probe))]
 pub fn dispatch_udp_probe(
     raw_send_socket: &mut Socket,
     probe: Probe,
@@ -142,6 +145,7 @@ fn swap_checksum_and_payload(udp: &mut UdpPacket<'_>) {
     udp.set_payload(&checksum);
 }
 
+#[instrument(skip(probe))]
 pub fn dispatch_tcp_probe(
     probe: Probe,
     src_addr: Ipv4Addr,
@@ -179,6 +183,7 @@ pub fn dispatch_tcp_probe(
     Ok(socket)
 }
 
+#[instrument(skip(recv_socket))]
 pub fn recv_icmp_probe(
     recv_socket: &mut Socket,
     protocol: TracerProtocol,
@@ -196,6 +201,7 @@ pub fn recv_icmp_probe(
     }
 }
 
+#[instrument(skip(tcp_socket))]
 pub fn recv_tcp_socket(
     tcp_socket: &Socket,
     sequence: Sequence,
@@ -315,6 +321,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
     packet_size - udp_header_size - ip_header_size
 }
 
+#[instrument]
 fn extract_probe_resp(
     protocol: TracerProtocol,
     ipv4: &Ipv4Packet<'_>,
@@ -353,6 +360,7 @@ fn extract_probe_resp(
     })
 }
 
+#[instrument]
 fn extract_time_exceeded(
     packet: &TimeExceededPacket<'_>,
     protocol: TracerProtocol,
@@ -379,6 +387,7 @@ fn extract_time_exceeded(
     })
 }
 
+#[instrument]
 fn extract_dest_unreachable(
     packet: &DestinationUnreachablePacket<'_>,
     protocol: TracerProtocol,
@@ -403,6 +412,7 @@ fn extract_dest_unreachable(
     })
 }
 
+#[instrument]
 fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
@@ -412,6 +422,7 @@ fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
+#[instrument]
 fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);
@@ -435,6 +446,7 @@ fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
 ///
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
 /// header.
+#[instrument]
 fn extract_tcp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;
     let header_len = usize::from(ip4.get_header_length() * 4);

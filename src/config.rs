@@ -47,6 +47,15 @@ const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 /// The default value for `mode`.
 const DEFAULT_MODE: Mode = Mode::Tui;
 
+/// The default value for `log-format`.
+const DEFAULT_LOG_FORMAT: LogFormat = LogFormat::Pretty;
+
+/// The default value for `log-span-events`.
+const DEFAULT_LOG_SPAN_EVENTS: LogSpanEvents = LogSpanEvents::Off;
+
+/// The default value for `log-filter`.
+const DEFAULT_LOG_FILTER: &str = "trippy=debug";
+
 /// The default value for `protocol`.
 const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
 
@@ -248,6 +257,32 @@ pub enum DnsResolveMethod {
     Cloudflare,
 }
 
+/// How to format log data.
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LogFormat {
+    /// Display log data in a compact format.
+    Compact,
+    /// Display log data in a pretty format.
+    Pretty,
+    /// Display log data in a json format.
+    Json,
+    /// Display log data in Chrome trace format.
+    Chrome,
+}
+
+/// How to log event spans.
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LogSpanEvents {
+    /// Do not display event spans.
+    Off,
+    /// Display enter and exit event spans.
+    Active,
+    /// Display all event spans.
+    Full,
+}
+
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
 #[command(name = "trip", author, version, about, long_about = None)]
@@ -425,6 +460,22 @@ pub struct Args {
     /// Generate shell completion
     #[arg(long, display_order = 39)]
     pub generate: Option<Shell>,
+
+    /// The debug log format [default: pretty]
+    #[arg(long, display_order = 40)]
+    pub log_format: Option<LogFormat>,
+
+    /// The debug log filter [default: trippy=debug]
+    #[arg(long, display_order = 41)]
+    pub log_filter: Option<String>,
+
+    /// The debug log format [default: off]
+    #[arg(long, display_order = 42)]
+    pub log_span_events: Option<LogSpanEvents>,
+
+    /// Enable verbose debug logging
+    #[arg(short = 'v', long, default_value_t = false, display_order = 43)]
+    pub verbose: bool,
 }
 
 fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, TuiColor)> {
@@ -481,6 +532,10 @@ pub struct TrippyConfig {
     pub report_cycles: usize,
     pub geoip_mmdb_file: Option<String>,
     pub max_rounds: Option<usize>,
+    pub verbose: bool,
+    pub log_format: LogFormat,
+    pub log_filter: String,
+    pub log_span_events: LogSpanEvents,
 }
 
 /// Tui color theme.
@@ -1270,8 +1325,8 @@ pub enum TuiCommandItem {
 
 pub mod config_file {
     use crate::config::{
-        AddressFamily, AddressMode, AsMode, DnsResolveMethod, GeoIpMode, Mode,
-        MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+        AddressFamily, AddressMode, AsMode, DnsResolveMethod, GeoIpMode, LogFormat, LogSpanEvents,
+        Mode, MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
     };
     use anyhow::Context;
     use etcetera::BaseStrategy;
@@ -1354,6 +1409,9 @@ pub mod config_file {
     #[serde(rename_all = "kebab-case", deny_unknown_fields)]
     pub struct ConfigTrippy {
         pub mode: Option<Mode>,
+        pub log_format: Option<LogFormat>,
+        pub log_filter: Option<String>,
+        pub log_span_events: Option<LogSpanEvents>,
     }
 
     #[derive(Debug, Default, Deserialize)]
@@ -1510,6 +1568,22 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
         let cfg_file_report = cfg_file.report.unwrap_or_default();
         let mode = cfg_layer(args.mode, cfg_file_trace.mode, DEFAULT_MODE);
+        let verbose = args.verbose;
+        let log_format = cfg_layer(
+            args.log_format,
+            cfg_file_trace.log_format,
+            DEFAULT_LOG_FORMAT,
+        );
+        let log_filter = cfg_layer(
+            args.log_filter,
+            cfg_file_trace.log_filter,
+            String::from(DEFAULT_LOG_FILTER),
+        );
+        let log_span_events = cfg_layer(
+            args.log_span_events,
+            cfg_file_trace.log_span_events,
+            DEFAULT_LOG_SPAN_EVENTS,
+        );
         let protocol = cfg_layer(
             args.protocol,
             cfg_file_strategy.protocol,
@@ -1701,6 +1775,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             Some(n) if n > 0 => Some(n),
             _ => None,
         };
+        validate_logging(mode, verbose)?;
         validate_multi(mode, protocol, &args.targets)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
@@ -1758,6 +1833,10 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             report_cycles,
             geoip_mmdb_file,
             max_rounds,
+            verbose,
+            log_format,
+            log_filter,
+            log_span_events,
         })
     }
 }
@@ -1777,6 +1856,14 @@ fn cfg_layer_opt<T>(fst: Option<T>, snd: Option<T>) -> Option<T> {
     match (fst, snd) {
         (Some(val), _) | (None, Some(val)) => Some(val),
         (None, None) => None,
+    }
+}
+
+fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
+    if matches!(mode, Mode::Tui) && verbose {
+        Err(anyhow!("cannot enable verbose logging in tui mode"))
+    } else {
+        Ok(())
     }
 }
 
