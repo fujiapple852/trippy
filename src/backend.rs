@@ -5,6 +5,7 @@ use parking_lot::RwLock;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::instrument;
 use trippy::tracing::{
     Probe, ProbeStatus, Tracer, TracerChannel, TracerChannelConfig, TracerConfig, TracerRound,
 };
@@ -266,6 +267,7 @@ impl Default for Hop {
 ///
 /// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI will delay the
 /// next round of the started.
+#[instrument(skip_all)]
 pub fn run_backend(
     tracer_config: &TracerConfig,
     channel_config: &TracerChannelConfig,

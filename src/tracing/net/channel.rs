@@ -9,6 +9,7 @@ use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
+use tracing::instrument;
 
 /// The maximum size of the IP packet we allow.
 pub const MAX_PACKET_SIZE: usize = 1024;
@@ -38,7 +39,9 @@ impl TracerChannel {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
+    #[instrument(skip_all)]
     pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
+        tracing::debug!(?config);
         if usize::from(config.packet_size.0) > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(usize::from(
                 config.packet_size.0,
@@ -70,6 +73,7 @@ impl TracerChannel {
 }
 
 impl Network for TracerChannel {
+    #[instrument(skip(self))]
     fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match self.protocol {
             TracerProtocol::Icmp => self.dispatch_icmp_probe(probe),
@@ -77,20 +81,25 @@ impl Network for TracerChannel {
             TracerProtocol::Tcp => self.dispatch_tcp_probe(probe),
         }
     }
-
+    #[instrument(skip_all)]
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
-        match self.protocol {
+        let prob_response = match self.protocol {
             TracerProtocol::Icmp | TracerProtocol::Udp => self.recv_icmp_probe(),
             TracerProtocol::Tcp => match self.recv_tcp_sockets()? {
                 None => self.recv_icmp_probe(),
                 resp => Ok(resp),
             },
+        }?;
+        if let Some(resp) = prob_response {
+            tracing::debug!(?resp);
         }
+        Ok(prob_response)
     }
 }
 
 impl TracerChannel {
     /// Dispatch a ICMP probe.
+    #[instrument(skip_all)]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_icmp_probe(
@@ -115,6 +124,7 @@ impl TracerChannel {
     }
 
     /// Dispatch a UDP probe.
+    #[instrument(skip_all)]
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_udp_probe(
@@ -140,6 +150,7 @@ impl TracerChannel {
     }
 
     /// Dispatch a TCP probe.
+    #[instrument(skip_all)]
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
@@ -156,6 +167,7 @@ impl TracerChannel {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
+    #[instrument(skip(self))]
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
@@ -170,6 +182,7 @@ impl TracerChannel {
     /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
     ///
     /// Any TCP socket which has not connected or failed after a timeout will be removed.
+    #[instrument(skip(self))]
     fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
@@ -212,6 +225,7 @@ impl TcpProbe {
 }
 
 /// Make a socket for sending raw `ICMP` packets.
+#[instrument]
 fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
     Ok(match addr {
         IpAddr::V4(_) => Socket::new_icmp_send_socket_ipv4(),
@@ -220,6 +234,7 @@ fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
 }
 
 /// Make a socket for sending `UDP` packets.
+#[instrument]
 fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
     Ok(match addr {
         IpAddr::V4(_) => Socket::new_udp_send_socket_ipv4(),
@@ -228,6 +243,7 @@ fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
+#[instrument]
 fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
     Ok(match addr {
         IpAddr::V4(ipv4addr) => Socket::new_recv_socket_ipv4(ipv4addr),

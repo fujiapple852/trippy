@@ -14,7 +14,7 @@
 #![deny(unsafe_code)]
 use crate::backend::Trace;
 use crate::caps::{drop_caps, ensure_caps};
-use crate::config::{Mode, TrippyConfig};
+use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
@@ -26,6 +26,10 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use trippy::tracing::SourceAddr;
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
@@ -43,6 +47,7 @@ mod report;
 fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
     let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
+    let _guard = configure_logging(&cfg);
     let resolver = start_dns_resolver(&cfg)?;
     let geoip_lookup = create_geoip_lookup(&cfg)?;
     ensure_caps()?;
@@ -77,6 +82,48 @@ fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
     } else {
         Ok(GeoIpLookup::empty())
     }
+}
+
+fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
+    if cfg.verbose {
+        let fmt_span = match cfg.log_span_events {
+            LogSpanEvents::Off => FmtSpan::NONE,
+            LogSpanEvents::Active => FmtSpan::ACTIVE,
+            LogSpanEvents::Full => FmtSpan::FULL,
+        };
+        match cfg.log_format {
+            LogFormat::Compact => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .compact()
+                    .init();
+            }
+            LogFormat::Pretty => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .pretty()
+                    .init();
+            }
+            LogFormat::Json => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .json()
+                    .init();
+            }
+            LogFormat::Chrome => {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .writer(std::io::stdout())
+                    .include_args(true)
+                    .build();
+                tracing_subscriber::registry().with(chrome_layer).init();
+                return Some(guard);
+            }
+        }
+    }
+    None
 }
 
 /// Start a tracer to a given target.

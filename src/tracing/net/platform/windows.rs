@@ -11,6 +11,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 use std::os::windows::prelude::AsRawSocket;
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
+use tracing::instrument;
 use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::Networking::WinSock::{
     AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, ICMP_ERROR_INFO, IN6_ADDR, IN6_ADDR_0, IN_ADDR,
@@ -63,18 +64,22 @@ pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
+#[instrument(ret)]
 pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
     lookup_interface_addr(&Adapters::ipv4()?, name)
 }
 
+#[instrument(ret)]
 pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
     lookup_interface_addr(&Adapters::ipv6()?, name)
 }
 
+#[instrument(skip(_port), ret)]
 pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
     routing_interface_query(target)
 }
 
+#[instrument]
 pub fn startup() -> Result<()> {
     Socket::startup()
 }
@@ -128,11 +133,13 @@ impl Socket {
         })
     }
 
+    #[instrument(skip(self))]
     fn create_event(&mut self) -> Result<()> {
         self.ol.hEvent = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })?;
         Ok(())
     }
 
+    #[instrument(skip(self))]
     fn wait_for_event(&self, timeout: Duration) -> Result<bool> {
         let millis = timeout.as_millis() as u32;
         let rc = syscall_threading!(WaitForSingleObject(self.ol.hEvent, millis));
@@ -144,10 +151,12 @@ impl Socket {
         Ok(true)
     }
 
+    #[instrument(skip(self))]
     fn reset_event(&self) -> Result<()> {
         syscall!(WSAResetEvent(self.ol.hEvent), |res| { res == 0 }).map(|_| ())
     }
 
+    #[instrument(skip(self, optval))]
     fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> Result<T> {
         let mut optlen = size_of::<T>() as i32;
         syscall!(
@@ -163,6 +172,7 @@ impl Socket {
         Ok(optval)
     }
 
+    #[instrument(skip(self))]
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
         let bytes = optval.to_ne_bytes();
         let optval = addr_of!(bytes).cast();
@@ -179,19 +189,23 @@ impl Socket {
         .map(|_| ())
     }
 
+    #[instrument(skip(self))]
     fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
         self.setsockopt_u32(level, optname, u32::from(optval))
     }
 
+    #[instrument(skip(self))]
     fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> Result<()> {
         self.setsockopt_bool(IPPROTO_TCP, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
     }
 
+    #[instrument(skip(self))]
     fn set_non_blocking(&self, is_non_blocking: bool) -> Result<()> {
         self.inner.set_nonblocking(is_non_blocking)
     }
 
     // TODO handle case where `WSARecvFrom` succeeded immediately.
+    #[instrument(skip(self))]
     fn post_recv_from(&mut self) -> Result<()> {
         fn is_err(res: i32) -> bool {
             res == SOCKET_ERROR && Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
@@ -218,6 +232,7 @@ impl Socket {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     fn get_overlapped_result(&self) -> Result<(u32, u32)> {
         let mut bytes = 0;
         let mut flags = 0;
@@ -271,20 +286,22 @@ impl Drop for Socket {
 
 #[allow(clippy::cast_possible_wrap)]
 impl TracerSocket for Socket {
+    #[instrument]
     fn new_icmp_send_socket_ipv4() -> Result<Self> {
-        // let sock = Self::new(AF_INET, SOCK_RAW, IPPROTO_RAW)?;
         let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
         sock.set_non_blocking(true)?;
         sock.set_header_included(true)?;
         Ok(sock)
     }
 
+    #[instrument]
     fn new_icmp_send_socket_ipv6() -> Result<Self> {
         let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
         sock.set_non_blocking(true)?;
         Ok(sock)
     }
 
+    #[instrument]
     fn new_udp_send_socket_ipv4() -> Result<Self> {
         let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
         sock.set_non_blocking(true)?;
@@ -292,12 +309,14 @@ impl TracerSocket for Socket {
         Ok(sock)
     }
 
+    #[instrument]
     fn new_udp_send_socket_ipv6() -> Result<Self> {
         let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
         sock.set_non_blocking(true)?;
         Ok(sock)
     }
 
+    #[instrument]
     fn new_recv_socket_ipv4(src_addr: Ipv4Addr) -> Result<Self> {
         let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
         sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
@@ -307,6 +326,7 @@ impl TracerSocket for Socket {
         Ok(sock)
     }
 
+    #[instrument]
     fn new_recv_socket_ipv6(src_addr: Ipv6Addr) -> Result<Self> {
         let mut sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
         sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
@@ -315,6 +335,7 @@ impl TracerSocket for Socket {
         Ok(sock)
     }
 
+    #[instrument]
     fn new_stream_socket_ipv4() -> Result<Self> {
         let sock = Self::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
@@ -322,6 +343,7 @@ impl TracerSocket for Socket {
         Ok(sock)
     }
 
+    #[instrument]
     fn new_stream_socket_ipv6() -> Result<Self> {
         let sock = Self::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
@@ -329,14 +351,17 @@ impl TracerSocket for Socket {
         Ok(sock)
     }
 
+    #[instrument]
     fn new_udp_dgram_socket_ipv4() -> Result<Self> {
         Self::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
     }
 
+    #[instrument]
     fn new_udp_dgram_socket_ipv6() -> Result<Self> {
         Self::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))
     }
 
+    #[instrument(skip(self))]
     fn bind(&mut self, source_socketaddr: SocketAddr) -> Result<()> {
         self.inner
             .bind(&SockAddr::from(source_socketaddr))
@@ -351,14 +376,17 @@ impl TracerSocket for Socket {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     fn set_tos(&self, tos: u32) -> Result<()> {
         self.inner.set_tos(tos)
     }
 
+    #[instrument(skip(self))]
     fn set_ttl(&self, ttl: u32) -> Result<()> {
         self.inner.set_ttl(ttl)
     }
 
+    #[instrument(skip(self))]
     fn set_reuse_port(&self, is_reuse_port: bool) -> Result<()> {
         self.setsockopt_bool(SOL_SOCKET as _, SO_REUSE_UNICASTPORT as _, is_reuse_port)
             .or_else(|_| {
@@ -366,14 +394,17 @@ impl TracerSocket for Socket {
             })
     }
 
+    #[instrument(skip(self))]
     fn set_header_included(&self, is_header_included: bool) -> Result<()> {
         self.inner.set_header_included(is_header_included)
     }
 
+    #[instrument(skip(self))]
     fn set_unicast_hops_v6(&self, max_hops: u8) -> Result<()> {
         self.inner.set_unicast_hops_v6(max_hops.into())
     }
 
+    #[instrument(skip(self))]
     fn connect(&self, dest_socketaddr: SocketAddr) -> Result<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         syscall!(
@@ -398,6 +429,7 @@ impl TracerSocket for Socket {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     fn is_readable(&self, timeout: Duration) -> Result<bool> {
         if !self.wait_for_event(timeout)? {
             return Ok(false);
@@ -411,6 +443,7 @@ impl TracerSocket for Socket {
         Ok(true)
     }
 
+    #[instrument(skip(self))]
     fn is_writable(&self) -> Result<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
@@ -440,14 +473,17 @@ impl TracerSocket for Socket {
         Ok(MAX_PACKET_SIZE)
     }
 
+    #[instrument(skip(self))]
     fn shutdown(&self) -> Result<()> {
         self.inner.shutdown(std::net::Shutdown::Both)
     }
 
+    #[instrument(skip(self), ret)]
     fn peer_addr(&self) -> Result<Option<SocketAddr>> {
         Ok(self.inner.peer_addr()?.as_socket())
     }
 
+    #[instrument(skip(self), ret)]
     fn take_error(&self) -> Result<Option<Error>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
@@ -456,6 +492,7 @@ impl TracerSocket for Socket {
         }
     }
 
+    #[instrument(skip(self), ret)]
     #[allow(unsafe_code)]
     fn icmp_error_info(&self) -> Result<IpAddr> {
         let icmp_error_info = self.getsockopt::<ICMP_ERROR_INFO>(
@@ -476,6 +513,7 @@ impl TracerSocket for Socket {
     }
 
     // Interestingly, Socket2 sockets don't seem to call closesocket on drop??
+    #[instrument(skip(self))]
     fn close(&self) -> Result<()> {
         syscall!(closesocket(self.inner.as_raw_socket() as _), |res| res
             == SOCKET_ERROR)
@@ -487,6 +525,7 @@ impl TracerSocket for Socket {
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
 #[allow(clippy::cast_sign_loss)]
+#[instrument]
 fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
@@ -611,6 +650,7 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
     (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
 }
 
+#[instrument(skip(adapters), ret)]
 fn lookup_interface_addr(adapters: &Adapters, name: &str) -> TraceResult<IpAddr> {
     adapters
         .iter()
