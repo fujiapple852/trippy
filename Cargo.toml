@@ -27,7 +27,7 @@ socket2 = { version = "0.5.2", features = [ "all" ] }
 
 # TUI dependencies
 anyhow = "1.0.71"
-dns-lookup = "1.0.8"
+dns-lookup = "2.0.1"
 trust-dns-resolver = "0.22.0"
 crossbeam = "0.8.2"
 clap = { version = "4.2.4", features = [ "derive", "wrap_help", "cargo" ] }
