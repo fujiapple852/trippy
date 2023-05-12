@@ -324,6 +324,12 @@ Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
 trip --generate bash
 ```
 
+Run in `silent` tracing mode and output `compact` trace logging with `full` span events:
+
+```shell
+trip www.example.com -m silent -v --log-format compact --log-span-events full
+```
+
 ## Command Reference
 
 ```shell
