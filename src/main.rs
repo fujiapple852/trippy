@@ -142,6 +142,7 @@ fn run_frontend(
         Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver)?,
         Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver)?,
         Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Silent => report::run_report_silent(&traces[0], args.report_cycles)?,
     }
     Ok(())
 }

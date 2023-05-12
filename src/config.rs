@@ -138,6 +138,8 @@ pub enum Mode {
     Csv,
     /// Generate a JSON report for N cycles.
     Json,
+    /// Do not generate any tracing output for N cycles.
+    Silent,
 }
 
 /// The tracing protocol.
@@ -1691,7 +1693,9 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,
-            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json => Some(report_cycles),
+            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json | Mode::Silent => {
+                Some(report_cycles)
+            }
         };
         let tui_max_addrs = match tui_max_addrs {
             Some(n) if n > 0 => Some(n),
