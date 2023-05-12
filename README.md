@@ -347,6 +347,7 @@ Options:
           - markdown: Generate a markdown text table report for N cycles
           - csv:      Generate a SCV report for N cycles
           - json:     Generate a JSON report for N cycles
+          - silent:   Do not generate any tracing output for N cycles
 
   -p, --protocol <PROTOCOL>
           Tracing protocol [default: icmp]
