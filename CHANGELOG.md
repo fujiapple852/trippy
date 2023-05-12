@@ -23,6 +23,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for `IPv4/udp` ([#542](https://github.com/fujiapple852/trippy/issues/542))
 - Added `silent` reporting mode to run tracing without producing any
   output ([#555](https://github.com/fujiapple852/trippy/issues/555))
+- Added `-v` (`--verbose`), `--log-format`, `--log-filter` & `--log-span-events` flags to support generating debug trace
+  logging output ([#552](https://github.com/fujiapple852/trippy/issues/552))
 
 ### Changed
 
