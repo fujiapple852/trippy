@@ -3,6 +3,7 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::windows::adapter::Adapters;
 use crate::tracing::net::socket::TracerSocket;
+use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::ffi::c_void;
 use std::io::{Error, ErrorKind, Result};
@@ -423,9 +424,10 @@ impl TracerSocket for Socket {
         }
     }
 
-    fn send_to(&self, packet: &[u8], dest_socketaddr: SocketAddr) -> Result<()> {
-        self.inner
-            .send_to(packet, &SockAddr::from(dest_socketaddr))?;
+    #[instrument(skip(self, buf))]
+    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> Result<()> {
+        tracing::debug!(buf = format!("{:02x?}", buf.iter().format(" ")), ?addr);
+        self.inner.send_to(buf, &SockAddr::from(addr))?;
         Ok(())
     }
 
@@ -457,9 +459,15 @@ impl TracerSocket for Socket {
         Ok(true)
     }
 
+    #[instrument(skip(self, buf), ret)]
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)> {
         let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))?;
         let len = self.read(buf)?;
+        tracing::debug!(
+            buf = format!("{:02x?}", buf[..len].iter().format(" ")),
+            len,
+            ?addr
+        );
         Ok((len, Some(SocketAddr::new(addr, 0))))
     }
 
@@ -467,8 +475,10 @@ impl TracerSocket for Socket {
     // we always copy and claim to have returned MAX_PACKET_SIZE bytes, regardless of how many bytes we actually
     // received.  The callers currently ignore this and just try to parse a packet from the buffer which isn't ideal.
     // Really we should record the actual number of bytes read in the `get_overlapped_result` call and return that here.
+    #[instrument(skip(self, buf), ret)]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         buf.copy_from_slice(self.buf.as_slice());
+        tracing::debug!(buf = format!("{:02x?}", buf[..MAX_PACKET_SIZE].iter().format(" ")));
         self.post_recv_from()?;
         Ok(MAX_PACKET_SIZE)
     }
