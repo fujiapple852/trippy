@@ -96,7 +96,7 @@ brew install trippy
 
 ### Scoop (Windows)
 
-[![scoop](https://img.shields.io/badge/scoop-0.7.0-blue)](https://trippy.cli.rs/scoop/trippy.json)
+[![scoop](https://img.shields.io/badge/scoop-0.8.0-blue)](https://trippy.cli.rs/scoop/trippy.json)
 
 ```shell
 scoop install https://trippy.cli.rs/scoop/trippy.json
