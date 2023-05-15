@@ -1,5 +1,5 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.7.0)
+[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.8.0)
 [![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
 
 # Trippy
@@ -72,7 +72,7 @@ issues.
 
 ### Cargo
 
-[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.7.0)
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.8.0)
 
 ```shell
 cargo install trippy
