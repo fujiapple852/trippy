@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.8.0] - 2023-05-15
+
+### Added
+
 - Added `--tui-as-mode` flag to control how AS information is
   rendered ([#483](https://github.com/fujiapple852/trippy/issues/483))
 - Added support for configuration files and added a `-c` (`--config-file`)
@@ -210,6 +218,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[0.8.0]: https://github.com/fujiapple852/trippy/compare/0.7.0...0.8.0
 
 [0.7.0]: https://github.com/fujiapple852/trippy/compare/0.6.0...0.7.0
 
