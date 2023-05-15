@@ -7,7 +7,7 @@
 Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking
 issues.
 
-<img src="assets/trippy-0.3.0-08-05-2022.gif" alt="trippy"/>
+<img src="assets/0.8.0/trippy.gif" alt="trippy"/>
 
 ## Navigation
 
