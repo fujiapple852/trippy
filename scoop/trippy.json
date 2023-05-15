@@ -1,12 +1,12 @@
 {
   "description": "A network diagnostic tool",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "license": "Apache-2.0 license",
   "notes": "Administrator privileges are required to run trip\n\nexample usage:\n\ntrip www.example.com\n",
-  "url": "https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-pc-windows-msvc.zip",
+  "url": "https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-pc-windows-msvc.zip",
   "homepage": "trippy.cli.rs",
-  "bin": "trippy-0.7.0-x86_64-pc-windows-msvc/trip.exe",
-  "hash": "c97282f1266719ac28dc364c4bf6257df6408ec59a6aba5c608139146b3b6ca5",
+  "bin": "trippy-0.8.0-x86_64-pc-windows-msvc/trip.exe",
+  "hash": "832e18d9ad370489a4e39af34adc03585b601d187571ff4098e9dcaeb01567ce",
   "checkver": "github",
   "autoupdate": {
     "url": "https://github.com/fujiapple852/trippy/releases/download/$version/trippy-$version-x86_64-pc-windows-msvc.zip"
