@@ -33,6 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [BREAKING CHANGE] Renamed short config flag for `report-cycles` from `-c`
   to `-C` ([#491](https://github.com/fujiapple852/trippy/issues/491))
 - Ensure administrator privileges on Windows ([#451](https://github.com/fujiapple852/trippy/issues/451))
+- Add context information to socket errors ([#153](https://github.com/fujiapple852/trippy/issues/153))
 
 ### Fixed
 
