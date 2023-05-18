@@ -15,6 +15,21 @@ use crossterm::{
 };
 use humantime::format_duration;
 use itertools::Itertools;
+use ratatui::layout::{Alignment, Direction, Margin, Rect};
+use ratatui::symbols::Marker;
+use ratatui::text::{Span, Spans};
+use ratatui::widgets::canvas::{Canvas, Context, Map, MapResolution, Painter, Rectangle, Shape};
+use ratatui::widgets::{
+    Axis, BarChart, BorderType, Chart, Clear, Dataset, GraphType, Paragraph, Sparkline, TableState,
+    Tabs,
+};
+use ratatui::{
+    backend::{Backend, CrosstermBackend},
+    layout::{Constraint, Layout},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Cell, Row, Table},
+    Frame, Terminal,
+};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::io;
@@ -22,21 +37,6 @@ use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 use trippy::tracing::{PortDirection, TracerProtocol};
-use tui::layout::{Alignment, Direction, Margin, Rect};
-use tui::symbols::Marker;
-use tui::text::{Span, Spans};
-use tui::widgets::canvas::{Canvas, Context, Map, MapResolution, Painter, Rectangle, Shape};
-use tui::widgets::{
-    Axis, BarChart, BorderType, Chart, Clear, Dataset, GraphType, Paragraph, Sparkline, TableState,
-    Tabs,
-};
-use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table},
-    Frame, Terminal,
-};
 
 const TABLE_HEADER: [&str; 11] = [
     "#", "Host", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StDev", "Sts",
