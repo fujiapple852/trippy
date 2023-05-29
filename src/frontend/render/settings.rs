@@ -6,7 +6,7 @@ use humantime::format_duration;
 use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
-use ratatui::text::{Span, Spans};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs};
 use ratatui::Frame;
 use trippy::tracing::PortDirection;
@@ -31,7 +31,7 @@ fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect
     let titles: Vec<_> = SETTINGS_TABS
         .iter()
         .map(|(title, _)| {
-            Spans::from(Span::styled(
+            Line::from(Span::styled(
                 *title,
                 Style::default().fg(app.tui_config.theme.settings_tab_text_color),
             ))

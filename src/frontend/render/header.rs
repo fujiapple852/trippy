@@ -5,7 +5,7 @@ use humantime::format_duration;
 use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
-use ratatui::text::{Span, Spans};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 use std::time::Duration;
@@ -25,8 +25,8 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text_color),
         );
     let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-    let clock_span = Spans::from(Span::raw(now));
-    let help_span = Spans::from(vec![
+    let clock_span = Line::from(Span::raw(now));
+    let help_span = Line::from(vec![
         Span::styled("h", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw("elp "),
         Span::styled("s", Style::default().add_modifier(Modifier::BOLD)),
@@ -34,8 +34,8 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw("uit"),
     ]);
-    let right_spans = vec![clock_span, help_span];
-    let right = Paragraph::new(right_spans)
+    let right_line = vec![clock_span, help_span];
+    let right = Paragraph::new(right_line)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
@@ -70,18 +70,18 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
-    let left_spans = vec![
-        Spans::from(vec![
+    let left_line = vec![
+        Line::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(target),
         ]),
-        Spans::from(vec![
+        Line::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
                 "protocol={protocol} as-info={as_info} details={details} max-hosts={max_hosts}"
             )),
         ]),
-        Spans::from(vec![
+        Line::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),
             Span::raw(format!(
@@ -91,7 +91,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         ]),
     ];
 
-    let left = Paragraph::new(left_spans)
+    let left = Paragraph::new(left_line)
         .style(Style::default())
         .block(header_block)
         .alignment(Alignment::Left);
