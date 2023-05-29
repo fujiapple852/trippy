@@ -20,7 +20,6 @@ mod config;
 mod render;
 mod theme;
 mod tui_app;
-mod widget;
 
 pub use config::TuiConfig;
 

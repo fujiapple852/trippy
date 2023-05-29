@@ -1,13 +1,12 @@
 use crate::backend::Hop;
 use crate::frontend::tui_app::TuiApp;
-use crate::frontend::widget::circle::CircleWidget;
 use itertools::Itertools;
 use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::symbols::Marker;
 use ratatui::text::Span;
-use ratatui::widgets::canvas::{Canvas, Context, Map, MapResolution, Rectangle};
+use ratatui::widgets::canvas::{Canvas, Circle, Context, Map, MapResolution, Rectangle};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
 use std::collections::HashMap;
@@ -97,7 +96,12 @@ fn render_map_canvas_radius(ctx: &mut Context<'_>, entry: &MapEntry, color: Colo
     } = entry;
     let radius_degrees = f64::from(*radius) / 110_f64;
     if radius_degrees > 2_f64 {
-        let circle_widget = CircleWidget::new(*longitude, *latitude, radius_degrees, color);
+        let circle_widget = Circle {
+            x: *longitude,
+            y: *latitude,
+            radius: radius_degrees,
+            color,
+        };
         ctx.draw(&circle_widget);
     }
 }
