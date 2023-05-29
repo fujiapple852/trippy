@@ -3,7 +3,7 @@ use crate::frontend::tui_app::TuiApp;
 use ratatui::backend::Backend;
 use ratatui::layout::Alignment;
 use ratatui::style::Style;
-use ratatui::text::Spans;
+use ratatui::text::Line;
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
 
@@ -15,8 +15,8 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
         .borders(Borders::ALL)
         .style(Style::default().bg(app.tui_config.theme.help_dialog_bg_color))
         .border_type(BorderType::Double);
-    let control_spans: Vec<_> = HELP_LINES.iter().map(|&line| Spans::from(line)).collect();
-    let control = Paragraph::new(control_spans)
+    let control_line: Vec<_> = HELP_LINES.iter().map(|&line| Line::from(line)).collect();
+    let control = Paragraph::new(control_line)
         .style(Style::default().fg(app.tui_config.theme.help_dialog_text_color))
         .block(block.clone())
         .alignment(Alignment::Left);

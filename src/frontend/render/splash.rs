@@ -2,7 +2,7 @@ use crate::frontend::tui_app::TuiApp;
 use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::Style;
-use ratatui::text::{Span, Spans};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 
@@ -32,11 +32,11 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         "",
         "Awaiting data...",
     ];
-    let spans: Vec<_> = splash
+    let line: Vec<_> = splash
         .into_iter()
-        .map(|line| Spans::from(Span::styled(line, Style::default())))
+        .map(|line| Line::from(Span::styled(line, Style::default())))
         .collect();
-    let paragraph = Paragraph::new(spans).alignment(Alignment::Center);
+    let paragraph = Paragraph::new(line).alignment(Alignment::Center);
     f.render_widget(block, rect);
     f.render_widget(paragraph, chunks[1]);
 }

@@ -2,7 +2,7 @@ use crate::frontend::tui_app::TuiApp;
 use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
-use ratatui::text::{Span, Spans};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Tabs};
 use ratatui::Frame;
 
@@ -23,7 +23,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
         .trace_info
         .iter()
         .map(|trace| {
-            Spans::from(Span::styled(
+            Line::from(Span::styled(
                 &trace.target_hostname,
                 Style::default().fg(app.tui_config.theme.tab_text_color),
             ))
