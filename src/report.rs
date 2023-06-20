@@ -19,10 +19,7 @@ pub fn run_report_csv(
     println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops().iter() {
         let ttl = hop.ttl();
-        let hosts = hop
-            .addrs()
-            .map(|ip| resolver.lazy_reverse_lookup(*ip))
-            .join(":");
+        let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
         let host = if hosts.is_empty() {
             String::from("???")
         } else {
@@ -121,7 +118,7 @@ pub fn run_report_json(
                 .addrs()
                 .map(|ip| Host {
                     ip: ip.to_string(),
-                    hostname: resolver.lazy_reverse_lookup(*ip).to_string(),
+                    hostname: resolver.reverse_lookup(*ip).to_string(),
                 })
                 .collect();
             ReportHop {
@@ -189,7 +186,7 @@ fn run_report_table(
         let ttl = hop.ttl().to_string();
         let hosts = hop
             .addrs()
-            .map(|ip| resolver.lazy_reverse_lookup(*ip).to_string())
+            .map(|ip| resolver.reverse_lookup(*ip).to_string())
             .join("\n");
         let host = if hosts.is_empty() {
             String::from("???")

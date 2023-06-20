@@ -122,7 +122,6 @@ impl DnsResolver {
     /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
     ///
     /// As this method is blocking it will never return a `DnsEntry::Pending`.
-    #[allow(dead_code)]
     pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, false, false)
     }
