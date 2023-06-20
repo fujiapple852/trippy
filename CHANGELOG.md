@@ -13,6 +13,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Reverse DNS lookup not working in reports ([#509](https://github.com/fujiapple852/trippy/issues/509))
+
 ## [0.8.0] - 2023-05-15
 
 ### Added
