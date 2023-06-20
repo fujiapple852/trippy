@@ -101,7 +101,9 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
 
 /// Render the source address of the trace.
 fn render_source(app: &mut TuiApp) -> String {
-    let src_hostname = app.resolver.reverse_lookup(app.tracer_config().source_addr);
+    let src_hostname = app
+        .resolver
+        .lazy_reverse_lookup(app.tracer_config().source_addr);
     let src_addr = app.tracer_config().source_addr;
     match app.tracer_config().port_direction {
         PortDirection::None => {

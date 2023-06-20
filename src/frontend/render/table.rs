@@ -234,19 +234,19 @@ fn format_address(
         AddressMode::IP => addr.to_string(),
         AddressMode::Host => {
             if config.lookup_as_info {
-                let entry = dns.reverse_lookup_with_asinfo(*addr);
+                let entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
                 format_dns_entry(entry, true, config.as_mode)
             } else {
-                let entry = dns.reverse_lookup(*addr);
+                let entry = dns.lazy_reverse_lookup(*addr);
                 format_dns_entry(entry, false, config.as_mode)
             }
         }
         AddressMode::Both => {
             let hostname = if config.lookup_as_info {
-                let entry = dns.reverse_lookup_with_asinfo(*addr);
+                let entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
                 format_dns_entry(entry, true, config.as_mode)
             } else {
-                let entry = dns.reverse_lookup(*addr);
+                let entry = dns.lazy_reverse_lookup(*addr);
                 format_dns_entry(entry, false, config.as_mode)
             };
             format!("{hostname} ({addr})")
@@ -360,7 +360,7 @@ fn format_details(
     let geoip = geoip_lookup.lookup(*addr).unwrap_or_default();
 
     if config.lookup_as_info {
-        let dns_entry = dns.reverse_lookup_with_asinfo(*addr);
+        let dns_entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
                 let details = fmt_details_with_asn(addr, index, count, None, None, geoip);
@@ -388,7 +388,7 @@ fn format_details(
             | DnsEntry::NotFound(Unresolved::Normal(_)) => unreachable!(),
         }
     } else {
-        let dns_entry = dns.reverse_lookup(*addr);
+        let dns_entry = dns.lazy_reverse_lookup(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
                 let details = fmt_details_no_asn(addr, index, count, None, geoip);

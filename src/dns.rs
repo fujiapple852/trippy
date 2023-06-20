@@ -129,14 +129,14 @@ impl DnsResolver {
     /// If the entry exists but is `DnsEntry::Timeout` then it is changed to be `DnsEntry::Pending` and enqueued.
     ///
     /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
-    pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
+    pub fn lazy_reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, false)
     }
 
     /// Perform a non-blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
     ///
-    /// See [`DnsResolver::reverse_lookup`]
-    pub fn reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
+    /// See [`DnsResolver::lazy_reverse_lookup`]
+    pub fn lazy_reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, true)
     }
 
