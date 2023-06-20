@@ -16,9 +16,15 @@ pub fn run_report_csv(
     resolver: &DnsResolver,
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
-    println!("Target,TargetIp,Hop,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
+    println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops().iter() {
         let ttl = hop.ttl();
+        let ips = hop.addrs().join(":");
+        let ip = if ips.is_empty() {
+            String::from("???")
+        } else {
+            ips
+        };
         let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
         let host = if hosts.is_empty() {
             String::from("???")
@@ -40,10 +46,11 @@ pub fn run_report_csv(
         let avg = hop.avg_ms();
         let loss_pct = hop.loss_pct();
         println!(
-            "{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
+            "{},{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
             info.target_hostname,
             info.target_addr,
             ttl,
+            ip,
             host,
             loss_pct,
             sent,
@@ -175,7 +182,7 @@ fn run_report_table(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     let columns = vec![
-        "Hop", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
+        "Hop", "IPs", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
     ];
     let mut table = Table::new();
     table
@@ -184,6 +191,12 @@ fn run_report_table(
         .set_header(columns);
     for hop in trace.hops().iter() {
         let ttl = hop.ttl().to_string();
+        let ips = hop.addrs().join("\n");
+        let ip = if ips.is_empty() {
+            String::from("???")
+        } else {
+            ips
+        };
         let hosts = hop
             .addrs()
             .map(|ip| resolver.reverse_lookup(*ip).to_string())
@@ -208,7 +221,7 @@ fn run_report_table(
         let avg = format!("{:.1}", hop.avg_ms());
         let loss_pct = format!("{:.1}", hop.loss_pct());
         table.add_row(vec![
-            &ttl, &host, &loss_pct, &sent, &recv, &last, &avg, &best, &worst, &stddev,
+            &ttl, &ip, &host, &loss_pct, &sent, &recv, &last, &avg, &best, &worst, &stddev,
         ]);
     }
     println!("{table}");
