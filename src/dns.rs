@@ -114,12 +114,28 @@ impl DnsResolver {
         })
     }
 
-    /// Resolve a DNS hostname to IP addresses.
+    /// Perform a blocking DNS hostname lookup and return a vector of IP addresses.
     pub fn lookup(&self, hostname: &str) -> anyhow::Result<Vec<IpAddr>> {
         self.inner.lookup(hostname)
     }
 
-    /// Perform a non-blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
+    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
+    ///
+    /// As this method is blocking it will never return a `DnsEntry::Pending`.
+    #[allow(dead_code)]
+    pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
+        self.inner.reverse_lookup(addr, false, false)
+    }
+
+    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
+    ///
+    /// See [`DnsResolver::reverse_lookup`]
+    #[allow(dead_code)]
+    pub fn reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
+        self.inner.reverse_lookup(addr, true, false)
+    }
+
+    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
     ///
     /// If the `IpAddr` has already been resolved then `DnsEntry::Resolved` is returned immediately.
     ///
@@ -130,14 +146,14 @@ impl DnsResolver {
     ///
     /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
     pub fn lazy_reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, false)
+        self.inner.reverse_lookup(addr, false, true)
     }
 
-    /// Perform a non-blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
+    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
     ///
     /// See [`DnsResolver::lazy_reverse_lookup`]
     pub fn lazy_reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, true)
+        self.inner.reverse_lookup(addr, true, true)
     }
 
     /// Get the `DnsResolverConfig`.
@@ -252,7 +268,15 @@ mod inner {
             }
         }
 
-        pub fn reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
+        pub fn reverse_lookup(&self, addr: IpAddr, with_asinfo: bool, lazy: bool) -> DnsEntry {
+            if lazy {
+                self.lazy_reverse_lookup(addr, with_asinfo)
+            } else {
+                reverse_lookup(&self.provider, addr, with_asinfo)
+            }
+        }
+
+        fn lazy_reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
             let mut enqueue = false;
 
             // Check if we have already attempted to resolve this `IpAddr` and return the current `DnsEntry` if so,
@@ -319,47 +343,52 @@ mod inner {
         cache: &Cache,
     ) {
         for DnsResolveRequest { addr, with_asinfo } in rx {
-            let entry = match &provider {
-                DnsProvider::DnsLookup => {
-                    // we can't distinguish between a failed lookup or a genuine error and so we just assume all
-                    // failures are `DnsEntry::NotFound`.
-                    match dns_lookup::lookup_addr(&addr) {
-                        Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])),
-                        Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr)),
+            cache
+                .write()
+                .insert(addr, reverse_lookup(provider, addr, with_asinfo));
+        }
+    }
+
+    fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
+        match &provider {
+            DnsProvider::DnsLookup => {
+                // we can't distinguish between a failed lookup or a genuine error and so we just assume all
+                // failures are `DnsEntry::NotFound`.
+                match dns_lookup::lookup_addr(&addr) {
+                    Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])),
+                    Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr)),
+                }
+            }
+            DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
+                Ok(name) => {
+                    let hostnames = name
+                        .into_iter()
+                        .map(|mut s| {
+                            s.set_fqdn(false);
+                            s
+                        })
+                        .map(|s| s.to_string())
+                        .collect();
+                    if with_asinfo {
+                        let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
+                        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info))
+                    } else {
+                        DnsEntry::Resolved(Resolved::Normal(addr, hostnames))
                     }
                 }
-                DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
-                    Ok(name) => {
-                        let hostnames = name
-                            .into_iter()
-                            .map(|mut s| {
-                                s.set_fqdn(false);
-                                s
-                            })
-                            .map(|s| s.to_string())
-                            .collect();
+                Err(err) => match err.kind() {
+                    ResolveErrorKind::NoRecordsFound { .. } => {
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info))
+                            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info))
                         } else {
-                            DnsEntry::Resolved(Resolved::Normal(addr, hostnames))
+                            DnsEntry::NotFound(Unresolved::Normal(addr))
                         }
                     }
-                    Err(err) => match err.kind() {
-                        ResolveErrorKind::NoRecordsFound { .. } => {
-                            if with_asinfo {
-                                let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info))
-                            } else {
-                                DnsEntry::NotFound(Unresolved::Normal(addr))
-                            }
-                        }
-                        ResolveErrorKind::Timeout => DnsEntry::Timeout(addr),
-                        _ => DnsEntry::Failed(addr),
-                    },
+                    ResolveErrorKind::Timeout => DnsEntry::Timeout(addr),
+                    _ => DnsEntry::Failed(addr),
                 },
-            };
-            cache.write().insert(addr, entry);
+            },
         }
     }
 
