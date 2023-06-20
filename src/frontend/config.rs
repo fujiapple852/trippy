@@ -1,4 +1,5 @@
-use crate::config::{AddressMode, AsMode, GeoIpMode, TuiBindings, TuiTheme};
+use crate::config::TuiBindings;
+use crate::config::{AddressMode, AsMode, GeoIpMode, TuiTheme};
 use crate::frontend::binding::Bindings;
 use crate::frontend::theme::Theme;
 use std::time::Duration;
