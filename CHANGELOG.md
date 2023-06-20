@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Add IPs field to `csv` and all tabular reports ([#597](https://github.com/fujiapple852/trippy/issues/597))
+
 ### Changed
 
 ### Fixed
