@@ -74,7 +74,7 @@ features = [
 
 [target.'cfg(windows)'.dependencies]
 widestring = "1.0.2"
-paste = "1.0.12"
+paste = "1.0.13"
 
 [dev-dependencies]
 rand = "0.8.5"
