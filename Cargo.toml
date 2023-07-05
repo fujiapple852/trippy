@@ -21,7 +21,7 @@ name = "trip"
 [dependencies]
 
 # Library dependencies
-thiserror = "1.0.40"
+thiserror = "1.0.41"
 derive_more = "0.99.17"
 arrayvec = "0.7.4"
 socket2 = { version = "0.5.2", features = [ "all" ] }
