@@ -32,7 +32,7 @@ anyhow = "1.0.71"
 dns-lookup = "2.0.1"
 trust-dns-resolver = "0.22.0"
 crossbeam = "0.8.2"
-clap = { version = "4.3.4", features = [ "derive", "wrap_help", "cargo" ] }
+clap = { version = "4.3.11", features = [ "derive", "wrap_help", "cargo" ] }
 clap_complete = "4.3.1"
 humantime = "2.1.0"
 parking_lot = "0.12.1"
