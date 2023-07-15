@@ -70,6 +70,8 @@ issues.
 
 ## Distributions
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/trippy.svg)](https://repology.org/project/trippy/versions)
+
 ### Cargo
 
 [![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.8.0)
