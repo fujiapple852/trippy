@@ -94,6 +94,14 @@ snap install trippy
 brew install trippy
 ```
 
+### WinGet (Windows)
+
+[![winget package](https://repology.org/badge/version-for-repo/winget/trippy.svg)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.8.0)
+
+```shell
+winget install trippy
+```
+
 ### Scoop (Windows)
 
 [![Scoop package](https://repology.org/badge/version-for-repo/scoop/trippy.svg)](https://github.com/ScoopInstaller/Main/blob/master/bucket/trippy.json)
