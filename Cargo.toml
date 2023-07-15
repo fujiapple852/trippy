@@ -46,7 +46,7 @@ comfy-table = "7.0.1"
 strum = { version = "0.25.0", features = [ "derive" ] }
 etcetera = "0.8.0"
 toml = "0.7.6"
-indexmap = "1.9.3"
+indexmap = "2.0.0"
 maxminddb = "0.23.0"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
 tracing-chrome = "0.7.1"
