@@ -116,7 +116,7 @@ pub fn dispatch_udp_probe<S: Socket>(
         probe.dest_port.0,
         payload,
     )?;
-    if matches!(multipath_strategy, MultipathStrategy::Paris) {
+    if multipath_strategy == MultipathStrategy::Paris {
         swap_checksum_and_payload(&mut udp);
     }
     let ipv4 = make_ipv4_packet(
