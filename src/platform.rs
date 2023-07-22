@@ -9,7 +9,6 @@ pub struct Platform {
     ///
     /// Specifically, each platform requires privileges unless it supports the `IPPROTO_ICMP` socket type which _also_
     /// allows the `IP_HDRINCL` socket option to be set.
-    #[allow(dead_code)]
     pub needs_privileges: bool,
 }
 

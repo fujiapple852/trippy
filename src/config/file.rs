@@ -85,6 +85,7 @@ pub struct ConfigFile {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigTrippy {
     pub mode: Option<Mode>,
+    pub unprivileged: Option<bool>,
     pub log_format: Option<LogFormat>,
     pub log_filter: Option<String>,
     pub log_span_events: Option<LogSpanEvents>,

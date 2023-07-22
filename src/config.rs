@@ -12,7 +12,9 @@ use std::str::FromStr;
 use std::time::Duration;
 use strum::VariantNames;
 use theme::TuiThemeItem;
-use trippy::tracing::{MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol};
+use trippy::tracing::{
+    MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerProtocol,
+};
 
 mod binding;
 mod cmd;
@@ -212,6 +214,7 @@ pub struct TrippyConfig {
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
+    pub privilege_mode: PrivilegeMode,
     pub report_cycles: usize,
     pub geoip_mmdb_file: Option<String>,
     pub max_rounds: Option<usize>,
@@ -230,8 +233,8 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             args,
             &Platform {
                 pid,
-                has_privileges: is_privileged,
-                ..
+                has_privileges,
+                needs_privileges,
             },
         ) = data;
         if args.print_tui_theme_items {
@@ -268,6 +271,18 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
         let cfg_file_report = cfg_file.report.unwrap_or_default();
         let mode = cfg_layer(args.mode, cfg_file_trace.mode, constants::DEFAULT_MODE);
+        let unprivileged = cfg_layer_bool_flag(
+            args.unprivileged,
+            cfg_file_trace.unprivileged,
+            constants::DEFAULT_UNPRIVILEGED,
+        );
+
+        let privilege_mode = if unprivileged {
+            PrivilegeMode::Unprivileged
+        } else {
+            PrivilegeMode::Privileged
+        };
+
         let verbose = args.verbose;
         let log_format = cfg_layer(
             args.log_format,
@@ -479,8 +494,9 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             Some(n) if n > 0 => Some(n),
             _ => None,
         };
-        validate_privilege(is_privileged)?;
+        validate_privilege(privilege_mode, has_privileges, needs_privileges)?;
         validate_logging(mode, verbose)?;
+        validate_strategy(multipath_strategy, unprivileged)?;
         validate_multi(mode, protocol, &args.targets)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
@@ -535,6 +551,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             tui_theme,
             tui_bindings,
             mode,
+            privilege_mode,
             report_cycles,
             geoip_mmdb_file,
             max_rounds,
@@ -572,11 +589,30 @@ fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
     }
 }
 
-fn validate_privilege(is_privileged: bool) -> anyhow::Result<()> {
-    if is_privileged {
-        Ok(())
-    } else {
-        Err(anyhow!("privileges are required to use raw sockets, see https://github.com/fujiapple852/trippy#privileges"))
+fn validate_privilege(
+    privilege_mode: PrivilegeMode,
+    has_privileges: bool,
+    needs_privileges: bool,
+) -> anyhow::Result<()> {
+    const PRIVILEGE_URL: &str = "https://github.com/fujiapple852/trippy#privileges";
+    match (privilege_mode, has_privileges, needs_privileges) {
+        (PrivilegeMode::Privileged, true, _) | (PrivilegeMode::Unprivileged, _, false) => Ok(()),
+        (PrivilegeMode::Privileged, false, true) => Err(anyhow!(format!(
+            "privileges are required\n\nsee {} for details",
+            PRIVILEGE_URL
+        ))),
+        (PrivilegeMode::Privileged, false, false) => Err(anyhow!(format!(
+            "privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee {} for details",
+            PRIVILEGE_URL
+        ))),
+        (PrivilegeMode::Unprivileged, false, true) => Err(anyhow!(format!(
+            "unprivileged mode not supported on this platform\n\nsee {} for details",
+            PRIVILEGE_URL
+        ))),
+        (PrivilegeMode::Unprivileged, true, true) => Err(anyhow!(format!(
+            "unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee {} for details",
+            PRIVILEGE_URL
+        ))),
     }
 }
 
@@ -585,6 +621,19 @@ fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
         Err(anyhow!("cannot enable verbose logging in tui mode"))
     } else {
         Ok(())
+    }
+}
+
+/// Validate the tracing strategy against the privilege mode.
+fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow::Result<()> {
+    match (strategy, unprivileged) {
+        (MultipathStrategy::Dublin, true) => Err(anyhow!(
+            "Dublin tracing strategy cannot be used in unprivileged mode"
+        )),
+        (MultipathStrategy::Paris, true) => Err(anyhow!(
+            "Paris tracing strategy cannot be used in unprivileged mode"
+        )),
+        _ => Ok(()),
     }
 }
 

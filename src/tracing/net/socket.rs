@@ -7,17 +7,17 @@ where
     Self: Sized,
 {
     /// Create an IPv4 socket for sending ICMP probes.
-    fn new_icmp_send_socket_ipv4() -> Result<Self>;
+    fn new_icmp_send_socket_ipv4(raw: bool) -> Result<Self>;
     /// Create an IPv6 socket for sending ICMP probes.
-    fn new_icmp_send_socket_ipv6() -> Result<Self>;
+    fn new_icmp_send_socket_ipv6(raw: bool) -> Result<Self>;
     /// Create an IPv4 socket for sending UDP probes.
-    fn new_udp_send_socket_ipv4() -> Result<Self>;
+    fn new_udp_send_socket_ipv4(raw: bool) -> Result<Self>;
     /// Create an IPv6 socket for sending UDP probes.
-    fn new_udp_send_socket_ipv6() -> Result<Self>;
+    fn new_udp_send_socket_ipv6(raw: bool) -> Result<Self>;
     /// Create an IPv4 socket for receiving UDP probe responses.
-    fn new_recv_socket_ipv4(addr: Ipv4Addr) -> Result<Self>;
+    fn new_recv_socket_ipv4(addr: Ipv4Addr, raw: bool) -> Result<Self>;
     /// Create an IPv6 socket for receiving UDP probe responses.
-    fn new_recv_socket_ipv6(addr: Ipv6Addr) -> Result<Self>;
+    fn new_recv_socket_ipv6(addr: Ipv6Addr, raw: bool) -> Result<Self>;
     /// Create a IPv4/TCP socket for sending TCP probes.
     fn new_stream_socket_ipv4() -> Result<Self>;
     /// Create a IPv6/TCP socket for sending TCP probes.

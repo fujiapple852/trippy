@@ -11,8 +11,8 @@ mod util;
 pub mod packet;
 
 pub use config::{
-    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
-    TracerProtocol,
+    MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerChannelConfig,
+    TracerConfig, TracerProtocol,
 };
 pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;

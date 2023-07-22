@@ -307,52 +307,76 @@ impl Drop for SocketImpl {
 #[allow(clippy::cast_possible_wrap)]
 impl Socket for SocketImpl {
     #[instrument]
-    fn new_icmp_send_socket_ipv4() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
-        sock.set_non_blocking(true)?;
-        sock.set_header_included(true)?;
-        Ok(sock)
+    fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
+        if raw {
+            let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+            sock.set_non_blocking(true)?;
+            sock.set_header_included(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]
-    fn new_icmp_send_socket_ipv6() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
-        sock.set_non_blocking(true)?;
-        Ok(sock)
+    fn new_icmp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
+        if raw {
+            let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+            sock.set_non_blocking(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]
-    fn new_udp_send_socket_ipv4() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
-        sock.set_non_blocking(true)?;
-        sock.set_header_included(true)?;
-        Ok(sock)
+    fn new_udp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
+        if raw {
+            let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+            sock.set_non_blocking(true)?;
+            sock.set_header_included(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]
-    fn new_udp_send_socket_ipv6() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
-        sock.set_non_blocking(true)?;
-        Ok(sock)
+    fn new_udp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
+        if raw {
+            let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
+            sock.set_non_blocking(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]
-    fn new_recv_socket_ipv4(src_addr: Ipv4Addr) -> IoResult<Self> {
-        let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
-        sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
-        sock.post_recv_from()?;
-        sock.set_non_blocking(true)?;
-        sock.set_header_included(true)?;
-        Ok(sock)
+    fn new_recv_socket_ipv4(src_addr: Ipv4Addr, raw: bool) -> IoResult<Self> {
+        if raw {
+            let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
+            sock.bind(SocketAddr::new(IpAddr::V4(src_addr), 0))?;
+            sock.post_recv_from()?;
+            sock.set_non_blocking(true)?;
+            sock.set_header_included(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]
-    fn new_recv_socket_ipv6(src_addr: Ipv6Addr) -> IoResult<Self> {
-        let mut sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
-        sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
-        sock.post_recv_from()?;
-        sock.set_non_blocking(true)?;
-        Ok(sock)
+    fn new_recv_socket_ipv6(src_addr: Ipv6Addr, raw: bool) -> IoResult<Self> {
+        if raw {
+            let mut sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
+            sock.bind(SocketAddr::new(IpAddr::V6(src_addr), 0))?;
+            sock.post_recv_from()?;
+            sock.set_non_blocking(true)?;
+            Ok(sock)
+        } else {
+            unimplemented!("non-raw socket is not supported on Windows")
+        }
     }
 
     #[instrument]

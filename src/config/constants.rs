@@ -13,6 +13,9 @@ pub const MAX_HOPS: usize = u8::MAX as usize;
 /// The default value for `mode`.
 pub const DEFAULT_MODE: Mode = Mode::Tui;
 
+/// The default value for `unprivileged`.
+pub const DEFAULT_UNPRIVILEGED: bool = false;
+
 /// The default value for `log-format`.
 pub const DEFAULT_LOG_FORMAT: LogFormat = LogFormat::Pretty;
 

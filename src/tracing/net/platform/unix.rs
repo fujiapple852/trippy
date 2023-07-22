@@ -208,43 +208,80 @@ impl SocketImpl {
 
 impl Socket for SocketImpl {
     #[instrument]
-    fn new_icmp_send_socket_ipv4() -> IoResult<Self> {
-        let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
-        socket.set_nonblocking(true)?;
-        socket.set_header_included(true)?;
-        Ok(socket)
+    fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+            socket.set_nonblocking(true)?;
+            socket.set_header_included(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new(Domain::IPV4, Type::DGRAM, Protocol::ICMPV4)?;
+            socket.set_nonblocking(true)?;
+            socket.set_header_included(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
-    fn new_icmp_send_socket_ipv6() -> IoResult<Self> {
-        let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
-        socket.set_nonblocking(true)?;
-        Ok(socket)
+    fn new_icmp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new_dgram_ipv6(Protocol::ICMPV6)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
-    fn new_udp_send_socket_ipv4() -> IoResult<Self> {
-        let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
-        socket.set_nonblocking(true)?;
-        socket.set_header_included(true)?;
-        Ok(socket)
+    fn new_udp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+            socket.set_nonblocking(true)?;
+            socket.set_header_included(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new_dgram_ipv4(Protocol::UDP)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
-    fn new_udp_send_socket_ipv6() -> IoResult<Self> {
-        let socket = Self::new_raw_ipv6(Protocol::UDP)?;
-        socket.set_nonblocking(true)?;
-        Ok(socket)
+    fn new_udp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv6(Protocol::UDP)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new_dgram_ipv6(Protocol::UDP)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
-    fn new_recv_socket_ipv4(addr: Ipv4Addr) -> IoResult<Self> {
-        let socket = Self::new_raw_ipv4(Protocol::ICMPV4)?;
-        socket.set_nonblocking(true)?;
-        socket.set_header_included(true)?;
-        Ok(socket)
+    fn new_recv_socket_ipv4(addr: Ipv4Addr, raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv4(Protocol::ICMPV4)?;
+            socket.set_nonblocking(true)?;
+            socket.set_header_included(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new(Domain::IPV4, Type::DGRAM, Protocol::ICMPV4)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
-    fn new_recv_socket_ipv6(addr: Ipv6Addr) -> IoResult<Self> {
-        let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
-        socket.set_nonblocking(true)?;
-        Ok(socket)
+    fn new_recv_socket_ipv6(addr: Ipv6Addr, raw: bool) -> IoResult<Self> {
+        if raw {
+            let socket = Self::new_raw_ipv6(Protocol::ICMPV6)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        } else {
+            let socket = Self::new_dgram_ipv6(Protocol::ICMPV6)?;
+            socket.set_nonblocking(true)?;
+            Ok(socket)
+        }
     }
     #[instrument]
     fn new_stream_socket_ipv4() -> IoResult<Self> {

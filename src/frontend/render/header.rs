@@ -40,13 +40,22 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .block(header_block.clone())
         .alignment(Alignment::Right);
     let protocol = match app.tracer_config().protocol {
-        TracerProtocol::Icmp => format!("icmp({})", app.tracer_config().addr_family),
+        TracerProtocol::Icmp => format!(
+            "icmp({}, {})",
+            app.tracer_config().addr_family,
+            app.tracer_config().privilege_mode
+        ),
         TracerProtocol::Udp => format!(
-            "udp({}, {})",
+            "udp({}, {}, {})",
             app.tracer_config().addr_family,
             app.tracer_config().multipath_strategy,
+            app.tracer_config().privilege_mode
         ),
-        TracerProtocol::Tcp => format!("tcp({})", app.tracer_config().addr_family),
+        TracerProtocol::Tcp => format!(
+            "tcp({}, {})",
+            app.tracer_config().addr_family,
+            app.tracer_config().privilege_mode
+        ),
     };
     let details = if app.show_hop_details {
         String::from("on")

@@ -25,6 +25,10 @@ pub struct Args {
     #[arg(value_enum, short = 'm', long)]
     pub mode: Option<Mode>,
 
+    /// Trace without requiring elevated privileges on supported platforms [default: false]
+    #[arg(short = 'u', long)]
+    pub unprivileged: bool,
+
     /// Tracing protocol [default: icmp]
     #[arg(value_enum, short = 'p', long)]
     pub protocol: Option<Protocol>,
