@@ -32,6 +32,13 @@
 #   silent      - Do not generate any output for N cycles
 mode = "tui"
 
+# Trace without requiring elevated privileges [default: false]
+#
+# Enabling will cause IPPROTO_ICMP sockets to be used.
+#
+# Note: not supported on all platforms.
+unprivileged = false
+
 # How to format log data.
 #
 # Allowed values are:

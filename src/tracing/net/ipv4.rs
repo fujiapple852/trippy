@@ -19,7 +19,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
-use crate::tracing::{MultipathStrategy, Probe, TracerProtocol};
+use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
@@ -88,25 +88,56 @@ pub fn dispatch_udp_probe<S: Socket>(
     probe: Probe,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
+    privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     multipath_strategy: MultipathStrategy,
     ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
-    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
-    let mut payload_buffer = [0_u8; MAX_UDP_PAYLOAD_BUF];
+    let payload_size = udp_payload_size(packet_size);
+    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
+    match privilege_mode {
+        PrivilegeMode::Privileged => dispatch_udp_probe_raw(
+            raw_send_socket,
+            probe,
+            src_addr,
+            dest_addr,
+            payload,
+            multipath_strategy,
+            ipv4_byte_order,
+        ),
+        PrivilegeMode::Unprivileged => {
+            dispatch_udp_probe_non_raw::<S>(probe, src_addr, dest_addr, payload)
+        }
+    }
+}
+
+/// Dispatch a UDP probe using a raw socket with `IP_HDRINCL` set.
+///
+/// As `IP_HDRINCL` is set we must supply the IP and UDP headers which allows us to set custom
+/// values for certain fields such as the checksum as required by the Paris tracing strategy.
+#[allow(clippy::too_many_arguments)]
+#[instrument(skip(raw_send_socket, probe))]
+fn dispatch_udp_probe_raw<S: Socket>(
+    raw_send_socket: &mut S,
+    probe: Probe,
+    src_addr: Ipv4Addr,
+    dest_addr: Ipv4Addr,
+    payload: &[u8],
+    multipath_strategy: MultipathStrategy,
+    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
+) -> TraceResult<()> {
+    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+    let payload_paris = probe.sequence.0.to_be_bytes();
     let payload = if multipath_strategy == MultipathStrategy::Paris {
-        payload_buffer.as_mut_slice()[0..2].copy_from_slice(&probe.sequence.0.to_be_bytes());
-        &payload_buffer[..2]
+        payload_paris.as_slice()
     } else {
-        let payload_size = udp_payload_size(packet_size);
-        payload_buffer.as_mut_slice()[0..payload_size].fill(payload_pattern.0);
-        &payload_buffer[..payload_size]
+        payload
     };
     let mut udp = make_udp_packet(
         &mut udp_buf,
@@ -117,7 +148,10 @@ pub fn dispatch_udp_probe<S: Socket>(
         payload,
     )?;
     if multipath_strategy == MultipathStrategy::Paris {
-        swap_checksum_and_payload(&mut udp);
+        let checksum = udp.get_checksum().to_be_bytes();
+        let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
+        udp.set_checksum(payload);
+        udp.set_payload(&checksum);
     }
     let ipv4 = make_ipv4_packet(
         &mut ipv4_buf,
@@ -134,14 +168,21 @@ pub fn dispatch_udp_probe<S: Socket>(
     Ok(())
 }
 
-/// Swap the checksum and payload values.
-///
-/// Assumes that the payload is 2 bytes in length.
-fn swap_checksum_and_payload(udp: &mut UdpPacket<'_>) {
-    let checksum = udp.get_checksum().to_be_bytes();
-    let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
-    udp.set_checksum(payload);
-    udp.set_payload(&checksum);
+/// Dispatch a UDP probe using a new UDP datagram socket.
+#[instrument(skip(probe))]
+fn dispatch_udp_probe_non_raw<S: Socket>(
+    probe: Probe,
+    src_addr: Ipv4Addr,
+    dest_addr: Ipv4Addr,
+    payload: &[u8],
+) -> TraceResult<()> {
+    let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
+    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
+    let mut socket = S::new_udp_dgram_socket_ipv4()?;
+    process_result(local_addr, socket.bind(local_addr))?;
+    socket.set_ttl(u32::from(probe.ttl.0))?;
+    socket.send_to(payload, remote_addr)?;
+    Ok(())
 }
 
 #[instrument(skip(probe))]

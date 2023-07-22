@@ -8,6 +8,24 @@ use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::time::Duration;
 
+/// The privilege mode.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum PrivilegeMode {
+    /// Privileged mode.
+    Privileged,
+    /// Unprivileged mode.
+    Unprivileged,
+}
+
+impl Display for PrivilegeMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Privileged => write!(f, "privileged"),
+            Self::Unprivileged => write!(f, "unprivileged"),
+        }
+    }
+}
+
 /// The address family.
 #[derive(Debug, Copy, Clone)]
 pub enum TracerAddrFamily {
@@ -149,6 +167,7 @@ impl PortDirection {
 /// Tracer network channel configuration.
 #[derive(Debug, Clone)]
 pub struct TracerChannelConfig {
+    pub privilege_mode: PrivilegeMode,
     pub protocol: TracerProtocol,
     pub addr_family: TracerAddrFamily,
     pub source_addr: IpAddr,
@@ -165,6 +184,7 @@ impl TracerChannelConfig {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn new(
+        privilege_mode: PrivilegeMode,
         protocol: TracerProtocol,
         addr_family: TracerAddrFamily,
         source_addr: IpAddr,
@@ -177,6 +197,7 @@ impl TracerChannelConfig {
         tcp_connect_timeout: Duration,
     ) -> Self {
         Self {
+            privilege_mode,
             protocol,
             addr_family,
             source_addr,

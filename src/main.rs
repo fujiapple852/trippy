@@ -31,11 +31,11 @@ use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use trippy::tracing::SourceAddr;
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
     TracerProtocol,
 };
+use trippy::tracing::{PrivilegeMode, SourceAddr};
 
 mod backend;
 mod config;
@@ -229,6 +229,7 @@ fn make_channel_config(
     target_addr: IpAddr,
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
+        args.privilege_mode,
         args.protocol,
         args.addr_family,
         source_addr,
@@ -255,6 +256,7 @@ fn make_trace_info(
         source_addr,
         target,
         target_addr,
+        args.privilege_mode,
         args.multipath_strategy,
         args.port_direction,
         args.protocol,
@@ -297,6 +299,7 @@ pub struct TraceInfo {
     pub source_addr: IpAddr,
     pub target_hostname: String,
     pub target_addr: IpAddr,
+    pub privilege_mode: PrivilegeMode,
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub protocol: TracerProtocol,
@@ -323,6 +326,7 @@ impl TraceInfo {
         source_addr: IpAddr,
         target_hostname: String,
         target_addr: IpAddr,
+        privilege_mode: PrivilegeMode,
         multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
         protocol: TracerProtocol,
@@ -345,6 +349,7 @@ impl TraceInfo {
             source_addr,
             target_hostname,
             target_addr,
+            privilege_mode,
             multipath_strategy,
             port_direction,
             protocol,

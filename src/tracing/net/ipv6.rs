@@ -19,7 +19,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{Probe, TracerProtocol};
+use crate::tracing::{PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -67,27 +67,58 @@ pub fn dispatch_icmp_probe<S: Socket>(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(udp_send_socket, probe))]
+#[instrument(skip(raw_send_socket, probe))]
 pub fn dispatch_udp_probe<S: Socket>(
-    udp_send_socket: &mut S,
+    raw_send_socket: &mut S,
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
+    privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
 ) -> TraceResult<()> {
-    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
+    let payload_size = udp_payload_size(packet_size);
+    match privilege_mode {
+        PrivilegeMode::Privileged => dispatch_udp_probe_raw(
+            raw_send_socket,
+            probe,
+            src_addr,
+            dest_addr,
+            payload_size,
+            payload_pattern,
+        ),
+        PrivilegeMode::Unprivileged => dispatch_udp_probe_non_raw::<S>(
+            probe,
+            src_addr,
+            dest_addr,
+            payload_size,
+            payload_pattern,
+        ),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+#[instrument(skip(udp_send_socket, probe))]
+fn dispatch_udp_probe_raw<S: Socket>(
+    udp_send_socket: &mut S,
+    probe: Probe,
+    src_addr: Ipv6Addr,
+    dest_addr: Ipv6Addr,
+    payload_size: usize,
+    payload_pattern: PayloadPattern,
+) -> TraceResult<()> {
+    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let udp = make_udp_packet(
         &mut udp_buf,
         src_addr,
         dest_addr,
         probe.src_port.0,
         probe.dest_port.0,
-        udp_payload_size(packet_size),
+        payload_size,
         payload_pattern,
     )?;
     udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
@@ -96,6 +127,25 @@ pub fn dispatch_udp_probe<S: Socket>(
     // with `EINVAL`.
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
     udp_send_socket.send_to(udp.packet(), remote_addr)?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+#[instrument(skip(probe))]
+fn dispatch_udp_probe_non_raw<S: Socket>(
+    probe: Probe,
+    src_addr: Ipv6Addr,
+    dest_addr: Ipv6Addr,
+    payload_size: usize,
+    payload_pattern: PayloadPattern,
+) -> TraceResult<()> {
+    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][..payload_size];
+    let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
+    let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), probe.dest_port.0);
+    let mut socket = S::new_udp_send_socket_ipv6(false)?;
+    process_result(local_addr, socket.bind(local_addr))?;
+    socket.set_unicast_hops_v6(probe.ttl.0)?;
+    socket.send_to(payload, remote_addr)?;
     Ok(())
 }
 

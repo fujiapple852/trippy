@@ -3,7 +3,9 @@ use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
-use crate::tracing::{MultipathStrategy, Probe, TracerChannelConfig, TracerProtocol};
+use crate::tracing::{
+    MultipathStrategy, PrivilegeMode, Probe, TracerChannelConfig, TracerProtocol,
+};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::net::IpAddr;
@@ -18,6 +20,7 @@ const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel<S: Socket> {
+    privilege_mode: PrivilegeMode,
     protocol: TracerProtocol,
     src_addr: IpAddr,
     ipv4_length_order: platform::PlatformIpv4FieldByteOrder,
@@ -45,16 +48,18 @@ impl<S: Socket> TracerChannel<S> {
                 config.packet_size.0,
             )));
         }
+        let raw = config.privilege_mode == PrivilegeMode::Privileged;
         platform::startup()?;
         let ipv4_length_order =
             platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let send_socket = match config.protocol {
-            TracerProtocol::Icmp => Some(make_icmp_send_socket(config.source_addr)?),
-            TracerProtocol::Udp => Some(make_udp_send_socket(config.source_addr)?),
+            TracerProtocol::Icmp => Some(make_icmp_send_socket(config.source_addr, raw)?),
+            TracerProtocol::Udp => Some(make_udp_send_socket(config.source_addr, raw)?),
             TracerProtocol::Tcp => None,
         };
-        let recv_socket = make_recv_socket(config.source_addr)?;
+        let recv_socket = make_recv_socket(config.source_addr, raw)?;
         Ok(Self {
+            privilege_mode: config.privilege_mode,
             protocol: config.protocol,
             src_addr: config.source_addr,
             ipv4_length_order,
@@ -137,6 +142,7 @@ impl<S: Socket> TracerChannel<S> {
                     probe,
                     src_addr,
                     dest_addr,
+                    self.privilege_mode,
                     self.packet_size,
                     self.payload_pattern,
                     self.multipath_strategy,
@@ -149,6 +155,7 @@ impl<S: Socket> TracerChannel<S> {
                     probe,
                     src_addr,
                     dest_addr,
+                    self.privilege_mode,
                     self.packet_size,
                     self.payload_pattern,
                 )
@@ -235,27 +242,27 @@ impl<S: Socket> TcpProbe<S> {
 
 /// Make a socket for sending raw `ICMP` packets.
 #[instrument]
-fn make_icmp_send_socket<S: Socket>(addr: IpAddr) -> TraceResult<S> {
+fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(_) => S::new_icmp_send_socket_ipv4(),
-        IpAddr::V6(_) => S::new_icmp_send_socket_ipv6(),
+        IpAddr::V4(_) => S::new_icmp_send_socket_ipv4(raw),
+        IpAddr::V6(_) => S::new_icmp_send_socket_ipv6(raw),
     }?)
 }
 
 /// Make a socket for sending `UDP` packets.
 #[instrument]
-fn make_udp_send_socket<S: Socket>(addr: IpAddr) -> TraceResult<S> {
+fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(_) => S::new_udp_send_socket_ipv4(),
-        IpAddr::V6(_) => S::new_udp_send_socket_ipv6(),
+        IpAddr::V4(_) => S::new_udp_send_socket_ipv4(raw),
+        IpAddr::V6(_) => S::new_udp_send_socket_ipv6(raw),
     }?)
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
 #[instrument]
-fn make_recv_socket<S: Socket>(addr: IpAddr) -> TraceResult<S> {
+fn make_recv_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(ipv4addr) => S::new_recv_socket_ipv4(ipv4addr),
-        IpAddr::V6(ipv6addr) => S::new_recv_socket_ipv6(ipv6addr),
+        IpAddr::V4(ipv4addr) => S::new_recv_socket_ipv4(ipv4addr, raw),
+        IpAddr::V6(ipv6addr) => S::new_recv_socket_ipv6(ipv6addr, raw),
     }?)
 }
