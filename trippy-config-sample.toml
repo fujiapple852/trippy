@@ -217,7 +217,7 @@ tui-as-mode = "asn"
 # How to render GeoIp information.
 #
 # Allowed values are:
-#   off - Do not show GeoIp information
+#   off - Do not show GeoIp information [default]
 #   short - Show short format GeoIp information
 #   long - Show long format GeoIp information
 #   location - Show latitude and Longitude format GeoIp information
