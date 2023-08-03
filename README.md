@@ -180,7 +180,7 @@ Trippy has been (lightly...) tested on the following platforms:
 
 ## Privileges
 
-Trippy uses a raw socket which require elevated privileges. Enabling the required privilege can be achieved in several
+Trippy uses a raw socket which requires elevated privileges. Enabling the required privilege can be achieved in several
 ways, including:
 
 1: Run as `root` user via `sudo`:
