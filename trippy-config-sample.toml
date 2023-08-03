@@ -47,7 +47,7 @@ log-filter = "trippy=debug"
 # How to log event spans.
 #
 # Allowed values are:
-#  off          - Do not display event spans [defsult]
+#  off          - Do not display event spans [default]
 #  active       - Display enter and exit event spans
 #  full         - Display all event spans
 log-span-events = "off"
