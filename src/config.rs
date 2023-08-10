@@ -143,7 +143,7 @@ pub enum Mode {
     Pretty,
     /// Generate a markdown text table report for N cycles.
     Markdown,
-    /// Generate a SCV report for N cycles.
+    /// Generate a CSV report for N cycles.
     Csv,
     /// Generate a JSON report for N cycles.
     Json,
