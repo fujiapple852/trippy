@@ -16,122 +16,14 @@ use trippy::tracing::{MultipathStrategy, PortDirection, TracerAddrFamily, Tracer
 
 mod binding;
 mod cmd;
+mod constants;
 mod file;
 mod theme;
 
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
+pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
-
-/// The maximum number of hops we allow.
-///
-/// The IP `ttl` is a u8 (0..255) but since a `ttl` of zero isn't useful we only allow 255 distinct hops.
-pub const MAX_HOPS: usize = u8::MAX as usize;
-
-/// The minimum TUI refresh rate.
-const TUI_MIN_REFRESH_RATE_MS: Duration = Duration::from_millis(50);
-
-/// The maximum TUI refresh rate.
-const TUI_MAX_REFRESH_RATE_MS: Duration = Duration::from_millis(1000);
-
-/// The minimum socket read timeout.
-const MIN_READ_TIMEOUT_MS: Duration = Duration::from_millis(10);
-
-/// The maximum socket read timeout.
-const MAX_READ_TIMEOUT_MS: Duration = Duration::from_millis(100);
-
-/// The minimum grace duration.
-const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
-
-/// The maximum grace duration.
-const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
-
-/// The default value for `mode`.
-const DEFAULT_MODE: Mode = Mode::Tui;
-
-/// The default value for `log-format`.
-const DEFAULT_LOG_FORMAT: LogFormat = LogFormat::Pretty;
-
-/// The default value for `log-span-events`.
-const DEFAULT_LOG_SPAN_EVENTS: LogSpanEvents = LogSpanEvents::Off;
-
-/// The default value for `log-filter`.
-const DEFAULT_LOG_FILTER: &str = "trippy=debug";
-
-/// The default value for `protocol`.
-const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
-
-/// The default value for `min-round-duration`.
-const DEFAULT_STRATEGY_MIN_ROUND_DURATION: &str = "1s";
-
-/// The default value for `max-round-duration`.
-const DEFAULT_STRATEGY_MAX_ROUND_DURATION: &str = "1s";
-
-/// The default value for `initial-sequence`.
-const DEFAULT_STRATEGY_INITIAL_SEQUENCE: u16 = 33000;
-
-/// The default value for `multipath-strategy`.
-const DEFAULT_STRATEGY_MULTIPATH: MultipathStrategyConfig = MultipathStrategyConfig::Classic;
-
-/// The default value for `grace-duration`.
-const DEFAULT_STRATEGY_GRACE_DURATION: &str = "100ms";
-
-/// The default value for `max-inflight`.
-const DEFAULT_STRATEGY_MAX_INFLIGHT: u8 = 24;
-
-/// The default value for `first-ttl`.
-const DEFAULT_STRATEGY_FIRST_TTL: u8 = 1;
-
-/// The default value for `max-ttl`.
-const DEFAULT_STRATEGY_MAX_TTL: u8 = 64;
-
-/// The default value for `packet-size`.
-const DEFAULT_STRATEGY_PACKET_SIZE: u16 = 84;
-
-/// The default value for `payload-pattern`.
-const DEFAULT_STRATEGY_PAYLOAD_PATTERN: u8 = 0;
-
-/// The default value for `tos`.
-const DEFAULT_STRATEGY_TOS: u8 = 0;
-
-/// The default value for `read-timeout`.
-const DEFAULT_STRATEGY_READ_TIMEOUT: &str = "10ms";
-
-/// The default value for `tui-max-samples`.
-const DEFAULT_TUI_MAX_SAMPLES: usize = 256;
-
-/// The default value for `tui-preserve-screen`.
-const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
-
-/// The default value for `tui-as-mode`.
-const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
-
-/// The default value for `tui-geoip-mode`.
-const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Off;
-
-/// The default value for `tui-address-mode`.
-const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
-
-/// The default value for `tui-refresh-rate`.
-const DEFAULT_TUI_REFRESH_RATE: &str = "100ms";
-
-/// The default value for `dns-resolve-method`.
-const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethod = DnsResolveMethod::System;
-
-/// The default value for `dns-lookup-as-info`.
-const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;
-
-/// The default value for `dns-timeout`.
-const DEFAULT_DNS_TIMEOUT: &str = "5s";
-
-/// The default value for `report-cycles`.
-const DEFAULT_REPORT_CYCLES: usize = 10;
-
-/// The minimum packet size we allow.
-const MIN_PACKET_SIZE: u16 = 28;
-
-/// The maximum packet size we allow.
-const MAX_PACKET_SIZE: u16 = 1024;
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
@@ -366,27 +258,27 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let cfg_file_tui = cfg_file.tui.unwrap_or_default();
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
         let cfg_file_report = cfg_file.report.unwrap_or_default();
-        let mode = cfg_layer(args.mode, cfg_file_trace.mode, DEFAULT_MODE);
+        let mode = cfg_layer(args.mode, cfg_file_trace.mode, constants::DEFAULT_MODE);
         let verbose = args.verbose;
         let log_format = cfg_layer(
             args.log_format,
             cfg_file_trace.log_format,
-            DEFAULT_LOG_FORMAT,
+            constants::DEFAULT_LOG_FORMAT,
         );
         let log_filter = cfg_layer(
             args.log_filter,
             cfg_file_trace.log_filter,
-            String::from(DEFAULT_LOG_FILTER),
+            String::from(constants::DEFAULT_LOG_FILTER),
         );
         let log_span_events = cfg_layer(
             args.log_span_events,
             cfg_file_trace.log_span_events,
-            DEFAULT_LOG_SPAN_EVENTS,
+            constants::DEFAULT_LOG_SPAN_EVENTS,
         );
         let protocol = cfg_layer(
             args.protocol,
             cfg_file_strategy.protocol,
-            DEFAULT_STRATEGY_PROTOCOL,
+            constants::DEFAULT_STRATEGY_PROTOCOL,
         );
         let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
         let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
@@ -395,109 +287,113 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
         let min_round_duration = cfg_layer(
             args.min_round_duration,
             cfg_file_strategy.min_round_duration,
-            String::from(DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+            String::from(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
         );
         let max_round_duration = cfg_layer(
             args.max_round_duration,
             cfg_file_strategy.max_round_duration,
-            String::from(DEFAULT_STRATEGY_MAX_ROUND_DURATION),
+            String::from(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
         );
         let initial_sequence = cfg_layer(
             args.initial_sequence,
             cfg_file_strategy.initial_sequence,
-            DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+            constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
         );
         let multipath_strategy_cfg = cfg_layer(
             args.multipath_strategy,
             cfg_file_strategy.multipath_strategy,
-            DEFAULT_STRATEGY_MULTIPATH,
+            constants::DEFAULT_STRATEGY_MULTIPATH,
         );
         let grace_duration = cfg_layer(
             args.grace_duration,
             cfg_file_strategy.grace_duration,
-            String::from(DEFAULT_STRATEGY_GRACE_DURATION),
+            String::from(constants::DEFAULT_STRATEGY_GRACE_DURATION),
         );
         let max_inflight = cfg_layer(
             args.max_inflight,
             cfg_file_strategy.max_inflight,
-            DEFAULT_STRATEGY_MAX_INFLIGHT,
+            constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
         );
         let first_ttl = cfg_layer(
             args.first_ttl,
             cfg_file_strategy.first_ttl,
-            DEFAULT_STRATEGY_FIRST_TTL,
+            constants::DEFAULT_STRATEGY_FIRST_TTL,
         );
         let max_ttl = cfg_layer(
             args.max_ttl,
             cfg_file_strategy.max_ttl,
-            DEFAULT_STRATEGY_MAX_TTL,
+            constants::DEFAULT_STRATEGY_MAX_TTL,
         );
         let packet_size = cfg_layer(
             args.packet_size,
             cfg_file_strategy.packet_size,
-            DEFAULT_STRATEGY_PACKET_SIZE,
+            constants::DEFAULT_STRATEGY_PACKET_SIZE,
         );
         let payload_pattern = cfg_layer(
             args.payload_pattern,
             cfg_file_strategy.payload_pattern,
-            DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+            constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
         );
-        let tos = cfg_layer(args.tos, cfg_file_strategy.tos, DEFAULT_STRATEGY_TOS);
+        let tos = cfg_layer(
+            args.tos,
+            cfg_file_strategy.tos,
+            constants::DEFAULT_STRATEGY_TOS,
+        );
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
-            String::from(DEFAULT_STRATEGY_READ_TIMEOUT),
+            String::from(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
         );
         let tui_max_samples = cfg_layer(
             args.tui_max_samples,
             cfg_file_tui.tui_max_samples,
-            DEFAULT_TUI_MAX_SAMPLES,
+            constants::DEFAULT_TUI_MAX_SAMPLES,
         );
         let tui_preserve_screen = cfg_layer(
             args.tui_preserve_screen,
             cfg_file_tui.tui_preserve_screen,
-            DEFAULT_TUI_PRESERVE_SCREEN,
+            constants::DEFAULT_TUI_PRESERVE_SCREEN,
         );
         let tui_refresh_rate = cfg_layer(
             args.tui_refresh_rate,
             cfg_file_tui.tui_refresh_rate,
-            String::from(DEFAULT_TUI_REFRESH_RATE),
+            String::from(constants::DEFAULT_TUI_REFRESH_RATE),
         );
         let tui_address_mode = cfg_layer(
             args.tui_address_mode,
             cfg_file_tui.tui_address_mode,
-            DEFAULT_TUI_ADDRESS_MODE,
+            constants::DEFAULT_TUI_ADDRESS_MODE,
         );
         let tui_as_mode = cfg_layer(
             args.tui_as_mode,
             cfg_file_tui.tui_as_mode,
-            DEFAULT_TUI_AS_MODE,
+            constants::DEFAULT_TUI_AS_MODE,
         );
         let tui_geoip_mode = cfg_layer(
             args.tui_geoip_mode,
             cfg_file_tui.tui_geoip_mode,
-            DEFAULT_TUI_GEOIP_MODE,
+            constants::DEFAULT_TUI_GEOIP_MODE,
         );
         let tui_max_addrs = cfg_layer_opt(args.tui_max_addrs, cfg_file_tui.tui_max_addrs);
         let dns_resolve_method = cfg_layer(
             args.dns_resolve_method,
             cfg_file_dns.dns_resolve_method,
-            DEFAULT_DNS_RESOLVE_METHOD,
+            constants::DEFAULT_DNS_RESOLVE_METHOD,
         );
         let dns_lookup_as_info = cfg_layer(
             args.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
-            DEFAULT_DNS_LOOKUP_AS_INFO,
+            constants::DEFAULT_DNS_LOOKUP_AS_INFO,
         );
         let dns_timeout = cfg_layer(
             args.dns_timeout,
             cfg_file_dns.dns_timeout,
-            String::from(DEFAULT_DNS_TIMEOUT),
+            String::from(constants::DEFAULT_DNS_TIMEOUT),
         );
         let report_cycles = cfg_layer(
             args.report_cycles,
             cfg_file_report.report_cycles,
-            DEFAULT_REPORT_CYCLES,
+            constants::DEFAULT_REPORT_CYCLES,
         );
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, protocol) {
@@ -716,12 +612,14 @@ fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
 
 /// Validate `read_timeout`.
 fn validate_read_timeout(read_timeout: Duration) -> anyhow::Result<()> {
-    if read_timeout < MIN_READ_TIMEOUT_MS || read_timeout > MAX_READ_TIMEOUT_MS {
+    if read_timeout < constants::MIN_READ_TIMEOUT_MS
+        || read_timeout > constants::MAX_READ_TIMEOUT_MS
+    {
         Err(anyhow!(
             "read-timeout ({:?}) must be between {:?} and {:?} inclusive",
             read_timeout,
-            MIN_READ_TIMEOUT_MS,
-            MAX_READ_TIMEOUT_MS
+            constants::MIN_READ_TIMEOUT_MS,
+            constants::MAX_READ_TIMEOUT_MS
         ))
     } else {
         Ok(())
@@ -746,12 +644,14 @@ fn validate_round_duration(
 
 /// Validate `grace_duration`.
 fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
-    if grace_duration < MIN_GRACE_DURATION_MS || grace_duration > MAX_GRACE_DURATION_MS {
+    if grace_duration < constants::MIN_GRACE_DURATION_MS
+        || grace_duration > constants::MAX_GRACE_DURATION_MS
+    {
         Err(anyhow!(
             "grace-duration ({:?}) must be between {:?} and {:?} inclusive",
             grace_duration,
-            MIN_GRACE_DURATION_MS,
-            MAX_GRACE_DURATION_MS
+            constants::MIN_GRACE_DURATION_MS,
+            constants::MAX_GRACE_DURATION_MS
         ))
     } else {
         Ok(())
@@ -760,14 +660,14 @@ fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
 
 /// Validate `packet_size`.
 fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
-    if (MIN_PACKET_SIZE..=MAX_PACKET_SIZE).contains(&packet_size) {
+    if (constants::MIN_PACKET_SIZE..=constants::MAX_PACKET_SIZE).contains(&packet_size) {
         Ok(())
     } else {
         Err(anyhow!(
             "packet-size ({}) must be between {} and {} inclusive",
             packet_size,
-            MIN_PACKET_SIZE,
-            MAX_PACKET_SIZE
+            constants::MIN_PACKET_SIZE,
+            constants::MAX_PACKET_SIZE
         ))
     }
 }
@@ -783,12 +683,14 @@ fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
 
 /// Validate `tui_refresh_rate`.
 fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
-    if tui_refresh_rate < TUI_MIN_REFRESH_RATE_MS || tui_refresh_rate > TUI_MAX_REFRESH_RATE_MS {
+    if tui_refresh_rate < constants::TUI_MIN_REFRESH_RATE_MS
+        || tui_refresh_rate > constants::TUI_MAX_REFRESH_RATE_MS
+    {
         Err(anyhow!(
             "tui-refresh-rate ({:?}) must be between {:?} and {:?} inclusive",
             tui_refresh_rate,
-            TUI_MIN_REFRESH_RATE_MS,
-            TUI_MAX_REFRESH_RATE_MS
+            constants::TUI_MIN_REFRESH_RATE_MS,
+            constants::TUI_MAX_REFRESH_RATE_MS
         ))
     } else {
         Ok(())
