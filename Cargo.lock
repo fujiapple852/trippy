@@ -1602,7 +1602,6 @@ name = "trippy"
 version = "0.9.0-dev"
 dependencies = [
  "anyhow",
- "arrayvec",
  "caps",
  "chrono",
  "clap",
@@ -1610,7 +1609,6 @@ dependencies = [
  "comfy-table",
  "crossbeam",
  "crossterm 0.27.0",
- "derive_more",
  "dns-lookup",
  "etcetera",
  "humantime",
@@ -1620,19 +1618,33 @@ dependencies = [
  "nix",
  "parking_lot",
  "paste",
- "rand",
  "ratatui",
  "serde",
  "serde_json",
- "socket2",
  "strum 0.25.0",
  "test-case",
- "thiserror",
  "toml",
  "tracing",
  "tracing-chrome",
  "tracing-subscriber",
+ "trippy-core",
  "trust-dns-resolver",
+ "windows-sys",
+]
+
+[[package]]
+name = "trippy-core"
+version = "0.9.0-dev"
+dependencies = [
+ "arrayvec",
+ "derive_more",
+ "itertools",
+ "nix",
+ "rand",
+ "socket2",
+ "test-case",
+ "thiserror",
+ "tracing",
  "widestring",
  "windows-sys",
 ]
