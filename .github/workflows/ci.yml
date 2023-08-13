@@ -52,14 +52,11 @@ jobs:
       - run: cargo test --workspace --all-features --target ${{ matrix.target }}
   fmt:
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        rust: [ stable, 1.63.0 ]
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           components: rustfmt
       - run: cargo fmt --all -- --check
 
