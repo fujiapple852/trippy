@@ -29,8 +29,7 @@ pub struct TracerChannel {
     tos: TypeOfService,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
-    icmp_send_socket: Socket,
-    udp_send_socket: Socket,
+    send_socket: Option<Socket>,
     recv_socket: Socket,
     tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
 }
@@ -50,8 +49,11 @@ impl TracerChannel {
         platform::startup()?;
         let ipv4_length_order =
             platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
-        let icmp_send_socket = make_icmp_send_socket(config.source_addr)?;
-        let udp_send_socket = make_udp_send_socket(config.source_addr)?;
+        let send_socket = match config.protocol {
+            TracerProtocol::Icmp => Some(make_icmp_send_socket(config.source_addr)?),
+            TracerProtocol::Udp => Some(make_udp_send_socket(config.source_addr)?),
+            TracerProtocol::Tcp => None,
+        };
         let recv_socket = make_recv_socket(config.source_addr)?;
         Ok(Self {
             protocol: config.protocol,
@@ -64,8 +66,7 @@ impl TracerChannel {
             tos: config.tos,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
-            icmp_send_socket,
-            udp_send_socket,
+            send_socket,
             recv_socket,
             tcp_probes: ArrayVec::new(),
         })
@@ -101,24 +102,28 @@ impl TracerChannel {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all)]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        match (self.src_addr, self.dest_addr) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_icmp_probe(
-                &mut self.icmp_send_socket,
-                probe,
-                src_addr,
-                dest_addr,
-                self.packet_size,
-                self.payload_pattern,
-                self.ipv4_length_order,
-            ),
-            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => ipv6::dispatch_icmp_probe(
-                &mut self.icmp_send_socket,
-                probe,
-                src_addr,
-                dest_addr,
-                self.packet_size,
-                self.payload_pattern,
-            ),
+        match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
+                ipv4::dispatch_icmp_probe(
+                    socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.packet_size,
+                    self.payload_pattern,
+                    self.ipv4_length_order,
+                )
+            }
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr), Some(socket)) => {
+                ipv6::dispatch_icmp_probe(
+                    socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.packet_size,
+                    self.payload_pattern,
+                )
+            }
             _ => unreachable!(),
         }
     }
@@ -126,25 +131,29 @@ impl TracerChannel {
     /// Dispatch a UDP probe.
     #[instrument(skip_all)]
     fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
-        match (self.src_addr, self.dest_addr) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => ipv4::dispatch_udp_probe(
-                &mut self.udp_send_socket,
-                probe,
-                src_addr,
-                dest_addr,
-                self.packet_size,
-                self.payload_pattern,
-                self.multipath_strategy,
-                self.ipv4_length_order,
-            ),
-            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => ipv6::dispatch_udp_probe(
-                &mut self.udp_send_socket,
-                probe,
-                src_addr,
-                dest_addr,
-                self.packet_size,
-                self.payload_pattern,
-            ),
+        match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
+                ipv4::dispatch_udp_probe(
+                    socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.packet_size,
+                    self.payload_pattern,
+                    self.multipath_strategy,
+                    self.ipv4_length_order,
+                )
+            }
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr), Some(socket)) => {
+                ipv6::dispatch_udp_probe(
+                    socket,
+                    probe,
+                    src_addr,
+                    dest_addr,
+                    self.packet_size,
+                    self.payload_pattern,
+                )
+            }
             _ => unreachable!(),
         }
     }
