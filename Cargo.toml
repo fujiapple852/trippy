@@ -30,7 +30,7 @@ tracing = "0.1.37"
 # TUI dependencies
 anyhow = "1.0.72"
 dns-lookup = "2.0.1"
-trust-dns-resolver = "0.22.0"
+trust-dns-resolver = "0.23.0"
 crossbeam = "0.8.2"
 clap = { version = "4.3.21", features = [ "derive", "wrap_help", "cargo" ] }
 clap_complete = "4.3.2"
