@@ -342,9 +342,8 @@ mod inner {
         cache: &Cache,
     ) {
         for DnsResolveRequest { addr, with_asinfo } in rx {
-            cache
-                .write()
-                .insert(addr, reverse_lookup(provider, addr, with_asinfo));
+            let dns_entry = reverse_lookup(provider, addr, with_asinfo);
+            cache.write().insert(addr, dns_entry);
         }
     }
 
