@@ -292,19 +292,17 @@ impl TryFrom<&str> for TuiKeyBinding {
         fn parse_modifiers(modifiers: &str) -> anyhow::Result<KeyModifiers> {
             modifiers
                 .split('+')
-                .fold(Ok(KeyModifiers::NONE), |key_modifiers, token| {
-                    key_modifiers.and_then(|modifiers| {
-                        ALL_MODIFIERS
-                            .iter()
-                            .find_map(|(modifier_token, modifier)| {
-                                if modifier_token.eq_ignore_ascii_case(token) {
-                                    Some(modifiers | *modifier)
-                                } else {
-                                    None
-                                }
-                            })
-                            .ok_or_else(|| anyhow!("unknown modifier '{}'", token,))
-                    })
+                .try_fold(KeyModifiers::NONE, |modifiers, token| {
+                    ALL_MODIFIERS
+                        .iter()
+                        .find_map(|(modifier_token, modifier)| {
+                            if modifier_token.eq_ignore_ascii_case(token) {
+                                Some(modifiers | *modifier)
+                            } else {
+                                None
+                            }
+                        })
+                        .ok_or_else(|| anyhow!("unknown modifier '{}'", token,))
                 })
         }
         match value.rsplit_once('+') {

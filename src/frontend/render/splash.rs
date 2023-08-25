@@ -23,6 +23,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg_color)
                 .fg(app.tui_config.theme.text_color),
         );
+    #[allow(clippy::needless_raw_string_hashes)]
     let splash = vec![
         r#" _____    _                "#,
         r#"|_   _| _(_)_ __ _ __ _  _ "#,
