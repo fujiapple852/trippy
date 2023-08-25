@@ -363,7 +363,7 @@ mod inner {
                     let hostnames = name
                         .into_iter()
                         .map(|mut s| {
-                            s.set_fqdn(false);
+                            s.0.set_fqdn(false);
                             s
                         })
                         .map(|s| s.to_string())
