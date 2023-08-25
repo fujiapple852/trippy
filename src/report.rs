@@ -17,7 +17,7 @@ pub fn run_report_csv(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
-    for hop in trace.hops().iter() {
+    for hop in trace.hops() {
         let ttl = hop.ttl();
         let ips = hop.addrs().join(":");
         let ip = if ips.is_empty() {
@@ -189,7 +189,7 @@ fn run_report_table(
         .load_preset(preset)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(columns);
-    for hop in trace.hops().iter() {
+    for hop in trace.hops() {
         let ttl = hop.ttl().to_string();
         let ips = hop.addrs().join("\n");
         let ip = if ips.is_empty() {
