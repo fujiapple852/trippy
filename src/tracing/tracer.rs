@@ -79,7 +79,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// 1 - the target host has not been found
     /// 2 - the next ttl is not greater than the maximum allowed ttl
     /// 3 - if the target ttl of the target is known:
-    ///       - the next ttl is not greater than the ttl of the target host observed from the prior round
+    ///       - the next ttl is not greater than the ttl of the target host observed from the prior
+    ///         round
     ///     otherwise:
     ///       - the number of unknown-in-flight probes is lower than the maximum allowed
     #[instrument(skip(self, network, st))]
@@ -122,20 +123,23 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
     /// Read and process the next incoming `ICMP` packet.
     ///
-    /// We allow multiple probes to be in-flight at any time and we cannot guaranteed that responses will be
-    /// received in-order.  We therefore maintain a buffer which holds details of each `Probe` which is
-    /// indexed by the offset of the sequence number from the sequence number at the beginning of the round.  The
-    /// sequence number is set in the outgoing `ICMP` `EchoRequest` (or `UDP` / `TCP`) packet and returned in both
-    /// the `TimeExceeded` and `EchoReply` responses.
+    /// We allow multiple probes to be in-flight at any time and we cannot guaranteed that responses
+    /// will be received in-order.  We therefore maintain a buffer which holds details of each
+    /// `Probe` which is indexed by the offset of the sequence number from the sequence number
+    /// at the beginning of the round.  The sequence number is set in the outgoing `ICMP`
+    /// `EchoRequest` (or `UDP` / `TCP`) packet and returned in both the `TimeExceeded` and
+    /// `EchoReply` responses.
     ///
-    /// Each incoming `ICMP` packet contains the original `ICMP` `EchoRequest` packet from which we can read the
-    /// `identifier` that we set which we can now validate to ensure we only process responses which correspond to
-    /// packets sent from this process.  For The `UDP` and `TCP` protocols, only packets destined for our src port will
-    /// be delivered to us by the OS and so no other `identifier` is needed and so we allow the special case value of 0.
+    /// Each incoming `ICMP` packet contains the original `ICMP` `EchoRequest` packet from which we
+    /// can read the `identifier` that we set which we can now validate to ensure we only
+    /// process responses which correspond to packets sent from this process.  For The `UDP` and
+    /// `TCP` protocols, only packets destined for our src port will be delivered to us by the
+    /// OS and so no other `identifier` is needed and so we allow the special case value of 0.
     ///
-    /// When we process an `EchoReply` from the target host we extract the time-to-live from the corresponding
-    /// original `EchoRequest`.  Note that this may not be the greatest time-to-live that was sent in the round as
-    /// the algorithm will send `EchoRequest` with larger time-to-live values before the `EchoReply` is received.
+    /// When we process an `EchoReply` from the target host we extract the time-to-live from the
+    /// corresponding original `EchoRequest`.  Note that this may not be the greatest
+    /// time-to-live that was sent in the round as the algorithm will send `EchoRequest` with
+    /// larger time-to-live values before the `EchoReply` is received.
     #[instrument(skip(self, network, st))]
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
@@ -195,8 +199,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
     /// Publish details of all `Probe` in the completed round.
     ///
-    /// If the round completed without receiving an `EchoReply` from the target host then we also publish the next
-    /// `Probe` which is assumed to represent the TTL of the target host.
+    /// If the round completed without receiving an `EchoReply` from the target host then we also
+    /// publish the next `Probe` which is assumed to represent the TTL of the target host.
     #[instrument(skip(self, state))]
     fn publish_trace(&self, state: &TracerState) {
         let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
@@ -227,7 +231,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         self.config.trace_identifier == trace_id || trace_id == TraceId(0)
     }
 
-    /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in a protocol specific way.
+    /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in
+    /// a protocol specific way.
     #[instrument(skip(self))]
     fn extract(&self, resp: &ProbeResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
         match resp.resp_seq {
@@ -270,8 +275,8 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
 /// Mutable state needed for the tracing algorithm.
 ///
-/// This is contained within a sub-module to ensure that mutations are only performed via methods on the
-/// `TracerState` struct.
+/// This is contained within a sub-module to ensure that mutations are only performed via methods on
+/// the `TracerState` struct.
 mod state {
     use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
     use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
@@ -285,26 +290,27 @@ mod state {
 
     /// The maximum number of `Probe` entries in the buffer.
     ///
-    /// This is larger than maximum number of time-to-live (TTL) we can support to allow for skipped sequences.
+    /// This is larger than maximum number of time-to-live (TTL) we can support to allow for skipped
+    /// sequences.
     const BUFFER_SIZE: u16 = MAX_SEQUENCE_PER_ROUND;
 
     /// The maximum sequence number.
     ///
-    /// The sequence number is only ever wrapped between rounds and so we need to ensure that there are enough sequence
-    /// numbers for a complete round.
+    /// The sequence number is only ever wrapped between rounds and so we need to ensure that there
+    /// are enough sequence numbers for a complete round.
     ///
-    /// A sequence number can be skipped if, for example, the port for that sequence number cannot be bound as it is
-    /// already in use.
+    /// A sequence number can be skipped if, for example, the port for that sequence number cannot
+    /// be bound as it is already in use.
     ///
-    /// To ensure each `Probe` is in the correct place in the buffer (i.e. the index into the buffer is always
-    /// `Probe.sequence - round_sequence`), when we skip a sequence we leave the skipped `Probe` in-place and use the
-    /// next slot for the next sequence.
+    /// To ensure each `Probe` is in the correct place in the buffer (i.e. the index into the buffer
+    /// is always `Probe.sequence - round_sequence`), when we skip a sequence we leave the
+    /// skipped `Probe` in-place and use the next slot for the next sequence.
     ///
-    /// We cap the number of sequences that can potentially be skipped in a round to ensure that sequence number does
-    /// not even need to wrap around during a round.
+    /// We cap the number of sequences that can potentially be skipped in a round to ensure that
+    /// sequence number does not even need to wrap around during a round.
     ///
-    /// We only ever send `ttl` in the range 1..255 and so we may use all buffer capacity, except the minimum needed to
-    /// send up to a max `ttl` of 255 (a `ttl` of 0 is never sent).
+    /// We only ever send `ttl` in the range 1..255 and so we may use all buffer capacity, except
+    /// the minimum needed to send up to a max `ttl` of 255 (a `ttl` of 0 is never sent).
     const MAX_SEQUENCE: Sequence = Sequence(u16::MAX - BUFFER_SIZE);
 
     /// Mutable state needed for the tracing algorithm.
@@ -330,8 +336,8 @@ mod state {
         max_received_ttl: Option<TimeToLive>,
         /// The observed time-to-live of the `EchoReply` from the target host.
         ///
-        /// Note that this is _not_ reset each round and that it can also _change_ over time, including going _down_ as
-        /// responses can be are received out-of-order.
+        /// Note that this is _not_ reset each round and that it can also _change_ over time,
+        /// including going _down_ as responses can be are received out-of-order.
         target_ttl: Option<TimeToLive>,
         /// The timestamp of the echo response packet.
         received_time: Option<SystemTime>,
@@ -410,8 +416,8 @@ mod state {
 
         /// Create and return the next `Probe` at the current `sequence` and `ttl`.
         ///
-        /// We post-increment `ttl` here and so in practice we only allow `ttl` values in the range `1..254` to allow
-        /// us to use a `u8`.
+        /// We post-increment `ttl` here and so in practice we only allow `ttl` values in the range
+        /// `1..254` to allow us to use a `u8`.
         #[instrument(skip(self))]
         pub fn next_probe(&mut self) -> Probe {
             let (src_port, dest_port, identifier) = self.probe_data();
@@ -434,10 +440,11 @@ mod state {
 
         /// Re-issue the `Probe` with the next sequence number.
         ///
-        /// This will mark the `Probe` at the previous `sequence` as skipped and re-create it with the previous `ttl`
-        /// and the current `sequence`.
+        /// This will mark the `Probe` at the previous `sequence` as skipped and re-create it with
+        /// the previous `ttl` and the current `sequence`.
         ///
-        /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method then afterwards:
+        /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method
+        /// then afterwards:
         /// - The `Probe` at sequence `3` will be reset to default values (i.e. `NotSent` status)
         /// - A new `Probe` will be created at sequence `4` with a `ttl` of `5`
         #[instrument(skip(self))]
@@ -461,7 +468,8 @@ mod state {
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current probe.
         ///
-        /// This will differ depending on the `TracerProtocol`, `MultipathStrategy` & `PortDirection`.
+        /// This will differ depending on the `TracerProtocol`, `MultipathStrategy` &
+        /// `PortDirection`.
         fn probe_data(&self) -> (Port, Port, TraceId) {
             match self.config.protocol {
                 TracerProtocol::Icmp => self.probe_icmp_data(),
@@ -603,9 +611,10 @@ mod state {
         /// - the latest packet `received_time` in this round
         /// - whether the target has been found in this round
         ///
-        /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid overwriting the state with
-        /// stale values.  We may also receive multiple replies from the target host with differing time-to-live values
-        /// and so must ensure we use the time-to-live with the lowest sequence number.
+        /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid
+        /// overwriting the state with stale values.  We may also receive multiple replies
+        /// from the target host with differing time-to-live values and so must ensure we
+        /// use the time-to-live with the lowest sequence number.
         #[instrument(skip(self))]
         fn complete_probe(
             &mut self,
@@ -624,12 +633,13 @@ mod state {
                 .with_received(received);
             self.buffer[usize::from(sequence - self.round_sequence)] = probe;
 
-            // If this `Probe` found the target then we set the `target_tll` if not already set, being careful to
-            // account for `Probes` being received out-of-order.
+            // If this `Probe` found the target then we set the `target_tll` if not already set,
+            // being careful to account for `Probes` being received out-of-order.
             //
-            // If this `Probe` did not find the target but has a ttl that is greater or equal to the target ttl (if
-            // known) then we reset the target ttl to None.  This is to support Equal Cost Multi-path Routing (ECMP)
-            // cases where the number of hops to the target will vary over the lifetime of the trace.
+            // If this `Probe` did not find the target but has a ttl that is greater or equal to the
+            // target ttl (if known) then we reset the target ttl to None.  This is to
+            // support Equal Cost Multi-path Routing (ECMP) cases where the number of
+            // hops to the target will vary over the lifetime of the trace.
             self.target_ttl = if is_target {
                 match self.target_ttl {
                     None => Some(probe.ttl),
@@ -655,9 +665,9 @@ mod state {
 
         /// Advance to the next round.
         ///
-        /// If, during the rond which just completed, we went above the max sequence number then we reset it here.
-        /// We do this here to avoid having to deal with the sequence number wrapping during a round, which is more
-        /// problematic.
+        /// If, during the rond which just completed, we went above the max sequence number then we
+        /// reset it here. We do this here to avoid having to deal with the sequence number
+        /// wrapping during a round, which is more problematic.
         #[instrument(skip(self))]
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
             if self.sequence >= MAX_SEQUENCE {

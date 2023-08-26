@@ -18,8 +18,8 @@ const DESTINATION_OFFSET: usize = 16;
 
 /// Represents an IPv4 Packet.
 ///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-/// data in host byte order, converting as necessary for the given architecture.
+/// The internal representation is held in network byte order (big-endian) and all accessor methods
+/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct Ipv4Packet<'a> {
     buf: Buffer<'a>,
 }

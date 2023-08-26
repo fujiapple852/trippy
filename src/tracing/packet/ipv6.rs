@@ -14,8 +14,8 @@ const DESTINATION_ADDRESS_OFFSET: usize = 24;
 
 /// Represents an IPv6 Packet.
 ///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-/// data in host byte order, converting as necessary for the given architecture.
+/// The internal representation is held in network byte order (big-endian) and all accessor methods
+/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct Ipv6Packet<'a> {
     buf: Buffer<'a>,
 }

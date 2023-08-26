@@ -52,8 +52,8 @@ const CHECKSUM_OFFSET: usize = 2;
 
 /// Represents an ICMP packet.
 ///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-/// data in host byte order, converting as necessary for the given architecture.
+/// The internal representation is held in network byte order (big-endian) and all accessor methods
+/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct IcmpPacket<'a> {
     buf: Buffer<'a>,
 }
@@ -198,8 +198,9 @@ pub mod echo_request {
 
     /// Represents an `ICMPv6` `EchoRequest` packet.
     ///
-    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-    /// data in host byte order, converting as necessary for the given architecture.
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
     pub struct EchoRequestPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -419,8 +420,9 @@ pub mod echo_reply {
 
     /// Represents an ICMP `EchoReply` packet.
     ///
-    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-    /// data in host byte order, converting as necessary for the given architecture.
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
     pub struct EchoReplyPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -638,8 +640,9 @@ pub mod time_exceeded {
 
     /// Represents an ICMP `TimeExceeded` packet.
     ///
-    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-    /// data in host byte order, converting as necessary for the given architecture.
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
     pub struct TimeExceededPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -807,8 +810,9 @@ pub mod destination_unreachable {
 
     /// Represents an ICMP `DestinationUnreachable` packet.
     ///
-    /// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-    /// data in host byte order, converting as necessary for the given architecture.
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
     pub struct DestinationUnreachablePacket<'a> {
         buf: Buffer<'a>,
     }

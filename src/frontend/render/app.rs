@@ -31,7 +31,8 @@ use ratatui::Frame;
 /// History - a graph of historic round-trip ping samples for the target host
 /// Frequency - a histogram of sample frequencies by round-trip time for the target host
 ///
-/// On startup a splash screen is shown in place of the hops table, until the completion of the first round.
+/// On startup a splash screen is shown in place of the hops table, until the completion of the
+/// first round.
 pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
     let constraints = if app.trace_info.len() > 1 {
         LAYOUT_WITH_TABS.as_slice()

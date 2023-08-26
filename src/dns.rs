@@ -126,7 +126,8 @@ impl DnsResolver {
         self.inner.reverse_lookup(addr, false, false)
     }
 
-    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
+    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS`
+    /// information.
     ///
     /// See [`DnsResolver::reverse_lookup`]
     #[allow(dead_code)]
@@ -138,10 +139,11 @@ impl DnsResolver {
     ///
     /// If the `IpAddr` has already been resolved then `DnsEntry::Resolved` is returned immediately.
     ///
-    /// Otherwise, the `IpAddr` is enqueued to be resolved in the background and a `DnsEntry::Pending` is
-    /// returned.
+    /// Otherwise, the `IpAddr` is enqueued to be resolved in the background and a
+    /// `DnsEntry::Pending` is returned.
     ///
-    /// If the entry exists but is `DnsEntry::Timeout` then it is changed to be `DnsEntry::Pending` and enqueued.
+    /// If the entry exists but is `DnsEntry::Timeout` then it is changed to be `DnsEntry::Pending`
+    /// and enqueued.
     ///
     /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
     pub fn lazy_reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
@@ -188,7 +190,8 @@ mod inner {
     /// The maximum number of in-flight reverse DNS resolutions that may be
     const RESOLVER_MAX_QUEUE_SIZE: usize = 100;
 
-    /// The duration wait to enqueue a `DnsEntry::Pending` to the resolver before returning `DnsEntry::Timeout`.
+    /// The duration wait to enqueue a `DnsEntry::Pending` to the resolver before returning
+    /// `DnsEntry::Timeout`.
     const RESOLVER_QUEUE_TIMEOUT: Duration = Duration::from_millis(10);
 
     /// Alias for a cache of reverse DNS lookup entries.
@@ -278,8 +281,8 @@ mod inner {
         fn lazy_reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
             let mut enqueue = false;
 
-            // Check if we have already attempted to resolve this `IpAddr` and return the current `DnsEntry` if so,
-            // otherwise add it in a state of `DnsEntry::Pending`.
+            // Check if we have already attempted to resolve this `IpAddr` and return the current
+            // `DnsEntry` if so, otherwise add it in a state of `DnsEntry::Pending`.
             let mut dns_entry = self
                 .addr_cache
                 .write()
@@ -290,7 +293,8 @@ mod inner {
                 })
                 .clone();
 
-            // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue it again.
+            // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue
+            // it again.
             if let DnsEntry::Timeout(addr) = dns_entry {
                 *self
                     .addr_cache
@@ -301,9 +305,9 @@ mod inner {
                 enqueue = true;
             }
 
-            // If this is a newly added `DnsEntry` then send it to the channel to be resolved in the background.  We do
-            // this after the above to ensure we aren't holding the lock on the cache, which is usd by the resolver and so
-            // would deadlock.
+            // If this is a newly added `DnsEntry` then send it to the channel to be resolved in the
+            // background.  We do this after the above to ensure we aren't holding the
+            // lock on the cache, which is usd by the resolver and so would deadlock.
             if enqueue {
                 if self
                     .tx
@@ -334,8 +338,8 @@ mod inner {
 
     /// Process each `IpAddr` from the resolver queue and perform the reverse DNS lookup.
     ///
-    /// For each `IpAddr`, perform the reverse DNS lookup and update the cache with the result (`Resolved`, `NotFound`,
-    /// `Timeout` or `Failed`) for that addr.
+    /// For each `IpAddr`, perform the reverse DNS lookup and update the cache with the result
+    /// (`Resolved`, `NotFound`, `Timeout` or `Failed`) for that addr.
     fn resolver_queue_processor(
         rx: Receiver<DnsResolveRequest>,
         provider: &DnsProvider,
@@ -350,8 +354,8 @@ mod inner {
     fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
         match &provider {
             DnsProvider::DnsLookup => {
-                // we can't distinguish between a failed lookup or a genuine error and so we just assume all
-                // failures are `DnsEntry::NotFound`.
+                // we can't distinguish between a failed lookup or a genuine error and so we just
+                // assume all failures are `DnsEntry::NotFound`.
                 match dns_lookup::lookup_addr(&addr) {
                     Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])),
                     Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr)),

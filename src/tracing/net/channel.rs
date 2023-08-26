@@ -188,7 +188,8 @@ impl TracerChannel {
         }
     }
 
-    /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was refused.
+    /// Generate synthetic `ProbeResponse` if a TCP socket is connected or if the connection was
+    /// refused.
     ///
     /// Any TCP socket which has not connected or failed after a timeout will be removed.
     #[instrument(skip(self))]

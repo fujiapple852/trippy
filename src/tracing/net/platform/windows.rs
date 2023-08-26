@@ -26,8 +26,9 @@ use windows_sys::Win32::System::IO::OVERLAPPED;
 
 /// Execute a `Win32::Networking::WinSock` syscall.
 ///
-/// The result of the syscall will be passed to the supplied boolean closure to determine if it represents an error
-/// and if so returns the last OS error, otherwise the result of the syscall is returned.
+/// The result of the syscall will be passed to the supplied boolean closure to determine if it
+/// represents an error and if so returns the last OS error, otherwise the result of the syscall is
+/// returned.
 macro_rules! syscall {
     ($fn: ident ( $($arg: expr),* $(,)* ), $err_fn: expr) => {{
         #[allow(unsafe_code)]
@@ -499,9 +500,10 @@ impl TracerSocket for Socket {
     }
 
     // TODO
-    // we always copy and claim to have returned MAX_PACKET_SIZE bytes, regardless of how many bytes we actually
-    // received.  The callers currently ignore this and just try to parse a packet from the buffer which isn't ideal.
-    // Really we should record the actual number of bytes read in the `get_overlapped_result` call and return that here.
+    // we always copy and claim to have returned MAX_PACKET_SIZE bytes, regardless of how many bytes
+    // we actually received.  The callers currently ignore this and just try to parse a packet
+    // from the buffer which isn't ideal. Really we should record the actual number of bytes
+    // read in the `get_overlapped_result` call and return that here.
     #[instrument(skip(self, buf), ret)]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
         buf.copy_from_slice(self.buf.as_slice());

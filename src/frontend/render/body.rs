@@ -6,7 +6,8 @@ use ratatui::Frame;
 
 /// Render the body.
 ///
-/// This is either an BSOD if there wa san error or the table of hop data or, if there is no data, the splash screen.
+/// This is either an BSOD if there wa san error or the table of hop data or, if there is no data,
+/// the splash screen.
 pub fn render<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
         bsod::render(f, rec, err);

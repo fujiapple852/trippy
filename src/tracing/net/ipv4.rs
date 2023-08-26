@@ -438,14 +438,15 @@ fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
 
 /// Get the src and dest ports from the original `TcpPacket` packet embedded in the payload.
 ///
-/// Unlike the embedded `ICMP` and `UDP` packets, which have a minimum header size of 8 bytes, the `TCP` packet header
-/// is a minimum of 20 bytes.
+/// Unlike the embedded `ICMP` and `UDP` packets, which have a minimum header size of 8 bytes, the
+/// `TCP` packet header is a minimum of 20 bytes.
 ///
-/// The `ICMP` packets we are extracting these from, such as `TimeExceeded`, only guarantee that 8 bytes of the
-/// original packet (plus the IP header) be returned and so we may not have a complete TCP packet.
+/// The `ICMP` packets we are extracting these from, such as `TimeExceeded`, only guarantee that 8
+/// bytes of the original packet (plus the IP header) be returned and so we may not have a complete
+/// TCP packet.
 ///
-/// We therefore have to detect this situation and ensure we provide buffer a large enough for a complete TCP packet
-/// header.
+/// We therefore have to detect this situation and ensure we provide buffer a large enough for a
+/// complete TCP packet header.
 #[instrument]
 fn extract_tcp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
     let ip4 = Ipv4Packet::new_view(payload).req()?;

@@ -119,7 +119,8 @@ pub enum GeoIpMode {
     Off,
     /// Show short format.
     ///
-    /// The `city` name is shown, `subdivision` and `country` codes are shown, `continent` is not displayed.
+    /// The `city` name is shown, `subdivision` and `country` codes are shown, `continent` is not
+    /// displayed.
     ///
     /// For example:
     ///

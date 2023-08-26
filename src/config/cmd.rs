@@ -78,7 +78,8 @@ pub struct Args {
     #[arg(short = 'T', long, display_order = 12)]
     pub max_round_duration: Option<String>,
 
-    /// The period of time to wait for additional ICMP responses after the target has responded [default: 100ms]
+    /// The period of time to wait for additional ICMP responses after the target has responded
+    /// [default: 100ms]
     #[arg(short = 'g', long, display_order = 13)]
     pub grace_duration: Option<String>,
 
