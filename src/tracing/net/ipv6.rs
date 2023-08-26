@@ -91,8 +91,9 @@ pub fn dispatch_udp_probe(
         payload_pattern,
     )?;
     udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
-    // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in the `UDP`
-    // packet.  If we (redundantly) set the target port here then the send will fail with `EINVAL`.
+    // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in
+    // the `UDP` packet.  If we (redundantly) set the target port here then the send will fail
+    // with `EINVAL`.
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
     udp_send_socket.send_to(udp.packet(), remote_addr)?;
     Ok(())
@@ -358,8 +359,8 @@ fn extract_udp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
 ///    packet in one piece, link-specific fragmentation and reassembly must
 ///    be provided at a layer below IPv6."
 ///
-/// The maximum packet size we allow is 1024 and so we can safely assume that the originating IPv6 packet
-/// being extracted will be at least as large as the minimum IPv6 packet size.
+/// The maximum packet size we allow is 1024 and so we can safely assume that the originating IPv6
+/// packet being extracted will be at least as large as the minimum IPv6 packet size.
 ///
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5

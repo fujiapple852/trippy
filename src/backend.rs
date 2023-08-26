@@ -55,8 +55,8 @@ impl Trace {
     ///
     /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
     ///
-    /// Note that if the target host does not respond to probes then the the highest `ttl` observed will be one greater
-    /// than the `ttl` of the last host which did respond.
+    /// Note that if the target host does not respond to probes then the the highest `ttl` observed
+    /// will be one greater than the `ttl` of the last host which did respond.
     pub fn is_target(&self, hop: &Hop) -> bool {
         self.highest_ttl == hop.ttl
     }
@@ -265,8 +265,8 @@ impl Default for Hop {
 
 /// Run the tracing backend.
 ///
-/// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI will delay the
-/// next round of the started.
+/// Note that this implementation blocks the tracer on the `RwLock` and so any delays in the the TUI
+/// will delay the next round of the started.
 #[instrument(skip_all)]
 pub fn run_backend(
     tracer_config: &TracerConfig,

@@ -2,7 +2,8 @@ use crate::tracing::error::TraceResult;
 use crate::tracing::net::platform::for_address;
 use std::net::IpAddr;
 
-/// The byte order to encode the `total_length`, `flags` and `fragment_offset` fields of the IPv4 header.
+/// The byte order to encode the `total_length`, `flags` and `fragment_offset` fields of the IPv4
+/// header.
 ///
 /// To quote directly from the `mtr` source code (from `check_length_order` in `probe_unix.c`):
 ///
@@ -21,16 +22,18 @@ pub enum PlatformIpv4FieldByteOrder {
 }
 
 impl PlatformIpv4FieldByteOrder {
-    /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and `fragment_offset`.
+    /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
+    /// `fragment_offset`.
     ///
-    /// This is achieved by creating a raw socket and attempting to send an `IPv4` packet to localhost with the
-    /// `total_length` set in either host byte order or network byte order. The OS will return an `InvalidInput` error
-    /// if the buffer provided is smaller than the `total_length` indicated, which will be the case when the byte order
-    /// is set incorrectly.
+    /// This is achieved by creating a raw socket and attempting to send an `IPv4` packet to
+    /// localhost with the `total_length` set in either host byte order or network byte order.
+    /// The OS will return an `InvalidInput` error if the buffer provided is smaller than the
+    /// `total_length` indicated, which will be the case when the byte order is set incorrectly.
     ///
-    /// This is a little confusing as `Ipv4Packet::set_total_length` method will _always_ convert from host byte order
-    /// to network byte order (which will be a no-op on big-endian system) and so to test the host byte order case
-    /// we must try both the normal and the swapped byte order.
+    /// This is a little confusing as `Ipv4Packet::set_total_length` method will _always_ convert
+    /// from host byte order to network byte order (which will be a no-op on big-endian system)
+    /// and so to test the host byte order case we must try both the normal and the swapped byte
+    /// order.
     ///
     /// For example, for a packet of length 4660 bytes (dec):
     ///

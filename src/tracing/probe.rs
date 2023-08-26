@@ -103,8 +103,8 @@ pub enum ProbeStatus {
     NotSent,
     /// The probe has been sent and we are awaiting the response.
     Awaited,
-    /// The probe has been sent and a response (`EchoReply`, `DestinationUnreachable` or `TimeExceeded`) has
-    /// been received.
+    /// The probe has been sent and a response (`EchoReply`, `DestinationUnreachable` or
+    /// `TimeExceeded`) has been received.
     Complete,
 }
 

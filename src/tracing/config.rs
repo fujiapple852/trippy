@@ -52,15 +52,16 @@ impl Display for TracerProtocol {
 pub enum MultipathStrategy {
     /// The src or dest port is used to store the sequence number.
     ///
-    /// This does _not_ allow fixing both the src and dest port and so `PortDirection::Both` and `SequenceField::Port`
-    /// are mutually exclusive.
+    /// This does _not_ allow fixing both the src and dest port and so `PortDirection::Both` and
+    /// `SequenceField::Port` are mutually exclusive.
     Classic,
     /// The UDP `checksum` field is used to store the sequence number.
     ///
     /// a.k.a [`paris`](https://github.com/libparistraceroute/libparistraceroute/wiki/Checksum) traceroute approach.
     ///
-    /// This requires that the UDP payload contains a well chosen value to ensure the UDP checksum remains valid for
-    /// the packet and therefore this cannot be used along with a custom payload pattern.
+    /// This requires that the UDP payload contains a well chosen value to ensure the UDP checksum
+    /// remains valid for the packet and therefore this cannot be used along with a custom
+    /// payload pattern.
     Paris,
     /// The IP `identifier` field is used to store the sequence number.
     ///
@@ -68,13 +69,15 @@ pub enum MultipathStrategy {
     ///
     /// The allow either the src or dest or both ports to be fixed.
     ///
-    /// If either of the src or dest port may vary (i.e. `PortDirection::FixedSrc` or `PortDirection::FixedDest`) then
-    /// the port number is set to be the `initial_sequence` plus the round number to ensure that there is a fixed
-    /// `flowid` (protocol, src ip/port, dest ip/port) for all packets in a given tracing round.  Each round may
+    /// If either of the src or dest port may vary (i.e. `PortDirection::FixedSrc` or
+    /// `PortDirection::FixedDest`) then the port number is set to be the `initial_sequence`
+    /// plus the round number to ensure that there is a fixed `flowid` (protocol, src ip/port,
+    /// dest ip/port) for all packets in a given tracing round.  Each round may
     /// therefore discover different paths.
     ///
-    /// If both src and dest ports are fixed (i.e. `PortDirection::FixedBoth`) then every packet in every round will
-    /// share the same `flowid` and thus only a single path will be discovered.
+    /// If both src and dest ports are fixed (i.e. `PortDirection::FixedBoth`) then every packet in
+    /// every round will share the same `flowid` and thus only a single path will be
+    /// discovered.
     Dublin,
 }
 
@@ -103,9 +106,9 @@ pub enum PortDirection {
     FixedDest(Port),
     /// Trace from a fixed source port to a fixed destination port (i.e. 5000 -> 80).
     ///
-    /// When both ports are fixed another element of the IP header is required to vary per probe such that probes can
-    /// be identified.  Typically this is only used for UDP, whereby the checksum is manipulated by adjusting the
-    /// payload and therefore used as the identifier.
+    /// When both ports are fixed another element of the IP header is required to vary per probe
+    /// such that probes can be identified.  Typically this is only used for UDP, whereby the
+    /// checksum is manipulated by adjusting the payload and therefore used as the identifier.
     ///
     /// Note that this case is not currently implemented.
     FixedBoth(Port, Port),

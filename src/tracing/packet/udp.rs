@@ -9,8 +9,8 @@ const CHECKSUM_OFFSET: usize = 6;
 
 /// Represents an UDP Packet.
 ///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-/// data in host byte order, converting as necessary for the given architecture.
+/// The internal representation is held in network byte order (big-endian) and all accessor methods
+/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct UdpPacket<'a> {
     buf: Buffer<'a>,
 }

@@ -15,8 +15,8 @@ const URGENT_POINTER_OFFSET: usize = 18;
 
 /// Represents an TCP Packet.
 ///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods take and return
-/// data in host byte order, converting as necessary for the given architecture.
+/// The internal representation is held in network byte order (big-endian) and all accessor methods
+/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct TcpPacket<'a> {
     buf: Buffer<'a>,
 }
