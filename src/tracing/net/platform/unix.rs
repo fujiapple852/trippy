@@ -14,7 +14,6 @@ use std::io;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
-use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 use tracing::instrument;
 
@@ -299,7 +298,7 @@ impl TracerSocket for Socket {
     #[instrument(skip(self))]
     fn is_readable(&self, timeout: Duration) -> IoResult<bool> {
         let mut read = FdSet::new();
-        read.insert(self.inner.as_raw_fd());
+        read.insert(&self.inner);
         let readable = nix::sys::select::select(
             None,
             Some(&mut read),
@@ -313,7 +312,7 @@ impl TracerSocket for Socket {
     #[instrument(skip(self))]
     fn is_writable(&self) -> IoResult<bool> {
         let mut write = FdSet::new();
-        write.insert(self.inner.as_raw_fd());
+        write.insert(&self.inner);
         let writable = nix::sys::select::select(
             None,
             None,
