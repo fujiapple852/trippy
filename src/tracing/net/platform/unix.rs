@@ -8,6 +8,7 @@ use nix::{
     sys::select::FdSet,
     sys::socket::{AddressFamily, SockaddrLike},
     sys::time::{TimeVal, TimeValLike},
+    Error,
 };
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::io;
@@ -305,9 +306,15 @@ impl TracerSocket for Socket {
             None,
             None,
             Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
-        )
-        .map_err(|err| IoError::Other(std::io::Error::from(err), IoOperation::Select))?;
-        Ok(readable == 1)
+        );
+        match readable {
+            Ok(readable) => Ok(readable == 1),
+            Err(err) if err == Error::EINTR => Ok(false),
+            Err(err) => Err(IoError::Other(
+                std::io::Error::from(err),
+                IoOperation::Select,
+            )),
+        }
     }
     #[instrument(skip(self))]
     fn is_writable(&self) -> IoResult<bool> {
@@ -319,9 +326,15 @@ impl TracerSocket for Socket {
             Some(&mut write),
             None,
             Some(&mut TimeVal::zero()),
-        )
-        .map_err(|err| IoError::Other(std::io::Error::from(err), IoOperation::Select))?;
-        Ok(writable == 1)
+        );
+        match writable {
+            Ok(writable) => Ok(writable == 1),
+            Err(err) if err == Error::EINTR => Ok(false),
+            Err(err) => Err(IoError::Other(
+                std::io::Error::from(err),
+                IoOperation::Select,
+            )),
+        }
     }
     #[instrument(skip(self, buf), ret)]
     fn recv_from(&mut self, buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
