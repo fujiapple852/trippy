@@ -45,7 +45,7 @@ serde_json = { version = "1.0.105", default-features = false }
 comfy-table = { version = "7.0.1", default-features = false }
 strum = { version = "0.25.0", default-features = false, features = [ "std", "derive" ] }
 etcetera = "0.8.0"
-toml = { version = "0.7.6", default-features = false, features = [ "parse" ] }
+toml = { version = "0.7.7", default-features = false, features = [ "parse" ] }
 indexmap = { version = "2.0.0", default-features = false }
 maxminddb = "0.23.0"
 tracing-subscriber = { version = "0.3.17", default-features = false, features = [ "json", "env-filter" ] }
