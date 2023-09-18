@@ -75,7 +75,7 @@ windows-sys = { version = "0.48.0", features = [
 
 [dev-dependencies]
 rand = "0.8.5"
-test-case = "3.1.0"
+test-case = "3.2.1"
 
 # cargo-generate-rpm dependencies
 [package.metadata.generate-rpm]
