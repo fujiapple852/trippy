@@ -691,8 +691,6 @@ Disable-NetFirewallRule ICMP_TRIPPY_ALLOW
 The Windows Defender firewall rule may also be configured manually,
 see [here](https://github.com/fujiapple852/trippy/issues/578#issuecomment-1565149826) for a step-by-step guide.
 
-### Does Trippy require
-
 ## Acknowledgements
 
 Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs),
