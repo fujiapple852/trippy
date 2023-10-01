@@ -373,14 +373,12 @@ fn extract_time_exceeded(
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
         }
         TracerProtocol::Udp => {
-            let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
             let (src_port, dest_port, checksum, identifier) = extract_udp_packet(packet.payload())?;
             ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier, src_port, dest_port, checksum,
             ))
         }
         TracerProtocol::Tcp => {
-            let packet = TimeExceededPacket::new_view(packet.packet()).req()?;
             let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
             ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
