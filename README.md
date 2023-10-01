@@ -7,7 +7,7 @@
 Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking
 issues.
 
-<img src="assets/0.8.0/trippy.gif" alt="trippy"/>
+[//]: # (<img src="assets/0.8.0/trippy.gif" alt="trippy"/>)
 
 ## Navigation
 
@@ -23,6 +23,7 @@ issues.
     * [Theme Reference](#theme-reference)
     * [Key Bindings Reference](#key-bindings-reference)
     * [Configuration Reference](#configuration-reference)
+    * [Frequently Asked Questions](#frequently-asked-questions)
     * [Acknowledgements](#acknowledgements)
     * [License](#license)
 
@@ -650,6 +651,47 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the Windows data directory (Windows only): `%APPDATA%`
 
 An annotated [template configuration file](trippy-config-sample.toml) is available.
+
+## Frequently Asked Questions
+
+### What does Trippy show "Awaiting data..."?
+
+> **:exclamation:**
+> If you are using Windows you
+_must_ [configure](#how-do-i-allow-incoming-icmp-traffic-in-the-windows-defender-firewall)
+> the Windows Defender firewall to allow incoming ICMP traffic
+
+When Trippy shows “Awaiting data...” it means that it has received zero responses for the probes sent in a trace. This
+indicates that either probes are not being sent or, more typically, responses are not being received.
+
+Check that local and network firewalls allows ICMP traffic and that the system `traceroute` (or `tracert.exe` on
+Windows) work as expected. Note that on Windows, even if `tracert.exe` works as expected, you
+_must_ [configure](#how-do-i-allow-incoming-icmp-traffic-in-the-windows-defender-firewall) the Windows Defender
+firewall to allow incoming ICMP traffic.
+
+For deeper diagnostics you can run tools such as https://www.wireshark.org to https://www.tcpdump.org to verify that
+icmp requests and responses are being send and received.
+
+<a name="windows-defender"></a>
+### How do I allow incoming ICMP traffic in the Windows Defender firewall?
+
+The Windows Defender firewall rule can be created using PowerShell:
+
+```shell
+New-NetFirewallRule -DisplayName "ICMP Trippy Allow" -Name ICMP_TRIPPY_ALLOW -Protocol ICMPv4 -Action Allow
+```
+
+The rule can be enabled and disabled as follows:
+
+```shell
+Enable-NetFirewallRule ICMP_TRIPPY_ALLOW
+Disable-NetFirewallRule ICMP_TRIPPY_ALLOW
+```
+
+The Windows Defender firewall rule may also be configured manually,
+see [here](https://github.com/fujiapple852/trippy/issues/578#issuecomment-1565149826) for a step-by-step guide.
+
+### Does Trippy require
 
 ## Acknowledgements
 
