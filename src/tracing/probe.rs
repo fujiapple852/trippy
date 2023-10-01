@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The state of an ICMP echo request/response
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
@@ -27,6 +27,8 @@ pub struct Probe {
     pub received: Option<SystemTime>,
     /// The type of ICMP response packet received for the probe.
     pub icmp_packet_type: Option<IcmpPacketType>,
+    /// The ICMP response extensions.
+    pub extensions: Option<Extensions>,
 }
 
 impl Probe {
@@ -53,6 +55,7 @@ impl Probe {
             host: None,
             received: None,
             icmp_packet_type: None,
+            extensions: None,
         }
     }
 
@@ -67,12 +70,12 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_status(self, status: ProbeStatus) -> Self {
+    pub fn with_status(self, status: ProbeStatus) -> Self {
         Self { status, ..self }
     }
 
     #[must_use]
-    pub const fn with_icmp_packet_type(self, icmp_packet_type: IcmpPacketType) -> Self {
+    pub fn with_icmp_packet_type(self, icmp_packet_type: IcmpPacketType) -> Self {
         Self {
             icmp_packet_type: Some(icmp_packet_type),
             ..self
@@ -80,7 +83,7 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_host(self, host: IpAddr) -> Self {
+    pub fn with_host(self, host: IpAddr) -> Self {
         Self {
             host: Some(host),
             ..self
@@ -88,11 +91,16 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_received(self, received: SystemTime) -> Self {
+    pub fn with_received(self, received: SystemTime) -> Self {
         Self {
             received: Some(received),
             ..self
         }
+    }
+
+    #[must_use]
+    pub fn with_extensions(self, extensions: Option<Extensions>) -> Self {
+        Self { extensions, ..self }
     }
 }
 
@@ -128,17 +136,46 @@ pub enum IcmpPacketType {
 }
 
 /// The response to a probe.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum ProbeResponse {
-    TimeExceeded(ProbeResponseData),
-    DestinationUnreachable(ProbeResponseData),
+    TimeExceeded(ProbeResponseData, Option<Extensions>),
+    DestinationUnreachable(ProbeResponseData, Option<Extensions>),
     EchoReply(ProbeResponseData),
     TcpReply(ProbeResponseData),
     TcpRefused(ProbeResponseData),
 }
 
+/// The ICMP extensions for a probe response.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Extensions {
+    pub extensions: Vec<Extension>,
+}
+
+/// A probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum Extension {
+    #[default]
+    Unknown,
+    Mpls(MplsLabelStack),
+}
+
+/// The members of a MPLS probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MplsLabelStack {
+    pub members: Vec<MplsLabelStackMember>,
+}
+
+/// A member of a MPLS probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MplsLabelStackMember {
+    pub label: u32,
+    pub exp: u8,
+    pub bos: u8,
+    pub ttl: u8,
+}
+
 /// The data in the probe response.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseData {
     /// Timestamp of the probe response.
     pub recv: SystemTime,
@@ -158,14 +195,14 @@ impl ProbeResponseData {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum ProbeResponseSeq {
     Icmp(ProbeResponseSeqIcmp),
     Udp(ProbeResponseSeqUdp),
     Tcp(ProbeResponseSeqTcp),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqIcmp {
     pub identifier: u16,
     pub sequence: u16,
@@ -180,7 +217,7 @@ impl ProbeResponseSeqIcmp {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqUdp {
     pub identifier: u16,
     pub src_port: u16,
@@ -199,7 +236,7 @@ impl ProbeResponseSeqUdp {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqTcp {
     pub src_port: u16,
     pub dest_port: u16,

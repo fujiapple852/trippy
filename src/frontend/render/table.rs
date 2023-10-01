@@ -12,6 +12,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
+use trippy::tracing::Extension;
 
 /// Render the table of data about the hops.
 ///
@@ -232,12 +233,33 @@ fn format_address(
     let addr_fmt = match config.address_mode {
         AddressMode::IP => addr.to_string(),
         AddressMode::Host => {
-            if config.lookup_as_info {
+            let hostname = if config.lookup_as_info {
                 let entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
                 format_dns_entry(entry, true, config.as_mode)
             } else {
                 let entry = dns.lazy_reverse_lookup(*addr);
                 format_dns_entry(entry, false, config.as_mode)
+            };
+
+            // TODO just a hack for now...
+            if let Some(extensions) = hop.extensions() {
+                let mpls = extensions
+                    .extensions
+                    .iter()
+                    .map(|ext| match ext {
+                        Extension::Unknown => todo!(),
+                        Extension::Mpls(mpls) => mpls
+                            .members
+                            .iter()
+                            .map(|member| {
+                                format!("[MPLS label: {}, ttl: {}]", member.label, member.ttl)
+                            })
+                            .join("\n"),
+                    })
+                    .join("\n");
+                format!("{hostname} {mpls}")
+            } else {
+                hostname
             }
         }
         AddressMode::Both => {

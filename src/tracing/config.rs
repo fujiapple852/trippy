@@ -176,6 +176,7 @@ pub struct TracerChannelConfig {
     pub payload_pattern: PayloadPattern,
     pub multipath_strategy: MultipathStrategy,
     pub tos: TypeOfService,
+    pub icmp_extensions: bool,
     pub read_timeout: Duration,
     pub tcp_connect_timeout: Duration,
 }
@@ -193,6 +194,7 @@ impl TracerChannelConfig {
         payload_pattern: u8,
         multipath_strategy: MultipathStrategy,
         tos: u8,
+        icmp_extensions: bool,
         read_timeout: Duration,
         tcp_connect_timeout: Duration,
     ) -> Self {
@@ -206,6 +208,7 @@ impl TracerChannelConfig {
             payload_pattern: PayloadPattern(payload_pattern),
             multipath_strategy,
             tos: TypeOfService(tos),
+            icmp_extensions,
             read_timeout,
             tcp_connect_timeout,
         }

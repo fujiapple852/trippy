@@ -110,6 +110,10 @@ pub struct Args {
     #[arg(short = 'Q', long)]
     pub tos: Option<u8>,
 
+    /// Parse ICMP extensions
+    #[arg(short = 'e', long)]
+    pub icmp_extensions: bool,
+
     /// The socket read timeout [default: 10ms]
     #[arg(long)]
     pub read_timeout: Option<String>,

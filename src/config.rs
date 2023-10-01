@@ -194,6 +194,7 @@ pub struct TrippyConfig {
     pub max_inflight: u8,
     pub initial_sequence: u16,
     pub tos: u8,
+    pub icmp_extensions: bool,
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
@@ -363,6 +364,13 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_strategy.tos,
             constants::DEFAULT_STRATEGY_TOS,
         );
+
+        let icmp_extensions = cfg_layer_bool_flag(
+            args.icmp_extensions,
+            cfg_file_strategy.icmp_extensions,
+            false,
+        );
+
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
@@ -535,6 +543,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             packet_size,
             payload_pattern,
             tos,
+            icmp_extensions,
             source_addr,
             interface,
             port_direction,

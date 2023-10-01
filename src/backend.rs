@@ -7,8 +7,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::instrument;
 use trippy::tracing::{
-    Probe, ProbeStatus, SocketImpl, Tracer, TracerChannel, TracerChannelConfig, TracerConfig,
-    TracerRound,
+    Extensions, Probe, ProbeStatus, SocketImpl, Tracer, TracerChannel, TracerChannelConfig,
+    TracerConfig, TracerRound,
 };
 
 /// The state of all hops in a trace.
@@ -115,6 +115,8 @@ impl Trace {
                 }
                 let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
                 *hop.addrs.entry(host).or_default() += 1;
+                // TODO should we combine extensions across rounds?
+                hop.extensions = probe.extensions.clone();
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;
@@ -165,6 +167,7 @@ pub struct Hop {
     mean: f64,
     m2: f64,
     samples: Vec<Duration>,
+    extensions: Option<Extensions>,
 }
 
 impl Hop {
@@ -185,6 +188,10 @@ impl Hop {
     /// The number of unique address observed for this time-to-live.
     pub fn addr_count(&self) -> usize {
         self.addrs.len()
+    }
+
+    pub fn extensions(&self) -> Option<&Extensions> {
+        self.extensions.as_ref()
     }
 
     /// The total number of probes sent.
@@ -260,6 +267,7 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+            extensions: None,
         }
     }
 }

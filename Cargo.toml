@@ -74,6 +74,7 @@ windows-sys = { version = "0.48.0", features = [
 ] }
 
 [dev-dependencies]
+hex-literal = "0.4.1"
 rand = "0.8.5"
 test-case = "3.2.1"
 

@@ -158,6 +158,18 @@ payload-pattern = 0
 # This is also known as DSCP+ECN.
 tos = 0
 
+# Whether to parse ICMP extensions.
+#
+# If enabled, all extensions attached to incoming ICMP TimeExceeded and DestinationUnavailable messages will be parsed
+# and proved as part of the trace response data.
+#
+# The following ICMP Extension Object Classes are supported:
+#   1 - MPLS Label Stack Class (RFC4950)
+#
+# Extension objects with an unknown class will be parsed to capture generic information including the class, subtype,
+# length and payload bytes.
+icmp_extensions = false
+
 # The socket read timeout [default: 10ms]
 read-timeout = "10ms"
 

@@ -238,6 +238,7 @@ fn make_channel_config(
         args.payload_pattern,
         args.multipath_strategy,
         args.tos,
+        args.icmp_extensions,
         args.read_timeout,
         args.min_round_duration,
     )

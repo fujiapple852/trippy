@@ -19,7 +19,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{PrivilegeMode, Probe, TracerProtocol};
+use crate::tracing::{Extensions, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -151,7 +151,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
 
 #[instrument(skip(probe))]
 pub fn dispatch_tcp_probe<S: Socket>(
-    probe: Probe,
+    probe: &Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
 ) -> TraceResult<S> {
@@ -168,6 +168,7 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: TracerProtocol,
+    icmp_extensions: bool,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
@@ -177,7 +178,12 @@ pub fn recv_icmp_probe<S: Socket>(
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
             };
-            Ok(extract_probe_resp(protocol, &icmp_v6, *src_addr)?)
+            Ok(extract_probe_resp(
+                protocol,
+                icmp_extensions,
+                &icmp_v6,
+                *src_addr,
+            )?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -214,11 +220,10 @@ pub fn recv_tcp_socket<S: Socket>(
                 }
                 if platform::is_host_unreachable_error(code) {
                     let error_addr = tcp_socket.icmp_error_info()?;
-                    return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                        SystemTime::now(),
-                        error_addr,
-                        resp_seq,
-                    ))));
+                    return Ok(Some(ProbeResponse::TimeExceeded(
+                        ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        None,
+                    )));
                 }
             }
         }
@@ -283,6 +288,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    icmp_extensions: bool,
     icmp_v6: &IcmpPacket<'_>,
     src: Ipv6Addr,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -292,15 +298,28 @@ fn extract_probe_resp(
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
             let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
-                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq))
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq), extension)
             })
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
             let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
-                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, ip, resp_seq))
+                ProbeResponse::DestinationUnreachable(
+                    ProbeResponseData::new(recv, ip, resp_seq),
+                    extension,
+                )
             })
         }
         IcmpType::EchoReply => match protocol {

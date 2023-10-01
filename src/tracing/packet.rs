@@ -9,6 +9,9 @@ pub mod icmpv4;
 /// `ICMPv6` packets.
 pub mod icmpv6;
 
+/// ICMP extensions
+pub mod icmp_extension;
+
 /// `IPv4` packets.
 pub mod ipv4;
 
@@ -21,7 +24,8 @@ pub mod udp;
 /// `TCP` packets.
 pub mod tcp;
 
-fn fmt_payload(bytes: &[u8]) -> String {
+#[must_use]
+pub fn fmt_payload(bytes: &[u8]) -> String {
     use itertools::Itertools as _;
     format!("{:02x}", bytes.iter().format(" "))
 }
