@@ -262,14 +262,14 @@ fn extract_probe_resp(
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
-            let resp_seq = extract_time_exceeded(&packet, protocol)?;
+            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                 recv, ip, resp_seq,
             )))
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
-            let resp_seq = extract_dest_unreachable(&packet, protocol)?;
+            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
             Some(ProbeResponse::DestinationUnreachable(
                 ProbeResponseData::new(recv, ip, resp_seq),
             ))
@@ -290,41 +290,21 @@ fn extract_probe_resp(
     })
 }
 
-fn extract_time_exceeded(
-    packet: &TimeExceededPacket<'_>,
+fn extract_probe_resp_seq(
+    payload: &[u8],
     protocol: TracerProtocol,
 ) -> TraceResult<ProbeResponseSeq> {
     Ok(match protocol {
         TracerProtocol::Icmp => {
-            let (identifier, sequence) = extract_echo_request(packet.payload())?;
+            let (identifier, sequence) = extract_echo_request(payload)?;
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
         }
         TracerProtocol::Udp => {
-            let (src_port, dest_port) = extract_udp_packet(packet.payload())?;
+            let (src_port, dest_port) = extract_udp_packet(payload)?;
             ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(0, src_port, dest_port, 0))
         }
         TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
-        }
-    })
-}
-
-fn extract_dest_unreachable(
-    packet: &DestinationUnreachablePacket<'_>,
-    protocol: TracerProtocol,
-) -> TraceResult<ProbeResponseSeq> {
-    Ok(match protocol {
-        TracerProtocol::Icmp => {
-            let (identifier, sequence) = extract_echo_request(packet.payload())?;
-            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
-        }
-        TracerProtocol::Udp => {
-            let (src_port, dest_port) = extract_udp_packet(packet.payload())?;
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(0, src_port, dest_port, 0))
-        }
-        TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
+            let (src_port, dest_port) = extract_tcp_packet(payload)?;
             ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
     })
