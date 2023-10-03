@@ -332,14 +332,14 @@ fn extract_probe_resp(
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
-            let resp_seq = extract_time_exceeded(&packet, protocol)?;
+            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
             Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
                 recv, src, resp_seq,
             )))
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
-            let resp_seq = extract_dest_unreachable(&packet, protocol)?;
+            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
             Some(ProbeResponse::DestinationUnreachable(
                 ProbeResponseData::new(recv, src, resp_seq),
             ))
@@ -361,50 +361,25 @@ fn extract_probe_resp(
 }
 
 #[instrument]
-fn extract_time_exceeded(
-    packet: &TimeExceededPacket<'_>,
+fn extract_probe_resp_seq(
+    payload: &[u8],
     protocol: TracerProtocol,
 ) -> TraceResult<ProbeResponseSeq> {
     Ok(match protocol {
         TracerProtocol::Icmp => {
-            let echo_request = extract_echo_request(packet.payload())?;
+            let echo_request = extract_echo_request(payload)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
         }
         TracerProtocol::Udp => {
-            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(packet.payload())?;
+            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(payload)?;
             ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier, src_port, dest_port, checksum,
             ))
         }
         TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
-        }
-    })
-}
-
-#[instrument]
-fn extract_dest_unreachable(
-    packet: &DestinationUnreachablePacket<'_>,
-    protocol: TracerProtocol,
-) -> TraceResult<ProbeResponseSeq> {
-    Ok(match protocol {
-        TracerProtocol::Icmp => {
-            let echo_request = extract_echo_request(packet.payload())?;
-            let identifier = echo_request.get_identifier();
-            let sequence = echo_request.get_sequence();
-            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
-        }
-        TracerProtocol::Udp => {
-            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(packet.payload())?;
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
-                identifier, src_port, dest_port, checksum,
-            ))
-        }
-        TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(packet.payload())?;
+            let (src_port, dest_port) = extract_tcp_packet(payload)?;
             ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
     })
