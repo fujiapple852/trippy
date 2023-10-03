@@ -183,10 +183,6 @@ impl<'a> Ipv4Packet<'a> {
 
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size() + ipv4_options_length(self);
-        debug_assert!(
-            (vals.len() <= ipv4_payload_length(self)),
-            "vals.len() <= len"
-        );
         self.buf.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
     }
 
@@ -197,24 +193,13 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        let start = Self::minimum_packet_size() + ipv4_options_length(self);
-        let end = std::cmp::min(
-            Self::minimum_packet_size() + ipv4_options_length(self) + ipv4_payload_length(self),
-            self.buf.as_slice().len(),
-        );
-        if self.buf.as_slice().len() <= start {
-            return &[];
-        }
-        &self.buf.as_slice()[start..end]
+        let start = Ipv4Packet::minimum_packet_size() + ipv4_options_length(self);
+        &self.buf.as_slice()[start..]
     }
 }
 
 fn ipv4_options_length(ipv4: &Ipv4Packet<'_>) -> usize {
     (ipv4.get_header_length() as usize * 4).saturating_sub(Ipv4Packet::minimum_packet_size())
-}
-
-fn ipv4_payload_length(ipv4: &Ipv4Packet<'_>) -> usize {
-    (ipv4.get_total_length() as usize).saturating_sub(ipv4.get_header_length() as usize * 4)
 }
 
 impl Debug for Ipv4Packet<'_> {
