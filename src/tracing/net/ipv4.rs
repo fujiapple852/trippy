@@ -190,8 +190,8 @@ pub fn recv_icmp_probe(
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
-        Ok(_bytes_read) => {
-            let ipv4 = Ipv4Packet::new_view(&buf).req()?;
+        Ok(bytes_read) => {
+            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read]).req()?;
             Ok(extract_probe_resp(protocol, &ipv4)?)
         }
         Err(err) => match err.kind() {

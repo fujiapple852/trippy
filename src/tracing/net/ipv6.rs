@@ -142,8 +142,8 @@ pub fn recv_icmp_probe(
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
-        Ok((_bytes_read, addr)) => {
-            let icmp_v6 = IcmpPacket::new_view(&buf).req()?;
+        Ok((bytes_read, addr)) => {
+            let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read]).req()?;
             let src_addr = match addr.as_ref().req()? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
