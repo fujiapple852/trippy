@@ -11,6 +11,7 @@ use strum::{AsRefStr, EnumString, EnumVariantNames};
 #[derive(Debug, Clone, Copy)]
 pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
+    pub toggle_help_alt: TuiKeyBinding,
     pub toggle_settings: TuiKeyBinding,
     pub previous_hop: TuiKeyBinding,
     pub next_hop: TuiKeyBinding,
@@ -45,6 +46,7 @@ impl TuiBindings {
     pub fn find_duplicates(&self) -> Vec<String> {
         let (_, duplicates) = [
             (self.toggle_help, TuiCommandItem::ToggleHelp),
+            (self.toggle_help_alt, TuiCommandItem::ToggleHelpAlt),
             (self.toggle_settings, TuiCommandItem::ToggleSettings),
             (self.previous_hop, TuiCommandItem::PreviousHop),
             (self.next_hop, TuiCommandItem::NextHop),
@@ -104,6 +106,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&TuiCommandItem::ToggleHelp)
                 .or(cfg.toggle_help.as_ref())
                 .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
+            toggle_help_alt: *cmd_items
+                .get(&TuiCommandItem::ToggleHelpAlt)
+                .or(cfg.toggle_help_alt.as_ref())
+                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('?'))),
             toggle_settings: *cmd_items
                 .get(&TuiCommandItem::ToggleSettings)
                 .or(cfg.toggle_settings.as_ref())
@@ -435,6 +441,8 @@ impl Display for TuiKeyBinding {
 pub enum TuiCommandItem {
     /// Toggle the help dialog.
     ToggleHelp,
+    /// Alternative command to toggle the help dialog.
+    ToggleHelpAlt,
     /// Toggle the settings dialog.
     ToggleSettings,
     /// Move down to the next hop.

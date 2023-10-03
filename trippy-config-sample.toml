@@ -285,6 +285,7 @@ map-info-panel-text-color = "gray"
 # See https://github.com/fujiapple852/trippy#key-bindings-reference for details.
 [bindings]
 toggle-help = "h"
+toggle-help-alt = "?"
 toggle-settings = "s"
 next-hop = "down"
 previous-hop = "up"

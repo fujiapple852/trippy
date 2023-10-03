@@ -259,6 +259,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let binds = &app.tui_config.bindings;
     vec![
         SettingsItem::new("toggle-help", format!("{}", binds.toggle_help)),
+        SettingsItem::new("toggle-help-alt", format!("{}", binds.toggle_help_alt)),
         SettingsItem::new("toggle-settings", format!("{}", binds.toggle_settings)),
         SettingsItem::new("next-hop", format!("{}", binds.next_hop)),
         SettingsItem::new("previous-hop", format!("{}", binds.previous_hop)),
@@ -399,7 +400,7 @@ pub const SETTINGS_TABS: [(&str, usize); 6] = [
     ("Trace", 14),
     ("Dns", 3),
     ("GeoIp", 1),
-    ("Bindings", 25),
+    ("Bindings", 26),
     ("Theme", 27),
 ];
 

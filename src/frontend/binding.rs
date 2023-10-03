@@ -7,6 +7,7 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug, Clone, Copy)]
 pub struct Bindings {
     pub toggle_help: KeyBinding,
+    pub toggle_help_alt: KeyBinding,
     pub toggle_settings: KeyBinding,
     pub previous_hop: KeyBinding,
     pub next_hop: KeyBinding,
@@ -38,6 +39,7 @@ impl From<TuiBindings> for Bindings {
     fn from(value: TuiBindings) -> Self {
         Self {
             toggle_help: KeyBinding::from(value.toggle_help),
+            toggle_help_alt: KeyBinding::from(value.toggle_help_alt),
             toggle_settings: KeyBinding::from(value.toggle_settings),
             previous_hop: KeyBinding::from(value.previous_hop),
             next_hop: KeyBinding::from(value.next_hop),
