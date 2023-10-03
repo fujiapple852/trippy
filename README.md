@@ -608,6 +608,7 @@ command line option.
 | Command                | Description                                     | Default  |
 |------------------------|-------------------------------------------------|----------|
 | `toggle-help`          | Toggle help                                     | `h`      |
+| `toggle-help-alt`      | Toggle help (alternative binding)               | `?`      |
 | `toggle-settings`      | Toggle settings                                 | `s`      |
 | `next-hop`             | Select next hop                                 | `down`   |
 | `previous-hop`         | Select previous hop                             | `up`     |
