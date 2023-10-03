@@ -68,6 +68,7 @@ fn run_app<B: Backend>(
                     let bindings = &app.tui_config.bindings;
                     if app.show_help {
                         if bindings.toggle_help.check(key)
+                            || bindings.toggle_help_alt.check(key)
                             || bindings.clear_selection.check(key)
                             || bindings.quit.check(key)
                         {
@@ -88,7 +89,8 @@ fn run_app<B: Backend>(
                         } else if bindings.previous_hop.check(key) {
                             app.previous_settings_item();
                         }
-                    } else if bindings.toggle_help.check(key) {
+                    } else if bindings.toggle_help.check(key) || bindings.toggle_help_alt.check(key)
+                    {
                         app.toggle_help();
                     } else if bindings.toggle_settings.check(key) {
                         app.toggle_settings();

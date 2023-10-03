@@ -44,7 +44,7 @@ const HELP_LINES: [&str; 20] = [
     "{ & }            - expand & collapse hosts to max and min",
     "+ & -            - zoom chart in and out",
     "z                - toggle AS information (if available)",
-    "h                - toggle help",
+    "h or ?           - toggle help",
     "s                - toggle settings",
     "q                - quit",
 ];
