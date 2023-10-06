@@ -350,7 +350,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             cfg_file_tui.tui_max_samples,
             constants::DEFAULT_TUI_MAX_SAMPLES,
         );
-        let tui_preserve_screen = cfg_layer(
+        let tui_preserve_screen = cfg_layer_bool_flag(
             args.tui_preserve_screen,
             cfg_file_tui.tui_preserve_screen,
             constants::DEFAULT_TUI_PRESERVE_SCREEN,
@@ -381,7 +381,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             cfg_file_dns.dns_resolve_method,
             constants::DEFAULT_DNS_RESOLVE_METHOD,
         );
-        let dns_lookup_as_info = cfg_layer(
+        let dns_lookup_as_info = cfg_layer_bool_flag(
             args.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
             constants::DEFAULT_DNS_LOOKUP_AS_INFO,
@@ -552,6 +552,14 @@ fn cfg_layer_opt<T>(fst: Option<T>, snd: Option<T>) -> Option<T> {
     match (fst, snd) {
         (Some(val), _) | (None, Some(val)) => Some(val),
         (None, None) => None,
+    }
+}
+
+fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
+    match (fst, snd) {
+        (true, _) => true,
+        (false, Some(val)) => val,
+        (false, None) => default,
     }
 }
 
