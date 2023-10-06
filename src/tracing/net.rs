@@ -20,6 +20,9 @@ pub mod channel;
 /// Determine the source address.
 pub mod source;
 
+/// The platform specific socket type.
+pub use platform::Socket;
+
 /// An abstraction over a network interface for tracing.
 pub trait Network {
     /// Send a `Probe`.

@@ -1,6 +1,5 @@
 use crate::tracing::error::{TraceResult, TracerError};
-use crate::tracing::net::platform::Socket;
-use crate::tracing::net::socket::TracerSocket as _;
+use crate::tracing::net::socket::TracerSocket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
@@ -18,7 +17,7 @@ pub const MAX_PACKET_SIZE: usize = 1024;
 const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `Probe` packets.
-pub struct TracerChannel {
+pub struct TracerChannel<S: TracerSocket> {
     protocol: TracerProtocol,
     src_addr: IpAddr,
     ipv4_length_order: platform::PlatformIpv4FieldByteOrder,
@@ -29,12 +28,12 @@ pub struct TracerChannel {
     tos: TypeOfService,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
-    send_socket: Option<Socket>,
-    recv_socket: Socket,
-    tcp_probes: ArrayVec<TcpProbe, MAX_TCP_PROBES>,
+    send_socket: Option<S>,
+    recv_socket: S,
+    tcp_probes: ArrayVec<TcpProbe<S>, MAX_TCP_PROBES>,
 }
 
-impl TracerChannel {
+impl<S: TracerSocket> TracerChannel<S> {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
@@ -73,7 +72,7 @@ impl TracerChannel {
     }
 }
 
-impl Network for TracerChannel {
+impl<S: TracerSocket> Network for TracerChannel<S> {
     #[instrument(skip(self))]
     fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match self.protocol {
@@ -98,7 +97,7 @@ impl Network for TracerChannel {
     }
 }
 
-impl TracerChannel {
+impl<S: TracerSocket> TracerChannel<S> {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all)]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
@@ -218,14 +217,14 @@ impl TracerChannel {
 }
 
 /// An entry in the TCP probes array.
-struct TcpProbe {
-    socket: Socket,
+struct TcpProbe<S: TracerSocket> {
+    socket: S,
     sequence: Sequence,
     start: SystemTime,
 }
 
-impl TcpProbe {
-    pub fn new(socket: Socket, sequence: Sequence, start: SystemTime) -> Self {
+impl<S: TracerSocket> TcpProbe<S> {
+    pub fn new(socket: S, sequence: Sequence, start: SystemTime) -> Self {
         Self {
             socket,
             sequence,
@@ -236,27 +235,27 @@ impl TcpProbe {
 
 /// Make a socket for sending raw `ICMP` packets.
 #[instrument]
-fn make_icmp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
+fn make_icmp_send_socket<S: TracerSocket>(addr: IpAddr) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(_) => Socket::new_icmp_send_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_icmp_send_socket_ipv6(),
+        IpAddr::V4(_) => S::new_icmp_send_socket_ipv4(),
+        IpAddr::V6(_) => S::new_icmp_send_socket_ipv6(),
     }?)
 }
 
 /// Make a socket for sending `UDP` packets.
 #[instrument]
-fn make_udp_send_socket(addr: IpAddr) -> TraceResult<Socket> {
+fn make_udp_send_socket<S: TracerSocket>(addr: IpAddr) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(_) => Socket::new_udp_send_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_udp_send_socket_ipv6(),
+        IpAddr::V4(_) => S::new_udp_send_socket_ipv4(),
+        IpAddr::V6(_) => S::new_udp_send_socket_ipv6(),
     }?)
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
 #[instrument]
-fn make_recv_socket(addr: IpAddr) -> TraceResult<Socket> {
+fn make_recv_socket<S: TracerSocket>(addr: IpAddr) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(ipv4addr) => Socket::new_recv_socket_ipv4(ipv4addr),
-        IpAddr::V6(ipv6addr) => Socket::new_recv_socket_ipv6(ipv6addr),
+        IpAddr::V4(ipv4addr) => S::new_recv_socket_ipv4(ipv4addr),
+        IpAddr::V6(ipv6addr) => S::new_recv_socket_ipv6(ipv6addr),
     }?)
 }
