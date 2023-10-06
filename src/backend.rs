@@ -7,7 +7,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::instrument;
 use trippy::tracing::{
-    Probe, ProbeStatus, Tracer, TracerChannel, TracerChannelConfig, TracerConfig, TracerRound,
+    Probe, ProbeStatus, Socket, Tracer, TracerChannel, TracerChannelConfig, TracerConfig,
+    TracerRound,
 };
 
 /// The state of all hops in a trace.
@@ -274,7 +275,7 @@ pub fn run_backend(
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
     let td = trace_data.clone();
-    let channel = TracerChannel::connect(channel_config)?;
+    let channel = TracerChannel::<Socket>::connect(channel_config)?;
     drop_caps()?;
     let tracer = Tracer::new(tracer_config, move |round| {
         trace_data.write().update_from_round(round);

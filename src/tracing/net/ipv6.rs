@@ -2,8 +2,7 @@ use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform;
-use crate::tracing::net::platform::Socket;
-use crate::tracing::net::socket::TracerSocket as _;
+use crate::tracing::net::socket::TracerSocket;
 use crate::tracing::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
 use crate::tracing::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv6::echo_reply::EchoReplyPacket;
@@ -38,8 +37,8 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
 #[instrument(skip(icmp_send_socket, probe))]
-pub fn dispatch_icmp_probe(
-    icmp_send_socket: &mut Socket,
+pub fn dispatch_icmp_probe<S: TracerSocket>(
+    icmp_send_socket: &mut S,
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
@@ -68,8 +67,8 @@ pub fn dispatch_icmp_probe(
 
 #[allow(clippy::too_many_arguments)]
 #[instrument(skip(udp_send_socket, probe))]
-pub fn dispatch_udp_probe(
-    udp_send_socket: &mut Socket,
+pub fn dispatch_udp_probe<S: TracerSocket>(
+    udp_send_socket: &mut S,
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
@@ -100,11 +99,11 @@ pub fn dispatch_udp_probe(
 }
 
 #[instrument(skip(probe))]
-pub fn dispatch_tcp_probe(
+pub fn dispatch_tcp_probe<S: TracerSocket>(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-) -> TraceResult<Socket> {
+) -> TraceResult<S> {
     fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
         match res {
             Ok(()) => Ok(()),
@@ -126,7 +125,7 @@ pub fn dispatch_tcp_probe(
             }
         }
     }
-    let mut socket = Socket::new_stream_socket_ipv6()?;
+    let mut socket = S::new_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
     process_result(local_addr, socket.bind(local_addr))?;
     socket.set_unicast_hops_v6(probe.ttl.0)?;
@@ -136,8 +135,8 @@ pub fn dispatch_tcp_probe(
 }
 
 #[instrument(skip(recv_socket))]
-pub fn recv_icmp_probe(
-    recv_socket: &mut Socket,
+pub fn recv_icmp_probe<S: TracerSocket>(
+    recv_socket: &mut S,
     protocol: TracerProtocol,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
@@ -158,8 +157,8 @@ pub fn recv_icmp_probe(
 }
 
 #[instrument(skip(tcp_socket))]
-pub fn recv_tcp_socket(
-    tcp_socket: &Socket,
+pub fn recv_tcp_socket<S: TracerSocket>(
+    tcp_socket: &S,
     sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
