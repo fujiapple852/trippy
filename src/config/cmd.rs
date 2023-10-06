@@ -10,7 +10,7 @@ use clap_complete::Shell;
 
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
-#[command(name = "trip", author, version, about, long_about = None)]
+#[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true))]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
     #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "generate"]))]
