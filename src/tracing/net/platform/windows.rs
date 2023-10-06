@@ -2,7 +2,7 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation, IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::windows::adapter::Adapters;
-use crate::tracing::net::socket::TracerSocket;
+use crate::tracing::net::socket::Socket;
 use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::ffi::c_void;
@@ -83,7 +83,7 @@ pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
 
 #[instrument]
 pub fn startup() -> TraceResult<()> {
-    Socket::startup().map_err(TracerError::IoError)
+    SocketImpl::startup().map_err(TracerError::IoError)
 }
 
 #[must_use]
@@ -105,7 +105,7 @@ pub fn is_host_unreachable_error(code: i32) -> bool {
 const WINSOCK_VERSION: u16 = 0x202;
 
 /// A network socket.
-pub struct Socket {
+pub struct SocketImpl {
     inner: socket2::Socket,
     ol: Box<OVERLAPPED>,
     buf: Vec<u8>,
@@ -113,7 +113,7 @@ pub struct Socket {
 }
 
 #[allow(clippy::cast_possible_wrap)]
-impl Socket {
+impl SocketImpl {
     fn startup() -> IoResult<()> {
         let mut wsa_data = Self::new_wsa_data();
         syscall!(WSAStartup(WINSOCK_VERSION, addr_of_mut!(wsa_data)), |res| {
@@ -290,7 +290,7 @@ impl Socket {
     }
 }
 
-impl Drop for Socket {
+impl Drop for SocketImpl {
     fn drop(&mut self) {
         self.close().unwrap_or_default();
         if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
@@ -300,7 +300,7 @@ impl Drop for Socket {
 }
 
 #[allow(clippy::cast_possible_wrap)]
-impl TracerSocket for Socket {
+impl Socket for SocketImpl {
     #[instrument]
     fn new_icmp_send_socket_ipv4() -> IoResult<Self> {
         let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
@@ -582,8 +582,8 @@ fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
     let socket = match target {
-        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+        IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?;
     let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
     syscall!(

@@ -1,7 +1,7 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
-use crate::tracing::net::socket::TracerSocket;
+use crate::tracing::net::socket::Socket;
 use crate::tracing::util::Required;
 use itertools::Itertools;
 use nix::{
@@ -68,7 +68,7 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
     ipv4.set_source(src_addr);
     ipv4.set_destination(Ipv4Addr::LOCALHOST);
     ipv4.set_total_length(total_length);
-    let probe_socket = Socket::new(
+    let probe_socket = SocketImpl::new(
         socket2::Domain::IPV4,
         socket2::Type::RAW,
         socket2::Protocol::from(nix::libc::IPPROTO_RAW),
@@ -134,19 +134,19 @@ pub fn is_host_unreachable_error(_code: i32) -> bool {
 #[instrument(ret)]
 pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
     let socket = match target_addr {
-        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+        IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?;
     socket.connect(SocketAddr::new(target_addr, port))?;
     Ok(socket.local_addr()?.req()?.ip())
 }
 
 /// A network socket.
-pub struct Socket {
+pub struct SocketImpl {
     inner: socket2::Socket,
 }
 
-impl Socket {
+impl SocketImpl {
     fn new(domain: Domain, ty: Type, protocol: Protocol) -> IoResult<Self> {
         Ok(Self {
             inner: socket2::Socket::new(domain, ty, Some(protocol))
@@ -183,7 +183,7 @@ impl Socket {
     }
 }
 
-impl TracerSocket for Socket {
+impl Socket for SocketImpl {
     #[instrument]
     fn new_icmp_send_socket_ipv4() -> IoResult<Self> {
         let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
@@ -395,7 +395,7 @@ impl TracerSocket for Socket {
     }
 }
 
-impl io::Read for Socket {
+impl io::Read for SocketImpl {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
     }
