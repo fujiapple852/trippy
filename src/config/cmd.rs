@@ -129,7 +129,7 @@ pub struct Args {
 
     /// Lookup autonomous system (AS) information during DNS queries [default: false]
     #[arg(long, short = 'z', display_order = 25)]
-    pub dns_lookup_as_info: Option<bool>,
+    pub dns_lookup_as_info: bool,
 
     /// How to render addresses [default: host]
     #[arg(value_enum, short = 'a', long, display_order = 26)]
@@ -153,7 +153,7 @@ pub struct Args {
 
     /// Preserve the screen on exit [default: false]
     #[arg(long, display_order = 31)]
-    pub tui_preserve_screen: Option<bool>,
+    pub tui_preserve_screen: bool,
 
     /// The Tui refresh rate [default: 100ms]
     #[arg(long, display_order = 32)]
