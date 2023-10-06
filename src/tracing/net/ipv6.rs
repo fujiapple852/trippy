@@ -107,7 +107,7 @@ pub fn dispatch_tcp_probe(
 ) -> TraceResult<Socket> {
     fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
         match res {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(err) => {
                 if let Some(code) = err.raw_os_error() {
                     if platform::is_not_in_progress_error(code) {

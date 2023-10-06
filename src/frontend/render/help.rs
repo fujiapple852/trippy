@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
 
 /// Render help dialog.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp) {
     let block = Block::default()
         .title(" Default Controls ")
         .title_alignment(Alignment::Center)

@@ -12,7 +12,7 @@ use std::time::Duration;
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title(format!(" Trippy v{} ", clap::crate_version!()))
         .title_alignment(Alignment::Center)
@@ -100,7 +100,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
 }
 
 /// Render the source address of the trace.
-fn render_source(app: &mut TuiApp) -> String {
+fn render_source(app: &TuiApp) -> String {
     let src_hostname = app
         .resolver
         .lazy_reverse_lookup(app.tracer_config().source_addr);
@@ -119,7 +119,7 @@ fn render_source(app: &mut TuiApp) -> String {
 }
 
 /// Render the destination address.
-fn render_destination(app: &mut TuiApp) -> String {
+fn render_destination(app: &TuiApp) -> String {
     let dest_hostname = &app.tracer_config().target_hostname;
     let dest_addr = app.tracer_config().target_addr;
     match app.tracer_config().port_direction {
