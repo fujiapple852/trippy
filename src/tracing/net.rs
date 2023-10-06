@@ -21,7 +21,7 @@ pub mod channel;
 pub mod source;
 
 /// The platform specific socket type.
-pub use platform::Socket;
+pub use platform::SocketImpl;
 
 /// An abstraction over a network interface for tracing.
 pub trait Network {

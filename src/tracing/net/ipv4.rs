@@ -2,7 +2,7 @@ use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform;
-use crate::tracing::net::socket::TracerSocket;
+use crate::tracing::net::socket::Socket;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -44,7 +44,7 @@ const DONT_FRAGMENT: u16 = 0x4000;
 
 #[allow(clippy::too_many_arguments)]
 #[instrument(skip(icmp_send_socket, probe))]
-pub fn dispatch_icmp_probe<S: TracerSocket>(
+pub fn dispatch_icmp_probe<S: Socket>(
     icmp_send_socket: &mut S,
     probe: Probe,
     src_addr: Ipv4Addr,
@@ -83,7 +83,7 @@ pub fn dispatch_icmp_probe<S: TracerSocket>(
 
 #[allow(clippy::too_many_arguments)]
 #[instrument(skip(raw_send_socket, probe))]
-pub fn dispatch_udp_probe<S: TracerSocket>(
+pub fn dispatch_udp_probe<S: Socket>(
     raw_send_socket: &mut S,
     probe: Probe,
     src_addr: Ipv4Addr,
@@ -145,7 +145,7 @@ fn swap_checksum_and_payload(udp: &mut UdpPacket<'_>) {
 }
 
 #[instrument(skip(probe))]
-pub fn dispatch_tcp_probe<S: TracerSocket>(
+pub fn dispatch_tcp_probe<S: Socket>(
     probe: Probe,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
@@ -183,7 +183,7 @@ pub fn dispatch_tcp_probe<S: TracerSocket>(
 }
 
 #[instrument(skip(recv_socket))]
-pub fn recv_icmp_probe<S: TracerSocket>(
+pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: TracerProtocol,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -201,7 +201,7 @@ pub fn recv_icmp_probe<S: TracerSocket>(
 }
 
 #[instrument(skip(tcp_socket))]
-pub fn recv_tcp_socket<S: TracerSocket>(
+pub fn recv_tcp_socket<S: Socket>(
     tcp_socket: &S,
     sequence: Sequence,
     dest_addr: IpAddr,

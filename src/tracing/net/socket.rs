@@ -2,7 +2,7 @@ use crate::tracing::error::IoResult as Result;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
-pub trait TracerSocket
+pub trait Socket
 where
     Self: Sized,
 {

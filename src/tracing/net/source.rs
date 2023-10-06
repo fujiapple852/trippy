@@ -1,8 +1,8 @@
 use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::net::platform;
-use crate::tracing::net::platform::Socket;
-use crate::tracing::net::socket::TracerSocket as _;
+use crate::tracing::net::platform::SocketImpl;
+use crate::tracing::net::socket::Socket as _;
 use crate::tracing::types::Port;
 use crate::tracing::PortDirection;
 use std::net::{IpAddr, SocketAddr};
@@ -42,10 +42,10 @@ impl SourceAddr {
 }
 
 /// Create a socket suitable for a given address.
-pub fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<Socket> {
+pub fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<SocketImpl> {
     Ok(match addr {
-        IpAddr::V4(_) => Socket::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => Socket::new_udp_dgram_socket_ipv6(),
+        IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?)
 }
 
