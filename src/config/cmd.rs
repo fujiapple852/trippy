@@ -5,12 +5,13 @@ use crate::config::{
     MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
+use clap::builder::Styles;
 use clap::Parser;
 use clap_complete::Shell;
 
 /// Trace a route to a host and record statistics
 #[derive(Parser, Debug)]
-#[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true))]
+#[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
     #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "generate"]))]
