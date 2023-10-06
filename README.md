@@ -344,6 +344,8 @@ trip www.example.com -m silent -v --log-format compact --log-span-events full
 ## Command Reference
 
 ```shell
+A network diagnostic tool
+
 Usage: trip [OPTIONS] [TARGETS]...
 
 Arguments:
@@ -362,7 +364,7 @@ Options:
           - stream:   Display a continuous stream of tracing data
           - pretty:   Generate an pretty text table report for N cycles
           - markdown: Generate a markdown text table report for N cycles
-          - csv:      Generate a SCV report for N cycles
+          - csv:      Generate a CSV report for N cycles
           - json:     Generate a JSON report for N cycles
           - silent:   Do not generate any tracing output for N cycles
 
@@ -458,11 +460,9 @@ Options:
       --dns-timeout <DNS_TIMEOUT>
           The maximum time to wait to perform DNS queries [default: 5s]
 
-  -z, --dns-lookup-as-info <DNS_LOOKUP_AS_INFO>
+  -z, --dns-lookup-as-info
           Lookup autonomous system (AS) information during DNS queries [default:
           false]
-
-          [possible values: true, false]
 
   -a, --tui-address-mode <TUI_ADDRESS_MODE>
           How to render addresses [default: host]
@@ -498,10 +498,8 @@ Options:
   -s, --tui-max-samples <TUI_MAX_SAMPLES>
           The maximum number of samples to record per hop [default: 256]
 
-      --tui-preserve-screen <TUI_PRESERVE_SCREEN>
+      --tui-preserve-screen
           Preserve the screen on exit [default: false]
-
-          [possible values: true, false]
 
       --tui-refresh-rate <TUI_REFRESH_RATE>
           The Tui refresh rate [default: 100ms]
