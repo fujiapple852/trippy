@@ -27,7 +27,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
 }
 
 /// Render settings tabs.
-fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
     let titles: Vec<_> = SETTINGS_TABS
         .iter()
         .map(|(title, _)| {
@@ -100,12 +100,7 @@ fn render_settings_table<B: Backend>(
 }
 
 /// Render settings info footer.
-fn render_settings_info<B: Backend>(
-    f: &mut Frame<'_, B>,
-    app: &mut TuiApp,
-    rect: Rect,
-    info: &str,
-) {
+fn render_settings_info<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect, info: &str) {
     let info = Paragraph::new(info)
         .style(Style::default())
         .block(

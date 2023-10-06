@@ -32,7 +32,7 @@ impl SourceAddr {
         let mut socket = udp_socket_for_addr_family(source_addr)?;
         let sock_addr = SocketAddr::new(source_addr, 0);
         match socket.bind(sock_addr) {
-            Ok(_) => {
+            Ok(()) => {
                 socket.close()?;
                 Ok(source_addr)
             }

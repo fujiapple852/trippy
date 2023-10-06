@@ -12,7 +12,7 @@ use ratatui::Frame;
 use std::collections::HashMap;
 
 /// Render the `GeoIp` map.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
     let entries = build_map_entries(app);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -191,7 +191,7 @@ struct MapEntry {
 /// Build a vec of `MapEntry` for all hops.
 ///
 /// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
-fn build_map_entries(app: &mut TuiApp) -> Vec<MapEntry> {
+fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
     for hop in app.tracer_data().hops() {
         for addr in hop.addrs() {

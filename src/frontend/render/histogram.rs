@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 /// Render a histogram of ping frequencies.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
     let target_hop = app.table_state.selected().map_or_else(
         || app.tracer_data().target_hop(),
         |s| &app.tracer_data().hops()[s],

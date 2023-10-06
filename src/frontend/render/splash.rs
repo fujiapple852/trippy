@@ -9,7 +9,7 @@ use ratatui::Frame;
 /// Render the splash screen.
 ///
 /// This is shown on startup whilst we await the first round of data to be available.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
     let chunks = Layout::default()
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);

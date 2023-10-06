@@ -41,10 +41,10 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
         IpAddr::V6(_) => return Ok(PlatformIpv4FieldByteOrder::Network),
     };
     match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
-        Ok(_) => Ok(PlatformIpv4FieldByteOrder::Network),
+        Ok(()) => Ok(PlatformIpv4FieldByteOrder::Network),
         Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
             match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
-                Ok(_) => Ok(PlatformIpv4FieldByteOrder::Host),
+                Ok(()) => Ok(PlatformIpv4FieldByteOrder::Host),
                 Err(err) => Err(err),
             }
         }
@@ -309,7 +309,7 @@ impl TracerSocket for Socket {
         );
         match readable {
             Ok(readable) => Ok(readable == 1),
-            Err(err) if err == Error::EINTR => Ok(false),
+            Err(Error::EINTR) => Ok(false),
             Err(err) => Err(IoError::Other(
                 std::io::Error::from(err),
                 IoOperation::Select,
@@ -329,7 +329,7 @@ impl TracerSocket for Socket {
         );
         match writable {
             Ok(writable) => Ok(writable == 1),
-            Err(err) if err == Error::EINTR => Ok(false),
+            Err(Error::EINTR) => Ok(false),
             Err(err) => Err(IoError::Other(
                 std::io::Error::from(err),
                 IoOperation::Select,

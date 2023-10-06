@@ -280,7 +280,7 @@ pub fn run_backend(
         trace_data.write().update_from_round(round);
     });
     match tracer.trace(channel) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(err) => {
             td.write().error = Some(err.to_string());
         }
