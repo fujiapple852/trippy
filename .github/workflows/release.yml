@@ -53,6 +53,12 @@ jobs:
           - build: linux-arm
             os: ubuntu-22.04
             target: aarch64-unknown-linux-musl
+          - build: linux-armv7
+            os: ubuntu-22.04
+            target: arm-unknown-linux-gnueabi
+          - build: linux-armv7
+            os: ubuntu-22.04
+            target: arm-unknown-linux-musleabi
           - build: macos
             os: macos-latest
             target: x86_64-apple-darwin
