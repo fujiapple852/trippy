@@ -653,7 +653,7 @@ An annotated [template configuration file](trippy-config-sample.toml) is availab
 
 ## Frequently Asked Questions
 
-### What does Trippy show "Awaiting data..."?
+### Why does Trippy show "Awaiting data..."?
 
 > **:exclamation:**
 > If you are using Windows you
@@ -663,12 +663,12 @@ _must_ [configure](#how-do-i-allow-incoming-icmp-traffic-in-the-windows-defender
 When Trippy shows “Awaiting data...” it means that it has received zero responses for the probes sent in a trace. This
 indicates that either probes are not being sent or, more typically, responses are not being received.
 
-Check that local and network firewalls allows ICMP traffic and that the system `traceroute` (or `tracert.exe` on
-Windows) work as expected. Note that on Windows, even if `tracert.exe` works as expected, you
+Check that local and network firewalls allow ICMP traffic and that the system `traceroute` (or `tracert.exe` on
+Windows) works as expected. Note that on Windows, even if `tracert.exe` works as expected, you
 _must_ [configure](#how-do-i-allow-incoming-icmp-traffic-in-the-windows-defender-firewall) the Windows Defender
 firewall to allow incoming ICMP traffic.
 
-For deeper diagnostics you can run tools such as https://www.wireshark.org to https://www.tcpdump.org to verify that
+For deeper diagnostics you can run tools such as https://www.wireshark.org and https://www.tcpdump.org to verify that
 icmp requests and responses are being send and received.
 
 <a name="windows-defender"></a>
