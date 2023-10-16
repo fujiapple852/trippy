@@ -168,6 +168,20 @@ impl SocketImpl {
         })
     }
 
+    fn new_dgram_ipv4(protocol: Protocol) -> IoResult<Self> {
+        Ok(Self {
+            inner: socket2::Socket::new(Domain::IPV4, Type::DGRAM, Some(protocol))
+                .map_err(|err| IoError::Other(err, IoOperation::NewSocket))?,
+        })
+    }
+
+    fn new_dgram_ipv6(protocol: Protocol) -> IoResult<Self> {
+        Ok(Self {
+            inner: socket2::Socket::new(Domain::IPV6, Type::DGRAM, Some(protocol))
+                .map_err(|err| IoError::Other(err, IoOperation::NewSocket))?,
+        })
+    }
+
     fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
         self.inner
             .set_nonblocking(nonblocking)
@@ -239,11 +253,11 @@ impl Socket for SocketImpl {
     }
     #[instrument]
     fn new_udp_dgram_socket_ipv4() -> IoResult<Self> {
-        Self::new(Domain::IPV4, Type::DGRAM, Protocol::UDP)
+        Self::new_dgram_ipv4(Protocol::UDP)
     }
     #[instrument]
     fn new_udp_dgram_socket_ipv6() -> IoResult<Self> {
-        Self::new(Domain::IPV6, Type::DGRAM, Protocol::UDP)
+        Self::new_dgram_ipv6(Protocol::UDP)
     }
     #[instrument(skip(self))]
     fn bind(&mut self, address: SocketAddr) -> IoResult<()> {
