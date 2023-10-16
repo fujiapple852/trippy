@@ -52,27 +52,36 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
     }
 }
 
-/// Open a raw socket and attempt to send an `ICMP` packet to a local address.
+/// Attempt to send an `ICMP` packet to a local address.
 ///
 /// The packet is actually of length `256` bytes but we set the `total_length` based on the input
-/// provided so as to test if the OS rejects the attempt.
+/// provided so as to test if the OS rejects the attempt during the call to `send_to`.
+///
+/// Note that this implementation will try to create an `IPPROTO_ICMP` socket and if that fails it
+/// will fallback to creating an `IPPROTO_RAW` socket.
 #[cfg(not(target_os = "linux"))]
 #[instrument(ret)]
 fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
-    let mut buf = [0_u8; TEST_PACKET_LENGTH as usize];
-    let mut ipv4 = crate::tracing::packet::ipv4::Ipv4Packet::new(&mut buf).req()?;
+    use crate::tracing::packet;
+    let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
+    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf).req()?;
+    icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
+    icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
+    icmp.set_identifier(0);
+    icmp.set_sequence(0);
+    icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
+    let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
+    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf).req()?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
-    ipv4.set_protocol(crate::tracing::packet::IpProtocol::Icmp);
+    ipv4.set_protocol(packet::IpProtocol::Icmp);
     ipv4.set_ttl(255);
     ipv4.set_source(src_addr);
     ipv4.set_destination(Ipv4Addr::LOCALHOST);
     ipv4.set_total_length(total_length);
-    let probe_socket = SocketImpl::new(
-        socket2::Domain::IPV4,
-        socket2::Type::RAW,
-        socket2::Protocol::from(nix::libc::IPPROTO_RAW),
-    )?;
+    ipv4.set_payload(icmp.packet());
+    let probe_socket = SocketImpl::new_dgram_ipv4(Protocol::ICMPV4)
+        .or_else(|_| SocketImpl::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW)))?;
     probe_socket.set_header_included(true)?;
     let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
     probe_socket.send_to(ipv4.packet(), remote_addr)?;
