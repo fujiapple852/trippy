@@ -117,6 +117,13 @@ jobs:
             echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
           fi
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: trippy-${{ matrix.target }}
+          path: trippy-*
+          if-no-files-found: error
+
       - name: Build RPM package
         shell: bash
         if: startsWith(matrix.build, 'linux-gnu')
