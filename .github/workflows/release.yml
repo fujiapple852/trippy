@@ -39,6 +39,7 @@ jobs:
       TARGET_DIR: ./target
       RUST_BACKTRACE: 1
     strategy:
+      fail-fast: false
       matrix:
         build: [linux-gnu, linux-musl, linux-arm64, linux-armv7, macos, netbsd, win-msvc]
         include:
