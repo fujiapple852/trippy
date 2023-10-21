@@ -275,7 +275,10 @@ pub fn run_backend(
     trace_data: Arc<RwLock<Trace>>,
 ) -> anyhow::Result<()> {
     let td = trace_data.clone();
-    let channel = TracerChannel::<SocketImpl>::connect(channel_config)?;
+    let channel = TracerChannel::<SocketImpl>::connect(channel_config).map_err(|err| {
+        td.write().error = Some(err.to_string());
+        err
+    })?;
     Platform::drop_privileges()?;
     let tracer = Tracer::new(tracer_config, move |round| {
         trace_data.write().update_from_round(round);
