@@ -51,6 +51,33 @@ jobs:
           target: ${{ matrix.target }}
       - run: cargo test --target ${{ matrix.target }}
 
+  build-cross:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [ netbsd ]
+        include:
+          - build: netbsd
+            os: ubuntu-22.04
+            target: x86_64-unknown-netbsd
+            rust: stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+      - name: Use Cross
+        shell: bash
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross
+      - name: Show command used for Cargo
+        run: |
+          echo "cargo command is: ${{ env.CARGO }}"
+          echo "target flag is: ${{ env.TARGET_FLAGS }}"
+      - name: cargo build
+        run: cross build --target ${{ matrix.target }} --verbose
+
   sim-test:
     runs-on: ${{ matrix.os }}
     strategy:
