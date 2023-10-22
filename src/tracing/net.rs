@@ -2,6 +2,9 @@ use crate::tracing::error::TraceResult;
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::Probe;
 
+/// Common types and helper functions.
+mod common;
+
 /// IPv4 implementation.
 mod ipv4;
 
