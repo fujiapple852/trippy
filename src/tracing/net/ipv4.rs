@@ -1,6 +1,6 @@
-use crate::tracing::error::TracerError::AddressNotAvailable;
-use crate::tracing::error::{IoResult, TraceResult, TracerError};
+use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
+use crate::tracing::net::common::process_result;
 use crate::tracing::net::platform;
 use crate::tracing::net::socket::Socket;
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
@@ -151,27 +151,6 @@ pub fn dispatch_tcp_probe<S: Socket>(
     dest_addr: Ipv4Addr,
     tos: TypeOfService,
 ) -> TraceResult<S> {
-    fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
-        match res {
-            Ok(()) => Ok(()),
-            Err(err) => {
-                if let Some(code) = err.raw_os_error() {
-                    if platform::is_not_in_progress_error(code) {
-                        match err.kind() {
-                            ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                                Err(AddressNotAvailable(addr))
-                            }
-                            _ => Err(TracerError::IoError(err)),
-                        }
-                    } else {
-                        Ok(())
-                    }
-                } else {
-                    Err(TracerError::IoError(err))
-                }
-            }
-        }
-    }
     let mut socket = S::new_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
     process_result(local_addr, socket.bind(local_addr))?;
