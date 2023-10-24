@@ -36,7 +36,7 @@ clap = { version = "4.4.0",  default-features = false, features = [ "cargo", "de
 clap_complete = "4.4.4"
 humantime = "2.1.0"
 parking_lot = "0.12.1"
-ratatui = "0.23.0"
+ratatui = "0.24.0"
 crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
 chrono = { version = "0.4.31", default-features = false, features = [ "clock" ] }
 itertools = "0.11.0"
