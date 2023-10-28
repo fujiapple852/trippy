@@ -174,6 +174,10 @@ mod inner {
     };
     use anyhow::anyhow;
     use crossbeam::channel::{bounded, Receiver, Sender};
+    use hickory_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
+    use hickory_resolver::error::ResolveErrorKind;
+    use hickory_resolver::proto::rr::RecordType;
+    use hickory_resolver::{Name, Resolver};
     use itertools::Itertools;
     use parking_lot::RwLock;
     use std::collections::HashMap;
@@ -182,10 +186,6 @@ mod inner {
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
-    use trust_dns_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
-    use trust_dns_resolver::error::ResolveErrorKind;
-    use trust_dns_resolver::proto::rr::RecordType;
-    use trust_dns_resolver::{Name, Resolver};
 
     /// The maximum number of in-flight reverse DNS resolutions that may be
     const RESOLVER_MAX_QUEUE_SIZE: usize = 100;
