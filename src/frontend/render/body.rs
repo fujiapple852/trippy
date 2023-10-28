@@ -1,6 +1,5 @@
 use crate::frontend::render::{bsod, chart, splash, table, world};
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::Rect;
 use ratatui::Frame;
 
@@ -8,7 +7,7 @@ use ratatui::Frame;
 ///
 /// This is either an BSOD if there wa san error or the table of hop data or, if there is no data,
 /// the splash screen.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, rec: Rect, app: &mut TuiApp) {
+pub fn render(f: &mut Frame<'_>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
         bsod::render(f, rec, err);
     } else if app.tracer_data().hops().is_empty() {

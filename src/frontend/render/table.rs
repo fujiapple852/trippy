@@ -6,7 +6,6 @@ use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::geoip::{GeoIpCity, GeoIpLookup};
 use itertools::Itertools;
-use ratatui::backend::Backend;
 use ratatui::layout::{Constraint, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
@@ -29,7 +28,7 @@ use std::rc::Rc;
 /// - The worst round-trip time for all probes at this hop (`Wrst`)
 /// - The standard deviation round-trip time for all probes at this hop (`StDev`)
 /// - The status of this hop (`Sts`)
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows =

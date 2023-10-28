@@ -1,4 +1,3 @@
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -6,7 +5,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 
 /// Render a blue screen of death.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, rect: Rect, error: &str) {
+pub fn render(f: &mut Frame<'_>, rect: Rect, error: &str) {
     let chunks = Layout::default()
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);

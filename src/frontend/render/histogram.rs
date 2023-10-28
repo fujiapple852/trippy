@@ -1,5 +1,4 @@
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{BarChart, Block, BorderType, Borders};
@@ -8,7 +7,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 /// Render a histogram of ping frequencies.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let target_hop = app.table_state.selected().map_or_else(
         || app.tracer_data().target_hop(),
         |s| &app.tracer_data().hops()[s],

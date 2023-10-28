@@ -1,6 +1,5 @@
 use crate::frontend::render::util;
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::Alignment;
 use ratatui::style::Style;
 use ratatui::text::Line;
@@ -8,7 +7,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
 
 /// Render help dialog.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
     let block = Block::default()
         .title(" Default Controls ")
         .title_alignment(Alignment::Center)

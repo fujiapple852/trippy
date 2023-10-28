@@ -1,18 +1,18 @@
+use std::time::Duration;
+
 use crate::config::DnsResolveMethod;
 use crate::frontend::tui_app::TuiApp;
 use chrono::SecondsFormat;
 use humantime::format_duration;
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
-use std::time::Duration;
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title(format!(" Trippy v{} ", clap::crate_version!()))
         .title_alignment(Alignment::Center)
