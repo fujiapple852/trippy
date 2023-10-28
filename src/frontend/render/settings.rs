@@ -3,7 +3,6 @@ use crate::frontend::render::util;
 use crate::frontend::theme;
 use crate::frontend::tui_app::TuiApp;
 use humantime::format_duration;
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -12,7 +11,7 @@ use ratatui::Frame;
 use trippy::tracing::PortDirection;
 
 /// Render settings dialog.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let all_settings = format_all_settings(app);
     let (name, info, items) = &all_settings[app.settings_tab_selected];
     let area = util::centered_rect(60, 60, f.size());
@@ -27,7 +26,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
 }
 
 /// Render settings tabs.
-fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+fn render_settings_tabs(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let titles: Vec<_> = SETTINGS_TABS
         .iter()
         .map(|(title, _)| {
@@ -53,8 +52,8 @@ fn render_settings_tabs<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Re
 }
 
 /// Render settings table.
-fn render_settings_table<B: Backend>(
-    f: &mut Frame<'_, B>,
+fn render_settings_table(
+    f: &mut Frame<'_>,
     app: &mut TuiApp,
     rect: Rect,
     name: &str,
@@ -100,7 +99,7 @@ fn render_settings_table<B: Backend>(
 }
 
 /// Render settings info footer.
-fn render_settings_info<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect, info: &str) {
+fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str) {
     let info = Paragraph::new(info)
         .style(Style::default())
         .block(

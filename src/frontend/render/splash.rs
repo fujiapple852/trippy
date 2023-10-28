@@ -1,5 +1,4 @@
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
@@ -9,7 +8,7 @@ use ratatui::Frame;
 /// Render the splash screen.
 ///
 /// This is shown on startup whilst we await the first round of data to be available.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let chunks = Layout::default()
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);

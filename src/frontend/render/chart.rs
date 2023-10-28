@@ -1,5 +1,4 @@
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::Style;
 use ratatui::symbols::Marker;
@@ -8,7 +7,7 @@ use ratatui::widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphTy
 use ratatui::Frame;
 
 /// Render the ping history for all hops as a chart.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let selected_hop = app.table_state.selected().map_or_else(
         || app.tracer_data().target_hop(),
         |s| &app.tracer_data().hops()[s],

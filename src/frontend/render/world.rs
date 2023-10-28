@@ -1,7 +1,6 @@
 use crate::backend::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
-use ratatui::backend::Backend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::symbols::Marker;
@@ -12,7 +11,7 @@ use ratatui::Frame;
 use std::collections::HashMap;
 
 /// Render the `GeoIp` map.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let entries = build_map_entries(app);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -27,12 +26,7 @@ pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
 }
 
 /// Render the map canvas.
-fn render_map_canvas<B: Backend>(
-    f: &mut Frame<'_, B>,
-    app: &TuiApp,
-    rect: Rect,
-    entries: &[MapEntry],
-) {
+fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[MapEntry]) {
     let theme = app.tui_config.theme;
     let map = Canvas::default()
         .background_color(app.tui_config.theme.bg_color)
@@ -131,12 +125,7 @@ fn render_map_canvas_selected(
 }
 
 /// Render the map info panel.
-fn render_map_info_panel<B: Backend>(
-    f: &mut Frame<'_, B>,
-    app: &TuiApp,
-    rect: Rect,
-    entries: &[MapEntry],
-) {
+fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[MapEntry]) {
     let theme = app.tui_config.theme;
     let selected_hop = app.selected_hop_or_target();
     let locations = entries

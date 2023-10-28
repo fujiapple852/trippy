@@ -1,12 +1,11 @@
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders, Sparkline};
 use ratatui::Frame;
 
 /// Render the ping history for the final hop which is typically the target.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let selected_hop = app.selected_hop_or_target();
     let data = selected_hop
         .samples()

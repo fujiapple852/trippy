@@ -1,6 +1,5 @@
 use crate::frontend::render::{body, footer, header, help, settings, tabs};
 use crate::frontend::tui_app::TuiApp;
-use ratatui::backend::Backend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 
@@ -33,7 +32,7 @@ use ratatui::Frame;
 ///
 /// On startup a splash screen is shown in place of the hops table, until the completion of the
 /// first round.
-pub fn render<B: Backend>(f: &mut Frame<'_, B>, app: &mut TuiApp) {
+pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let constraints = if app.trace_info.len() > 1 {
         LAYOUT_WITH_TABS.as_slice()
     } else {
