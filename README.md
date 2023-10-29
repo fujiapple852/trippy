@@ -213,6 +213,12 @@ Basic usage with default parameters:
 trip www.example.com
 ```
 
+Trace without requiring elevated privileges (supported platforms only, see [privileges](#privileges)):
+
+```shell
+trip www.example.com --unprivileged
+```
+
 Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--udp` & `--tcp`):
 
 ```shell
@@ -367,6 +373,9 @@ Options:
           - csv:      Generate a CSV report for N cycles
           - json:     Generate a JSON report for N cycles
           - silent:   Do not generate any tracing output for N cycles
+
+   -u, --unprivileged
+          Trace without requiring elevated privileges on supported platforms [default: false]
 
   -p, --protocol <PROTOCOL>
           Tracing protocol [default: icmp]
