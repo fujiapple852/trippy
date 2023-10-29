@@ -694,7 +694,7 @@ An annotated [template configuration file](trippy-config-sample.toml) is availab
 
 ### Why does Trippy show "Awaiting data..."?
 
-> **:exclamation:**
+> [!IMPORTANT]  
 > If you are using Windows you
 _must_ [configure](#how-do-i-allow-incoming-icmp-traffic-in-the-windows-defender-firewall)
 > the Windows Defender firewall to allow incoming ICMP traffic
