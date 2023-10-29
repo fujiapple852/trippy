@@ -379,6 +379,9 @@ trip www.example.com -m silent -v --log-format compact --log-span-events full
 
 ## Command Reference
 
+> [!NOTE]
+> Trippy command line arguments may be given in any order and my occur both before and after the targets.
+
 ```shell
 A network diagnostic tool
 
