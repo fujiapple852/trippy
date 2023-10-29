@@ -181,8 +181,11 @@ Trippy has been (lightly...) tested on the following platforms:
 
 ## Privileges
 
-Trippy uses a raw socket which requires elevated privileges. Enabling the required privilege can be achieved in several
-ways, including:
+Trippy normally requires elevated privileges due to the use of raw sockets. Enabling the required privileges for your
+platform can be achieved in several ways, as outlined below. Trippy can also be used without elevated privileged on
+certain platforms, with some limitations.
+
+### Unix
 
 1: Run as `root` user via `sudo`:
 
@@ -202,8 +205,35 @@ sudo chown root $(which trip) && sudo chmod +s $(which trip)
 sudo setcap CAP_NET_RAW+p $(which trip)
 ```
 
-Trippy is a capability aware application and will add `CAP_NET_RAW` to the effective set if it is present in the allowed
-set. Note that trippy will drop all capabilities after creating the raw socket.
+> [!NOTE]  
+> Trippy is a capability aware application and will add `CAP_NET_RAW` to the effective set if it is present in the
+> allowed set. Trippy will drop all capabilities after creating the raw sockets.
+
+### Windows
+
+Trippy must be run with Administrator privileges on Windows.
+
+### Unprivileged mode
+
+Trippy allows running in an unprivileged mode for all tracing modes (`ICMP`, `UDP` and `TCP`) on platforms which support
+that feature.
+
+> [!NOTE]
+> Unprivileged mode is currently only supported on macOS. Linux support is possible and may be added in the future.
+> Unprivileged mode is not supported on NetBSD, OpenBSD, FreeBSD or Windows as these platforms do not support
+> the `IPPROTO_ICMP` socket type. See [#101](https://github.com/fujiapple852/trippy/issues/101) for further information.
+
+The unprivileged mode can be enabled by adding the `--unprivileged` (`-u`) command line flag or by adding
+the `unprivileged` entry in the `trippy` section of the [configuration file](#configuration-reference):
+
+```toml
+[trippy]
+unprivileged = true
+```
+
+> [!NOTE]
+> The `paris` and `dublin` `ECMP` strategies are not supported in unprivileged mode as these require
+> manipulating the `UDP` and `IP` and headers which in turn requires the use of a raw socket.
 
 ## Usage Examples
 
@@ -681,6 +711,7 @@ For deeper diagnostics you can run tools such as https://www.wireshark.org and h
 icmp requests and responses are being send and received.
 
 <a name="windows-defender"></a>
+
 ### How do I allow incoming ICMP traffic in the Windows Defender firewall?
 
 The Windows Defender firewall rule can be created using PowerShell:
