@@ -12,11 +12,12 @@
     clippy::option_option
 )]
 #![deny(unsafe_code)]
+
 use crate::backend::Trace;
-use crate::caps::{drop_caps, ensure_caps};
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::geoip::GeoIpLookup;
+use crate::platform::Platform;
 use anyhow::{anyhow, Error};
 use clap::Parser;
 use config::Args;
@@ -37,27 +38,28 @@ use trippy::tracing::{
 };
 
 mod backend;
-mod caps;
 mod config;
 mod dns;
 mod frontend;
 mod geoip;
+mod platform;
 mod report;
 
 fn main() -> anyhow::Result<()> {
-    let pid = u16::try_from(std::process::id() % u32::from(u16::MAX))?;
-    let cfg = TrippyConfig::try_from((Args::parse(), pid))?;
+    let args = Args::parse();
+    Platform::acquire_privileges()?;
+    let platform = Platform::discover()?;
+    let cfg = TrippyConfig::try_from((args, &platform))?;
     let _guard = configure_logging(&cfg);
     let resolver = start_dns_resolver(&cfg)?;
     let geoip_lookup = create_geoip_lookup(&cfg)?;
-    ensure_caps()?;
     let traces: Vec<_> = cfg
         .targets
         .iter()
         .enumerate()
-        .map(|(i, target_host)| start_tracer(&cfg, target_host, pid + i as u16, &resolver))
+        .map(|(i, target_host)| start_tracer(&cfg, target_host, platform.pid + i as u16, &resolver))
         .collect::<anyhow::Result<Vec<_>>>()?;
-    drop_caps()?;
+    Platform::drop_privileges()?;
     run_frontend(&cfg, resolver, geoip_lookup, traces)?;
     Ok(())
 }

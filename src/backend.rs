@@ -1,5 +1,5 @@
-use crate::caps::drop_caps;
 use crate::config::MAX_HOPS;
+use crate::platform::Platform;
 use indexmap::IndexMap;
 use parking_lot::RwLock;
 use std::net::{IpAddr, Ipv4Addr};
@@ -276,7 +276,7 @@ pub fn run_backend(
 ) -> anyhow::Result<()> {
     let td = trace_data.clone();
     let channel = TracerChannel::<SocketImpl>::connect(channel_config)?;
-    drop_caps()?;
+    Platform::drop_privileges()?;
     let tracer = Tracer::new(tracer_config, move |round| {
         trace_data.write().update_from_round(round);
     });
