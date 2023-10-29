@@ -20,6 +20,7 @@ mod constants;
 mod file;
 mod theme;
 
+use crate::platform::Platform;
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
 pub use constants::MAX_HOPS;
@@ -220,12 +221,19 @@ pub struct TrippyConfig {
     pub log_span_events: LogSpanEvents,
 }
 
-impl TryFrom<(Args, u16)> for TrippyConfig {
+impl TryFrom<(Args, &Platform)> for TrippyConfig {
     type Error = anyhow::Error;
 
     #[allow(clippy::too_many_lines)]
-    fn try_from(data: (Args, u16)) -> Result<Self, Self::Error> {
-        let (args, pid) = data;
+    fn try_from(data: (Args, &Platform)) -> Result<Self, Self::Error> {
+        let (
+            args,
+            &Platform {
+                pid,
+                has_privileges: is_privileged,
+                ..
+            },
+        ) = data;
         if args.print_tui_theme_items {
             println!(
                 "TUI theme color items: {}",
@@ -471,6 +479,7 @@ impl TryFrom<(Args, u16)> for TrippyConfig {
             Some(n) if n > 0 => Some(n),
             _ => None,
         };
+        validate_privilege(is_privileged)?;
         validate_logging(mode, verbose)?;
         validate_multi(mode, protocol, &args.targets)?;
         validate_ttl(first_ttl, max_ttl)?;
@@ -560,6 +569,14 @@ fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
         (true, _) => true,
         (false, Some(val)) => val,
         (false, None) => default,
+    }
+}
+
+fn validate_privilege(is_privileged: bool) -> anyhow::Result<()> {
+    if is_privileged {
+        Ok(())
+    } else {
+        Err(anyhow!("privileges are required to use raw sockets, see https://github.com/fujiapple852/trippy#privileges"))
     }
 }
 
