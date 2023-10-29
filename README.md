@@ -359,7 +359,7 @@ List all Tui commands that can have a custom key binding:
 trip --print-tui-binding-commands
 ```
 
-Specify the location of the trippy config file:
+Specify the location of the Trippy config file:
 
 ```shell
 trip www.example.com --config-file /path/to/trippy.toml
@@ -683,7 +683,7 @@ example `ctrl+shift+b`.
 Trippy can be configured with via command line arguments or an optional configuration file. If a given configuration
 item is specified in both the configuration file and via a command line argument then the latter will take precedence.
 
-The configuration file location may be provided to trippy via the `-c` (`--config-file`) argument. If not provided,
+The configuration file location may be provided to Trippy via the `-c` (`--config-file`) argument. If not provided,
 Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration file in one of the following locations:
 
 - The current directory
