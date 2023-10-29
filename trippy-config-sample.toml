@@ -16,7 +16,7 @@
 
 
 #
-# General Trippy configuraton.
+# General Trippy configuration.
 #
 [trippy]
 
@@ -85,7 +85,7 @@ addr-family = "ipv4"
 
 # The source IP address [default: auto]
 #
-# If unspecified the source address wil be chosen automatically based on the tracing target.
+# If unspecified the source address will be chosen automatically based on the tracing target.
 #source-address = "1.2.3.4"
 
 # The network interface [default: auto]
@@ -126,7 +126,7 @@ multipath-strategy = "classic"
 
 # The maximum number of in-flight ICMP echo requests [default: 24]
 #
-# The tracing stratgey operates a sliding window protocol and will allow a
+# The tracing strategy operates a sliding window protocol and will allow a
 # maximum number of probes to be inflight (sent, and not received or lost)
 # at any given time.
 max-inflight = 24
@@ -171,7 +171,7 @@ dns-resolve-method = "system"
 
 # Whether to lookup AS information [default: false]
 #
-# If enabled, AS (autonomous system) information is retrived during DNS
+# If enabled, AS (autonomous system) information is retrieved during DNS
 # queries.
 dns-lookup-as-info = false
 
