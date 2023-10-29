@@ -88,7 +88,7 @@ impl Platform {
         Ok(())
     }
 
-    // Unix (excl. MacOS)
+    // Unix (excl. macOS)
 
     #[cfg(all(unix, not(target_os = "macos")))]
     /// Does the platform always require privileges?
@@ -101,12 +101,12 @@ impl Platform {
         true
     }
 
-    // MacOS
+    // macOS
 
     #[cfg(target_os = "macos")]
     /// Does the platform always require privileges?
     ///
-    /// `MacOS` supports both privileged and unprivileged modes.
+    /// `macOS` supports both privileged and unprivileged modes.
     fn needs_privileges() -> bool {
         false
     }
