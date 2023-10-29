@@ -89,7 +89,7 @@ cargo install trippy
 snap install trippy
 ```
 
-### Homebrew (MacOS)
+### Homebrew (macOS)
 
 [![Homebrew package](https://repology.org/badge/version-for-repo/homebrew/trippy.svg)](https://formulae.brew.sh/formula/trippy)
 
