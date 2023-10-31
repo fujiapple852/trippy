@@ -331,17 +331,17 @@ fn extract_probe_resp(
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
-            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
-            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                recv, src, resp_seq,
-            )))
+            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq))
+            })
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
-            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
-            Some(ProbeResponse::DestinationUnreachable(
-                ProbeResponseData::new(recv, src, resp_seq),
-            ))
+            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
+                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, src, resp_seq))
+            })
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
@@ -361,27 +361,31 @@ fn extract_probe_resp(
 
 #[instrument]
 fn extract_probe_resp_seq(
-    payload: &[u8],
+    ipv4: &Ipv4Packet<'_>,
     protocol: TracerProtocol,
-) -> TraceResult<ProbeResponseSeq> {
-    let ipv4 = Ipv4Packet::new_view(payload).req()?;
-    Ok(match protocol {
-        TracerProtocol::Icmp => {
-            let echo_request = extract_echo_request(&ipv4)?;
+) -> TraceResult<Option<ProbeResponseSeq>> {
+    Ok(match (protocol, ipv4.get_protocol()) {
+        (TracerProtocol::Icmp, IpProtocol::Icmp) => {
+            let echo_request = extract_echo_request(ipv4)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
-            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
+            Some(ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(
+                identifier, sequence,
+            )))
         }
-        TracerProtocol::Udp => {
-            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(&ipv4)?;
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
+        (TracerProtocol::Udp, IpProtocol::Udp) => {
+            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(ipv4)?;
+            Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier, src_port, dest_port, checksum,
-            ))
+            )))
         }
-        TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(&ipv4)?;
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
+        (TracerProtocol::Tcp, IpProtocol::Tcp) => {
+            let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
+            Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
+                src_port, dest_port,
+            )))
         }
+        _ => None,
     })
 }
 
