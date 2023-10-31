@@ -364,42 +364,36 @@ fn extract_probe_resp_seq(
     payload: &[u8],
     protocol: TracerProtocol,
 ) -> TraceResult<ProbeResponseSeq> {
+    let ipv4 = Ipv4Packet::new_view(payload).req()?;
     Ok(match protocol {
         TracerProtocol::Icmp => {
-            let echo_request = extract_echo_request(payload)?;
+            let echo_request = extract_echo_request(&ipv4)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
         }
         TracerProtocol::Udp => {
-            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(payload)?;
+            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(&ipv4)?;
             ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier, src_port, dest_port, checksum,
             ))
         }
         TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(payload)?;
+            let (src_port, dest_port) = extract_tcp_packet(&ipv4)?;
             ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
         }
     })
 }
 
 #[instrument]
-fn extract_echo_request(payload: &[u8]) -> TraceResult<EchoRequestPacket<'_>> {
-    let ipv4 = Ipv4Packet::new_view(payload).req()?;
-    let header_len = usize::from(ipv4.get_header_length() * 4);
-    let nested_icmp = &payload[header_len..];
-    let nested_echo = EchoRequestPacket::new_view(nested_icmp).req()?;
-    Ok(nested_echo)
+fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequestPacket<'a>> {
+    Ok(EchoRequestPacket::new_view(ipv4.payload()).req()?)
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
 #[instrument]
-fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
-    let ipv4 = Ipv4Packet::new_view(payload).req()?;
-    let header_len = usize::from(ipv4.get_header_length() * 4);
-    let nested_udp = &payload[header_len..];
-    let nested = UdpPacket::new_view(nested_udp).req()?;
+fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
+    let nested = UdpPacket::new_view(ipv4.payload()).req()?;
     Ok((
         nested.get_source(),
         nested.get_destination(),
@@ -420,10 +414,8 @@ fn extract_udp_packet(payload: &[u8]) -> TraceResult<(u16, u16, u16, u16)> {
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a
 /// complete TCP packet header.
 #[instrument]
-fn extract_tcp_packet(payload: &[u8]) -> TraceResult<(u16, u16)> {
-    let ipv4 = Ipv4Packet::new_view(payload).req()?;
-    let header_len = usize::from(ipv4.get_header_length() * 4);
-    let nested_tcp = &payload[header_len..];
+fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
+    let nested_tcp = ipv4.payload();
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
