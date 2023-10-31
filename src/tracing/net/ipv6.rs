@@ -12,6 +12,7 @@ use crate::tracing::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpType};
 use crate::tracing::packet::ipv6::Ipv6Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
+use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{
     ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
     ProbeResponseSeqUdp,
@@ -261,17 +262,17 @@ fn extract_probe_resp(
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
-            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
-            Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                recv, ip, resp_seq,
-            )))
+            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq))
+            })
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
-            let resp_seq = extract_probe_resp_seq(packet.payload(), protocol)?;
-            Some(ProbeResponse::DestinationUnreachable(
-                ProbeResponseData::new(recv, ip, resp_seq),
-            ))
+            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
+                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, ip, resp_seq))
+            })
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
@@ -290,27 +291,33 @@ fn extract_probe_resp(
 }
 
 fn extract_probe_resp_seq(
-    payload: &[u8],
+    ipv6: &Ipv6Packet<'_>,
     protocol: TracerProtocol,
-) -> TraceResult<ProbeResponseSeq> {
-    Ok(match protocol {
-        TracerProtocol::Icmp => {
-            let (identifier, sequence) = extract_echo_request(payload)?;
-            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(identifier, sequence))
+) -> TraceResult<Option<ProbeResponseSeq>> {
+    Ok(match (protocol, ipv6.get_next_header()) {
+        (TracerProtocol::Icmp, IpProtocol::IcmpV6) => {
+            let (identifier, sequence) = extract_echo_request(ipv6)?;
+            Some(ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(
+                identifier, sequence,
+            )))
         }
-        TracerProtocol::Udp => {
-            let (src_port, dest_port) = extract_udp_packet(payload)?;
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(0, src_port, dest_port, 0))
+        (TracerProtocol::Udp, IpProtocol::Udp) => {
+            let (src_port, dest_port) = extract_udp_packet(ipv6)?;
+            Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
+                0, src_port, dest_port, 0,
+            )))
         }
-        TracerProtocol::Tcp => {
-            let (src_port, dest_port) = extract_tcp_packet(payload)?;
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(src_port, dest_port))
+        (TracerProtocol::Tcp, IpProtocol::Tcp) => {
+            let (src_port, dest_port) = extract_tcp_packet(ipv6)?;
+            Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
+                src_port, dest_port,
+            )))
         }
+        _ => None,
     })
 }
 
-fn extract_echo_request(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
-    let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
+fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload()).req()?;
     Ok((
         echo_request_packet.get_identifier(),
@@ -318,8 +325,7 @@ fn extract_echo_request(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
     ))
 }
 
-fn extract_udp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
-    let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
+fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     let udp_packet = UdpPacket::new_view(ipv6.payload()).req()?;
     Ok((udp_packet.get_source(), udp_packet.get_destination()))
 }
@@ -343,8 +349,7 @@ fn extract_udp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
 ///
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
-fn extract_tcp_packet(ipv6_bytes: &[u8]) -> TraceResult<(u16, u16)> {
-    let ipv6 = Ipv6Packet::new_view(ipv6_bytes).req()?;
+fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
 }
