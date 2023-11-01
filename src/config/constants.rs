@@ -16,6 +16,9 @@ pub const DEFAULT_MODE: Mode = Mode::Tui;
 /// The default value for `unprivileged`.
 pub const DEFAULT_UNPRIVILEGED: bool = false;
 
+/// The default value for `all_resolved_ips`.
+pub const DEFAULT_DNS_RESOLVE_ALL: bool = false;
+
 /// The default value for `log-format`.
 pub const DEFAULT_LOG_FORMAT: LogFormat = LogFormat::Pretty;
 

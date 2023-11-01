@@ -118,6 +118,10 @@ pub struct Args {
     #[arg(value_enum, short = 'r', long)]
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
 
+    /// Trace to all IPs resolved from DNS lookup [default: false]
+    #[arg(short = 'y', long)]
+    pub dns_resolve_all: bool,
+
     /// The maximum time to wait to perform DNS queries [default: 5s]
     #[arg(long)]
     pub dns_timeout: Option<String>,
