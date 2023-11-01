@@ -216,6 +216,7 @@ pub struct TrippyConfig {
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
     pub privilege_mode: PrivilegeMode,
+    pub dns_resolve_all: bool,
     pub report_cycles: usize,
     pub geoip_mmdb_file: Option<String>,
     pub max_rounds: Option<usize>,
@@ -277,13 +278,16 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_trace.unprivileged,
             constants::DEFAULT_UNPRIVILEGED,
         );
-
         let privilege_mode = if unprivileged {
             PrivilegeMode::Unprivileged
         } else {
             PrivilegeMode::Privileged
         };
-
+        let dns_resolve_all = cfg_layer_bool_flag(
+            args.dns_resolve_all,
+            cfg_file_dns.dns_resolve_all,
+            constants::DEFAULT_DNS_RESOLVE_ALL,
+        );
         let verbose = args.verbose;
         let log_format = cfg_layer(
             args.log_format,
@@ -499,7 +503,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         validate_privilege(privilege_mode, has_privileges, needs_privileges)?;
         validate_logging(mode, verbose)?;
         validate_strategy(multipath_strategy, unprivileged)?;
-        validate_multi(mode, protocol, &args.targets)?;
+        validate_multi(mode, protocol, &args.targets, dns_resolve_all)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
         validate_read_timeout(read_timeout)?;
@@ -554,6 +558,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             tui_bindings,
             mode,
             privilege_mode,
+            dns_resolve_all,
             report_cycles,
             geoip_mmdb_file,
             max_rounds,
@@ -640,18 +645,25 @@ fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow:
 }
 
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
-fn validate_multi(mode: Mode, protocol: TracerProtocol, targets: &[String]) -> anyhow::Result<()> {
+fn validate_multi(
+    mode: Mode,
+    protocol: TracerProtocol,
+    targets: &[String],
+    dns_resolve_all: bool,
+) -> anyhow::Result<()> {
     match (mode, protocol) {
         (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
-            if targets.len() > 1 =>
+            if targets.len() > 1 || dns_resolve_all =>
         {
             Err(anyhow!(
                 "only a single target may be specified for this mode"
             ))
         }
-        (_, TracerProtocol::Tcp | TracerProtocol::Udp) if targets.len() > 1 => Err(anyhow!(
-            "only a single target may be specified for TCP and UDP tracing"
-        )),
+        (_, TracerProtocol::Tcp | TracerProtocol::Udp) if targets.len() > 1 || dns_resolve_all => {
+            Err(anyhow!(
+                "only a single target may be specified for TCP and UDP tracing"
+            ))
+        }
         _ => Ok(()),
     }
 }

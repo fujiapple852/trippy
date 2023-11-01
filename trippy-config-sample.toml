@@ -176,6 +176,12 @@ read-timeout = "10ms"
 #   cloudflare  - Resolve using the Cloudflare `1.1.1.1` DNS service
 dns-resolve-method = "system"
 
+# Trace to all IPs resolved from DNS lookup (ICMP only) [default: false]
+#
+# When set to true a trace will be started for all IPs resolved for all given targets.
+# When set to false a trace will be started for one arbitrarily chosen IP per given target.
+dns-resolve-all = false
+
 # Whether to lookup AS information [default: false]
 #
 # If enabled, AS (autonomous system) information is retrieved during DNS

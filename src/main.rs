@@ -52,12 +52,8 @@ fn main() -> anyhow::Result<()> {
     let _guard = configure_logging(&cfg);
     let resolver = start_dns_resolver(&cfg)?;
     let geoip_lookup = create_geoip_lookup(&cfg)?;
-    let traces: Vec<_> = cfg
-        .targets
-        .iter()
-        .enumerate()
-        .map(|(i, target_host)| start_tracer(&cfg, target_host, platform.pid + i as u16, &resolver))
-        .collect::<anyhow::Result<Vec<_>>>()?;
+    let addrs = resolve_targets(&cfg, &resolver)?;
+    let traces = start_tracers(&cfg, &addrs, platform.pid)?;
     Platform::drop_privileges()?;
     run_frontend(&cfg, resolver, geoip_lookup, traces)?;
     Ok(())
@@ -125,30 +121,54 @@ fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
     None
 }
 
+/// Resolve targets.
+fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result<Vec<TargetInfo>> {
+    cfg.targets
+        .iter()
+        .flat_map(|target| match resolver.lookup(target) {
+            Ok(addrs) => addrs
+                .into_iter()
+                .enumerate()
+                .take_while(|(i, _)| if cfg.dns_resolve_all { true } else { *i == 0 })
+                .map(|(i, addr)| {
+                    let hostname = if cfg.dns_resolve_all {
+                        format!("{} [{}]", target, i + 1)
+                    } else {
+                        target.to_string()
+                    };
+                    Ok(TargetInfo { hostname, addr })
+                })
+                .collect::<Vec<_>>()
+                .into_iter(),
+            Err(e) => {
+                vec![Err(anyhow!("failed to resolve target: {} ({})", target, e))].into_iter()
+            }
+        })
+        .collect::<anyhow::Result<Vec<_>>>()
+}
+
+/// Start all tracers.
+fn start_tracers(
+    cfg: &TrippyConfig,
+    addrs: &[TargetInfo],
+    pid: u16,
+) -> anyhow::Result<Vec<TraceInfo>> {
+    addrs
+        .iter()
+        .enumerate()
+        .map(|(i, TargetInfo { hostname, addr })| {
+            start_tracer(cfg, hostname, *addr, pid + i as u16)
+        })
+        .collect::<anyhow::Result<Vec<_>>>()
+}
+
 /// Start a tracer to a given target.
 fn start_tracer(
     cfg: &TrippyConfig,
     target_host: &str,
+    target_addr: IpAddr,
     trace_identifier: u16,
-    resolver: &DnsResolver,
 ) -> Result<TraceInfo, Error> {
-    let target_addr: IpAddr = resolver
-        .lookup(target_host)
-        .map_err(|e| anyhow!("failed to resolve target: {} ({})", target_host, e))?
-        .into_iter()
-        .find(|addr| {
-            matches!(
-                (cfg.addr_family, addr),
-                (TracerAddrFamily::Ipv4, IpAddr::V4(_)) | (TracerAddrFamily::Ipv6, IpAddr::V6(_))
-            )
-        })
-        .ok_or_else(|| {
-            anyhow!(
-                "failed to find an {:?} address for target: {}",
-                cfg.addr_family,
-                target_host
-            )
-        })?;
     let source_addr = match cfg.source_addr {
         None => SourceAddr::discover(target_addr, cfg.port_direction, cfg.interface.as_deref())?,
         Some(addr) => SourceAddr::validate(addr)?,
@@ -270,6 +290,7 @@ fn make_trace_info(
         args.payload_pattern,
         args.interface.clone(),
         args.geoip_mmdb_file.clone(),
+        args.dns_resolve_all,
     )
 }
 
@@ -287,6 +308,13 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_theme,
         &args.tui_bindings,
     )
+}
+
+/// Information about a tracing target.
+#[derive(Debug, Clone)]
+pub struct TargetInfo {
+    pub hostname: String,
+    pub addr: IpAddr,
 }
 
 /// Information about a `Trace` needed for the Tui, stream and reports.
@@ -313,6 +341,7 @@ pub struct TraceInfo {
     pub payload_pattern: u8,
     pub interface: Option<String>,
     pub geoip_mmdb_file: Option<String>,
+    pub dns_resolve_all: bool,
 }
 
 impl TraceInfo {
@@ -340,6 +369,7 @@ impl TraceInfo {
         payload_pattern: u8,
         interface: Option<String>,
         geoip_mmdb_file: Option<String>,
+        dns_resolve_all: bool,
     ) -> Self {
         Self {
             data,
@@ -363,6 +393,7 @@ impl TraceInfo {
             payload_pattern,
             interface,
             geoip_mmdb_file,
+            dns_resolve_all,
         }
     }
 }

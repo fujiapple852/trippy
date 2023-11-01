@@ -231,6 +231,10 @@ fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
             format_dns_method(app.resolver.config().resolve_method),
         ),
         SettingsItem::new(
+            "dns-resolve-all",
+            format!("{}", app.tracer_config().dns_resolve_all),
+        ),
+        SettingsItem::new(
             "dns-lookup-as-info",
             format!("{}", app.tui_config.lookup_as_info),
         ),
@@ -393,7 +397,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
     ("Tui", 7),
     ("Trace", 14),
-    ("Dns", 3),
+    ("Dns", 4),
     ("GeoIp", 1),
     ("Bindings", 26),
     ("Theme", 27),

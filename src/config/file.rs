@@ -118,6 +118,7 @@ pub struct ConfigStrategy {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigDns {
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
+    pub dns_resolve_all: Option<bool>,
     pub dns_lookup_as_info: Option<bool>,
     pub dns_timeout: Option<String>,
 }
