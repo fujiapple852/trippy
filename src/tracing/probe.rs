@@ -130,13 +130,42 @@ pub enum IcmpPacketType {
 }
 
 /// The response to a probe.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum ProbeResponse {
-    TimeExceeded(ProbeResponseData),
-    DestinationUnreachable(ProbeResponseData),
+    TimeExceeded(ProbeResponseData, Option<Extensions>),
+    DestinationUnreachable(ProbeResponseData, Option<Extensions>),
     EchoReply(ProbeResponseData),
     TcpReply(ProbeResponseData),
     TcpRefused(ProbeResponseData),
+}
+
+/// The ICMP extensions for a probe response.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Extensions {
+    pub extensions: Vec<Extension>,
+}
+
+/// A probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum Extension {
+    #[default]
+    Unknown,
+    Mpls(MplsLabelStack),
+}
+
+/// The members of a MPLS probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MplsLabelStack {
+    pub members: Vec<MplsLabelStackMember>,
+}
+
+/// A member of a MPLS probe response extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MplsLabelStackMember {
+    pub label: u32,
+    pub exp: u8,
+    pub bos: u8,
+    pub ttl: u8,
 }
 
 /// The data in the probe response.
