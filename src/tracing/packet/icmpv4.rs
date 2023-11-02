@@ -637,6 +637,7 @@ pub mod time_exceeded {
     const TYPE_OFFSET: usize = 0;
     const CODE_OFFSET: usize = 1;
     const CHECKSUM_OFFSET: usize = 2;
+    const LENGTH_OFFSET: usize = 5;
 
     /// Represents an ICMP `TimeExceeded` packet.
     ///
@@ -689,6 +690,11 @@ pub mod time_exceeded {
             u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
+        #[must_use]
+        pub fn get_length(&self) -> u8 {
+            self.buf.read(LENGTH_OFFSET)
+        }
+
         pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
@@ -699,6 +705,10 @@ pub mod time_exceeded {
 
         pub fn set_checksum(&mut self, val: u16) {
             self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_length(&mut self, val: u8) {
+            *self.buf.write(LENGTH_OFFSET) = val;
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
@@ -724,6 +734,7 @@ pub mod time_exceeded {
                 .field("icmp_type", &self.get_icmp_type())
                 .field("icmp_code", &self.get_icmp_code())
                 .field("checksum", &self.get_checksum())
+                .field("length", &self.get_length())
                 .field("payload", &fmt_payload(self.payload()))
                 .finish()
         }
@@ -785,12 +796,28 @@ pub mod time_exceeded {
         }
 
         #[test]
+        fn test_length() {
+            let mut buf = [0_u8; TimeExceededPacket::minimum_packet_size()];
+            let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
+            packet.set_length(0);
+            assert_eq!(0, packet.get_length());
+            assert_eq!([0x00], packet.packet()[5..6]);
+            packet.set_length(8);
+            assert_eq!(8, packet.get_length());
+            assert_eq!([0x08], packet.packet()[5..6]);
+            packet.set_length(u8::MAX);
+            assert_eq!(u8::MAX, packet.get_length());
+            assert_eq!([0xFF], packet.packet()[5..6]);
+        }
+
+        #[test]
         fn test_view() {
             let buf = [0x0b, 0x00, 0xf4, 0xee, 0x00, 0x11, 0x00, 0x00];
             let packet = TimeExceededPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(62702, packet.get_checksum());
+            assert_eq!(17, packet.get_length());
             assert!(packet.payload().is_empty());
         }
     }
@@ -805,7 +832,7 @@ pub mod destination_unreachable {
     const TYPE_OFFSET: usize = 0;
     const CODE_OFFSET: usize = 1;
     const CHECKSUM_OFFSET: usize = 2;
-    const UNUSED_OFFSET: usize = 4;
+    const LENGTH_OFFSET: usize = 5;
     const NEXT_HOP_MTU_OFFSET: usize = 6;
 
     /// Represents an ICMP `DestinationUnreachable` packet.
@@ -860,8 +887,8 @@ pub mod destination_unreachable {
         }
 
         #[must_use]
-        pub fn get_unused(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes(UNUSED_OFFSET))
+        pub fn get_length(&self) -> u8 {
+            self.buf.read(LENGTH_OFFSET)
         }
 
         #[must_use]
@@ -881,8 +908,8 @@ pub mod destination_unreachable {
             self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
-        pub fn set_unused(&mut self, val: u16) {
-            self.buf.set_bytes(UNUSED_OFFSET, val.to_be_bytes());
+        pub fn set_length(&mut self, val: u8) {
+            *self.buf.write(LENGTH_OFFSET) = val;
         }
 
         pub fn set_next_hop_mtu(&mut self, val: u16) {
@@ -912,7 +939,7 @@ pub mod destination_unreachable {
                 .field("icmp_type", &self.get_icmp_type())
                 .field("icmp_code", &self.get_icmp_code())
                 .field("checksum", &self.get_checksum())
-                .field("unused", &self.get_unused())
+                .field("length", &self.get_length())
                 .field("next_hop_mtu", &self.get_next_hop_mtu())
                 .field("payload", &fmt_payload(self.payload()))
                 .finish()
@@ -975,12 +1002,28 @@ pub mod destination_unreachable {
         }
 
         #[test]
+        fn test_length() {
+            let mut buf = [0_u8; DestinationUnreachablePacket::minimum_packet_size()];
+            let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
+            packet.set_length(0);
+            assert_eq!(0, packet.get_length());
+            assert_eq!([0x00], packet.packet()[5..6]);
+            packet.set_length(8);
+            assert_eq!(8, packet.get_length());
+            assert_eq!([0x08], packet.packet()[5..6]);
+            packet.set_length(u8::MAX);
+            assert_eq!(u8::MAX, packet.get_length());
+            assert_eq!([0xFF], packet.packet()[5..6]);
+        }
+
+        #[test]
         fn test_view() {
             let buf = [0x03, 0x03, 0xdf, 0xdc, 0x00, 0x00, 0x00, 0x00];
             let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!(IcmpCode(3), packet.get_icmp_code());
             assert_eq!(57308, packet.get_checksum());
+            assert_eq!(0, packet.get_length());
             assert!(packet.payload().is_empty());
         }
     }
