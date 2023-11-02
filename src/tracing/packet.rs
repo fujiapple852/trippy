@@ -9,6 +9,9 @@ pub mod icmpv4;
 /// `ICMPv6` packets.
 pub mod icmpv6;
 
+/// `ICMP` extensions.
+pub mod icmp_extension;
+
 /// `IPv4` packets.
 pub mod ipv4;
 
