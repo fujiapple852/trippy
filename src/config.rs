@@ -444,12 +444,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
-            (MultipathStrategyConfig::Paris, TracerAddrFamily::Ipv4) => {
-                Ok(MultipathStrategy::Paris)
-            }
-            (MultipathStrategyConfig::Paris, TracerAddrFamily::Ipv6) => Err(anyhow!(
-                "Paris multipath strategy not implemented for IPv6 yet!"
-            )),
+            (MultipathStrategyConfig::Paris, _) => Ok(MultipathStrategy::Paris),
             (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv4) => {
                 Ok(MultipathStrategy::Dublin)
             }
