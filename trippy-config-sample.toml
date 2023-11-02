@@ -121,7 +121,7 @@ grace-duration = "100ms"
 # The initial sequence number [default: 33000]
 initial-sequence = 33000
 
-# The Equal-cost Multi-Path routing strategy (IPv4/UDP only)
+# The Equal-cost Multi-Path routing strategy (UDP only)
 #
 # Allowed value are:
 #   classic - The src or dest port is used to store the sequence number [default]

@@ -82,7 +82,7 @@ pub struct Args {
     #[arg(long)]
     pub initial_sequence: Option<u16>,
 
-    /// The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default: classic]
+    /// The Equal-cost Multi-Path routing strategy (UDP only) [default: classic]
     #[arg(value_enum, short = 'R', long)]
     pub multipath_strategy: Option<MultipathStrategyConfig>,
 

@@ -19,7 +19,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::util::Required;
-use crate::tracing::{PrivilegeMode, Probe, TracerProtocol};
+use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -76,28 +76,26 @@ pub fn dispatch_udp_probe<S: Socket>(
     privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    multipath_strategy: MultipathStrategy,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
     if packet_size > MAX_PACKET_SIZE {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let payload_size = udp_payload_size(packet_size);
+    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
     match privilege_mode {
         PrivilegeMode::Privileged => dispatch_udp_probe_raw(
             raw_send_socket,
             probe,
             src_addr,
             dest_addr,
-            payload_size,
-            payload_pattern,
+            payload,
+            multipath_strategy,
         ),
-        PrivilegeMode::Unprivileged => dispatch_udp_probe_non_raw::<S>(
-            probe,
-            src_addr,
-            dest_addr,
-            payload_size,
-            payload_pattern,
-        ),
+        PrivilegeMode::Unprivileged => {
+            dispatch_udp_probe_non_raw::<S>(probe, src_addr, dest_addr, payload)
+        }
     }
 }
 
@@ -108,19 +106,30 @@ fn dispatch_udp_probe_raw<S: Socket>(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    payload_size: usize,
-    payload_pattern: PayloadPattern,
+    payload: &[u8],
+    multipath_strategy: MultipathStrategy,
 ) -> TraceResult<()> {
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
-    let udp = make_udp_packet(
+    let payload_paris = probe.sequence.0.to_be_bytes();
+    let payload = if multipath_strategy == MultipathStrategy::Paris {
+        payload_paris.as_slice()
+    } else {
+        payload
+    };
+    let mut udp = make_udp_packet(
         &mut udp_buf,
         src_addr,
         dest_addr,
         probe.src_port.0,
         probe.dest_port.0,
-        payload_size,
-        payload_pattern,
+        payload,
     )?;
+    if multipath_strategy == MultipathStrategy::Paris {
+        let checksum = udp.get_checksum().to_be_bytes();
+        let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
+        udp.set_checksum(payload);
+        udp.set_payload(&checksum);
+    }
     udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
     // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in
     // the `UDP` packet.  If we (redundantly) set the target port here then the send will fail
@@ -136,10 +145,8 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
     probe: Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-    payload_size: usize,
-    payload_pattern: PayloadPattern,
+    payload: &[u8],
 ) -> TraceResult<()> {
-    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][..payload_size];
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), probe.dest_port.0);
     let mut socket = S::new_udp_send_socket_ipv6(false)?;
@@ -227,22 +234,20 @@ pub fn recv_tcp_socket<S: Socket>(
 }
 
 /// Create a `UdpPacket`
-fn make_udp_packet(
-    udp_buf: &mut [u8],
+fn make_udp_packet<'a>(
+    udp_buf: &'a mut [u8],
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
     src_port: u16,
     dest_port: u16,
-    payload_size: usize,
-    payload_pattern: PayloadPattern,
-) -> TraceResult<UdpPacket<'_>> {
-    let udp_payload_buf = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
-    let udp_packet_size = UdpPacket::minimum_packet_size() + payload_size;
+    payload: &'_ [u8],
+) -> TraceResult<UdpPacket<'a>> {
+    let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
     let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
-    udp.set_payload(&udp_payload_buf[..payload_size]);
+    udp.set_payload(payload);
     udp.set_checksum(udp_ipv6_checksum(udp.packet(), src_addr, dest_addr));
     Ok(udp)
 }
@@ -331,9 +336,9 @@ fn extract_probe_resp_seq(
             )))
         }
         (TracerProtocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port) = extract_udp_packet(ipv6)?;
+            let (src_port, dest_port, checksum) = extract_udp_packet(ipv6)?;
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
-                0, src_port, dest_port, 0,
+                0, src_port, dest_port, checksum,
             )))
         }
         (TracerProtocol::Tcp, IpProtocol::Tcp) => {
@@ -354,9 +359,13 @@ fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     ))
 }
 
-fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
+fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
     let udp_packet = UdpPacket::new_view(ipv6.payload()).req()?;
-    Ok((udp_packet.get_source(), udp_packet.get_destination()))
+    Ok((
+        udp_packet.get_source(),
+        udp_packet.get_destination(),
+        udp_packet.get_checksum(),
+    ))
 }
 
 /// From [rfc4443] (section 2.4, point c):

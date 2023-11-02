@@ -158,6 +158,7 @@ impl<S: Socket> TracerChannel<S> {
                     self.privilege_mode,
                     self.packet_size,
                     self.payload_pattern,
+                    self.multipath_strategy,
                 )
             }
             _ => unreachable!(),
