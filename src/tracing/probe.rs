@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 
 /// The state of an ICMP echo request/response
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
@@ -169,7 +169,7 @@ pub struct MplsLabelStackMember {
 }
 
 /// The data in the probe response.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseData {
     /// Timestamp of the probe response.
     pub recv: SystemTime,
@@ -189,14 +189,14 @@ impl ProbeResponseData {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum ProbeResponseSeq {
     Icmp(ProbeResponseSeqIcmp),
     Udp(ProbeResponseSeqUdp),
     Tcp(ProbeResponseSeqTcp),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqIcmp {
     pub identifier: u16,
     pub sequence: u16,
@@ -211,7 +211,7 @@ impl ProbeResponseSeqIcmp {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqUdp {
     pub identifier: u16,
     pub src_port: u16,
@@ -230,7 +230,7 @@ impl ProbeResponseSeqUdp {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProbeResponseSeqTcp {
     pub src_port: u16,
     pub dest_port: u16,

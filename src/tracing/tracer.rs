@@ -284,6 +284,7 @@ mod state {
         IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus, TracerConfig,
         TracerProtocol,
     };
+    use std::array::from_fn;
     use std::net::IpAddr;
     use std::time::SystemTime;
     use tracing::instrument;
@@ -347,7 +348,7 @@ mod state {
         pub fn new(config: TracerConfig) -> Self {
             Self {
                 config,
-                buffer: [Probe::default(); BUFFER_SIZE as usize],
+                buffer: from_fn(|_| Probe::default()),
                 sequence: config.initial_sequence,
                 round_sequence: config.initial_sequence,
                 ttl: config.first_ttl,
@@ -368,7 +369,7 @@ mod state {
 
         /// Get the `Probe` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> Probe {
-            self.buffer[usize::from(sequence - self.round_sequence)]
+            self.buffer[usize::from(sequence - self.round_sequence)].clone()
         }
 
         pub const fn ttl(&self) -> TimeToLive {
@@ -430,7 +431,7 @@ mod state {
                 self.round,
                 SystemTime::now(),
             );
-            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe.clone();
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive(1);
             debug_assert!(self.sequence < Sequence(u16::MAX));
@@ -460,7 +461,7 @@ mod state {
                 self.round,
                 SystemTime::now(),
             );
-            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe.clone();
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
@@ -631,7 +632,7 @@ mod state {
                 .with_icmp_packet_type(icmp_packet_type)
                 .with_host(host)
                 .with_received(received);
-            self.buffer[usize::from(sequence - self.round_sequence)] = probe;
+            self.buffer[usize::from(sequence - self.round_sequence)] = probe.clone();
 
             // If this `Probe` found the target then we set the `target_tll` if not already set,
             // being careful to account for `Probes` being received out-of-order.
@@ -766,8 +767,8 @@ mod state {
             // Validate the probes() iterator returns returns only a single probe
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_1_fetch, probe_next1);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_1_fetch, probe_next1);
                 assert_eq!(None, probe_iter.next());
             }
 
@@ -825,10 +826,10 @@ mod state {
             // Validate the probes() iterator returns the two probes in the states we expect
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_2_recv, probe_next1);
-                let probe_next2 = *probe_iter.next().unwrap();
-                assert_eq!(probe_3, probe_next2);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_2_recv, probe_next1);
+                let probe_next2 = probe_iter.next().unwrap();
+                assert_eq!(&probe_3, probe_next2);
             }
 
             // Update the state of probe 3 after receiving a EchoReply
@@ -850,10 +851,10 @@ mod state {
             // Validate the probes() iterator returns the two probes in the states we expect
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_2_recv, probe_next1);
-                let probe_next2 = *probe_iter.next().unwrap();
-                assert_eq!(probe_3_recv, probe_next2);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_2_recv, probe_next1);
+                let probe_next2 = probe_iter.next().unwrap();
+                assert_eq!(&probe_3_recv, probe_next2);
             }
         }
 
