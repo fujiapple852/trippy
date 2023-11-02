@@ -1,5 +1,5 @@
 use crate::backend::trace::Hop;
-use crate::config::{AddressMode, AsMode, GeoIpMode};
+use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -12,6 +12,7 @@ use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
 use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
+use trippy::tracing::{Extension, Extensions, MplsLabelStackMember, UnknownExtension};
 
 /// Render the table of data about the hops.
 ///
@@ -259,6 +260,7 @@ fn format_address(
             format!("{hostname} ({addr})")
         }
     };
+    let exp_fmt = format_extensions(config, hop);
     let geo_fmt = match config.geoip_mode {
         GeoIpMode::Off => None,
         GeoIpMode::Short => geoip_lookup
@@ -274,27 +276,25 @@ fn format_address(
             .unwrap_or_default()
             .map(|geo| geo.location()),
     };
-    match geo_fmt {
-        Some(geo) if hop.addr_count() > 1 => {
-            format!(
-                "{} [{}] [{:.1}%]",
-                addr_fmt,
-                geo,
-                (freq as f64 / hop.total_recv() as f64) * 100_f64
-            )
-        }
-        Some(geo) => {
-            format!("{addr_fmt} [{geo}]")
-        }
-        None if hop.addr_count() > 1 => {
-            format!(
-                "{} [{:.1}%]",
-                addr_fmt,
-                (freq as f64 / hop.total_recv() as f64) * 100_f64
-            )
-        }
-        None => addr_fmt,
+    let freq_fmt = if hop.addr_count() > 1 {
+        Some(format!(
+            "{:.1}%",
+            (freq as f64 / hop.total_recv() as f64) * 100_f64
+        ))
+    } else {
+        None
+    };
+    let mut address = addr_fmt;
+    if let Some(geo) = geo_fmt.as_deref() {
+        address.push_str(&format!(" [{geo}]"));
     }
+    if let Some(exp) = exp_fmt {
+        address.push_str(&format!(" [{exp}]"));
+    }
+    if let Some(freq) = freq_fmt {
+        address.push_str(&format!(" [{freq}]"));
+    }
+    address
 }
 
 /// Format a `DnsEntry` with or without `AS` information (if available)
@@ -333,6 +333,101 @@ fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
     }
 }
 
+/// Format `icmp` extensions.
+fn format_extensions(config: &TuiConfig, hop: &Hop) -> Option<String> {
+    if let Some(extensions) = hop.extensions() {
+        match config.icmp_extension_mode {
+            IcmpExtensionMode::Off => None,
+            IcmpExtensionMode::Mpls => format_extensions_mpls(extensions),
+            IcmpExtensionMode::Full => format_extensions_full(extensions),
+            IcmpExtensionMode::All => Some(format_extensions_all(extensions)),
+        }
+    } else {
+        None
+    }
+}
+
+/// Format MPLS extensions as: `labels: 12345, 6789`.
+///
+/// If not MPLS extensions are present then None is returned.
+fn format_extensions_mpls(extensions: &Extensions) -> Option<String> {
+    let labels = extensions
+        .extensions
+        .iter()
+        .filter_map(|ext| match ext {
+            Extension::Unknown(_) => None,
+            Extension::Mpls(stack) => Some(stack),
+        })
+        .flat_map(|ext| &ext.members)
+        .map(|mem| mem.label)
+        .format(", ")
+        .to_string();
+    if labels.is_empty() {
+        None
+    } else {
+        Some(format!("labels: {labels}"))
+    }
+}
+
+/// Format all known extensions with full details.
+///
+/// For MPLS: `mpls(label=48320, ttl=1, exp=0, bos=1), mpls(...)`
+fn format_extensions_full(extensions: &Extensions) -> Option<String> {
+    let formatted = extensions
+        .extensions
+        .iter()
+        .filter_map(|ext| match ext {
+            Extension::Unknown(_) => None,
+            Extension::Mpls(stack) => Some(stack),
+        })
+        .flat_map(|ext| &ext.members)
+        .map(format_ext_mpls_stack_member)
+        .format(", ")
+        .to_string();
+    if formatted.is_empty() {
+        None
+    } else {
+        Some(formatted)
+    }
+}
+
+/// Format a list all known and unknown extensions with full details.
+///
+/// `mpls(label=48320, ttl=1, exp=0, bos=1), mpls(label=...), unknown(class=1, sub=1, object=0b c8 c1 01), ...`
+fn format_extensions_all(extensions: &Extensions) -> String {
+    extensions
+        .extensions
+        .iter()
+        .flat_map(|ext| match ext {
+            Extension::Unknown(unknown) => vec![format_ext_unknown(unknown)],
+            Extension::Mpls(stack) => stack
+                .members
+                .iter()
+                .map(format_ext_mpls_stack_member)
+                .collect::<Vec<_>>(),
+        })
+        .format(", ")
+        .to_string()
+}
+
+/// Format a MPLS `icmp` extension object.
+pub fn format_ext_mpls_stack_member(member: &MplsLabelStackMember) -> String {
+    format!(
+        "mpls(label={}, ttl={}, exp={}, bos={})",
+        member.label, member.ttl, member.exp, member.bos
+    )
+}
+
+/// Format an unknown `icmp` extension object.
+pub fn format_ext_unknown(unknown: &UnknownExtension) -> String {
+    format!(
+        "unknown(class={}, subtype={}, object={:02x})",
+        unknown.class_num,
+        unknown.class_subtype,
+        unknown.bytes.iter().format(" ")
+    )
+}
+
 /// Render hostname table cell (detailed mode).
 fn render_hostname_with_details(
     app: &TuiApp,
@@ -351,7 +446,7 @@ fn render_hostname_with_details(
     } else {
         String::from("No response")
     };
-    (Cell::from(rendered), 6)
+    (Cell::from(rendered), 7)
 }
 
 /// Format hop details.
@@ -373,11 +468,21 @@ fn format_details(
     } else {
         dns.lazy_reverse_lookup(*addr)
     };
+    let ext = hop.extensions();
     match dns_entry {
-        DnsEntry::Pending(addr) => fmt_details_line(addr, index, count, None, None, geoip, config),
-        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
-            fmt_details_line(addr, index, count, Some(hosts), Some(asinfo), geoip, config)
+        DnsEntry::Pending(addr) => {
+            fmt_details_line(addr, index, count, None, None, geoip, ext, config)
         }
+        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => fmt_details_line(
+            addr,
+            index,
+            count,
+            Some(hosts),
+            Some(asinfo),
+            geoip,
+            ext,
+            config,
+        ),
         DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => fmt_details_line(
             addr,
             index,
@@ -385,13 +490,14 @@ fn format_details(
             Some(vec![]),
             Some(asinfo),
             geoip,
+            ext,
             config,
         ),
         DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
-            fmt_details_line(addr, index, count, Some(hosts), None, geoip, config)
+            fmt_details_line(addr, index, count, Some(hosts), None, geoip, ext, config)
         }
         DnsEntry::NotFound(Unresolved::Normal(addr)) => {
-            fmt_details_line(addr, index, count, Some(vec![]), None, geoip, config)
+            fmt_details_line(addr, index, count, Some(vec![]), None, geoip, ext, config)
         }
         DnsEntry::Failed(ip) => {
             format!("Failed: {ip}")
@@ -413,7 +519,9 @@ fn format_details(
 /// AS Info: 142.250.0.0/15 arin 2012-05-24
 /// Geo: United States, North America
 /// Pos: 37.751, -97.822 (~1000km)
+/// Ext: [mpls(label=48268, ttl=1, exp=0, bos=1)]
 /// ```
+#[allow(clippy::too_many_arguments)]
 fn fmt_details_line(
     addr: IpAddr,
     index: usize,
@@ -421,6 +529,7 @@ fn fmt_details_line(
     hostnames: Option<Vec<String>>,
     asinfo: Option<AsInfo>,
     geoip: Option<Rc<GeoIpCity>>,
+    extensions: Option<&Extensions>,
     config: &TuiConfig,
 ) -> String {
     let as_formatted = match (config.lookup_as_info, asinfo) {
@@ -455,7 +564,12 @@ fn fmt_details_line(
     } else {
         "Geo: <not found>\nPos: <not found>".to_string()
     };
-    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}")
+    let ext_formatted = if let Some(extensions) = extensions {
+        format!("Ext: [{}]", format_extensions_all(extensions))
+    } else {
+        "Ext: <none>".to_string()
+    };
+    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
 }
 
 const TABLE_HEADER: [&str; 11] = [

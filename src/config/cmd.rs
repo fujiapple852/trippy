@@ -1,8 +1,8 @@
 use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
-    MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
+    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
@@ -160,6 +160,10 @@ pub struct Args {
     /// How to render AS information [default: asn]
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
+
+    /// How to render ICMP extensions [default: mpls]
+    #[arg(value_enum, long)]
+    pub tui_icmp_extension_mode: Option<IcmpExtensionMode>,
 
     /// How to render GeoIp information [default: short]
     #[arg(value_enum, long)]
