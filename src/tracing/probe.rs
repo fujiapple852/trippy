@@ -27,6 +27,8 @@ pub struct Probe {
     pub received: Option<SystemTime>,
     /// The type of ICMP response packet received for the probe.
     pub icmp_packet_type: Option<IcmpPacketType>,
+    /// The ICMP response extensions.
+    pub extensions: Option<Extensions>,
 }
 
 impl Probe {
@@ -53,6 +55,7 @@ impl Probe {
             host: None,
             received: None,
             icmp_packet_type: None,
+            extensions: None,
         }
     }
 
@@ -67,12 +70,12 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_status(self, status: ProbeStatus) -> Self {
+    pub fn with_status(self, status: ProbeStatus) -> Self {
         Self { status, ..self }
     }
 
     #[must_use]
-    pub const fn with_icmp_packet_type(self, icmp_packet_type: IcmpPacketType) -> Self {
+    pub fn with_icmp_packet_type(self, icmp_packet_type: IcmpPacketType) -> Self {
         Self {
             icmp_packet_type: Some(icmp_packet_type),
             ..self
@@ -80,7 +83,7 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_host(self, host: IpAddr) -> Self {
+    pub fn with_host(self, host: IpAddr) -> Self {
         Self {
             host: Some(host),
             ..self
@@ -88,11 +91,16 @@ impl Probe {
     }
 
     #[must_use]
-    pub const fn with_received(self, received: SystemTime) -> Self {
+    pub fn with_received(self, received: SystemTime) -> Self {
         Self {
             received: Some(received),
             ..self
         }
+    }
+
+    #[must_use]
+    pub fn with_extensions(self, extensions: Option<Extensions>) -> Self {
+        Self { extensions, ..self }
     }
 }
 
