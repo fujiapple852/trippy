@@ -11,6 +11,9 @@ mod ipv4;
 /// IPv6 implementation.
 mod ipv6;
 
+/// ICMP extensions.
+mod extension;
+
 /// Platform specific network code.
 mod platform;
 

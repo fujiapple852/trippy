@@ -14,8 +14,8 @@ use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{
-    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp,
+    Extensions, ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp,
+    ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::tracing::util::Required;
@@ -206,12 +206,13 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: TracerProtocol,
+    icmp_extensions: bool,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
             let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read]).req()?;
-            Ok(extract_probe_resp(protocol, &ipv4)?)
+            Ok(extract_probe_resp(protocol, icmp_extensions, &ipv4)?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -248,11 +249,10 @@ pub fn recv_tcp_socket<S: Socket>(
                 }
                 if platform::is_host_unreachable_error(code) {
                     let error_addr = tcp_socket.icmp_error_info()?;
-                    return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                        SystemTime::now(),
-                        error_addr,
-                        resp_seq,
-                    ))));
+                    return Ok(Some(ProbeResponse::TimeExceeded(
+                        ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        None,
+                    )));
                 }
             }
         }
@@ -343,6 +343,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 #[instrument]
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    icmp_extensions: bool,
     ipv4: &Ipv4Packet<'_>,
 ) -> TraceResult<Option<ProbeResponse>> {
     let recv = SystemTime::now();
@@ -352,15 +353,28 @@ fn extract_probe_resp(
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
             let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
-                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq))
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq), extension)
             })
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
             let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
-                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, src, resp_seq))
+                ProbeResponse::DestinationUnreachable(
+                    ProbeResponseData::new(recv, src, resp_seq),
+                    extension,
+                )
             })
         }
         IcmpType::EchoReply => match protocol {

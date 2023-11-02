@@ -144,14 +144,14 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
         match next {
-            Some(ProbeResponse::TimeExceeded(data)) => {
+            Some(ProbeResponse::TimeExceeded(data, _)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 let is_target = host == self.config.target_addr;
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_time_exceeded(sequence, host, received, is_target);
                 }
             }
-            Some(ProbeResponse::DestinationUnreachable(data)) => {
+            Some(ProbeResponse::DestinationUnreachable(data, _)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
                     st.complete_probe_unreachable(sequence, host, received);
