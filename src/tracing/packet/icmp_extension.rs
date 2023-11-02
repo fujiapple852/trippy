@@ -493,6 +493,314 @@ pub mod extension_object {
     }
 }
 
+pub mod mpls_label_stack {
+    use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
+
+    /// Represents an ICMP `MplsLabelStackPacket`.
+    ///
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
+    pub struct MplsLabelStackPacket<'a> {
+        buf: Buffer<'a>,
+    }
+
+    impl<'a> MplsLabelStackPacket<'a> {
+        pub fn new(packet: &'a mut [u8]) -> Option<MplsLabelStackPacket<'_>> {
+            if packet.len() >= Self::minimum_packet_size() {
+                Some(Self {
+                    buf: Buffer::Mutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub fn new_view(packet: &'a [u8]) -> Option<MplsLabelStackPacket<'_>> {
+            if packet.len() >= Self::minimum_packet_size() {
+                Some(Self {
+                    buf: Buffer::Immutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub const fn minimum_packet_size() -> usize {
+            4
+        }
+
+        #[must_use]
+        pub fn packet(&self) -> &[u8] {
+            self.buf.as_slice()
+        }
+
+        #[must_use]
+        pub fn members(&self) -> MplsLabelStackIter<'_> {
+            MplsLabelStackIter::new(&self.buf)
+        }
+    }
+
+    pub struct MplsLabelStackIter<'a> {
+        buf: &'a Buffer<'a>,
+        offset: usize,
+        bos: u8,
+    }
+
+    impl<'a> MplsLabelStackIter<'a> {
+        #[must_use]
+        pub fn new(buf: &'a Buffer<'_>) -> Self {
+            Self {
+                buf,
+                offset: 0,
+                bos: 0,
+            }
+        }
+    }
+
+    impl<'a> Iterator for MplsLabelStackIter<'a> {
+        type Item = &'a [u8];
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.bos > 0 || self.offset >= self.buf.as_slice().len() {
+                None
+            } else {
+                let member_bytes = &self.buf.as_slice()[self.offset..];
+                if let Some(member) = MplsLabelStackMemberPacket::new_view(member_bytes) {
+                    self.bos = member.get_bos();
+                    self.offset += MplsLabelStackMemberPacket::minimum_packet_size();
+                    Some(member_bytes)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_stack_member_iterator() {
+            let buf = [0x04, 0xbb, 0x41, 0x01];
+            let stack = MplsLabelStackPacket::new_view(&buf).unwrap();
+            let mut member_iter = stack.members();
+            let member_bytes = member_iter.next().unwrap();
+            let member = MplsLabelStackMemberPacket::new_view(member_bytes).unwrap();
+            assert_eq!(19380, member.get_label());
+            assert_eq!(0, member.get_exp());
+            assert_eq!(1, member.get_bos());
+            assert_eq!(1, member.get_ttl());
+            assert!(member_iter.next().is_none());
+        }
+    }
+}
+
+pub mod mpls_label_stack_member {
+    use crate::tracing::packet::buffer::Buffer;
+    use std::fmt::{Debug, Formatter};
+
+    const LABEL_OFFSET: usize = 0;
+    const EXP_OFFSET: usize = 2;
+    const BOS_OFFSET: usize = 2;
+    const TTL_OFFSET: usize = 3;
+
+    /// Represents an ICMP `MplsLabelStackMemberPacket`.
+    ///
+    /// The internal representation is held in network byte order (big-endian) and all accessor
+    /// methods take and return data in host byte order, converting as necessary for the given
+    /// architecture.
+    pub struct MplsLabelStackMemberPacket<'a> {
+        buf: Buffer<'a>,
+    }
+
+    impl<'a> MplsLabelStackMemberPacket<'a> {
+        pub fn new(packet: &'a mut [u8]) -> Option<MplsLabelStackMemberPacket<'_>> {
+            if packet.len() >= Self::minimum_packet_size() {
+                Some(Self {
+                    buf: Buffer::Mutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub fn new_view(packet: &'a [u8]) -> Option<MplsLabelStackMemberPacket<'_>> {
+            if packet.len() >= Self::minimum_packet_size() {
+                Some(Self {
+                    buf: Buffer::Immutable(packet),
+                })
+            } else {
+                None
+            }
+        }
+
+        #[must_use]
+        pub const fn minimum_packet_size() -> usize {
+            4
+        }
+
+        #[must_use]
+        pub fn get_label(&self) -> u32 {
+            u32::from_be_bytes([
+                0x0,
+                self.buf.read(LABEL_OFFSET),
+                self.buf.read(LABEL_OFFSET + 1),
+                self.buf.read(LABEL_OFFSET + 2),
+            ]) >> 4
+        }
+
+        #[must_use]
+        pub fn get_exp(&self) -> u8 {
+            (self.buf.read(EXP_OFFSET) & 0x0e) >> 1
+        }
+
+        #[must_use]
+        pub fn get_bos(&self) -> u8 {
+            self.buf.read(BOS_OFFSET) & 0x01
+        }
+
+        #[must_use]
+        pub fn get_ttl(&self) -> u8 {
+            self.buf.read(TTL_OFFSET)
+        }
+
+        pub fn set_label(&mut self, val: u32) {
+            let bytes = (val << 4).to_be_bytes();
+            *self.buf.write(LABEL_OFFSET) = bytes[1];
+            *self.buf.write(LABEL_OFFSET + 1) = bytes[2];
+            *self.buf.write(LABEL_OFFSET + 2) =
+                (self.buf.read(LABEL_OFFSET + 2) & 0x0f) | (bytes[3] & 0xf0);
+        }
+
+        pub fn set_exp(&mut self, exp: u8) {
+            *self.buf.write(EXP_OFFSET) = (self.buf.read(EXP_OFFSET) & 0xf1) | ((exp << 1) & 0x0e);
+        }
+
+        pub fn set_bos(&mut self, bos: u8) {
+            *self.buf.write(BOS_OFFSET) = (self.buf.read(BOS_OFFSET) & 0xfe) | (bos & 0x01);
+        }
+
+        pub fn set_ttl(&mut self, ttl: u8) {
+            *self.buf.write(TTL_OFFSET) = ttl;
+        }
+
+        #[must_use]
+        pub fn packet(&self) -> &[u8] {
+            self.buf.as_slice()
+        }
+    }
+
+    impl Debug for MplsLabelStackMemberPacket<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("MplsLabelStackMember")
+                .field("label", &self.get_label())
+                .field("exp", &self.get_exp())
+                .field("bos", &self.get_bos())
+                .field("ttl", &self.get_ttl())
+                .finish()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_label() {
+            let mut buf = [0_u8; MplsLabelStackMemberPacket::minimum_packet_size()];
+            let mut mpls_extension = MplsLabelStackMemberPacket::new(&mut buf).unwrap();
+            mpls_extension.set_label(0);
+            assert_eq!(0, mpls_extension.get_label());
+            assert_eq!([0x00, 0x00, 0x00], mpls_extension.packet()[0..3]);
+            mpls_extension.set_label(19380);
+            assert_eq!(19380, mpls_extension.get_label());
+            assert_eq!([0x04, 0xbb, 0x40], mpls_extension.packet()[0..3]);
+            mpls_extension.set_label(1_048_575);
+            assert_eq!(1_048_575, mpls_extension.get_label());
+            assert_eq!([0xff, 0xff, 0xf0], mpls_extension.packet()[0..3]);
+        }
+
+        #[test]
+        fn test_exp() {
+            let mut buf = [0_u8; MplsLabelStackMemberPacket::minimum_packet_size()];
+            let mut mpls_extension = MplsLabelStackMemberPacket::new(&mut buf).unwrap();
+            mpls_extension.set_exp(0);
+            assert_eq!(0, mpls_extension.get_exp());
+            assert_eq!([0x00], mpls_extension.packet()[2..3]);
+            mpls_extension.set_exp(7);
+            assert_eq!(7, mpls_extension.get_exp());
+            assert_eq!([0x0e], mpls_extension.packet()[2..3]);
+        }
+
+        #[test]
+        fn test_bos() {
+            let mut buf = [0_u8; MplsLabelStackMemberPacket::minimum_packet_size()];
+            let mut mpls_extension = MplsLabelStackMemberPacket::new(&mut buf).unwrap();
+            mpls_extension.set_bos(0);
+            assert_eq!(0, mpls_extension.get_bos());
+            assert_eq!([0x00], mpls_extension.packet()[2..3]);
+            mpls_extension.set_bos(1);
+            assert_eq!(1, mpls_extension.get_bos());
+            assert_eq!([0x01], mpls_extension.packet()[2..3]);
+        }
+
+        #[test]
+        fn test_ttl() {
+            let mut buf = [0_u8; MplsLabelStackMemberPacket::minimum_packet_size()];
+            let mut mpls_extension = MplsLabelStackMemberPacket::new(&mut buf).unwrap();
+            mpls_extension.set_ttl(0);
+            assert_eq!(0, mpls_extension.get_ttl());
+            assert_eq!([0x00], mpls_extension.packet()[3..4]);
+            mpls_extension.set_ttl(1);
+            assert_eq!(1, mpls_extension.get_ttl());
+            assert_eq!([0x01], mpls_extension.packet()[3..4]);
+            mpls_extension.set_ttl(255);
+            assert_eq!(255, mpls_extension.get_ttl());
+            assert_eq!([0xff], mpls_extension.packet()[3..4]);
+        }
+
+        #[test]
+        fn test_combined() {
+            let mut buf = [0_u8; MplsLabelStackMemberPacket::minimum_packet_size()];
+            let mut mpls_extension = MplsLabelStackMemberPacket::new(&mut buf).unwrap();
+            mpls_extension.set_label(19380);
+            mpls_extension.set_exp(0);
+            mpls_extension.set_bos(1);
+            mpls_extension.set_ttl(1);
+            assert_eq!(19380, mpls_extension.get_label());
+            assert_eq!(0, mpls_extension.get_exp());
+            assert_eq!(1, mpls_extension.get_bos());
+            assert_eq!(1, mpls_extension.get_ttl());
+            assert_eq!([0x04, 0xbb, 0x41, 0x01], mpls_extension.packet()[0..4]);
+            mpls_extension.set_label(1_048_575);
+            mpls_extension.set_exp(7);
+            mpls_extension.set_bos(1);
+            mpls_extension.set_ttl(255);
+            assert_eq!(1_048_575, mpls_extension.get_label());
+            assert_eq!(7, mpls_extension.get_exp());
+            assert_eq!(1, mpls_extension.get_bos());
+            assert_eq!(255, mpls_extension.get_ttl());
+            assert_eq!([0xff, 0xff, 0xff, 0xff], mpls_extension.packet()[0..4]);
+        }
+
+        #[test]
+        fn test_view() {
+            let buf = [0x04, 0xbb, 0x41, 0x01];
+            let object = MplsLabelStackMemberPacket::new_view(&buf).unwrap();
+            assert_eq!(19380, object.get_label());
+            assert_eq!(0, object.get_exp());
+            assert_eq!(1, object.get_bos());
+            assert_eq!(1, object.get_ttl());
+        }
+    }
+}
+
 pub mod extension_splitter {
     use crate::tracing::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
 
@@ -560,6 +868,8 @@ pub mod extension_splitter {
         };
         use crate::tracing::packet::icmp_extension::extension_splitter::split;
         use crate::tracing::packet::icmp_extension::extension_structure::ExtensionsPacket;
+        use crate::tracing::packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
+        use crate::tracing::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
         use crate::tracing::packet::icmpv4::echo_request::EchoRequestPacket;
         use crate::tracing::packet::icmpv4::time_exceeded::TimeExceededPacket;
         use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
@@ -673,6 +983,15 @@ pub mod extension_splitter {
             );
             assert_eq!(ClassSubType(1), extension_object.get_class_subtype());
             assert_eq!([0x04, 0xbb, 0x41, 0x01], extension_object.payload());
+
+            let mpls_stack = MplsLabelStackPacket::new_view(extension_object.payload()).unwrap();
+            let mpls_stack_member_bytes = mpls_stack.members().next().unwrap();
+            let mpls_stack_member =
+                MplsLabelStackMemberPacket::new_view(mpls_stack_member_bytes).unwrap();
+            assert_eq!(19380, mpls_stack_member.get_label());
+            assert_eq!(0, mpls_stack_member.get_exp());
+            assert_eq!(1, mpls_stack_member.get_bos());
+            assert_eq!(1, mpls_stack_member.get_ttl());
         }
 
         // This ICMP TimeExceeded packet does not have any ICMP extensions.
