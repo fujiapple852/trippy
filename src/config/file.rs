@@ -111,6 +111,7 @@ pub struct ConfigStrategy {
     pub packet_size: Option<u16>,
     pub payload_pattern: Option<u8>,
     pub tos: Option<u8>,
+    pub icmp_extensions: Option<bool>,
     pub read_timeout: Option<String>,
 }
 
