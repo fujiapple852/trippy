@@ -631,6 +631,7 @@ pub mod echo_reply {
 pub mod time_exceeded {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
+    use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
@@ -724,7 +725,20 @@ pub mod time_exceeded {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size()..]
+            let (payload, _) = self.split_payload_extension();
+            payload
+        }
+
+        #[must_use]
+        pub fn extension(&self) -> Option<&[u8]> {
+            let (_, extension) = self.split_payload_extension();
+            extension
+        }
+
+        fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
+            let rfc4884_length = self.get_length();
+            let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
+            split(rfc4884_length, icmp_payload)
         }
     }
 
@@ -826,6 +840,7 @@ pub mod time_exceeded {
 pub mod destination_unreachable {
     use crate::tracing::packet::buffer::Buffer;
     use crate::tracing::packet::fmt_payload;
+    use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
@@ -929,7 +944,20 @@ pub mod destination_unreachable {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size()..]
+            let (payload, _) = self.split_payload_extension();
+            payload
+        }
+
+        #[must_use]
+        pub fn extension(&self) -> Option<&[u8]> {
+            let (_, extension) = self.split_payload_extension();
+            extension
+        }
+
+        fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
+            let rfc4884_length = self.get_length();
+            let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
+            split(rfc4884_length, icmp_payload)
         }
     }
 
