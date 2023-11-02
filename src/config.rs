@@ -117,6 +117,25 @@ pub enum AsMode {
     Name,
 }
 
+/// How to render `icmp` extensions in the hops table.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum IcmpExtensionMode {
+    /// Do not show `icmp` extensions.
+    Off,
+    /// Show MPLS label(s) only.
+    Mpls,
+    /// Show full `icmp` extension data for all known extensions.
+    ///
+    /// For MPLS the fields shown are `label`, `ttl`, `exp` & `bos`.
+    Full,
+    /// Show full `icmp` extension data for all known and unknown classes.
+    ///
+    /// This is the same as `Full`, but also shows `class`, `subtype` and
+    /// `object` for unknown extensions.
+    All,
+}
+
 /// How to render `GeoIp` information in the hop table.
 ///
 /// Note that the hop details view is always shown using the `Long` representation.
@@ -217,6 +236,7 @@ pub struct TrippyConfig {
     pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
+    pub tui_icmp_extension_mode: IcmpExtensionMode,
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
@@ -418,6 +438,13 @@ impl TrippyConfig {
             cfg_file_tui.tui_as_mode,
             constants::DEFAULT_TUI_AS_MODE,
         );
+
+        let tui_icmp_extension_mode = cfg_layer(
+            args.tui_icmp_extension_mode,
+            cfg_file_tui.tui_icmp_extension_mode,
+            constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
+        );
+
         let tui_geoip_mode = cfg_layer(
             args.tui_geoip_mode,
             cfg_file_tui.tui_geoip_mode,
@@ -577,6 +604,7 @@ impl TrippyConfig {
             tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
+            tui_icmp_extension_mode,
             tui_geoip_mode,
             tui_max_addrs,
             tui_theme,
@@ -626,6 +654,7 @@ impl Default for TrippyConfig {
             tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
             tui_address_mode: constants::DEFAULT_TUI_ADDRESS_MODE,
             tui_as_mode: constants::DEFAULT_TUI_AS_MODE,
+            tui_icmp_extension_mode: constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
             tui_geoip_mode: constants::DEFAULT_TUI_GEOIP_MODE,
             tui_max_addrs: None,
             tui_theme: TuiTheme::default(),

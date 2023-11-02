@@ -216,6 +216,7 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new("packet-size", format!("{}", cfg.packet_size)),
         SettingsItem::new("payload-pattern", format!("{}", cfg.payload_pattern)),
+        SettingsItem::new("icmp-extensions", format!("{}", cfg.icmp_extensions)),
         SettingsItem::new("interface", interface),
         SettingsItem::new("multipath-strategy", cfg.multipath_strategy.to_string()),
         SettingsItem::new("target-port", dst_port),
@@ -419,7 +420,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
     ("Tui", 8),
-    ("Trace", 14),
+    ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
     ("Bindings", 29),

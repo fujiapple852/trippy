@@ -1,8 +1,8 @@
 use crate::config::binding::TuiKeyBinding;
 use crate::config::theme::TuiColor;
 use crate::config::{
-    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat,
-    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
+    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
 };
 use anyhow::Context;
 use etcetera::BaseStrategy;
@@ -218,6 +218,7 @@ pub struct ConfigTui {
     pub tui_privacy_max_ttl: Option<u8>,
     pub tui_address_mode: Option<AddressMode>,
     pub tui_as_mode: Option<AsMode>,
+    pub tui_icmp_extension_mode: Option<IcmpExtensionMode>,
     pub tui_geoip_mode: Option<GeoIpMode>,
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
@@ -232,6 +233,7 @@ impl Default for ConfigTui {
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),
+            tui_icmp_extension_mode: Some(super::constants::DEFAULT_TUI_ICMP_EXTENSION_MODE),
             tui_geoip_mode: Some(super::constants::DEFAULT_TUI_GEOIP_MODE),
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),
             geoip_mmdb_file: None,

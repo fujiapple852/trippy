@@ -1,6 +1,6 @@
 use crate::config::{
-    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat,
-    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
+    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
 };
 use std::time::Duration;
 
@@ -81,6 +81,9 @@ pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 
 /// The default value for `tui-as-mode`.
 pub const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
+
+/// The default value for `tui-icmp-extension-mode`.
+pub const DEFAULT_TUI_ICMP_EXTENSION_MODE: IcmpExtensionMode = IcmpExtensionMode::Off;
 
 /// The default value for `tui-geoip-mode`.
 pub const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Off;

@@ -1,5 +1,5 @@
-use crate::config::TuiBindings;
 use crate::config::{AddressMode, AsMode, GeoIpMode, TuiTheme};
+use crate::config::{IcmpExtensionMode, TuiBindings};
 use crate::frontend::binding::Bindings;
 use crate::frontend::theme::Theme;
 use std::time::Duration;
@@ -19,6 +19,8 @@ pub struct TuiConfig {
     pub lookup_as_info: bool,
     /// How to render AS data.
     pub as_mode: AsMode,
+    /// How to render ICMP extensions.
+    pub icmp_extension_mode: IcmpExtensionMode,
     /// How to render GeoIp data.
     pub geoip_mode: GeoIpMode,
     /// The maximum number of addresses to show per hop.
@@ -40,6 +42,7 @@ impl TuiConfig {
         address_mode: AddressMode,
         lookup_as_info: bool,
         as_mode: AsMode,
+        icmp_extension_mode: IcmpExtensionMode,
         geoip_mode: GeoIpMode,
         max_addrs: Option<u8>,
         max_samples: usize,
@@ -53,6 +56,7 @@ impl TuiConfig {
             address_mode,
             lookup_as_info,
             as_mode,
+            icmp_extension_mode,
             geoip_mode,
             max_addrs,
             max_samples,
