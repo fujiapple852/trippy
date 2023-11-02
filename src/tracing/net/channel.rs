@@ -172,10 +172,10 @@ impl<S: Socket> TracerChannel<S> {
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.tos)
+                ipv4::dispatch_tcp_probe(&probe, src_addr, dest_addr, self.tos)
             }
             (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr)
+                ipv6::dispatch_tcp_probe(&probe, src_addr, dest_addr)
             }
             _ => unreachable!(),
         }?;

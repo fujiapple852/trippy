@@ -187,7 +187,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
 
 #[instrument(skip(probe))]
 pub fn dispatch_tcp_probe<S: Socket>(
-    probe: Probe,
+    probe: &Probe,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     tos: TypeOfService,
