@@ -1,7 +1,7 @@
 use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethod, GeoIpMode, LogFormat, LogSpanEvents, Mode,
+    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
     MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
@@ -116,7 +116,7 @@ pub struct Args {
 
     /// How to perform DNS queries [default: system]
     #[arg(value_enum, short = 'r', long)]
-    pub dns_resolve_method: Option<DnsResolveMethod>,
+    pub dns_resolve_method: Option<DnsResolveMethodConfig>,
 
     /// The maximum time to wait to perform DNS queries [default: 5s]
     #[arg(long)]

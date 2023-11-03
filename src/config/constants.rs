@@ -1,5 +1,5 @@
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethod, GeoIpMode, LogFormat, LogSpanEvents, Mode,
+    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
     MultipathStrategyConfig, Protocol,
 };
 use std::time::Duration;
@@ -83,7 +83,7 @@ pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 pub const DEFAULT_TUI_REFRESH_RATE: &str = "100ms";
 
 /// The default value for `dns-resolve-method`.
-pub const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethod = DnsResolveMethod::System;
+pub const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethodConfig = DnsResolveMethodConfig::System;
 
 /// The default value for `dns-lookup-as-info`.
 pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;

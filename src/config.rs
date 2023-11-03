@@ -27,6 +27,7 @@ pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
 pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
+use trippy::dns::DnsResolveMethod;
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
@@ -144,7 +145,7 @@ pub enum GeoIpMode {
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum DnsResolveMethod {
+pub enum DnsResolveMethodConfig {
     /// Resolve using the OS resolver.
     System,
     /// Resolve using the `/etc/resolv.conf` DNS configuration.
@@ -399,7 +400,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             constants::DEFAULT_TUI_GEOIP_MODE,
         );
         let tui_max_addrs = cfg_layer_opt(args.tui_max_addrs, cfg_file_tui.tui_max_addrs);
-        let dns_resolve_method = cfg_layer(
+        let dns_resolve_method_config = cfg_layer(
             args.dns_resolve_method,
             cfg_file_dns.dns_resolve_method,
             constants::DEFAULT_DNS_RESOLVE_METHOD,
@@ -478,6 +479,12 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             }
         };
         let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
+        let dns_resolve_method = match dns_resolve_method_config {
+            DnsResolveMethodConfig::System => DnsResolveMethod::System,
+            DnsResolveMethodConfig::Resolv => DnsResolveMethod::Resolv,
+            DnsResolveMethodConfig::Google => DnsResolveMethod::Google,
+            DnsResolveMethodConfig::Cloudflare => DnsResolveMethod::Cloudflare,
+        };
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,

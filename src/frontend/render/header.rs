@@ -1,6 +1,3 @@
-use std::time::Duration;
-
-use crate::config::DnsResolveMethod;
 use crate::frontend::tui_app::TuiApp;
 use chrono::SecondsFormat;
 use humantime::format_duration;
@@ -9,6 +6,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
+use std::time::Duration;
+use trippy::dns::DnsResolveMethod;
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.

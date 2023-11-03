@@ -1,9 +1,20 @@
-use crate::config::DnsResolveMethod;
-use crate::dns::inner::DnsResolverInner;
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::Duration;
+
+/// How DNS queries will be resolved.
+#[derive(Debug, Copy, Clone)]
+pub enum DnsResolveMethod {
+    /// Resolve using the OS resolver.
+    System,
+    /// Resolve using the `/etc/resolv.conf` DNS configuration.
+    Resolv,
+    /// Resolve using the Google `8.8.8.8` DNS service.
+    Google,
+    /// Resolve using the Cloudflare `1.1.1.1` DNS service.
+    Cloudflare,
+}
 
 /// The state of reverse DNS resolution.
 #[derive(Debug, Clone)]
@@ -84,6 +95,7 @@ pub struct DnsResolverConfig {
 }
 
 impl DnsResolverConfig {
+    #[must_use]
     pub fn new_ipv4(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
@@ -92,6 +104,7 @@ impl DnsResolverConfig {
         }
     }
 
+    #[must_use]
     pub fn new_ipv6(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
@@ -104,13 +117,13 @@ impl DnsResolverConfig {
 /// A cheaply cloneable, non-blocking, caching, forward and reverse DNS resolver.
 #[derive(Clone)]
 pub struct DnsResolver {
-    inner: Rc<DnsResolverInner>,
+    inner: Rc<inner::DnsResolverInner>,
 }
 
 impl DnsResolver {
     pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
         Ok(Self {
-            inner: Rc::new(DnsResolverInner::start(config)?),
+            inner: Rc::new(inner::DnsResolverInner::start(config)?),
         })
     }
 
@@ -122,6 +135,7 @@ impl DnsResolver {
     /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
     ///
     /// As this method is blocking it will never return a `DnsEntry::Pending`.
+    #[must_use]
     pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, false, false)
     }
@@ -131,6 +145,7 @@ impl DnsResolver {
     ///
     /// See [`DnsResolver::reverse_lookup`]
     #[allow(dead_code)]
+    #[must_use]
     pub fn reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, true, false)
     }
@@ -146,6 +161,7 @@ impl DnsResolver {
     /// and enqueued.
     ///
     /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
+    #[must_use]
     pub fn lazy_reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, false, true)
     }
@@ -153,11 +169,13 @@ impl DnsResolver {
     /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
     ///
     /// See [`DnsResolver::lazy_reverse_lookup`]
+    #[must_use]
     pub fn lazy_reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
         self.inner.reverse_lookup(addr, true, true)
     }
 
     /// Get the `DnsResolverConfig`.
+    #[must_use]
     pub fn config(&self) -> &DnsResolverConfig {
         self.inner.config()
     }

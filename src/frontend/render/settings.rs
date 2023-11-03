@@ -1,4 +1,4 @@
-use crate::config::{AddressMode, AsMode, DnsResolveMethod, GeoIpMode};
+use crate::config::{AddressMode, AsMode, GeoIpMode};
 use crate::frontend::render::util;
 use crate::frontend::theme;
 use crate::frontend::tui_app::TuiApp;
@@ -8,6 +8,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs};
 use ratatui::Frame;
+use trippy::dns::DnsResolveMethod;
 use trippy::tracing::PortDirection;
 
 /// Render settings dialog.

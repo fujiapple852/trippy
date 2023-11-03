@@ -10,3 +10,5 @@
 #![deny(unsafe_code)]
 
 pub mod tracing;
+
+pub mod dns;

@@ -15,7 +15,6 @@
 
 use crate::backend::Trace;
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
-use crate::dns::{DnsResolver, DnsResolverConfig};
 use crate::geoip::GeoIpLookup;
 use crate::platform::Platform;
 use anyhow::{anyhow, Error};
@@ -31,6 +30,7 @@ use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use trippy::dns::{DnsResolver, DnsResolverConfig};
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
     TracerProtocol,
@@ -39,7 +39,6 @@ use trippy::tracing::{PrivilegeMode, SourceAddr};
 
 mod backend;
 mod config;
-mod dns;
 mod frontend;
 mod geoip;
 mod platform;

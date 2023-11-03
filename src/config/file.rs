@@ -1,8 +1,8 @@
 use crate::config::binding::TuiKeyBinding;
 use crate::config::theme::TuiColor;
 use crate::config::{
-    AddressFamily, AddressMode, AsMode, DnsResolveMethod, GeoIpMode, LogFormat, LogSpanEvents,
-    Mode, MultipathStrategyConfig, Protocol,
+    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat,
+    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
 };
 use anyhow::Context;
 use etcetera::BaseStrategy;
@@ -117,7 +117,7 @@ pub struct ConfigStrategy {
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigDns {
-    pub dns_resolve_method: Option<DnsResolveMethod>,
+    pub dns_resolve_method: Option<DnsResolveMethodConfig>,
     pub dns_lookup_as_info: Option<bool>,
     pub dns_timeout: Option<String>,
 }
