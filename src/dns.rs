@@ -1,20 +1,12 @@
+//! A DNS resolver.
+//!
+//! This module provides a cheaply cloneable, non-blocking, caching, forward
+//! and reverse DNS resolver which support the ability to lookup Autonomous
+//! System (AS) information.
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::Duration;
-
-/// How DNS queries will be resolved.
-#[derive(Debug, Copy, Clone)]
-pub enum DnsResolveMethod {
-    /// Resolve using the OS resolver.
-    System,
-    /// Resolve using the `/etc/resolv.conf` DNS configuration.
-    Resolv,
-    /// Resolve using the Google `8.8.8.8` DNS service.
-    Google,
-    /// Resolve using the Cloudflare `1.1.1.1` DNS service.
-    Cloudflare,
-}
 
 /// The state of reverse DNS resolution.
 #[derive(Debug, Clone)]
@@ -71,30 +63,67 @@ impl Display for DnsEntry {
 /// Autonomous System (AS) information.
 #[derive(Debug, Clone, Default)]
 pub struct AsInfo {
+    /// The Autonomous System Number.
+    ///
+    /// This is returned without the AS prefix i.e. `12301`.
     pub asn: String,
+    /// The AS prefix.
+    ///
+    /// Given in CIDR notation i.e. `81.0.100.0/22`.
     pub prefix: String,
+    /// The country code.
+    ///
+    /// Given as a ISO format i.e. `HU`.
     pub cc: String,
+    /// AS registry name.
+    ///
+    /// Given as a string i.e. `ripencc`.
     pub registry: String,
+    /// Allocation date.
+    ///
+    /// Given as an ISO date i.e. `1999-02-25`.
     pub allocated: String,
+    /// The Autonomous System Name.
+    ///
+    /// Given as a string i.e. `INVITECH, HU`.
     pub name: String,
 }
 
 /// The address family.
 #[derive(Debug, Copy, Clone)]
 pub enum IpAddrFamily {
+    /// Internet Protocol v4.
     Ipv4,
+    /// Internet Protocol v6.
     Ipv6,
+}
+
+/// How DNS queries will be resolved.
+#[derive(Debug, Copy, Clone)]
+pub enum DnsResolveMethod {
+    /// Resolve using the OS resolver.
+    System,
+    /// Resolve using the `/etc/resolv.conf` DNS configuration.
+    Resolv,
+    /// Resolve using the Google `8.8.8.8` DNS service.
+    Google,
+    /// Resolve using the Cloudflare `1.1.1.1` DNS service.
+    Cloudflare,
 }
 
 /// Configuration for the `DnsResolver`.
 #[derive(Debug, Copy, Clone)]
 pub struct DnsResolverConfig {
+    /// The method to use for DNS resolution.
     pub resolve_method: DnsResolveMethod,
+    /// The address family to lookup.
     pub addr_family: IpAddrFamily,
+    /// The timeout for DNS resolution.
     pub timeout: Duration,
 }
 
 impl DnsResolverConfig {
+    /// Create an IPv4 `DnsResolverConfig`.
     #[must_use]
     pub fn new_ipv4(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
@@ -104,6 +133,7 @@ impl DnsResolverConfig {
         }
     }
 
+    /// Create an IPv6 `DnsResolverConfig`.
     #[must_use]
     pub fn new_ipv6(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
         Self {
@@ -121,13 +151,14 @@ pub struct DnsResolver {
 }
 
 impl DnsResolver {
+    /// Create and start a new `DnsResolver`.
     pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
         Ok(Self {
             inner: Rc::new(inner::DnsResolverInner::start(config)?),
         })
     }
 
-    /// Perform a blocking DNS hostname lookup and return a vector of IP addresses.
+    /// Perform a blocking DNS hostname lookup and return the resolved IPv4 or IPv6 addresses.
     pub fn lookup(&self, hostname: &str) -> anyhow::Result<Vec<IpAddr>> {
         self.inner.lookup(hostname)
     }
@@ -180,6 +211,7 @@ impl DnsResolver {
         self.inner.config()
     }
 
+    /// Flush the cache of responses.
     pub fn flush(&self) {
         self.inner.flush();
     }
