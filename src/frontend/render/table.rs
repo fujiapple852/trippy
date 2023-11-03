@@ -1,6 +1,5 @@
 use crate::backend::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode};
-use crate::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Unresolved};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -12,6 +11,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
+use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Unresolved};
 
 /// Render the table of data about the hops.
 ///

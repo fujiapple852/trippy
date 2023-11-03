@@ -1,12 +1,11 @@
 use crate::backend::{Hop, Trace};
-use crate::config::DnsResolveMethod;
-use crate::dns::DnsResolver;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::SETTINGS_TABS;
 use crate::geoip::GeoIpLookup;
 use crate::TraceInfo;
 use ratatui::widgets::TableState;
 use std::time::SystemTime;
+use trippy::dns::{DnsResolveMethod, DnsResolver};
 
 pub struct TuiApp {
     pub selected_tracer_data: Trace,
