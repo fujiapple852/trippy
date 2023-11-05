@@ -1,7 +1,8 @@
 use crate::config::AddressMode;
 use crate::frontend::binding::CTRL_C;
 use crate::geoip::GeoIpLookup;
-use crate::{DnsResolver, TraceInfo};
+use crate::TraceInfo;
+pub use config::TuiConfig;
 use crossterm::event::KeyEventKind;
 use crossterm::{
     event::{self, Event},
@@ -13,6 +14,7 @@ use ratatui::{
     Terminal,
 };
 use std::io;
+use trippy::dns::DnsResolver;
 use tui_app::TuiApp;
 
 mod binding;
@@ -20,8 +22,6 @@ mod config;
 mod render;
 mod theme;
 mod tui_app;
-
-pub use config::TuiConfig;
 
 /// Run the frontend TUI.
 pub fn run_frontend(

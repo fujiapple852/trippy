@@ -1,4 +1,4 @@
-use crate::{DnsResolver, Trace, TraceInfo};
+use crate::{Trace, TraceInfo};
 use anyhow::anyhow;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
@@ -8,7 +8,7 @@ use serde::{Serialize, Serializer};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
-use trippy::dns::Resolver;
+use trippy::dns::{DnsResolver, Resolver};
 
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
