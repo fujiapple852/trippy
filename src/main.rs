@@ -30,7 +30,7 @@ use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use trippy::dns::{DnsResolver, DnsResolverConfig};
+use trippy::dns::{DnsResolver, DnsResolverConfig, Resolver};
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
     TracerProtocol,

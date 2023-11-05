@@ -8,6 +8,7 @@ use serde::{Serialize, Serializer};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
+use trippy::dns::Resolver;
 
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
