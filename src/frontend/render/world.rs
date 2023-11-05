@@ -1,4 +1,3 @@
-use crate::backend::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -45,14 +44,11 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
             render_map_canvas_world(ctx, theme.map_world_color);
             ctx.layer();
             for entry in entries {
+                let hindex = app.selected_or_target_index();
+                let ttl = app.tracer_data().ttl(hindex);
                 render_map_canvas_pin(ctx, entry);
                 render_map_canvas_radius(ctx, entry, theme.map_radius_color);
-                render_map_canvas_selected(
-                    ctx,
-                    entry,
-                    app.selected_hop_or_target(),
-                    theme.map_selected_color,
-                );
+                render_map_canvas_selected(ctx, entry, ttl, theme.map_selected_color);
             }
         })
         .marker(Marker::Braille)
@@ -101,19 +97,14 @@ fn render_map_canvas_radius(ctx: &mut Context<'_>, entry: &MapEntry, color: Colo
 }
 
 /// Render the map canvas selected item box.
-fn render_map_canvas_selected(
-    ctx: &mut Context<'_>,
-    entry: &MapEntry,
-    selected_hop: &Hop,
-    color: Color,
-) {
+fn render_map_canvas_selected(ctx: &mut Context<'_>, entry: &MapEntry, ttl: u8, color: Color) {
     let MapEntry {
         latitude,
         longitude,
         hops,
         ..
     } = entry;
-    if hops.contains(&selected_hop.ttl()) {
+    if hops.contains(&ttl) {
         ctx.draw(&Rectangle {
             x: longitude - 5.0_f64,
             y: latitude - 5.0_f64,
@@ -127,11 +118,14 @@ fn render_map_canvas_selected(
 /// Render the map info panel.
 fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[MapEntry]) {
     let theme = app.tui_config.theme;
-    let selected_hop = app.selected_hop_or_target();
+    let hindex = app.selected_or_target_index();
+    let ttl = app.tracer_data().ttl(hindex);
+    let addr_count = app.tracer_data().addr_count(hindex);
+    let mut addrs = app.tracer_data().addrs(hindex);
     let locations = entries
         .iter()
         .filter_map(|entry| {
-            if entry.hops.contains(&selected_hop.ttl()) {
+            if entry.hops.contains(&ttl) {
                 Some(format!("{} [{}]", entry.long_name, entry.location))
             } else {
                 None
@@ -140,19 +134,15 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
         .collect::<Vec<_>>();
     let info = match locations.as_slice() {
         _ if app.tracer_config().geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
-        [] if selected_hop.addr_count() > 0 => format!(
-            "No GeoIp data for hop {} ({})",
-            selected_hop.ttl(),
-            selected_hop.addrs().join(", ")
-        ),
-        [] => format!("No GeoIp data for hop {}", selected_hop.ttl()),
+        [] if addr_count > 0 => format!("No GeoIp data for hop {} ({})", ttl, addrs.join(", ")),
+        [] => format!("No GeoIp data for hop {ttl}"),
         [loc] => loc.to_string(),
-        _ => format!("Multiple GeoIp locations for hop {}", selected_hop.ttl()),
+        _ => format!("Multiple GeoIp locations for hop {ttl}"),
     };
     let info_panel = Paragraph::new(info)
         .block(
             Block::default()
-                .title(format!("Hop {}", selected_hop.ttl()))
+                .title(format!("Hop {ttl}"))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(theme.map_info_panel_border_color))
@@ -182,8 +172,11 @@ struct MapEntry {
 /// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
 fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
-    for hop in app.tracer_data().hops() {
-        for addr in hop.addrs() {
+    let hop_range = app.tracer_data().hop_range();
+    for hindex in hop_range {
+        let addrs = app.tracer_data().addrs(hindex);
+        let ttl = app.tracer_data().ttl(hindex);
+        for addr in addrs {
             if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {
                     let entry = geo_map.entry(geo.long_name()).or_insert(MapEntry {
@@ -194,7 +187,7 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
                         radius,
                         hops: vec![],
                     });
-                    entry.hops.push(hop.ttl());
+                    entry.hops.push(ttl);
                 }
             };
         }

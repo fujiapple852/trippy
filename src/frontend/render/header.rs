@@ -94,7 +94,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
             Span::raw(render_status(app)),
             Span::raw(format!(
                 ", discovered {} hops",
-                app.tracer_data().hops().len()
+                app.tracer_data().hop_count()
             )),
         ]),
     ];

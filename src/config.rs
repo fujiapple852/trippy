@@ -142,6 +142,18 @@ pub enum GeoIpMode {
     Location,
 }
 
+/// TODO How to segregate trace date.
+#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SegregationMode {
+    /// Do not segregate tracing data.
+    None,
+    /// Segregate trace data by the TCP/UDP quad (src/dest address and port).
+    ByFlowId,
+    /// Segregate trace data by the unique signature of a tracing round.
+    BySignature,
+}
+
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]

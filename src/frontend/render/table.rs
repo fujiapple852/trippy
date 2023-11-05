@@ -1,4 +1,3 @@
-use crate::backend::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
@@ -31,10 +30,16 @@ use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved}
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows =
-        app.tracer_data().hops().iter().map(|hop| {
-            render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config)
-        });
+    let hop_range = app.tracer_data().hop_range();
+    let rows = hop_range.into_iter().map(|hindex| {
+        render_table_row(
+            app,
+            hindex,
+            &app.resolver,
+            &app.geoip_lookup,
+            &app.tui_config,
+        )
+    });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -68,32 +73,38 @@ fn render_table_header(theme: Theme) -> Row<'static> {
 /// Render a single row in the table of hops.
 fn render_table_row(
     app: &TuiApp,
-    hop: &Hop,
+    hindex: usize,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> Row<'static> {
-    let is_selected_hop = app
-        .selected_hop()
-        .map(|h| h.ttl() == hop.ttl())
-        .unwrap_or_default();
-    let is_target = app.tracer_data().is_target(hop);
-    let is_in_round = app.tracer_data().is_in_round(hop);
-    let ttl_cell = render_ttl_cell(hop);
+    let is_selected_hop = app.table_state.selected() == Some(hindex);
+    let is_target = app.tracer_data().is_target(hindex);
+    let is_in_round = app.tracer_data().is_in_round(hindex);
+    let ttl = app.tracer_data().ttl(hindex);
+    let loss_pct = app.tracer_data().loss_pct(hindex);
+    let total_sent = app.tracer_data().total_sent(hindex);
+    let total_recv = app.tracer_data().total_recv(hindex);
+    let last = app.tracer_data().last_ms(hindex);
+    let avg = app.tracer_data().avg_ms(hindex);
+    let best = app.tracer_data().best_ms(hindex);
+    let worst = app.tracer_data().worst_ms(hindex);
+    let stddev = app.tracer_data().stddev_ms(hindex);
+    let ttl_cell = render_ttl_cell(ttl);
     let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
-        render_hostname_with_details(app, hop, dns, geoip_lookup, config)
+        render_hostname_with_details(app, hindex, dns, geoip_lookup, config)
     } else {
-        render_hostname(hop, dns, geoip_lookup, config)
+        render_hostname(app, hindex, dns, geoip_lookup, config)
     };
-    let loss_pct_cell = render_loss_pct_cell(hop);
-    let total_sent_cell = render_total_sent_cell(hop);
-    let total_recv_cell = render_total_recv_cell(hop);
-    let last_cell = render_last_cell(hop);
-    let avg_cell = render_avg_cell(hop);
-    let best_cell = render_best_cell(hop);
-    let worst_cell = render_worst_cell(hop);
-    let stddev_cell = render_stddev_cell(hop);
-    let status_cell = render_status_cell(hop, is_target);
+    let loss_pct_cell = render_loss_pct_cell(loss_pct);
+    let total_sent_cell = render_total_sent_cell(total_sent);
+    let total_recv_cell = render_total_recv_cell(total_recv);
+    let last_cell = render_last_cell(last);
+    let avg_cell = render_avg_cell(total_recv, avg);
+    let best_cell = render_best_cell(best);
+    let worst_cell = render_worst_cell(worst);
+    let stddev_cell = render_stddev_cell(total_recv, stddev);
+    let status_cell = render_status_cell(total_sent, total_recv, is_target);
     let cells = [
         ttl_cell,
         hostname_cell,
@@ -118,68 +129,56 @@ fn render_table_row(
         .style(Style::default().fg(row_color))
 }
 
-fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.ttl()))
+fn render_ttl_cell(ttl: u8) -> Cell<'static> {
+    Cell::from(format!("{ttl}"))
 }
 
-fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{:.1}%", hop.loss_pct()))
+fn render_loss_pct_cell(loss_pct: f64) -> Cell<'static> {
+    Cell::from(format!("{loss_pct:.1}%"))
 }
 
-fn render_total_sent_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_sent()))
+fn render_total_sent_cell(total_sent: usize) -> Cell<'static> {
+    Cell::from(format!("{total_sent}"))
 }
 
-fn render_total_recv_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_recv()))
+fn render_total_recv_cell(total_recv: usize) -> Cell<'static> {
+    Cell::from(format!("{total_recv}"))
 }
 
-fn render_avg_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv() > 0 {
-        format!("{:.1}", hop.avg_ms())
+fn render_avg_cell(total_recv: usize, avg: f64) -> Cell<'static> {
+    Cell::from(if total_recv > 0 {
+        format!("{avg:.1}")
     } else {
         String::default()
     })
 }
 
-fn render_last_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.last_ms()
-            .map(|last| format!("{last:.1}"))
-            .unwrap_or_default(),
-    )
+fn render_last_cell(last: Option<f64>) -> Cell<'static> {
+    Cell::from(last.map(|last| format!("{last:.1}")).unwrap_or_default())
 }
 
-fn render_best_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.best_ms()
-            .map(|best| format!("{best:.1}"))
-            .unwrap_or_default(),
-    )
+fn render_best_cell(best: Option<f64>) -> Cell<'static> {
+    Cell::from(best.map(|best| format!("{best:.1}")).unwrap_or_default())
 }
 
-fn render_worst_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.worst_ms()
-            .map(|worst| format!("{worst:.1}"))
-            .unwrap_or_default(),
-    )
+fn render_worst_cell(worst: Option<f64>) -> Cell<'static> {
+    Cell::from(worst.map(|worst| format!("{worst:.1}")).unwrap_or_default())
 }
 
-fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv() > 1 {
-        format!("{:.1}", hop.stddev_ms())
+fn render_stddev_cell(total_recv: usize, stddev: f64) -> Cell<'static> {
+    Cell::from(if total_recv > 1 {
+        format!("{stddev:.1}")
     } else {
         String::default()
     })
 }
 
-fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
-    let lost = hop.total_sent() - hop.total_recv();
+fn render_status_cell(total_sent: usize, total_recv: usize, is_target: bool) -> Cell<'static> {
+    let lost = total_sent - total_recv;
     Cell::from(match (lost, is_target) {
-        (lost, target) if target && lost == hop.total_sent() => "🔴",
+        (lost, target) if target && lost == total_sent => "🔴",
         (lost, target) if target && lost > 0 => "🟡",
-        (lost, target) if !target && lost == hop.total_sent() => "🟤",
+        (lost, target) if !target && lost == total_sent => "🟤",
         (lost, target) if !target && lost > 0 => "🔵",
         _ => "🟢",
     })
@@ -187,30 +186,37 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
 
 /// Render hostname table cell (normal mode).
 fn render_hostname(
-    hop: &Hop,
+    app: &TuiApp,
+    hindex: usize,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
-    let (hostname, count) = if hop.total_recv() > 0 {
+    let total_recv = app.tracer_data().total_recv(hindex);
+    let addrs_with_counts = app.tracer_data().addrs_with_counts(hindex);
+    let addr_count = app.tracer_data().addr_count(hindex);
+
+    let (hostname, count) = if total_recv > 0 {
         match config.max_addrs {
             None => {
-                let hostnames = hop
-                    .addrs_with_counts()
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
+                let hostnames = addrs_with_counts
+                    .map(|(addr, &freq)| {
+                        format_address(app, addr, freq, hindex, dns, geoip_lookup, config)
+                    })
                     .join("\n");
-                let count = hop.addr_count().clamp(1, u8::MAX as usize);
+                let count = addr_count.clamp(1, u8::MAX as usize);
                 (hostnames, count as u16)
             }
             Some(max_addr) => {
-                let hostnames = hop
-                    .addrs_with_counts()
+                let hostnames = addrs_with_counts
                     .sorted_unstable_by_key(|(_, &cnt)| cnt)
                     .rev()
                     .take(max_addr as usize)
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
+                    .map(|(addr, &freq)| {
+                        format_address(app, addr, freq, hindex, dns, geoip_lookup, config)
+                    })
                     .join("\n");
-                let count = hop.addr_count().clamp(1, max_addr as usize);
+                let count = addr_count.clamp(1, max_addr as usize);
                 (hostnames, count as u16)
             }
         }
@@ -222,9 +228,10 @@ fn render_hostname(
 
 /// Perform a reverse DNS lookup for an address and format the result.
 fn format_address(
+    app: &TuiApp,
     addr: &IpAddr,
     freq: usize,
-    hop: &Hop,
+    hindex: usize,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
@@ -266,23 +273,27 @@ fn format_address(
             .unwrap_or_default()
             .map(|geo| geo.location()),
     };
+
+    let addr_count = app.tracer_data().addr_count(hindex);
+    let total_recv = app.tracer_data().total_recv(hindex);
+
     match geo_fmt {
-        Some(geo) if hop.addr_count() > 1 => {
+        Some(geo) if addr_count > 1 => {
             format!(
                 "{} [{}] [{:.1}%]",
                 addr_fmt,
                 geo,
-                (freq as f64 / hop.total_recv() as f64) * 100_f64
+                (freq as f64 / total_recv as f64) * 100_f64
             )
         }
         Some(geo) => {
             format!("{addr_fmt} [{geo}]")
         }
-        None if hop.addr_count() > 1 => {
+        None if addr_count > 1 => {
             format!(
                 "{} [{:.1}%]",
                 addr_fmt,
-                (freq as f64 / hop.total_recv() as f64) * 100_f64
+                (freq as f64 / total_recv as f64) * 100_f64
             )
         }
         None => addr_fmt,
@@ -328,14 +339,15 @@ fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
 /// Render hostname table cell (detailed mode).
 fn render_hostname_with_details(
     app: &TuiApp,
-    hop: &Hop,
+    hindex: usize,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
-    let (rendered, count) = if hop.total_recv() > 0 {
-        let index = app.selected_hop_address;
-        format_details(hop, index, dns, geoip_lookup, config)
+    let total_recv = app.tracer_data().total_recv(hindex);
+    let (rendered, count) = if total_recv > 0 {
+        let offset = app.selected_hop_address;
+        format_details(app, hindex, offset, dns, geoip_lookup, config)
     } else {
         (String::from("No response"), 1)
     };
@@ -345,34 +357,43 @@ fn render_hostname_with_details(
 
 /// Format hop details.
 fn format_details(
-    hop: &Hop,
+    app: &TuiApp,
+    hindex: usize,
     offset: usize,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (String, u16) {
-    let Some(addr) = hop.addrs().nth(offset) else {
+    let mut addrs = app.tracer_data().addrs(hindex);
+    let count = app.tracer_data().addr_count(hindex);
+
+    let Some(addr) = addrs.nth(offset) else {
         return (format!("Error: no addr for index {offset}"), 1);
     };
-    let count = hop.addr_count();
-    let index = offset + 1;
+    let addr_index = offset + 1;
     let geoip = geoip_lookup.lookup(*addr).unwrap_or_default();
 
     if config.lookup_as_info {
         let dns_entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
-                let details = fmt_details_with_asn(addr, index, count, None, None, geoip);
+                let details = fmt_details_with_asn(addr, addr_index, count, None, None, geoip);
                 (details, 6)
             }
             DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
                 let details =
-                    fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo), geoip);
+                    fmt_details_with_asn(addr, addr_index, count, Some(hosts), Some(asinfo), geoip);
                 (details, 6)
             }
             DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => {
-                let details =
-                    fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo), geoip);
+                let details = fmt_details_with_asn(
+                    addr,
+                    addr_index,
+                    count,
+                    Some(vec![]),
+                    Some(asinfo),
+                    geoip,
+                );
                 (details, 6)
             }
             DnsEntry::Failed(ip) => {
@@ -390,15 +411,15 @@ fn format_details(
         let dns_entry = dns.lazy_reverse_lookup(*addr);
         match dns_entry {
             DnsEntry::Pending(addr) => {
-                let details = fmt_details_no_asn(addr, index, count, None, geoip);
+                let details = fmt_details_no_asn(addr, addr_index, count, None, geoip);
                 (details, 3)
             }
             DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(hosts), geoip);
+                let details = fmt_details_no_asn(addr, addr_index, count, Some(hosts), geoip);
                 (details, 3)
             }
             DnsEntry::NotFound(Unresolved::Normal(addr)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(vec![]), geoip);
+                let details = fmt_details_no_asn(addr, addr_index, count, Some(vec![]), geoip);
                 (details, 3)
             }
             DnsEntry::Failed(ip) => {

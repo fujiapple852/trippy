@@ -2,7 +2,7 @@ use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
     AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
-    MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+    MultipathStrategyConfig, Protocol, SegregationMode, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
@@ -113,6 +113,10 @@ pub struct Args {
     /// The socket read timeout [default: 10ms]
     #[arg(long)]
     pub read_timeout: Option<String>,
+
+    /// TODO How to segregate trace data.
+    #[arg(long)]
+    pub segregation_mode: Option<SegregationMode>,
 
     /// How to perform DNS queries [default: system]
     #[arg(value_enum, short = 'r', long)]

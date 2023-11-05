@@ -6,9 +6,10 @@ use ratatui::Frame;
 
 /// Render the ping history for the final hop which is typically the target.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
-    let selected_hop = app.selected_hop_or_target();
-    let data = selected_hop
-        .samples()
+    let hindex = app.selected_or_target_index();
+    let samples = app.tracer_data().samples(hindex);
+    let ttl = app.tracer_data().ttl(hindex);
+    let data = samples
         .iter()
         .take(rect.width as usize)
         .map(|s| (s.as_secs_f64() * 1000_f64) as u64)
@@ -16,7 +17,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("Samples #{}", selected_hop.ttl()))
+                .title(format!("Samples #{ttl}"))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg_color)

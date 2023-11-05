@@ -1,4 +1,4 @@
-use crate::backend::{Hop, Trace};
+use crate::backend::Trace;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::SETTINGS_TABS;
 use crate::geoip::GeoIpLookup;
@@ -75,17 +75,19 @@ impl TuiApp {
             Trace::new(self.tui_config.max_samples);
     }
 
-    pub fn selected_hop_or_target(&self) -> &Hop {
-        self.table_state.selected().map_or_else(
-            || self.tracer_data().target_hop(),
-            |s| &self.tracer_data().hops()[s],
-        )
+    pub fn selected_or_target_index(&self) -> usize {
+        self.table_state.selected().unwrap_or_else(|| {
+            let hop_count = self.tracer_data().hop_count();
+            if hop_count > 0 {
+                hop_count - 1
+            } else {
+                0
+            }
+        })
     }
 
-    pub fn selected_hop(&self) -> Option<&Hop> {
-        self.table_state
-            .selected()
-            .map(|s| &self.tracer_data().hops()[s])
+    pub fn selected_hop_index(&self) -> Option<usize> {
+        self.table_state.selected()
     }
 
     pub fn tracer_config(&self) -> &TraceInfo {
@@ -93,7 +95,7 @@ impl TuiApp {
     }
 
     pub fn clamp_selected_hop(&mut self) {
-        let hop_count = self.tracer_data().hops().len();
+        let hop_count = self.tracer_data().hop_count();
         if let Some(selected) = self.table_state.selected() {
             if selected > hop_count - 1 {
                 self.table_state.select(Some(hop_count - 1));
@@ -102,7 +104,7 @@ impl TuiApp {
     }
 
     pub fn next_hop(&mut self) {
-        let hop_count = self.tracer_data().hops().len();
+        let hop_count = self.tracer_data().hop_count();
         if hop_count == 0 {
             return;
         }
@@ -122,7 +124,7 @@ impl TuiApp {
     }
 
     pub fn previous_hop(&mut self) {
-        let hop_count = self.tracer_data().hops().len();
+        let hop_count = self.tracer_data().hop_count();
         if hop_count == 0 {
             return;
         }
@@ -153,15 +155,15 @@ impl TuiApp {
     }
 
     pub fn next_hop_address(&mut self) {
-        if let Some(hop) = self.selected_hop() {
-            if self.selected_hop_address < hop.addr_count() - 1 {
+        if let Some(hindex) = self.selected_hop_index() {
+            if self.selected_hop_address < self.tracer_data().addr_count(hindex) - 1 {
                 self.selected_hop_address += 1;
             }
         }
     }
 
     pub fn previous_hop_address(&mut self) {
-        if self.selected_hop().is_some() && self.selected_hop_address > 0 {
+        if self.selected_hop_index().is_some() && self.selected_hop_address > 0 {
             self.selected_hop_address -= 1;
         }
     }
@@ -297,13 +299,7 @@ impl TuiApp {
 
     /// The maximum number of hosts per hop for the currently selected trace.
     pub fn max_hosts(&self) -> u8 {
-        self.selected_tracer_data
-            .hops()
-            .iter()
-            .map(|h| h.addrs().count())
-            .max()
-            .and_then(|i| u8::try_from(i).ok())
-            .unwrap_or_default()
+        self.selected_tracer_data.max_addr_count()
     }
 }
 

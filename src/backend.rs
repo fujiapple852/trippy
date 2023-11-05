@@ -1,8 +1,11 @@
+use crate::backend::flow::FlowId;
 use crate::config::MAX_HOPS;
 use crate::platform::Platform;
 use indexmap::IndexMap;
 use parking_lot::RwLock;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
+use std::ops::Range;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::instrument;
@@ -15,23 +18,19 @@ use trippy::tracing::{
 #[derive(Debug, Clone)]
 pub struct Trace {
     max_samples: usize,
-    lowest_ttl: u8,
-    highest_ttl: u8,
-    highest_ttl_for_round: u8,
     round: Option<usize>,
-    hops: Vec<Hop>,
+    flows: HashMap<FlowId, Flow>,
     error: Option<String>,
 }
 
 impl Trace {
     pub fn new(max_samples: usize) -> Self {
+        let mut flows = HashMap::new();
+        flows.insert(FlowId(0), Flow::new());
         Self {
             max_samples,
-            lowest_ttl: 0,
-            highest_ttl: 0,
-            highest_ttl_for_round: 0,
             round: None,
-            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+            flows,
             error: None,
         }
     }
@@ -41,15 +40,37 @@ impl Trace {
         self.round
     }
 
-    /// Information about each hop in the trace.
-    pub fn hops(&self) -> &[Hop] {
-        if self.lowest_ttl == 0 || self.highest_ttl == 0 {
-            &[]
+    /// Return the number of hops.
+    pub fn hop_count(&self) -> usize {
+        let flow = self.flows.get(&FlowId(0)).unwrap();
+        if flow.lowest_ttl == 0 || flow.highest_ttl == 0 {
+            0
         } else {
-            let start = (self.lowest_ttl as usize) - 1;
-            let end = self.highest_ttl as usize;
-            &self.hops[start..end]
+            usize::from(flow.highest_ttl - flow.lowest_ttl) + 1
         }
+    }
+
+    /// Return the range of hops in tui indexes
+    ///
+    /// These will always be in the range 0..x even when the `lowest_ttl` is not 1
+    pub fn hop_range(&self) -> Range<usize> {
+        let flow = self.flows.get(&FlowId(0)).unwrap();
+        #[allow(clippy::range_plus_one)]
+        if flow.lowest_ttl == 0 || flow.highest_ttl == 0 {
+            0..0
+        } else {
+            0..usize::from(flow.highest_ttl - flow.lowest_ttl) + 1
+        }
+    }
+
+    /// The maximum number of hosts per hop.
+    pub fn max_addr_count(&self) -> u8 {
+        self.hops()
+            .iter()
+            .map(|h| h.addrs.len())
+            .max()
+            .and_then(|i| u8::try_from(i).ok())
+            .unwrap_or_default()
     }
 
     /// Is a given `Hop` the target hop?
@@ -58,23 +79,123 @@ impl Trace {
     ///
     /// Note that if the target host does not respond to probes then the the highest `ttl` observed
     /// will be one greater than the `ttl` of the last host which did respond.
-    pub fn is_target(&self, hop: &Hop) -> bool {
-        self.highest_ttl == hop.ttl
+    pub fn is_target(&self, index: usize) -> bool {
+        let flow = self.flows.get(&FlowId(0)).unwrap();
+        let hop = &self.hops()[index];
+        flow.highest_ttl == hop.ttl
     }
 
     /// Is a given `Hop` in the current round?
-    pub fn is_in_round(&self, hop: &Hop) -> bool {
-        hop.ttl <= self.highest_ttl_for_round
+    pub fn is_in_round(&self, index: usize) -> bool {
+        let flow = self.flows.get(&FlowId(0)).unwrap();
+        let hop = &self.hops()[index];
+        hop.ttl <= flow.highest_ttl_for_round
     }
 
-    /// Return the target `Hop`.
+    /// The time-to-live of this hop.
     ///
-    /// TODO Do we guarantee there is always a target hop?
-    pub fn target_hop(&self) -> &Hop {
-        if self.highest_ttl > 0 {
-            &self.hops[usize::from(self.highest_ttl) - 1]
+    /// The index here is the Tui index, so 0 may be ttl 4
+    pub fn ttl(&self, index: usize) -> u8 {
+        let hop = &self.hops()[index];
+        hop.ttl
+    }
+
+    /// The set of addresses that have responded for this time-to-live.
+    pub fn addrs(&self, index: usize) -> impl Iterator<Item = &IpAddr> {
+        let hop = &self.hops()[index];
+        hop.addrs.keys()
+    }
+
+    pub fn addrs_with_counts(&self, index: usize) -> impl Iterator<Item = (&IpAddr, &usize)> {
+        let hop = &self.hops()[index];
+        hop.addrs.iter()
+    }
+
+    /// The number of unique address observed for this time-to-live.
+    pub fn addr_count(&self, index: usize) -> usize {
+        let hop = &self.hops()[index];
+        hop.addrs.len()
+    }
+
+    /// The total number of probes sent.
+    pub fn total_sent(&self, index: usize) -> usize {
+        let hop = &self.hops()[index];
+        hop.total_sent
+    }
+
+    /// The total number of probes responses received.
+    pub fn total_recv(&self, index: usize) -> usize {
+        let hop = &self.hops()[index];
+        hop.total_recv
+    }
+
+    /// The % of packets that are lost.
+    pub fn loss_pct(&self, index: usize) -> f64 {
+        let hop = &self.hops()[index];
+        if hop.total_sent > 0 {
+            let lost = hop.total_sent - hop.total_recv;
+            lost as f64 / hop.total_sent as f64 * 100f64
         } else {
-            &self.hops[0]
+            0_f64
+        }
+    }
+
+    /// The duration of the last probe.
+    pub fn last_ms(&self, index: usize) -> Option<f64> {
+        let hop = &self.hops()[index];
+        hop.last.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The duration of the best probe observed.
+    pub fn best_ms(&self, index: usize) -> Option<f64> {
+        let hop = &self.hops()[index];
+        hop.best.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The duration of the worst probe observed.
+    pub fn worst_ms(&self, index: usize) -> Option<f64> {
+        let hop = &self.hops()[index];
+        hop.worst.map(|last| last.as_secs_f64() * 1000_f64)
+    }
+
+    /// The average duration of all probes.
+    pub fn avg_ms(&self, index: usize) -> f64 {
+        let hop = &self.hops()[index];
+        if hop.total_recv > 0 {
+            (hop.total_time.as_secs_f64() * 1000_f64) / hop.total_recv as f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The standard deviation of all probes.
+    pub fn stddev_ms(&self, index: usize) -> f64 {
+        let hop = &self.hops()[index];
+        if hop.total_recv > 1 {
+            (hop.m2 / (hop.total_recv - 1) as f64).sqrt()
+        } else {
+            0_f64
+        }
+    }
+
+    /// The last N samples.
+    pub fn samples(&self, index: usize) -> &[Duration] {
+        let hop = &self.hops()[index];
+        &hop.samples
+    }
+
+    /// Return a slice of `Hop`.
+    ///
+    /// If there are no hops then the `hops[0..1]` is returned as a sentinel
+    /// value which will have default values for all fields.
+    fn hops(&self) -> &[Hop] {
+        let flow = self.flows.get(&FlowId(0)).unwrap();
+        if flow.lowest_ttl == 0 || flow.highest_ttl == 0 {
+            &flow.hops[0..1]
+        } else {
+            let start = (flow.lowest_ttl as usize) - 1;
+            let end = flow.highest_ttl as usize;
+            &flow.hops[start..end]
         }
     }
 
@@ -84,8 +205,13 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
-        self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
-        self.highest_ttl_for_round = round.largest_ttl.0;
+        let _flow_id = FlowId::from_addrs(round.probes.iter().map(|p| (p.ttl.0, p.host))).flow_id();
+        // println!("flow_id: {}", flow_id.flow_id());
+        // let flow = self.flows.entry(flow_id).or_insert_with(|| Flow::new());
+
+        let flow = self.flows.get_mut(&FlowId(0)).unwrap();
+        flow.highest_ttl = std::cmp::max(flow.highest_ttl, round.largest_ttl.0);
+        flow.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
             self.update_from_probe(probe);
         }
@@ -94,10 +220,11 @@ impl Trace {
     fn update_from_probe(&mut self, probe: &Probe) {
         self.update_lowest_ttl(probe);
         self.update_round(probe);
+        let flow = self.flows.get_mut(&FlowId(0)).unwrap();
         match probe.status {
             ProbeStatus::Complete => {
                 let index = usize::from(probe.ttl.0) - 1;
-                let hop = &mut self.hops[index];
+                let hop = &mut flow.hops[index];
                 hop.ttl = probe.ttl.0;
                 hop.total_sent += 1;
                 hop.total_recv += 1;
@@ -118,11 +245,11 @@ impl Trace {
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].ttl = probe.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
+                flow.hops[index].total_sent += 1;
+                flow.hops[index].ttl = probe.ttl.0;
+                flow.hops[index].samples.insert(0, Duration::default());
+                if flow.hops[index].samples.len() > self.max_samples {
+                    flow.hops[index].samples.pop();
                 }
             }
             ProbeStatus::NotSent => {}
@@ -131,11 +258,12 @@ impl Trace {
 
     /// Update `lowest_ttl` for valid probes.
     fn update_lowest_ttl(&mut self, probe: &Probe) {
+        let flow = self.flows.get_mut(&FlowId(0)).unwrap();
         if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            if self.lowest_ttl == 0 {
-                self.lowest_ttl = probe.ttl.0;
+            if flow.lowest_ttl == 0 {
+                flow.lowest_ttl = probe.ttl.0;
             } else {
-                self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
+                flow.lowest_ttl = flow.lowest_ttl.min(probe.ttl.0);
             }
         }
     }
@@ -151,9 +279,32 @@ impl Trace {
     }
 }
 
-/// Information about a single `Hop` within a `Trace`.
+// /// An identifier for a flow.
+// pub type FlowId = u64;
+
+/// A Flow holds data a unique tracing flow.
 #[derive(Debug, Clone)]
-pub struct Hop {
+struct Flow {
+    lowest_ttl: u8,
+    highest_ttl: u8,
+    highest_ttl_for_round: u8,
+    hops: Vec<Hop>,
+}
+
+impl Flow {
+    pub fn new() -> Self {
+        Self {
+            lowest_ttl: 0,
+            highest_ttl: 0,
+            highest_ttl_for_round: 0,
+            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+        }
+    }
+}
+
+/// Information about a single `Hop` within a `Flow`.
+#[derive(Debug, Clone)]
+struct Hop {
     ttl: u8,
     addrs: IndexMap<IpAddr, usize>,
     total_sent: usize,
@@ -165,85 +316,6 @@ pub struct Hop {
     mean: f64,
     m2: f64,
     samples: Vec<Duration>,
-}
-
-impl Hop {
-    /// The time-to-live of this hop.
-    pub fn ttl(&self) -> u8 {
-        self.ttl
-    }
-
-    /// The set of addresses that have responded for this time-to-live.
-    pub fn addrs(&self) -> impl Iterator<Item = &IpAddr> {
-        self.addrs.keys()
-    }
-
-    pub fn addrs_with_counts(&self) -> impl Iterator<Item = (&IpAddr, &usize)> {
-        self.addrs.iter()
-    }
-
-    /// The number of unique address observed for this time-to-live.
-    pub fn addr_count(&self) -> usize {
-        self.addrs.len()
-    }
-
-    /// The total number of probes sent.
-    pub fn total_sent(&self) -> usize {
-        self.total_sent
-    }
-
-    /// The total number of probes responses received.
-    pub fn total_recv(&self) -> usize {
-        self.total_recv
-    }
-
-    /// The % of packets that are lost.
-    pub fn loss_pct(&self) -> f64 {
-        if self.total_sent > 0 {
-            let lost = self.total_sent - self.total_recv;
-            lost as f64 / self.total_sent as f64 * 100f64
-        } else {
-            0_f64
-        }
-    }
-
-    /// The duration of the last probe.
-    pub fn last_ms(&self) -> Option<f64> {
-        self.last.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The duration of the best probe observed.
-    pub fn best_ms(&self) -> Option<f64> {
-        self.best.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The duration of the worst probe observed.
-    pub fn worst_ms(&self) -> Option<f64> {
-        self.worst.map(|last| last.as_secs_f64() * 1000_f64)
-    }
-
-    /// The average duration of all probes.
-    pub fn avg_ms(&self) -> f64 {
-        if self.total_recv() > 0 {
-            (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
-        } else {
-            0_f64
-        }
-    }
-
-    /// The standard deviation of all probes.
-    pub fn stddev_ms(&self) -> f64 {
-        if self.total_recv > 1 {
-            (self.m2 / (self.total_recv - 1) as f64).sqrt()
-        } else {
-            0_f64
-        }
-    }
-
-    /// The last N samples.
-    pub fn samples(&self) -> &[Duration] {
-        &self.samples
-    }
 }
 
 impl Default for Hop {
@@ -260,6 +332,69 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+        }
+    }
+}
+
+mod flow {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    use std::net::IpAddr;
+
+    /// TODO
+    #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+    pub struct FlowId(pub(super) u64);
+
+    impl FlowId {
+        /// TODO
+        pub fn from_addrs(addrs: impl Iterator<Item = (u8, Option<IpAddr>)>) -> Self {
+            let hasher = addrs.fold(DefaultHasher::new(), |mut hasher, hop| {
+                hop.hash(&mut hasher);
+                hasher
+            });
+            Self(hasher.finish())
+        }
+
+        /// TODO
+        pub fn flow_id(&self) -> u64 {
+            self.0
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use std::net::Ipv4Addr;
+        use std::str::FromStr;
+
+        #[test]
+        fn test_flow_id() {
+            let hops = [
+                (1, Some(addr("192.168.1.1"))),
+                (2, Some(addr("10.193.232.14"))),
+                (3, Some(addr("10.193.232.21"))),
+                (4, Some(addr("218.102.40.26"))),
+                (5, Some(addr("10.195.41.17"))),
+                (6, Some(addr("63.218.1.105"))),
+                (7, Some(addr("63.223.60.126"))),
+                (8, Some(addr("213.248.97.220"))),
+                (9, Some(addr("62.115.118.110"))),
+                (10, None),
+                (11, Some(addr("62.115.140.43"))),
+                (12, Some(addr("62.115.115.173"))),
+                (13, Some(addr("62.115.45.195"))),
+                (14, Some(addr("185.74.76.23"))),
+                (15, Some(addr("89.18.162.17"))),
+                (16, Some(addr("213.189.4.73"))),
+            ];
+            assert_eq!(
+                2_435_116_302_937_406_375,
+                FlowId::from_addrs(hops.into_iter()).flow_id()
+            );
+        }
+
+        fn addr(addr: &str) -> IpAddr {
+            IpAddr::V4(Ipv4Addr::from_str(addr).unwrap())
         }
     }
 }

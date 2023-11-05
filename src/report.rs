@@ -18,34 +18,37 @@ pub fn run_report_csv(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
-    for hop in trace.hops() {
-        let ttl = hop.ttl();
-        let ips = hop.addrs().join(":");
+    for hindex in trace.hop_range() {
+        let ttl = trace.ttl(hindex);
+        let ips = trace.addrs(hindex).join(":");
         let ip = if ips.is_empty() {
             String::from("???")
         } else {
             ips
         };
-        let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
+        let hosts = trace
+            .addrs(hindex)
+            .map(|ip| resolver.reverse_lookup(*ip))
+            .join(":");
         let host = if hosts.is_empty() {
             String::from("???")
         } else {
             hosts
         };
-        let sent = hop.total_sent();
-        let recv = hop.total_recv();
-        let last = hop
-            .last_ms()
+        let sent = trace.total_sent(hindex);
+        let recv = trace.total_recv(hindex);
+        let last = trace
+            .last_ms(hindex)
             .map_or_else(|| String::from("???"), |last| format!("{last:.1}"));
-        let best = hop
-            .best_ms()
+        let best = trace
+            .best_ms(hindex)
             .map_or_else(|| String::from("???"), |best| format!("{best:.1}"));
-        let worst = hop
-            .worst_ms()
+        let worst = trace
+            .worst_ms(hindex)
             .map_or_else(|| String::from("???"), |worst| format!("{worst:.1}"));
-        let stddev = hop.stddev_ms();
-        let avg = hop.avg_ms();
-        let loss_pct = hop.loss_pct();
+        let stddev = trace.stddev_ms(hindex);
+        let avg = trace.avg_ms(hindex);
+        let loss_pct = trace.loss_pct(hindex);
         println!(
             "{},{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
             info.target_hostname,
@@ -119,31 +122,29 @@ pub fn run_report_json(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     let hops: Vec<ReportHop> = trace
-        .hops()
-        .iter()
-        .map(|hop| {
-            let hosts: Vec<_> = hop
-                .addrs()
+        .hop_range()
+        .map(|hindex| {
+            let hosts: Vec<_> = trace
+                .addrs(hindex)
                 .map(|ip| Host {
                     ip: ip.to_string(),
                     hostname: resolver.reverse_lookup(*ip).to_string(),
                 })
                 .collect();
             ReportHop {
-                ttl: hop.ttl(),
+                ttl: trace.ttl(hindex),
                 hosts,
-                loss_pct: hop.loss_pct(),
-                sent: hop.total_sent(),
-                last: hop.last_ms().unwrap_or_default(),
-                recv: hop.total_recv(),
-                avg: hop.avg_ms(),
-                best: hop.best_ms().unwrap_or_default(),
-                worst: hop.worst_ms().unwrap_or_default(),
-                stddev: hop.stddev_ms(),
+                loss_pct: trace.loss_pct(hindex),
+                sent: trace.total_sent(hindex),
+                last: trace.last_ms(hindex).unwrap_or_default(),
+                recv: trace.total_recv(hindex),
+                avg: trace.avg_ms(hindex),
+                best: trace.best_ms(hindex).unwrap_or_default(),
+                worst: trace.worst_ms(hindex).unwrap_or_default(),
+                stddev: trace.stddev_ms(hindex),
             }
         })
         .collect();
-
     let report = Report {
         info: ReportInfo {
             target: Host {
@@ -190,16 +191,16 @@ fn run_report_table(
         .load_preset(preset)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(columns);
-    for hop in trace.hops() {
-        let ttl = hop.ttl().to_string();
-        let ips = hop.addrs().join("\n");
+    for hindex in trace.hop_range() {
+        let ttl = trace.ttl(hindex).to_string();
+        let ips = trace.addrs(hindex).join("\n");
         let ip = if ips.is_empty() {
             String::from("???")
         } else {
             ips
         };
-        let hosts = hop
-            .addrs()
+        let hosts = trace
+            .addrs(hindex)
             .map(|ip| resolver.reverse_lookup(*ip).to_string())
             .join("\n");
         let host = if hosts.is_empty() {
@@ -207,20 +208,20 @@ fn run_report_table(
         } else {
             hosts
         };
-        let sent = hop.total_sent().to_string();
-        let recv = hop.total_recv().to_string();
-        let last = hop
-            .last_ms()
+        let sent = trace.total_sent(hindex).to_string();
+        let recv = trace.total_recv(hindex).to_string();
+        let last = trace
+            .last_ms(hindex)
             .map_or_else(|| String::from("???"), |last| format!("{last:.1}"));
-        let best = hop
-            .best_ms()
+        let best = trace
+            .best_ms(hindex)
             .map_or_else(|| String::from("???"), |best| format!("{best:.1}"));
-        let worst = hop
-            .worst_ms()
+        let worst = trace
+            .worst_ms(hindex)
             .map_or_else(|| String::from("???"), |worst| format!("{worst:.1}"));
-        let stddev = format!("{:.1}", hop.stddev_ms());
-        let avg = format!("{:.1}", hop.avg_ms());
-        let loss_pct = format!("{:.1}", hop.loss_pct());
+        let stddev = format!("{:.1}", trace.stddev_ms(hindex));
+        let avg = format!("{:.1}", trace.avg_ms(hindex));
+        let loss_pct = format!("{:.1}", trace.loss_pct(hindex));
         table.add_row(vec![
             &ttl, &ip, &host, &loss_pct, &sent, &recv, &last, &avg, &best, &worst, &stddev,
         ]);
@@ -237,26 +238,26 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
         if let Some(err) = trace_data.error() {
             return Err(anyhow!("error: {}", err));
         }
-        for hop in trace_data.hops() {
-            let ttl = hop.ttl();
-            let addrs = hop.addrs().collect::<Vec<_>>();
-            let sent = hop.total_sent();
-            let recv = hop.total_recv();
-            let last = hop
-                .last_ms()
+        for hindex in trace_data.hop_range() {
+            let ttl = trace_data.ttl(hindex);
+            let addrs = trace_data.addrs(hindex).collect::<Vec<_>>();
+            let sent = trace_data.total_sent(hindex);
+            let recv = trace_data.total_recv(hindex);
+            let last = trace_data
+                .last_ms(hindex)
                 .map(|last| format!("{last:.1}"))
                 .unwrap_or_default();
-            let best = hop
-                .best_ms()
+            let best = trace_data
+                .best_ms(hindex)
                 .map(|best| format!("{best:.1}"))
                 .unwrap_or_default();
-            let worst = hop
-                .worst_ms()
+            let worst = trace_data
+                .worst_ms(hindex)
                 .map(|worst| format!("{worst:.1}"))
                 .unwrap_or_default();
-            let stddev = hop.stddev_ms();
-            let avg = hop.avg_ms();
-            let loss_pct = hop.loss_pct();
+            let stddev = trace_data.stddev_ms(hindex);
+            let avg = trace_data.avg_ms(hindex);
+            let loss_pct = trace_data.loss_pct(hindex);
             println!(
                 "ttl={ttl} addrs={addrs:?} loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last} best={best} worst={worst} avg={avg:.1} stddev={stddev:.1}"
             );
