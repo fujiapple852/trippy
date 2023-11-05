@@ -14,15 +14,6 @@ pub struct Config {
     pub timeout: Duration,
 }
 
-/// The address family.
-#[derive(Debug, Copy, Clone)]
-pub enum IpAddrFamily {
-    /// Internet Protocol v4.
-    Ipv4,
-    /// Internet Protocol v6.
-    Ipv6,
-}
-
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone)]
 pub enum ResolveMethod {
@@ -34,6 +25,15 @@ pub enum ResolveMethod {
     Google,
     /// Resolve using the Cloudflare `1.1.1.1` DNS service.
     Cloudflare,
+}
+
+/// The address family.
+#[derive(Debug, Copy, Clone)]
+pub enum IpAddrFamily {
+    /// Internet Protocol v4.
+    Ipv4,
+    /// Internet Protocol v6.
+    Ipv6,
 }
 
 impl Config {
