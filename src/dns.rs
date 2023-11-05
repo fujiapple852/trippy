@@ -7,6 +7,75 @@ use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::Duration;
+use thiserror::Error;
+
+/// A DNS resolver.
+pub trait Resolver {
+    /// Perform a blocking DNS hostname lookup and return the resolved IPv4 or IPv6 addresses.
+    fn lookup(&self, hostname: impl AsRef<str>) -> Result<ResolvedIpAddrs>;
+
+    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
+    ///
+    /// As this method is blocking it will never return a `DnsEntry::Pending`.
+    #[must_use]
+    fn reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry;
+
+    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS`
+    /// information.
+    ///
+    /// See [`Resolver::reverse_lookup`]
+    #[must_use]
+    fn reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry;
+
+    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
+    ///
+    /// If the `IpAddr` has already been resolved then `DnsEntry::Resolved` is returned immediately.
+    ///
+    /// Otherwise, the `IpAddr` is enqueued to be resolved in the background and a
+    /// `DnsEntry::Pending` is returned.
+    ///
+    /// If the entry exists but is `DnsEntry::Timeout` then it is changed to be `DnsEntry::Pending`
+    /// and enqueued.
+    ///
+    /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
+    #[must_use]
+    fn lazy_reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry;
+
+    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
+    ///
+    /// See [`Resolver::lazy_reverse_lookup`]
+    #[must_use]
+    fn lazy_reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry;
+}
+
+/// A DNS resolver error result.
+pub type Result<T> = std::result::Result<T, Error>;
+
+/// A DNS resolver error.
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("DNS lookup failed")]
+    LookupFailed(Box<dyn std::error::Error>),
+}
+
+/// The output of a successful DNS lookup.
+#[derive(Debug, Clone)]
+pub struct ResolvedIpAddrs(Vec<IpAddr>);
+
+impl ResolvedIpAddrs {
+    pub fn iter(&self) -> impl Iterator<Item = &'_ IpAddr> {
+        self.0.iter()
+    }
+}
+
+impl IntoIterator for ResolvedIpAddrs {
+    type Item = IpAddr;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
 
 /// The state of reverse DNS resolution.
 #[derive(Debug, Clone)]
@@ -158,53 +227,6 @@ impl DnsResolver {
         })
     }
 
-    /// Perform a blocking DNS hostname lookup and return the resolved IPv4 or IPv6 addresses.
-    pub fn lookup(&self, hostname: &str) -> anyhow::Result<Vec<IpAddr>> {
-        self.inner.lookup(hostname)
-    }
-
-    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
-    ///
-    /// As this method is blocking it will never return a `DnsEntry::Pending`.
-    #[must_use]
-    pub fn reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, false, false)
-    }
-
-    /// Perform a blocking reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS`
-    /// information.
-    ///
-    /// See [`DnsResolver::reverse_lookup`]
-    #[allow(dead_code)]
-    #[must_use]
-    pub fn reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, true, false)
-    }
-
-    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry`.
-    ///
-    /// If the `IpAddr` has already been resolved then `DnsEntry::Resolved` is returned immediately.
-    ///
-    /// Otherwise, the `IpAddr` is enqueued to be resolved in the background and a
-    /// `DnsEntry::Pending` is returned.
-    ///
-    /// If the entry exists but is `DnsEntry::Timeout` then it is changed to be `DnsEntry::Pending`
-    /// and enqueued.
-    ///
-    /// If enqueuing times out then the entry is changed to be `DnsEntry::Timeout` and returned.
-    #[must_use]
-    pub fn lazy_reverse_lookup(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, false, true)
-    }
-
-    /// Perform a lazy reverse DNS lookup of `IpAddr` and return a `DnsEntry` with `AS` information.
-    ///
-    /// See [`DnsResolver::lazy_reverse_lookup`]
-    #[must_use]
-    pub fn lazy_reverse_lookup_with_asinfo(&self, addr: IpAddr) -> DnsEntry {
-        self.inner.reverse_lookup(addr, true, true)
-    }
-
     /// Get the `DnsResolverConfig`.
     #[must_use]
     pub fn config(&self) -> &DnsResolverConfig {
@@ -217,10 +239,33 @@ impl DnsResolver {
     }
 }
 
+impl Resolver for DnsResolver {
+    fn lookup(&self, hostname: impl AsRef<str>) -> Result<ResolvedIpAddrs> {
+        self.inner.lookup(hostname.as_ref())
+    }
+    #[must_use]
+    fn reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry {
+        self.inner.reverse_lookup(addr.into(), false, false)
+    }
+    #[must_use]
+    fn reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry {
+        self.inner.reverse_lookup(addr.into(), true, false)
+    }
+    #[must_use]
+    fn lazy_reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry {
+        self.inner.reverse_lookup(addr.into(), false, true)
+    }
+    #[must_use]
+    fn lazy_reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry {
+        self.inner.reverse_lookup(addr.into(), true, true)
+    }
+}
+
 /// Private impl of resolver.
 mod inner {
     use crate::dns::{
-        AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, IpAddrFamily, Resolved, Unresolved,
+        AsInfo, DnsEntry, DnsResolveMethod, DnsResolverConfig, Error, IpAddrFamily, Resolved,
+        ResolvedIpAddrs, Result, Unresolved,
     };
     use anyhow::anyhow;
     use crossbeam::channel::{bounded, Receiver, Sender};
@@ -311,12 +356,15 @@ mod inner {
             &self.config
         }
 
-        pub fn lookup(&self, hostname: &str) -> anyhow::Result<Vec<IpAddr>> {
+        pub fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
             match &self.provider {
-                DnsProvider::TrustDns(resolver) => {
-                    Ok(resolver.lookup_ip(hostname)?.iter().collect::<Vec<_>>())
-                }
-                DnsProvider::DnsLookup => Ok(dns_lookup::lookup_host(hostname)?
+                DnsProvider::TrustDns(resolver) => Ok(resolver
+                    .lookup_ip(hostname)
+                    .map_err(|err| Error::LookupFailed(Box::new(err)))?
+                    .iter()
+                    .collect::<Vec<_>>()),
+                DnsProvider::DnsLookup => Ok(dns_lookup::lookup_host(hostname)
+                    .map_err(|err| Error::LookupFailed(Box::new(err)))?
                     .into_iter()
                     .filter(|addr| {
                         matches!(
@@ -327,6 +375,7 @@ mod inner {
                     })
                     .collect::<Vec<_>>()),
             }
+            .map(ResolvedIpAddrs)
         }
 
         pub fn reverse_lookup(&self, addr: IpAddr, with_asinfo: bool, lazy: bool) -> DnsEntry {

@@ -11,7 +11,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
-use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Unresolved};
+use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 
 /// Render the table of data about the hops.
 ///
