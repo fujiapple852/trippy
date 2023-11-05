@@ -316,7 +316,16 @@ mod inner {
                 DnsProvider::TrustDns(resolver) => {
                     Ok(resolver.lookup_ip(hostname)?.iter().collect::<Vec<_>>())
                 }
-                DnsProvider::DnsLookup => Ok(dns_lookup::lookup_host(hostname)?),
+                DnsProvider::DnsLookup => Ok(dns_lookup::lookup_host(hostname)?
+                    .into_iter()
+                    .filter(|addr| {
+                        matches!(
+                            (self.config.addr_family, addr),
+                            (IpAddrFamily::Ipv4, IpAddr::V4(_))
+                                | (IpAddrFamily::Ipv6, IpAddr::V6(_))
+                        )
+                    })
+                    .collect::<Vec<_>>()),
             }
         }
 
