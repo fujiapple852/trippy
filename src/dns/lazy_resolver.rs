@@ -5,9 +5,9 @@ use std::time::Duration;
 
 /// Configuration for the `DnsResolver`.
 #[derive(Debug, Copy, Clone)]
-pub struct DnsResolverConfig {
+pub struct Config {
     /// The method to use for DNS resolution.
-    pub resolve_method: DnsResolveMethod,
+    pub resolve_method: ResolveMethod,
     /// The address family to lookup.
     pub addr_family: IpAddrFamily,
     /// The timeout for DNS resolution.
@@ -25,7 +25,7 @@ pub enum IpAddrFamily {
 
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone)]
-pub enum DnsResolveMethod {
+pub enum ResolveMethod {
     /// Resolve using the OS resolver.
     System,
     /// Resolve using the `/etc/resolv.conf` DNS configuration.
@@ -36,10 +36,10 @@ pub enum DnsResolveMethod {
     Cloudflare,
 }
 
-impl DnsResolverConfig {
-    /// Create an IPv4 `DnsResolverConfig`.
+impl Config {
+    /// Create an IPv4 `Config`.
     #[must_use]
-    pub fn new_ipv4(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
+    pub fn new_ipv4(resolve_method: ResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
             addr_family: IpAddrFamily::Ipv4,
@@ -47,9 +47,9 @@ impl DnsResolverConfig {
         }
     }
 
-    /// Create an IPv6 `DnsResolverConfig`.
+    /// Create an IPv6 `Config`.
     #[must_use]
-    pub fn new_ipv6(resolve_method: DnsResolveMethod, timeout: Duration) -> Self {
+    pub fn new_ipv6(resolve_method: ResolveMethod, timeout: Duration) -> Self {
         Self {
             resolve_method,
             addr_family: IpAddrFamily::Ipv6,
@@ -66,15 +66,15 @@ pub struct DnsResolver {
 
 impl DnsResolver {
     /// Create and start a new `DnsResolver`.
-    pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
+    pub fn start(config: Config) -> std::io::Result<Self> {
         Ok(Self {
             inner: Rc::new(inner::DnsResolverInner::start(config)?),
         })
     }
 
-    /// Get the `DnsResolverConfig`.
+    /// Get the `Config`.
     #[must_use]
-    pub fn config(&self) -> &DnsResolverConfig {
+    pub fn config(&self) -> &Config {
         self.inner.config()
     }
 
@@ -108,7 +108,7 @@ impl Resolver for DnsResolver {
 
 /// Private impl of resolver.
 mod inner {
-    use crate::dns::lazy::{DnsResolveMethod, DnsResolverConfig, IpAddrFamily};
+    use crate::dns::lazy_resolver::{Config, IpAddrFamily, ResolveMethod};
     use crate::dns::resolver::{
         AsInfo, DnsEntry, Error, Resolved, ResolvedIpAddrs, Result, Unresolved,
     };
@@ -151,18 +151,18 @@ mod inner {
 
     /// Resolver implementation.
     pub struct DnsResolverInner {
-        config: DnsResolverConfig,
+        config: Config,
         provider: DnsProvider,
         tx: Sender<DnsResolveRequest>,
         addr_cache: Cache,
     }
 
     impl DnsResolverInner {
-        pub fn start(config: DnsResolverConfig) -> anyhow::Result<Self> {
+        pub fn start(config: Config) -> std::io::Result<Self> {
             let (tx, rx) = bounded(RESOLVER_MAX_QUEUE_SIZE);
             let addr_cache = Arc::new(RwLock::new(HashMap::new()));
 
-            let provider = if matches!(config.resolve_method, DnsResolveMethod::System) {
+            let provider = if matches!(config.resolve_method, ResolveMethod::System) {
                 DnsProvider::DnsLookup
             } else {
                 let mut options = ResolverOpts::default();
@@ -172,12 +172,12 @@ mod inner {
                     IpAddrFamily::Ipv6 => LookupIpStrategy::Ipv6Only,
                 };
                 let res = match config.resolve_method {
-                    DnsResolveMethod::Resolv => Resolver::from_system_conf(),
-                    DnsResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
-                    DnsResolveMethod::Cloudflare => {
+                    ResolveMethod::Resolv => Resolver::from_system_conf(),
+                    ResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
+                    ResolveMethod::Cloudflare => {
                         Resolver::new(ResolverConfig::cloudflare(), options)
                     }
-                    DnsResolveMethod::System => unreachable!(),
+                    ResolveMethod::System => unreachable!(),
                 }?;
                 let resolver = Arc::new(res);
                 DnsProvider::TrustDns(resolver)
@@ -197,7 +197,7 @@ mod inner {
             })
         }
 
-        pub fn config(&self) -> &DnsResolverConfig {
+        pub fn config(&self) -> &Config {
             &self.config
         }
 

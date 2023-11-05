@@ -5,7 +5,7 @@ use crate::geoip::GeoIpLookup;
 use crate::TraceInfo;
 use ratatui::widgets::TableState;
 use std::time::SystemTime;
-use trippy::dns::{DnsResolveMethod, DnsResolver};
+use trippy::dns::{DnsResolver, ResolveMethod};
 
 pub struct TuiApp {
     pub selected_tracer_data: Trace,
@@ -252,11 +252,11 @@ impl TuiApp {
 
     pub fn toggle_asinfo(&mut self) {
         match self.resolver.config().resolve_method {
-            DnsResolveMethod::Resolv | DnsResolveMethod::Google | DnsResolveMethod::Cloudflare => {
+            ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
                 self.tui_config.lookup_as_info = !self.tui_config.lookup_as_info;
                 self.resolver.flush();
             }
-            DnsResolveMethod::System => {}
+            ResolveMethod::System => {}
         }
     }
 

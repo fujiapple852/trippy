@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 use std::time::Duration;
-use trippy::dns::{DnsResolveMethod, Resolver};
+use trippy::dns::{ResolveMethod, Resolver};
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.
@@ -62,8 +62,8 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         String::from("off")
     };
     let as_info = match app.resolver.config().resolve_method {
-        DnsResolveMethod::System => String::from("n/a"),
-        DnsResolveMethod::Resolv | DnsResolveMethod::Google | DnsResolveMethod::Cloudflare => {
+        ResolveMethod::System => String::from("n/a"),
+        ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
             if app.tui_config.lookup_as_info {
                 String::from("on")
             } else {

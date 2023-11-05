@@ -30,7 +30,7 @@ use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use trippy::dns::{DnsResolver, DnsResolverConfig, Resolver};
+use trippy::dns::{Config, DnsResolver, Resolver};
 use trippy::tracing::{
     MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
     TracerProtocol,
@@ -66,14 +66,12 @@ fn main() -> anyhow::Result<()> {
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     Ok(match cfg.addr_family {
-        TracerAddrFamily::Ipv4 => DnsResolver::start(DnsResolverConfig::new_ipv4(
-            cfg.dns_resolve_method,
-            cfg.dns_timeout,
-        ))?,
-        TracerAddrFamily::Ipv6 => DnsResolver::start(DnsResolverConfig::new_ipv6(
-            cfg.dns_resolve_method,
-            cfg.dns_timeout,
-        ))?,
+        TracerAddrFamily::Ipv4 => {
+            DnsResolver::start(Config::new_ipv4(cfg.dns_resolve_method, cfg.dns_timeout))?
+        }
+        TracerAddrFamily::Ipv6 => {
+            DnsResolver::start(Config::new_ipv6(cfg.dns_resolve_method, cfg.dns_timeout))?
+        }
     })
 }
 

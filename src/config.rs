@@ -1,3 +1,4 @@
+use crate::platform::Platform;
 use anyhow::anyhow;
 use binding::TuiCommandItem;
 use clap::{Command, CommandFactory, ValueEnum};
@@ -12,6 +13,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use strum::VariantNames;
 use theme::TuiThemeItem;
+use trippy::dns::ResolveMethod;
 use trippy::tracing::{
     MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerProtocol,
 };
@@ -22,12 +24,10 @@ mod constants;
 mod file;
 mod theme;
 
-use crate::platform::Platform;
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
 pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
-use trippy::dns::DnsResolveMethod;
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
@@ -203,7 +203,7 @@ pub struct TrippyConfig {
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub dns_timeout: Duration,
-    pub dns_resolve_method: DnsResolveMethod,
+    pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
     pub tui_max_samples: usize,
     pub tui_preserve_screen: bool,
@@ -480,10 +480,10 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         };
         let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
         let dns_resolve_method = match dns_resolve_method_config {
-            DnsResolveMethodConfig::System => DnsResolveMethod::System,
-            DnsResolveMethodConfig::Resolv => DnsResolveMethod::Resolv,
-            DnsResolveMethodConfig::Google => DnsResolveMethod::Google,
-            DnsResolveMethodConfig::Cloudflare => DnsResolveMethod::Cloudflare,
+            DnsResolveMethodConfig::System => ResolveMethod::System,
+            DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
+            DnsResolveMethodConfig::Google => ResolveMethod::Google,
+            DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
         };
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
@@ -787,12 +787,9 @@ fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
 }
 
 /// Validate `dns_resolve_method` and `dns_lookup_as_info`.
-fn validate_dns(
-    dns_resolve_method: DnsResolveMethod,
-    dns_lookup_as_info: bool,
-) -> anyhow::Result<()> {
+fn validate_dns(dns_resolve_method: ResolveMethod, dns_lookup_as_info: bool) -> anyhow::Result<()> {
     match dns_resolve_method {
-        DnsResolveMethod::System if dns_lookup_as_info => Err(anyhow!(
+        ResolveMethod::System if dns_lookup_as_info => Err(anyhow!(
             "AS lookup not supported by resolver `system` (use '-r' to choose another resolver)"
         )),
         _ => Ok(()),

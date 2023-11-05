@@ -8,7 +8,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs};
 use ratatui::Frame;
-use trippy::dns::DnsResolveMethod;
+use trippy::dns::ResolveMethod;
 use trippy::tracing::PortDirection;
 
 /// Render settings dialog.
@@ -420,12 +420,12 @@ impl SettingsItem {
 }
 
 /// Format the `DnsResolveMethod`.
-fn format_dns_method(resolve_method: DnsResolveMethod) -> String {
+fn format_dns_method(resolve_method: ResolveMethod) -> String {
     match resolve_method {
-        DnsResolveMethod::System => String::from("system"),
-        DnsResolveMethod::Resolv => String::from("resolv"),
-        DnsResolveMethod::Google => String::from("google"),
-        DnsResolveMethod::Cloudflare => String::from("cloudflare"),
+        ResolveMethod::System => String::from("system"),
+        ResolveMethod::Resolv => String::from("resolv"),
+        ResolveMethod::Google => String::from("google"),
+        ResolveMethod::Cloudflare => String::from("cloudflare"),
     }
 }
 
