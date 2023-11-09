@@ -1,4 +1,4 @@
-use crate::backend::Hop;
+use crate::backend::trace::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};

@@ -13,11 +13,11 @@
 )]
 #![deny(unsafe_code)]
 
-use crate::backend::Trace;
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::geoip::GeoIpLookup;
 use crate::platform::Platform;
 use anyhow::{anyhow, Error};
+use backend::trace::Trace;
 use clap::Parser;
 use config::Args;
 use frontend::TuiConfig;
