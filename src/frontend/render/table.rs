@@ -337,7 +337,8 @@ fn render_hostname_with_details(
         let index = app.selected_hop_address;
         format_details(hop, index, dns, geoip_lookup, config)
     } else {
-        (String::from("No response"), 1)
+        let height = if config.lookup_as_info { 6 } else { 3 };
+        (String::from("No response"), height)
     };
     let cell = Cell::from(rendered);
     (cell, count)
