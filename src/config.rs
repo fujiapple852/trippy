@@ -45,6 +45,8 @@ pub enum Mode {
     Csv,
     /// Generate a JSON report for N cycles.
     Json,
+    /// Generate a Graphviz DOT file for N cycles.
+    Dot,
     /// Do not generate any tracing output for N cycles.
     Silent,
 }
@@ -498,7 +500,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,
-            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json | Mode::Silent => {
+            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json | Mode::Dot | Mode::Silent => {
                 Some(report_cycles)
             }
         };

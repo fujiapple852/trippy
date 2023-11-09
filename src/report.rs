@@ -1,3 +1,4 @@
+use crate::backend::flows::FlowEntry;
 use crate::backend::trace::Trace;
 use crate::TraceInfo;
 use anyhow::anyhow;
@@ -5,7 +6,10 @@ use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
 use parking_lot::RwLock;
+use petgraph::dot::{Config, Dot};
+use petgraph::graphmap::DiGraphMap;
 use serde::{Serialize, Serializer};
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -269,6 +273,31 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
 /// Run a trace without generating any output.
 pub fn run_report_silent(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
     wait_for_round(&info.data, report_cycles)?;
+    Ok(())
+}
+
+/// Run a trace and generate a dot file.
+pub fn run_report_dot(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
+    wait_for_round(&info.data, report_cycles)?;
+    let trace = info.data.read().clone();
+    let mut graph: DiGraphMap<IpAddr, ()> = DiGraphMap::new();
+    for (flow, _id) in trace.flow_registry().flows() {
+        for (fst, snd) in flow.entries.windows(2).map(|pair| (pair[0], pair[1])) {
+            match (fst, snd) {
+                (FlowEntry::Known(addr1), FlowEntry::Known(addr2)) => {
+                    graph.add_edge(addr1, addr2, ());
+                }
+                (FlowEntry::Known(addr1), FlowEntry::Unknown) => {
+                    graph.add_edge(addr1, IpAddr::V4(Ipv4Addr::UNSPECIFIED), ());
+                }
+                (FlowEntry::Unknown, FlowEntry::Known(addr2)) => {
+                    graph.add_edge(IpAddr::V4(Ipv4Addr::UNSPECIFIED), addr2, ());
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
     Ok(())
 }
 
