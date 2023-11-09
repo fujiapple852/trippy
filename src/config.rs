@@ -47,6 +47,8 @@ pub enum Mode {
     Json,
     /// Generate a Graphviz DOT file for N cycles.
     Dot,
+    /// Display all flows.
+    Flows,
     /// Do not generate any tracing output for N cycles.
     Silent,
 }
@@ -500,9 +502,13 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,
-            Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json | Mode::Dot | Mode::Silent => {
-                Some(report_cycles)
-            }
+            Mode::Pretty
+            | Mode::Markdown
+            | Mode::Csv
+            | Mode::Json
+            | Mode::Dot
+            | Mode::Flows
+            | Mode::Silent => Some(report_cycles),
         };
         let tui_max_addrs = match tui_max_addrs {
             Some(n) if n > 0 => Some(n),

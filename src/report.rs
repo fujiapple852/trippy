@@ -301,6 +301,16 @@ pub fn run_report_dot(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<
     Ok(())
 }
 
+/// Run a trace and report all flows observed.
+pub fn run_report_flows(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
+    wait_for_round(&info.data, report_cycles)?;
+    let trace = info.data.read().clone();
+    for (flow, flow_id) in trace.flow_registry().flows() {
+        println!("flow_id: {flow_id:?} - {flow:?}");
+    }
+    Ok(())
+}
+
 /// Block until trace data for round `round` is available.
 fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyhow::Result<Trace> {
     let mut trace = trace_data.read().clone();
