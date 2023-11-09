@@ -1,4 +1,5 @@
-use crate::backend::{Hop, Trace};
+use crate::backend::trace::Hop;
+use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::SETTINGS_TABS;
 use crate::geoip::GeoIpLookup;

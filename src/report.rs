@@ -1,4 +1,5 @@
-use crate::{Trace, TraceInfo};
+use crate::backend::trace::Trace;
+use crate::TraceInfo;
 use anyhow::anyhow;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};

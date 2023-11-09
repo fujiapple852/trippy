@@ -1,4 +1,4 @@
-use crate::backend::Hop;
+use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
