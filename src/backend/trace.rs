@@ -1,3 +1,4 @@
+use crate::backend::flows::{Flow, FlowRegistry};
 use crate::config::MAX_HOPS;
 use indexmap::IndexMap;
 use std::net::{IpAddr, Ipv4Addr};
@@ -13,6 +14,7 @@ pub struct Trace {
     highest_ttl_for_round: u8,
     round: Option<usize>,
     hops: Vec<Hop>,
+    flow_registry: FlowRegistry,
     error: Option<String>,
 }
 
@@ -25,6 +27,7 @@ impl Trace {
             highest_ttl_for_round: 0,
             round: None,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+            flow_registry: FlowRegistry::new(),
             error: None,
         }
     }
@@ -71,6 +74,10 @@ impl Trace {
         }
     }
 
+    pub fn flow_registry(&self) -> &FlowRegistry {
+        &self.flow_registry
+    }
+
     pub fn error(&self) -> Option<&str> {
         self.error.as_deref()
     }
@@ -81,6 +88,7 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
+        self.update_flows(round.probes);
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
         self.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
@@ -145,6 +153,10 @@ impl Trace {
                 Some(r) => Some(r.max(probe.round.0)),
             }
         }
+    }
+    fn update_flows(&mut self, probes: &[Probe]) {
+        let flow = Flow::from_hops(probes.iter().map(|p| p.host));
+        self.flow_registry.register(flow);
     }
 }
 
