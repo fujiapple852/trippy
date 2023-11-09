@@ -208,6 +208,7 @@ pub struct TrippyConfig {
     pub tui_max_samples: usize,
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
+    pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
     pub tui_geoip_mode: GeoIpMode,
@@ -388,6 +389,11 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_tui.tui_refresh_rate,
             String::from(constants::DEFAULT_TUI_REFRESH_RATE),
         );
+        let tui_privacy_max_ttl = cfg_layer(
+            args.tui_privacy_max_ttl,
+            cfg_file_tui.tui_privacy_max_ttl,
+            constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
+        );
         let tui_address_mode = cfg_layer(
             args.tui_address_mode,
             cfg_file_tui.tui_address_mode,
@@ -550,6 +556,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             tui_max_samples,
             tui_preserve_screen,
             tui_refresh_rate,
+            tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
             tui_geoip_mode,

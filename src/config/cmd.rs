@@ -41,7 +41,7 @@ pub struct Args {
     #[arg(long, conflicts_with = "protocol", conflicts_with = "udp")]
     pub tcp: bool,
 
-    /// use IPv4 only
+    /// Use IPv4 only
     #[arg(short = '4', long, conflicts_with = "ipv6")]
     pub ipv4: bool,
 
@@ -157,6 +157,10 @@ pub struct Args {
     /// The Tui refresh rate [default: 100ms]
     #[arg(long)]
     pub tui_refresh_rate: Option<String>,
+
+    /// The maximum ttl of hops which will be masked for privacy [default: 0]
+    #[arg(long)]
+    pub tui_privacy_max_ttl: Option<u8>,
 
     /// The TUI theme colors [item=color,item=color,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value)]

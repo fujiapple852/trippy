@@ -138,16 +138,20 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
             }
         })
         .collect::<Vec<_>>();
-    let info = match locations.as_slice() {
-        _ if app.tracer_config().geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
-        [] if selected_hop.addr_count() > 0 => format!(
-            "No GeoIp data for hop {} ({})",
-            selected_hop.ttl(),
-            selected_hop.addrs().join(", ")
-        ),
-        [] => format!("No GeoIp data for hop {}", selected_hop.ttl()),
-        [loc] => loc.to_string(),
-        _ => format!("Multiple GeoIp locations for hop {}", selected_hop.ttl()),
+    let info = if app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
+        "**Hidden**".to_string()
+    } else {
+        match locations.as_slice() {
+            _ if app.tracer_config().geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
+            [] if selected_hop.addr_count() > 0 => format!(
+                "No GeoIp data for hop {} ({})",
+                selected_hop.ttl(),
+                selected_hop.addrs().join(", ")
+            ),
+            [] => format!("No GeoIp data for hop {}", selected_hop.ttl()),
+            [loc] => loc.to_string(),
+            _ => format!("Multiple GeoIp locations for hop {}", selected_hop.ttl()),
+        }
     };
     let info_panel = Paragraph::new(info)
         .block(

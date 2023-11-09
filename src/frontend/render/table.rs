@@ -193,25 +193,33 @@ fn render_hostname(
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
-        match config.max_addrs {
-            None => {
-                let hostnames = hop
-                    .addrs_with_counts()
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
-                    .join("\n");
-                let count = hop.addr_count().clamp(1, u8::MAX as usize);
-                (hostnames, count as u16)
-            }
-            Some(max_addr) => {
-                let hostnames = hop
-                    .addrs_with_counts()
-                    .sorted_unstable_by_key(|(_, &cnt)| cnt)
-                    .rev()
-                    .take(max_addr as usize)
-                    .map(|(addr, &freq)| format_address(addr, freq, hop, dns, geoip_lookup, config))
-                    .join("\n");
-                let count = hop.addr_count().clamp(1, max_addr as usize);
-                (hostnames, count as u16)
+        if config.privacy_max_ttl >= hop.ttl() {
+            (String::from("**Hidden**"), 1)
+        } else {
+            match config.max_addrs {
+                None => {
+                    let hostnames = hop
+                        .addrs_with_counts()
+                        .map(|(addr, &freq)| {
+                            format_address(addr, freq, hop, dns, geoip_lookup, config)
+                        })
+                        .join("\n");
+                    let count = hop.addr_count().clamp(1, u8::MAX as usize);
+                    (hostnames, count as u16)
+                }
+                Some(max_addr) => {
+                    let hostnames = hop
+                        .addrs_with_counts()
+                        .sorted_unstable_by_key(|(_, &cnt)| cnt)
+                        .rev()
+                        .take(max_addr as usize)
+                        .map(|(addr, &freq)| {
+                            format_address(addr, freq, hop, dns, geoip_lookup, config)
+                        })
+                        .join("\n");
+                    let count = hop.addr_count().clamp(1, max_addr as usize);
+                    (hostnames, count as u16)
+                }
             }
         }
     } else {
@@ -334,8 +342,13 @@ fn render_hostname_with_details(
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let (rendered, count) = if hop.total_recv() > 0 {
-        let index = app.selected_hop_address;
-        format_details(hop, index, dns, geoip_lookup, config)
+        if config.privacy_max_ttl >= hop.ttl() {
+            let height = if config.lookup_as_info { 6 } else { 3 };
+            (String::from("**Hidden**"), height)
+        } else {
+            let index = app.selected_hop_address;
+            format_details(hop, index, dns, geoip_lookup, config)
+        }
     } else {
         let height = if config.lookup_as_info { 6 } else { 3 };
         (String::from("No response"), height)
