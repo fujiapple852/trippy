@@ -5,6 +5,7 @@ use trace::Trace;
 use tracing::instrument;
 use trippy::tracing::{SocketImpl, Tracer, TracerChannel, TracerChannelConfig, TracerConfig};
 
+pub mod flows;
 pub mod trace;
 
 /// Run the tracing backend.
