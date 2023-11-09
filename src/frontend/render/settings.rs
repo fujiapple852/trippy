@@ -158,6 +158,10 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             format!("{}", format_duration(app.tui_config.refresh_rate)),
         ),
         SettingsItem::new(
+            "tui-privacy-max-ttl",
+            format!("{}", app.tui_config.privacy_max_ttl),
+        ),
+        SettingsItem::new(
             "tui-address-mode",
             format_address_mode(app.tui_config.address_mode),
         ),
@@ -395,7 +399,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 7),
+    ("Tui", 8),
     ("Trace", 14),
     ("Dns", 4),
     ("GeoIp", 1),

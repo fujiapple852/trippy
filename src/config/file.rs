@@ -135,6 +135,7 @@ pub struct ConfigTui {
     pub tui_max_samples: Option<usize>,
     pub tui_preserve_screen: Option<bool>,
     pub tui_refresh_rate: Option<String>,
+    pub tui_privacy_max_ttl: Option<u8>,
     pub tui_address_mode: Option<AddressMode>,
     pub tui_as_mode: Option<AsMode>,
     pub tui_geoip_mode: Option<GeoIpMode>,
