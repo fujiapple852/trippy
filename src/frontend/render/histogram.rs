@@ -1,3 +1,4 @@
+use crate::backend::trace::Trace;
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};

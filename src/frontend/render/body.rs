@@ -1,3 +1,4 @@
+use crate::backend::trace::Trace;
 use crate::frontend::render::{bsod, chart, splash, table, world};
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::Rect;
@@ -10,7 +11,7 @@ use ratatui::Frame;
 pub fn render(f: &mut Frame<'_>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
         bsod::render(f, rec, err);
-    } else if app.tracer_data().hops().is_empty() {
+    } else if app.tracer_data().hops(Trace::default_flow_id()).is_empty() {
         splash::render(f, app, rec);
     } else if app.show_chart {
         chart::render(f, app, rec);

@@ -19,7 +19,7 @@ pub fn run_report_csv(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
-    for hop in trace.hops() {
+    for hop in trace.hops(Trace::default_flow_id()) {
         let ttl = hop.ttl();
         let ips = hop.addrs().join(":");
         let ip = if ips.is_empty() {
@@ -120,7 +120,7 @@ pub fn run_report_json(
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
     let hops: Vec<ReportHop> = trace
-        .hops()
+        .hops(Trace::default_flow_id())
         .iter()
         .map(|hop| {
             let hosts: Vec<_> = hop
@@ -191,7 +191,7 @@ fn run_report_table(
         .load_preset(preset)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(columns);
-    for hop in trace.hops() {
+    for hop in trace.hops(Trace::default_flow_id()) {
         let ttl = hop.ttl().to_string();
         let ips = hop.addrs().join("\n");
         let ip = if ips.is_empty() {
@@ -238,7 +238,7 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
         if let Some(err) = trace_data.error() {
             return Err(anyhow!("error: {}", err));
         }
-        for hop in trace_data.hops() {
+        for hop in trace_data.hops(Trace::default_flow_id()) {
             let ttl = hop.ttl();
             let addrs = hop.addrs().collect::<Vec<_>>();
             let sent = hop.total_sent();
@@ -275,7 +275,9 @@ pub fn run_report_silent(info: &TraceInfo, report_cycles: usize) -> anyhow::Resu
 /// Block until trace data for round `round` is available.
 fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyhow::Result<Trace> {
     let mut trace = trace_data.read().clone();
-    while trace.round().is_none() || trace.round() < Some(report_cycles - 1) {
+    while trace.round(Trace::default_flow_id()).is_none()
+        || trace.round(Trace::default_flow_id()) < Some(report_cycles - 1)
+    {
         trace = trace_data.read().clone();
         if let Some(err) = trace.error() {
             return Err(anyhow!("error: {}", err));
