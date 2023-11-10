@@ -1,6 +1,8 @@
-use crate::backend::flows::{Flow, FlowRegistry};
+use crate::backend::flows::{Flow, FlowId, FlowRegistry};
 use crate::config::MAX_HOPS;
 use indexmap::IndexMap;
+use std::collections::HashMap;
+use std::iter::once;
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 use trippy::tracing::{Probe, ProbeStatus, TracerRound};
@@ -9,73 +11,66 @@ use trippy::tracing::{Probe, ProbeStatus, TracerRound};
 #[derive(Debug, Clone)]
 pub struct Trace {
     max_samples: usize,
-    lowest_ttl: u8,
-    highest_ttl: u8,
-    highest_ttl_for_round: u8,
-    round: Option<usize>,
-    hops: Vec<Hop>,
-    flow_registry: FlowRegistry,
+    trace_data: HashMap<FlowId, TraceData>,
+    registry: FlowRegistry,
     error: Option<String>,
 }
 
 impl Trace {
+    /// Create a new `Trace`.
     pub fn new(max_samples: usize) -> Self {
         Self {
+            trace_data: once((Self::default_flow_id(), TraceData::new(max_samples)))
+                .collect::<HashMap<FlowId, TraceData>>(),
             max_samples,
-            lowest_ttl: 0,
-            highest_ttl: 0,
-            highest_ttl_for_round: 0,
-            round: None,
-            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
-            flow_registry: FlowRegistry::new(),
+            registry: FlowRegistry::new(),
             error: None,
         }
     }
 
-    /// The current round of tracing.
-    pub fn round(&self) -> Option<usize> {
-        self.round
+    /// Return the id of the default flow.
+    pub fn default_flow_id() -> FlowId {
+        FlowId(0)
     }
 
-    /// Information about each hop in the trace.
-    pub fn hops(&self) -> &[Hop] {
-        if self.lowest_ttl == 0 || self.highest_ttl == 0 {
-            &[]
-        } else {
-            let start = (self.lowest_ttl as usize) - 1;
-            let end = self.highest_ttl as usize;
-            &self.hops[start..end]
-        }
+    /// Information about each hop for a given flow.
+    pub fn hops(&self, flow_id: FlowId) -> &[Hop] {
+        self.trace_data[&flow_id].hops()
     }
 
-    /// Is a given `Hop` the target hop?
+    /// Is a given `Hop` the target hop for a given flow?
     ///
     /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
     ///
     /// Note that if the target host does not respond to probes then the the highest `ttl` observed
     /// will be one greater than the `ttl` of the last host which did respond.
-    pub fn is_target(&self, hop: &Hop) -> bool {
-        self.highest_ttl == hop.ttl
+    pub fn is_target(&self, hop: &Hop, flow_id: FlowId) -> bool {
+        self.trace_data[&flow_id].is_target(hop)
     }
 
-    /// Is a given `Hop` in the current round?
-    pub fn is_in_round(&self, hop: &Hop) -> bool {
-        hop.ttl <= self.highest_ttl_for_round
+    /// Is a given `Hop` in the current round for a given flow?
+    pub fn is_in_round(&self, hop: &Hop, flow_id: FlowId) -> bool {
+        self.trace_data[&flow_id].is_in_round(hop)
     }
 
-    /// Return the target `Hop`.
-    ///
-    /// TODO Do we guarantee there is always a target hop?
-    pub fn target_hop(&self) -> &Hop {
-        if self.highest_ttl > 0 {
-            &self.hops[usize::from(self.highest_ttl) - 1]
-        } else {
-            &self.hops[0]
-        }
+    /// Return the target `Hop` for a given flow.
+    pub fn target_hop(&self, flow_id: FlowId) -> &Hop {
+        self.trace_data[&flow_id].target_hop()
     }
 
-    pub fn flow_registry(&self) -> &FlowRegistry {
-        &self.flow_registry
+    /// The current round of tracing for a given flow.
+    pub fn round(&self, flow_id: FlowId) -> Option<usize> {
+        self.trace_data[&flow_id].round()
+    }
+
+    /// The total rounds of tracing for a given flow.
+    pub fn round_count(&self, flow_id: FlowId) -> usize {
+        self.trace_data[&flow_id].round_count()
+    }
+
+    /// The registry of flows in the trace.
+    pub fn flows(&self) -> &[(Flow, FlowId)] {
+        self.registry.flows()
     }
 
     pub fn error(&self) -> Option<&str> {
@@ -87,76 +82,21 @@ impl Trace {
     }
 
     /// Update the tracing state from a `TracerRound`.
-    pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
-        self.update_flows(round.probes);
-        self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
-        self.highest_ttl_for_round = round.largest_ttl.0;
-        for probe in round.probes {
-            self.update_from_probe(probe);
-        }
+    pub(super) fn update_from_round(&mut self, round: &TracerRound<'_>) {
+        let flow = Flow::from_hops(round.probes.iter().map(|p| p.host));
+        let flow_id = self.registry.register(flow);
+        self.update_trace_flow(Self::default_flow_id(), round);
+        self.update_trace_flow(flow_id, round);
     }
 
-    fn update_from_probe(&mut self, probe: &Probe) {
-        self.update_lowest_ttl(probe);
-        self.update_round(probe);
-        match probe.status {
-            ProbeStatus::Complete => {
-                let index = usize::from(probe.ttl.0) - 1;
-                let hop = &mut self.hops[index];
-                hop.ttl = probe.ttl.0;
-                hop.total_sent += 1;
-                hop.total_recv += 1;
-                let dur = probe.duration();
-                let dur_ms = dur.as_secs_f64() * 1000_f64;
-                hop.total_time += dur;
-                hop.last = Some(dur);
-                hop.samples.insert(0, dur);
-                hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
-                hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
-                hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
-                hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
-                if hop.samples.len() > self.max_samples {
-                    hop.samples.pop();
-                }
-                let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
-                *hop.addrs.entry(host).or_default() += 1;
-            }
-            ProbeStatus::Awaited => {
-                let index = usize::from(probe.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].ttl = probe.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
-                }
-            }
-            ProbeStatus::NotSent => {}
-        }
-    }
-
-    /// Update `lowest_ttl` for valid probes.
-    fn update_lowest_ttl(&mut self, probe: &Probe) {
-        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            if self.lowest_ttl == 0 {
-                self.lowest_ttl = probe.ttl.0;
-            } else {
-                self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
-            }
-        }
-    }
-
-    /// Update `round` for valid probes.
-    fn update_round(&mut self, probe: &Probe) {
-        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            self.round = match self.round {
-                None => Some(probe.round.0),
-                Some(r) => Some(r.max(probe.round.0)),
-            }
-        }
-    }
-    fn update_flows(&mut self, probes: &[Probe]) {
-        let flow = Flow::from_hops(probes.iter().map(|p| p.host));
-        self.flow_registry.register(flow);
+    fn update_trace_flow(&mut self, flow_id: FlowId, round: &TracerRound<'_>) {
+        let flow_trace = self
+            .trace_data
+            .entry(flow_id)
+            .or_insert_with(|| TraceData::new(self.max_samples));
+        flow_trace.highest_ttl = std::cmp::max(flow_trace.highest_ttl, round.largest_ttl.0);
+        flow_trace.highest_ttl_for_round = round.largest_ttl.0;
+        flow_trace.update_from_round(round);
     }
 }
 
@@ -269,6 +209,137 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+        }
+    }
+}
+
+/// Data for a trace.
+#[derive(Debug, Clone)]
+struct TraceData {
+    /// The maximum number of samples to record.
+    max_samples: usize,
+    /// The lowest ttl observed across all rounds.
+    lowest_ttl: u8,
+    /// The highest ttl observed across all rounds.
+    highest_ttl: u8,
+    /// The highest ttl observed for the latest round.
+    highest_ttl_for_round: u8,
+    /// The latest round received.
+    round: Option<usize>,
+    /// The total number of rounds received.
+    round_count: usize,
+    /// The hops in this trace.
+    hops: Vec<Hop>,
+}
+
+impl TraceData {
+    fn new(max_samples: usize) -> Self {
+        Self {
+            max_samples,
+            lowest_ttl: 0,
+            highest_ttl: 0,
+            highest_ttl_for_round: 0,
+            round: None,
+            round_count: 0,
+            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+        }
+    }
+
+    fn hops(&self) -> &[Hop] {
+        if self.lowest_ttl == 0 || self.highest_ttl == 0 {
+            &[]
+        } else {
+            let start = (self.lowest_ttl as usize) - 1;
+            let end = self.highest_ttl as usize;
+            &self.hops[start..end]
+        }
+    }
+
+    fn is_target(&self, hop: &Hop) -> bool {
+        self.highest_ttl == hop.ttl
+    }
+
+    fn is_in_round(&self, hop: &Hop) -> bool {
+        hop.ttl <= self.highest_ttl_for_round
+    }
+
+    fn target_hop(&self) -> &Hop {
+        if self.highest_ttl > 0 {
+            &self.hops[usize::from(self.highest_ttl) - 1]
+        } else {
+            &self.hops[0]
+        }
+    }
+
+    fn round(&self) -> Option<usize> {
+        self.round
+    }
+
+    fn round_count(&self) -> usize {
+        self.round_count
+    }
+
+    fn update_from_round(&mut self, round: &TracerRound<'_>) {
+        self.round_count += 1;
+        for probe in round.probes {
+            self.update_from_probe(probe);
+        }
+    }
+
+    fn update_from_probe(&mut self, probe: &Probe) {
+        self.update_lowest_ttl(probe);
+        self.update_round(probe);
+        match probe.status {
+            ProbeStatus::Complete => {
+                let index = usize::from(probe.ttl.0) - 1;
+                let hop = &mut self.hops[index];
+                hop.ttl = probe.ttl.0;
+                hop.total_sent += 1;
+                hop.total_recv += 1;
+                let dur = probe.duration();
+                let dur_ms = dur.as_secs_f64() * 1000_f64;
+                hop.total_time += dur;
+                hop.last = Some(dur);
+                hop.samples.insert(0, dur);
+                hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
+                hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
+                hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
+                hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
+                if hop.samples.len() > self.max_samples {
+                    hop.samples.pop();
+                }
+                let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+                *hop.addrs.entry(host).or_default() += 1;
+            }
+            ProbeStatus::Awaited => {
+                let index = usize::from(probe.ttl.0) - 1;
+                self.hops[index].total_sent += 1;
+                self.hops[index].ttl = probe.ttl.0;
+                self.hops[index].samples.insert(0, Duration::default());
+                if self.hops[index].samples.len() > self.max_samples {
+                    self.hops[index].samples.pop();
+                }
+            }
+            ProbeStatus::NotSent => {}
+        }
+    }
+
+    fn update_round(&mut self, probe: &Probe) {
+        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
+            self.round = match self.round {
+                None => Some(probe.round.0),
+                Some(r) => Some(r.max(probe.round.0)),
+            }
+        }
+    }
+
+    fn update_lowest_ttl(&mut self, probe: &Probe) {
+        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
+            if self.lowest_ttl == 0 {
+                self.lowest_ttl = probe.ttl.0;
+            } else {
+                self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
+            }
         }
     }
 }
