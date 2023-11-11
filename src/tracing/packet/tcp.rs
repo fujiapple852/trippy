@@ -175,7 +175,8 @@ impl<'a> TcpPacket<'a> {
         self.buf.as_slice()
     }
 
-    fn payload(&self) -> &[u8] {
+    #[must_use]
+    pub fn payload(&self) -> &[u8] {
         let start = Self::minimum_packet_size() + self.tcp_options_length();
         if self.buf.as_slice().len() <= start {
             return &[];
