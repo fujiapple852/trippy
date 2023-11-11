@@ -101,6 +101,8 @@ impl Probe {
 pub enum ProbeStatus {
     /// The probe has not been sent.
     NotSent,
+    /// The probe was skipped.
+    Skipped,
     /// The probe has been sent and we are awaiting the response.
     Awaited,
     /// The probe has been sent and a response (`EchoReply`, `DestinationUnreachable` or
