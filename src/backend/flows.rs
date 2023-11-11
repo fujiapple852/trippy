@@ -34,7 +34,7 @@ impl FlowRegistry {
     pub fn new() -> Self {
         Self {
             flows: Vec::new(),
-            next_flow_id: FlowId(0),
+            next_flow_id: FlowId(1),
         }
     }
 
@@ -183,9 +183,9 @@ mod tests {
         let mut registry = FlowRegistry::new();
         let flow1 = Flow::from_hops([addr("1.1.1.1")]);
         let flow_id = registry.register(flow1);
-        assert_eq!(FlowId(0), flow_id);
+        assert_eq!(FlowId(1), flow_id);
         assert_eq!(
-            &[(Flow::from_hops([addr("1.1.1.1")]), FlowId(0))],
+            &[(Flow::from_hops([addr("1.1.1.1")]), FlowId(1))],
             registry.flows()
         );
     }
@@ -197,8 +197,8 @@ mod tests {
         let flow1_id = registry.register(flow1.clone());
         let flow2 = Flow::from_hops([addr("2.2.2.2")]);
         let flow2_id = registry.register(flow2.clone());
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(1), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(2), flow2_id);
         assert_eq!(&[(flow1, flow1_id), (flow2, flow2_id)], registry.flows());
     }
 
@@ -209,8 +209,8 @@ mod tests {
         let flow1_id = registry.register(flow1.clone());
         let flow2 = Flow::from_hops([addr("1.1.1.1")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
         assert_eq!(&[(flow1, flow1_id)], registry.flows());
     }
 
@@ -223,9 +223,9 @@ mod tests {
         let flow2_id = registry.register(flow2.clone());
         let flow3 = Flow::from_hops([addr("1.1.1.1")]);
         let flow3_id = registry.register(flow3);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(1), flow2_id);
-        assert_eq!(FlowId(0), flow3_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(2), flow2_id);
+        assert_eq!(FlowId(1), flow3_id);
         assert_eq!(&[(flow1, flow1_id), (flow2, flow2_id)], registry.flows());
     }
 
@@ -242,11 +242,11 @@ mod tests {
         let flow4_id = registry.register(flow4);
         let flow5 = Flow::from_hops([addr("1.1.1.1")]);
         let flow5_id = registry.register(flow5);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
-        assert_eq!(FlowId(0), flow3_id);
-        assert_eq!(FlowId(1), flow4_id);
-        assert_eq!(FlowId(0), flow5_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
+        assert_eq!(FlowId(1), flow3_id);
+        assert_eq!(FlowId(2), flow4_id);
+        assert_eq!(FlowId(1), flow5_id);
     }
 
     #[test]
@@ -260,10 +260,10 @@ mod tests {
         let flow3_id = registry.register(flow3);
         let flow4 = Flow::from_hops([addr("1.1.1.1"), addr("2.2.2.2"), addr("3.3.3.3")]);
         let flow4_id = registry.register(flow4);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
-        assert_eq!(FlowId(0), flow3_id);
-        assert_eq!(FlowId(0), flow4_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
+        assert_eq!(FlowId(1), flow3_id);
+        assert_eq!(FlowId(1), flow4_id);
     }
 
     #[test]
@@ -286,10 +286,10 @@ mod tests {
         // still matches flow 1
         let flow4 = Flow::from_hops([addr("2.2.2.2")]);
         let flow4_id = registry.register(flow4);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(1), flow2_id);
-        assert_eq!(FlowId(0), flow3_id);
-        assert_eq!(FlowId(1), flow4_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(2), flow2_id);
+        assert_eq!(FlowId(1), flow3_id);
+        assert_eq!(FlowId(2), flow4_id);
     }
 
     #[test]
@@ -299,8 +299,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([addr("1.1.1.1")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
     }
 
     #[test]
@@ -310,8 +310,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([addr("1.1.1.1"), None]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
     }
 
     #[test]
@@ -321,8 +321,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([addr("1.1.1.1"), addr("2.2.2.2")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
     }
 
     #[test]
@@ -332,8 +332,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([addr("1.1.1.1"), addr("2.2.2.2")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
     }
 
     #[test]
@@ -343,8 +343,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([None, addr("1.1.1.1")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(0), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(1), flow2_id);
     }
 
     #[test]
@@ -354,8 +354,8 @@ mod tests {
         let flow1_id = registry.register(flow1);
         let flow2 = Flow::from_hops([None, addr("2.2.2.2")]);
         let flow2_id = registry.register(flow2);
-        assert_eq!(FlowId(0), flow1_id);
-        assert_eq!(FlowId(1), flow2_id);
+        assert_eq!(FlowId(1), flow1_id);
+        assert_eq!(FlowId(2), flow2_id);
     }
 
     #[allow(clippy::unnecessary_wraps)]
