@@ -36,6 +36,14 @@ pub struct Theme {
     pub frequency_chart_bar_color: Color,
     /// The color of text in the bars of the frequency chart.
     pub frequency_chart_text_color: Color,
+    /// The color of the selected flow bar in the flows chart.
+    pub flows_chart_bar_selected_color: Color,
+    /// The color of the unselected flow bar in the flows chart.
+    pub flows_chart_bar_unselected_color: Color,
+    /// The color of the current flow text in the flows chart.
+    pub flows_chart_text_current_color: Color,
+    /// The color of the non-current flow text in the flows chart.
+    pub flows_chart_text_non_current_color: Color,
     /// The color of the samples chart.
     pub samples_chart_color: Color,
     /// The background color of the help dialog.
@@ -84,6 +92,12 @@ impl From<TuiTheme> for Theme {
             hops_chart_axis_color: Color::from(value.hops_chart_axis_color),
             frequency_chart_bar_color: Color::from(value.frequency_chart_bar_color),
             frequency_chart_text_color: Color::from(value.frequency_chart_text_color),
+            flows_chart_bar_selected_color: Color::from(value.flows_chart_bar_selected_color),
+            flows_chart_bar_unselected_color: Color::from(value.flows_chart_bar_unselected_color),
+            flows_chart_text_current_color: Color::from(value.flows_chart_text_current_color),
+            flows_chart_text_non_current_color: Color::from(
+                value.flows_chart_text_non_current_color,
+            ),
             samples_chart_color: Color::from(value.samples_chart_color),
             help_dialog_bg_color: Color::from(value.help_dialog_bg_color),
             help_dialog_text_color: Color::from(value.help_dialog_text_color),

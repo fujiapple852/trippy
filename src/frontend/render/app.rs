@@ -1,4 +1,4 @@
-use crate::frontend::render::{body, footer, header, help, settings, tabs};
+use crate::frontend::render::{body, flows, footer, header, help, settings, tabs};
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
@@ -10,7 +10,9 @@ use ratatui::Frame;
 ///  ____________________________________
 /// |               Header               |
 ///  ------------------------------------
-/// |                Tabs                |
+/// |               Tabs                 |
+///  ------------------------------------
+/// |               Flows                |
 ///  ------------------------------------
 /// |                                    |
 /// |                                    |
@@ -25,7 +27,8 @@ use ratatui::Frame;
 ///  ------------------------------------
 ///
 /// Header - the title, configuration, destination, clock and keyboard controls
-/// Tab - a tab for each target being traced (only shown if > 1 target requested)
+/// Tab - a tab for each target being traced (shown if > 1 target requested, can't be used with flows)
+/// Flows - a navigable chart of individual trace flows (toggled on/off, can't be used with tabs)
 /// Hops - a table where each row represents a single hop (time-to-live) in the trace
 /// History - a graph of historic round-trip ping samples for the target host
 /// Frequency - a histogram of sample frequencies by round-trip time for the target host
@@ -35,6 +38,8 @@ use ratatui::Frame;
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let constraints = if app.trace_info.len() > 1 {
         LAYOUT_WITH_TABS.as_slice()
+    } else if app.show_flows {
+        LAYOUT_WITH_FLOWS.as_slice()
     } else {
         LAYOUT_WITHOUT_TABS.as_slice()
     };
@@ -45,6 +50,10 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     header::render(f, app, chunks[0]);
     if app.trace_info.len() > 1 {
         tabs::render(f, chunks[1], app);
+        body::render(f, chunks[2], app);
+        footer::render(f, chunks[3], app);
+    } else if app.show_flows {
+        flows::render(f, chunks[1], app);
         body::render(f, chunks[2], app);
         footer::render(f, chunks[3], app);
     } else {
@@ -67,6 +76,13 @@ const LAYOUT_WITHOUT_TABS: [Constraint; 3] = [
 const LAYOUT_WITH_TABS: [Constraint; 4] = [
     Constraint::Length(5),
     Constraint::Length(3),
+    Constraint::Min(10),
+    Constraint::Length(6),
+];
+
+const LAYOUT_WITH_FLOWS: [Constraint; 4] = [
+    Constraint::Length(5),
+    Constraint::Length(6),
     Constraint::Min(10),
     Constraint::Length(6),
 ];

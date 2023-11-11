@@ -39,6 +39,14 @@ pub struct TuiTheme {
     pub frequency_chart_bar_color: TuiColor,
     /// The color of text in the bars of the frequency chart.
     pub frequency_chart_text_color: TuiColor,
+    /// The color of the selected flow bar in the flows chart.
+    pub flows_chart_bar_selected_color: TuiColor,
+    /// The color of the unselected flow bar in the flows chart.
+    pub flows_chart_bar_unselected_color: TuiColor,
+    /// The color of the current flow text in the flows chart.
+    pub flows_chart_text_current_color: TuiColor,
+    /// The color of the non-current flow text in the flows chart.
+    pub flows_chart_text_non_current_color: TuiColor,
     /// The color of the samples chart.
     pub samples_chart_color: TuiColor,
     /// The background color of the help dialog.
@@ -85,6 +93,10 @@ impl Default for TuiTheme {
             hops_chart_axis_color: TuiColor::DarkGray,
             frequency_chart_bar_color: TuiColor::Green,
             frequency_chart_text_color: TuiColor::Gray,
+            flows_chart_bar_selected_color: TuiColor::Green,
+            flows_chart_bar_unselected_color: TuiColor::DarkGray,
+            flows_chart_text_current_color: TuiColor::LightGreen,
+            flows_chart_text_non_current_color: TuiColor::White,
             samples_chart_color: TuiColor::Yellow,
             help_dialog_bg_color: TuiColor::Blue,
             help_dialog_text_color: TuiColor::Gray,
@@ -160,6 +172,22 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::FrequencyChartTextColor)
                 .or(cfg.frequency_chart_text_color.as_ref())
                 .unwrap_or(&Self::default().frequency_chart_text_color),
+            flows_chart_bar_selected_color: *color_map
+                .get(&TuiThemeItem::FlowsChartBarSelectedColor)
+                .or(cfg.flows_chart_bar_selected_color.as_ref())
+                .unwrap_or(&Self::default().flows_chart_bar_selected_color),
+            flows_chart_bar_unselected_color: *color_map
+                .get(&TuiThemeItem::FlowsChartBarUnselectedColor)
+                .or(cfg.flows_chart_bar_unselected_color.as_ref())
+                .unwrap_or(&Self::default().flows_chart_bar_unselected_color),
+            flows_chart_text_current_color: *color_map
+                .get(&TuiThemeItem::FlowsChartTextCurrentColor)
+                .or(cfg.flows_chart_text_current_color.as_ref())
+                .unwrap_or(&Self::default().flows_chart_text_current_color),
+            flows_chart_text_non_current_color: *color_map
+                .get(&TuiThemeItem::FlowsChartTextNonCurrentColor)
+                .or(cfg.flows_chart_text_non_current_color.as_ref())
+                .unwrap_or(&Self::default().flows_chart_text_non_current_color),
             samples_chart_color: *color_map
                 .get(&TuiThemeItem::SamplesChartColor)
                 .or(cfg.samples_chart_color.as_ref())
@@ -251,6 +279,14 @@ pub enum TuiThemeItem {
     FrequencyChartBarColor,
     /// The color of text in the bars of the frequency chart.
     FrequencyChartTextColor,
+    /// The color of the selected flow bar in the flows chart.
+    FlowsChartBarSelectedColor,
+    /// The color of the unselected flow bar in the flows chart.
+    FlowsChartBarUnselectedColor,
+    /// The color of the current flow text in the flows chart.
+    FlowsChartTextCurrentColor,
+    /// The color of the non-current flow text in the flows chart.
+    FlowsChartTextNonCurrentColor,
     /// The color of the samples chart.
     SamplesChartColor,
     /// The background color of the help dialog.

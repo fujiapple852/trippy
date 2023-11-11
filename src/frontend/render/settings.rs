@@ -279,6 +279,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("toggle-freeze", format!("{}", binds.toggle_freeze)),
         SettingsItem::new("toggle-chart", format!("{}", binds.toggle_chart)),
         SettingsItem::new("toggle-map", format!("{}", binds.toggle_map)),
+        SettingsItem::new("toggle-flows", format!("{}", binds.toggle_flows)),
         SettingsItem::new("expand-hosts", format!("{}", binds.expand_hosts)),
         SettingsItem::new("expand-hosts-max", format!("{}", binds.expand_hosts_max)),
         SettingsItem::new("contract-hosts", format!("{}", binds.contract_hosts)),
@@ -301,6 +302,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
 }
 
 /// Format theme settings.
+#[allow(clippy::too_many_lines)]
 fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let theme = &app.tui_config.theme;
     vec![
@@ -343,6 +345,22 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new(
             "frequency-chart-text-color",
             theme::fmt_color(theme.frequency_chart_text_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-bar-selected-color",
+            theme::fmt_color(theme.flows_chart_bar_selected_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-bar-unselected-color",
+            theme::fmt_color(theme.flows_chart_bar_unselected_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-text-current-color",
+            theme::fmt_color(theme.flows_chart_text_current_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-text-non-current-color",
+            theme::fmt_color(theme.flows_chart_text_non_current_color),
         ),
         SettingsItem::new(
             "samples-chart-color ",
@@ -403,8 +421,8 @@ pub const SETTINGS_TABS: [(&str, usize); 6] = [
     ("Trace", 14),
     ("Dns", 4),
     ("GeoIp", 1),
-    ("Bindings", 26),
-    ("Theme", 27),
+    ("Bindings", 27),
+    ("Theme", 31),
 ];
 
 /// The settings table header.

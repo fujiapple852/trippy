@@ -1,4 +1,4 @@
-use crate::backend::trace::{Hop, Trace};
+use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
@@ -31,11 +31,10 @@ use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved}
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let header = render_table_header(app.tui_config.theme);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app
-        .tracer_data()
-        .hops(Trace::default_flow_id())
-        .iter()
-        .map(|hop| render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config));
+    let rows =
+        app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
+            render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config)
+        });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -78,8 +77,8 @@ fn render_table_row(
         .selected_hop()
         .map(|h| h.ttl() == hop.ttl())
         .unwrap_or_default();
-    let is_target = app.tracer_data().is_target(hop, Trace::default_flow_id());
-    let is_in_round = app.tracer_data().is_in_round(hop, Trace::default_flow_id());
+    let is_target = app.tracer_data().is_target(hop, app.selected_flow);
+    let is_in_round = app.tracer_data().is_in_round(hop, app.selected_flow);
     let ttl_cell = render_ttl_cell(hop);
     let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
