@@ -430,14 +430,16 @@ fn extract_probe_resp_seq(
             )))
         }
         (Protocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port, checksum, identifier) = extract_udp_packet(ipv4)?;
-
+            let (src_port, dest_port, checksum, identifier, payload_length) =
+                extract_udp_packet(ipv4)?;
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier,
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
                 dest_port,
                 checksum,
+                payload_length,
+                false,
             )))
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
@@ -459,13 +461,14 @@ fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequest
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
 #[instrument]
-fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
+fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16, u16)> {
     let nested = UdpPacket::new_view(ipv4.payload())?;
     Ok((
         nested.get_source(),
         nested.get_destination(),
         nested.get_checksum(),
         ipv4.get_identification(),
+        nested.get_length() - UdpPacket::minimum_packet_size() as u16,
     ))
 }
 
@@ -1137,6 +1140,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1154,6 +1159,8 @@ mod tests {
         assert_eq!(31829, src_port);
         assert_eq!(33030, dest_port);
         assert_eq!(58571, checksum);
+        assert_eq!(56, payload_len);
+        assert!(!has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1189,6 +1196,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1206,6 +1215,8 @@ mod tests {
         assert_eq!(32779, src_port);
         assert_eq!(33010, dest_port);
         assert_eq!(10913, checksum);
+        assert_eq!(56, payload_len);
+        assert!(!has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }

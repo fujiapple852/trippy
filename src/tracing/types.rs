@@ -48,6 +48,8 @@ bitflags! {
     pub struct Flags: u32 {
         /// Swap the checksum and payload (UDP only).
         const PARIS_CHECKSUM = 1;
+        /// Encode the sequence number as the payload length (IPv6/UDP only)
+        const DUBLIN_IPV6_PAYLOAD_LENGTH = 2;
     }
 }
 
