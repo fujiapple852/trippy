@@ -8,16 +8,13 @@ use std::time::Duration;
 
 /// Render a histogram of ping frequencies.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
-    let target_hop = app.table_state.selected().map_or_else(
-        || app.tracer_data().target_hop(),
-        |s| &app.tracer_data().hops()[s],
-    );
-    let freq_data = sample_frequency(target_hop.samples());
+    let selected_hop = app.selected_hop_or_target();
+    let freq_data = sample_frequency(selected_hop.samples());
     let freq_data_ref: Vec<_> = freq_data.iter().map(|(b, c)| (b.as_str(), *c)).collect();
     let barchart = BarChart::default()
         .block(
             Block::default()
-                .title(format!("Frequency #{}", target_hop.ttl()))
+                .title(format!("Frequency #{}", selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg_color)
