@@ -6,7 +6,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Tabs};
 use ratatui::Frame;
 
 /// Render the tabs, one per trace.
-pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
+pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let tabs_block = Block::default()
         .title("Traces")
         .title_alignment(Alignment::Left)

@@ -44,7 +44,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
         .split(f.size());
     header::render(f, app, chunks[0]);
     if app.trace_info.len() > 1 {
-        tabs::render(f, app, chunks[1]);
+        tabs::render(f, chunks[1], app);
         body::render(f, chunks[2], app);
         footer::render(f, chunks[3], app);
     } else {
