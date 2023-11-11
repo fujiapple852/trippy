@@ -1,5 +1,6 @@
 use derive_more::{Add, AddAssign, Sub, SubAssign};
 use itertools::{EitherOrBoth, Itertools};
+use std::fmt::{Debug, Display, Formatter};
 use std::net::IpAddr;
 
 /// Identifies a tracing `Flow`.
@@ -19,6 +20,12 @@ use std::net::IpAddr;
     SubAssign,
 )]
 pub struct FlowId(pub u64);
+
+impl Display for FlowId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// A register of tracing `Flows`.
 #[derive(Debug, Clone, Default)]
@@ -152,6 +159,12 @@ impl Flow {
     }
 }
 
+impl Display for Flow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.entries.iter().format(", "))
+    }
+}
+
 /// The result of a `Flow` comparison check.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum CheckStatus {
@@ -170,6 +183,17 @@ pub enum FlowEntry {
     Unknown,
     /// A known flow entry with an `IpAddr`.
     Known(IpAddr),
+}
+
+impl Display for FlowEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unknown => f.write_str("*"),
+            Self::Known(addr) => {
+                write!(f, "{addr}")
+            }
+        }
+    }
 }
 
 #[cfg(test)]
