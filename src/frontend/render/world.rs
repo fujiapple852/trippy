@@ -1,4 +1,4 @@
-use crate::backend::trace::{Hop, Trace};
+use crate::backend::trace::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -186,7 +186,7 @@ struct MapEntry {
 /// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
 fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
-    for hop in app.tracer_data().hops(Trace::default_flow_id()) {
+    for hop in app.tracer_data().hops(app.selected_flow) {
         for addr in hop.addrs() {
             if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {

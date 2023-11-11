@@ -106,8 +106,10 @@ fn run_app<B: Backend>(
                         app.clear();
                     } else if bindings.next_hop_address.check(key) {
                         app.next_hop_address();
+                        app.next_flow(); // TODO
                     } else if bindings.previous_hop_address.check(key) {
                         app.previous_hop_address();
+                        app.previous_flow(); // TODO
                     } else if bindings.address_mode_ip.check(key) {
                         app.tui_config.address_mode = AddressMode::IP;
                     } else if bindings.address_mode_host.check(key) {

@@ -1,3 +1,4 @@
+use crate::backend::flows::FlowId;
 use crate::backend::trace::Hop;
 use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
@@ -24,6 +25,10 @@ pub struct TuiApp {
     ///
     /// Only used in detail mode.
     pub selected_hop_address: usize,
+    /// The FlowId of the selected flow.
+    ///
+    /// FlowId(0) represents the unified flow for the trace.
+    pub selected_flow: FlowId,
     pub resolver: DnsResolver,
     pub geoip_lookup: GeoIpLookup,
     pub show_help: bool,
@@ -51,6 +56,7 @@ impl TuiApp {
             trace_selected: 0,
             settings_tab_selected: 0,
             selected_hop_address: 0,
+            selected_flow: Trace::default_flow_id(),
             resolver,
             geoip_lookup,
             show_help: false,
@@ -78,15 +84,15 @@ impl TuiApp {
 
     pub fn selected_hop_or_target(&self) -> &Hop {
         self.table_state.selected().map_or_else(
-            || self.tracer_data().target_hop(Trace::default_flow_id()),
-            |s| &self.tracer_data().hops(Trace::default_flow_id())[s],
+            || self.tracer_data().target_hop(self.selected_flow),
+            |s| &self.tracer_data().hops(self.selected_flow)[s],
         )
     }
 
     pub fn selected_hop(&self) -> Option<&Hop> {
         self.table_state
             .selected()
-            .map(|s| &self.tracer_data().hops(Trace::default_flow_id())[s])
+            .map(|s| &self.tracer_data().hops(self.selected_flow)[s])
     }
 
     pub fn tracer_config(&self) -> &TraceInfo {
@@ -94,7 +100,7 @@ impl TuiApp {
     }
 
     pub fn clamp_selected_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if let Some(selected) = self.table_state.selected() {
             if selected > hop_count - 1 {
                 self.table_state.select(Some(hop_count - 1));
@@ -103,7 +109,7 @@ impl TuiApp {
     }
 
     pub fn next_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -123,7 +129,7 @@ impl TuiApp {
     }
 
     pub fn previous_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -153,6 +159,7 @@ impl TuiApp {
         };
     }
 
+    // TODO attempt to subtract with overflow here when on map and switching flows (which calls this fow now as we share a key)
     pub fn next_hop_address(&mut self) {
         if let Some(hop) = self.selected_hop() {
             if self.selected_hop_address < hop.addr_count() - 1 {
@@ -164,6 +171,22 @@ impl TuiApp {
     pub fn previous_hop_address(&mut self) {
         if self.selected_hop().is_some() && self.selected_hop_address > 0 {
             self.selected_hop_address -= 1;
+        }
+    }
+
+    pub fn flow_count(&self) -> usize {
+        self.selected_tracer_data.flow_registry().flows().len()
+    }
+
+    pub fn next_flow(&mut self) {
+        if (self.selected_flow.0 as usize) < self.flow_count() - 1 {
+            self.selected_flow += FlowId(1);
+        }
+    }
+
+    pub fn previous_flow(&mut self) {
+        if self.selected_flow.0 > 0 {
+            self.selected_flow -= FlowId(1);
         }
     }
 
@@ -299,7 +322,7 @@ impl TuiApp {
     /// The maximum number of hosts per hop for the currently selected trace.
     pub fn max_hosts(&self) -> u8 {
         self.selected_tracer_data
-            .hops(Trace::default_flow_id())
+            .hops(self.selected_flow)
             .iter()
             .map(|h| h.addrs().count())
             .max()
