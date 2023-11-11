@@ -94,8 +94,6 @@ impl Trace {
             .trace_data
             .entry(flow_id)
             .or_insert_with(|| TraceData::new(self.max_samples));
-        flow_trace.highest_ttl = std::cmp::max(flow_trace.highest_ttl, round.largest_ttl.0);
-        flow_trace.highest_ttl_for_round = round.largest_ttl.0;
         flow_trace.update_from_round(round);
     }
 }
@@ -281,6 +279,8 @@ impl TraceData {
 
     fn update_from_round(&mut self, round: &TracerRound<'_>) {
         self.round_count += 1;
+        self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
+        self.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
             self.update_from_probe(probe);
         }
