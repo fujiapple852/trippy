@@ -1,4 +1,3 @@
-use crate::backend::trace::Trace;
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::Style;
@@ -13,7 +12,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let samples = app.tui_config.max_samples / app.zoom_factor;
     let series_data = app
         .selected_tracer_data
-        .hops(Trace::default_flow_id())
+        .hops(app.selected_flow)
         .iter()
         .map(|hop| {
             hop.samples()

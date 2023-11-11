@@ -25,15 +25,16 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
     f.render_widget(control, area);
 }
 
-const HELP_LINES: [&str; 20] = [
+const HELP_LINES: [&str; 21] = [
     "[up] & [down]    - select hop",
-    "[left] & [right] - select trace",
+    "[left] & [right] - select trace or flow",
     ", & .            - select hop address",
     "[esc]            - clear selection",
     "d                - toggle hop details",
+    "f                - toggle flows",
     "c                - toggle chart",
     "m                - toggle map",
-    "ctrl+f           - toggle freeze display",
+    "Ctrl-f           - toggle freeze display",
     "Ctrl+r           - reset statistics",
     "Ctrl+k           - flush DNS cache",
     "i                - show IP only",

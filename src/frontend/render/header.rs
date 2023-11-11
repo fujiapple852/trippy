@@ -1,4 +1,3 @@
-use crate::backend::trace::Trace;
 use crate::frontend::tui_app::TuiApp;
 use chrono::SecondsFormat;
 use humantime::format_duration;
@@ -95,7 +94,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
             Span::raw(render_status(app)),
             Span::raw(format!(
                 ", discovered {} hops",
-                app.tracer_data().hops(Trace::default_flow_id()).len()
+                app.tracer_data().hops(app.selected_flow).len()
             )),
         ]),
     ];
