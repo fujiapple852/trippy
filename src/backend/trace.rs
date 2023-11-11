@@ -83,7 +83,16 @@ impl Trace {
 
     /// Update the tracing state from a `TracerRound`.
     pub(super) fn update_from_round(&mut self, round: &TracerRound<'_>) {
-        let flow = Flow::from_hops(round.probes.iter().map(|p| p.host));
+        let flow = Flow::from_hops(
+            round
+                .probes
+                .iter()
+                .filter(|probe| {
+                    matches!(probe.status, ProbeStatus::Complete | ProbeStatus::Awaited)
+                })
+                .take(usize::from(round.largest_ttl.0))
+                .map(|p| p.host),
+        );
         let flow_id = self.registry.register(flow);
         self.update_trace_flow(Self::default_flow_id(), round);
         self.update_trace_flow(flow_id, round);
