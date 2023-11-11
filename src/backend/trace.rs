@@ -320,7 +320,7 @@ impl TraceData {
                     self.hops[index].samples.pop();
                 }
             }
-            ProbeStatus::NotSent => {}
+            ProbeStatus::NotSent | ProbeStatus::Skipped => {}
         }
     }
 
