@@ -431,13 +431,14 @@ fn extract_probe_resp_seq(
         }
         (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum, identifier) = extract_udp_packet(ipv4)?;
-
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier,
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
                 dest_port,
                 checksum,
+                0,
+                false,
             )))
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
@@ -1137,6 +1138,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1154,6 +1157,8 @@ mod tests {
         assert_eq!(31829, src_port);
         assert_eq!(33030, dest_port);
         assert_eq!(58571, checksum);
+        assert_eq!(0, payload_len);
+        assert!(!has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1189,6 +1194,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1206,6 +1213,8 @@ mod tests {
         assert_eq!(32779, src_port);
         assert_eq!(33010, dest_port);
         assert_eq!(10913, checksum);
+        assert_eq!(0, payload_len);
+        assert!(!has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }

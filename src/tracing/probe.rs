@@ -231,6 +231,8 @@ pub struct ProbeResponseSeqUdp {
     pub src_port: u16,
     pub dest_port: u16,
     pub checksum: u16,
+    pub payload_len: u16,
+    pub has_magic: bool,
 }
 
 impl ProbeResponseSeqUdp {
@@ -240,6 +242,8 @@ impl ProbeResponseSeqUdp {
         src_port: u16,
         dest_port: u16,
         checksum: u16,
+        payload_len: u16,
+        has_magic: bool,
     ) -> Self {
         Self {
             identifier,
@@ -247,6 +251,8 @@ impl ProbeResponseSeqUdp {
             src_port,
             dest_port,
             checksum,
+            payload_len,
+            has_magic,
         }
     }
 }
