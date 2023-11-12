@@ -38,21 +38,6 @@ impl Trace {
         self.trace_data[&flow_id].hops()
     }
 
-    /// Is a given `Hop` the target hop for a given flow?
-    ///
-    /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
-    ///
-    /// Note that if the target host does not respond to probes then the the highest `ttl` observed
-    /// will be one greater than the `ttl` of the last host which did respond.
-    pub fn is_target(&self, hop: &Hop, flow_id: FlowId) -> bool {
-        self.trace_data[&flow_id].is_target(hop)
-    }
-
-    /// Is a given `Hop` in the current round for a given flow?
-    pub fn is_in_round(&self, hop: &Hop, flow_id: FlowId) -> bool {
-        self.trace_data[&flow_id].is_in_round(hop)
-    }
-
     /// Return the target `Hop` for a given flow.
     pub fn target_hop(&self, flow_id: FlowId) -> &Hop {
         self.trace_data[&flow_id].target_hop()
@@ -110,20 +95,48 @@ impl Trace {
 /// Information about a single `Hop` within a `Trace`.
 #[derive(Debug, Clone)]
 pub struct Hop {
+    /// Is this the target hop?
+    is_target: bool,
+    /// Is this hop in the current round?
+    is_in_round: bool,
+    /// The ttl of this hop.
     ttl: u8,
+    /// The addrs of this hop and associated counts.
     addrs: IndexMap<IpAddr, usize>,
+    /// The total probes sent for this hop.
     total_sent: usize,
+    /// The total probes received for this hop.
     total_recv: usize,
+    /// The total round trip time for this hop across all rounds.
     total_time: Duration,
+    /// The round trip time for this hop in the current round.
     last: Option<Duration>,
+    /// The best round trip time for this hop across all rounds.
     best: Option<Duration>,
+    /// The worst round trip time for this hop across all rounds.
     worst: Option<Duration>,
+    /// The history of round trip times across the last N rounds.
+    samples: Vec<Duration>,
     mean: f64,
     m2: f64,
-    samples: Vec<Duration>,
 }
 
 impl Hop {
+    /// Is this `Hop` in the current round?
+    pub fn is_in_round(&self) -> bool {
+        self.is_in_round
+    }
+
+    /// Is a given `Hop` the target hop for a given flow?
+    ///
+    /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
+    ///
+    /// Note that if the target host does not respond to probes then the the highest `ttl` observed
+    /// will be one greater than the `ttl` of the last host which did respond.
+    pub fn is_target(&self) -> bool {
+        self.is_target
+    }
+
     /// The time-to-live of this hop.
     pub fn ttl(&self) -> u8 {
         self.ttl
@@ -205,6 +218,8 @@ impl Hop {
 impl Default for Hop {
     fn default() -> Self {
         Self {
+            is_target: false,
+            is_in_round: false,
             ttl: 0,
             addrs: IndexMap::default(),
             total_sent: 0,
@@ -229,8 +244,6 @@ struct TraceData {
     lowest_ttl: u8,
     /// The highest ttl observed across all rounds.
     highest_ttl: u8,
-    /// The highest ttl observed for the latest round.
-    highest_ttl_for_round: u8,
     /// The latest round received.
     round: Option<usize>,
     /// The total number of rounds received.
@@ -245,7 +258,6 @@ impl TraceData {
             max_samples,
             lowest_ttl: 0,
             highest_ttl: 0,
-            highest_ttl_for_round: 0,
             round: None,
             round_count: 0,
             hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
@@ -260,14 +272,6 @@ impl TraceData {
             let end = self.highest_ttl as usize;
             &self.hops[start..end]
         }
-    }
-
-    fn is_target(&self, hop: &Hop) -> bool {
-        self.highest_ttl == hop.ttl
-    }
-
-    fn is_in_round(&self, hop: &Hop) -> bool {
-        hop.ttl <= self.highest_ttl_for_round
     }
 
     fn target_hop(&self) -> &Hop {
@@ -289,19 +293,20 @@ impl TraceData {
     fn update_from_round(&mut self, round: &TracerRound<'_>) {
         self.round_count += 1;
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
-        self.highest_ttl_for_round = round.largest_ttl.0;
         for probe in round.probes {
-            self.update_from_probe(probe);
+            self.update_from_probe(round, probe);
         }
     }
 
-    fn update_from_probe(&mut self, probe: &Probe) {
+    fn update_from_probe(&mut self, round: &TracerRound<'_>, probe: &Probe) {
         self.update_lowest_ttl(probe);
         self.update_round(probe);
         match probe.status {
             ProbeStatus::Complete => {
                 let index = usize::from(probe.ttl.0) - 1;
                 let hop = &mut self.hops[index];
+                hop.is_target = probe.ttl == round.largest_ttl;
+                hop.is_in_round = probe.ttl <= round.largest_ttl;
                 hop.ttl = probe.ttl.0;
                 hop.total_sent += 1;
                 hop.total_recv += 1;
@@ -322,11 +327,14 @@ impl TraceData {
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].ttl = probe.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
+                let hop = &mut self.hops[index];
+                hop.is_target = probe.ttl == round.largest_ttl;
+                hop.is_in_round = probe.ttl <= round.largest_ttl;
+                hop.total_sent += 1;
+                hop.ttl = probe.ttl.0;
+                hop.samples.insert(0, Duration::default());
+                if hop.samples.len() > self.max_samples {
+                    hop.samples.pop();
                 }
             }
             ProbeStatus::NotSent | ProbeStatus::Skipped => {}

@@ -78,8 +78,8 @@ fn render_table_row(
         .selected_hop()
         .map(|h| h.ttl() == hop.ttl())
         .unwrap_or_default();
-    let is_target = app.tracer_data().is_target(hop, Trace::default_flow_id());
-    let is_in_round = app.tracer_data().is_in_round(hop, Trace::default_flow_id());
+    let is_target = hop.is_target();
+    let is_in_round = hop.is_in_round();
     let ttl_cell = render_ttl_cell(hop);
     let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
