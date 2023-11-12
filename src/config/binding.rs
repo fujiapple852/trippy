@@ -153,7 +153,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
             toggle_freeze: *cmd_items
                 .get(&TuiCommandItem::ToggleFreeze)
                 .or(cfg.toggle_freeze.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('f'))),
+                .unwrap_or(&TuiKeyBinding::new_with_modifier(
+                    KeyCode::Char('f'),
+                    KeyModifiers::CONTROL,
+                )),
             toggle_chart: *cmd_items
                 .get(&TuiCommandItem::ToggleChart)
                 .or(cfg.toggle_chart.as_ref())
