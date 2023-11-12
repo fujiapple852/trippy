@@ -33,7 +33,7 @@ const HELP_LINES: [&str; 20] = [
     "d                - toggle hop details",
     "c                - toggle chart",
     "m                - toggle map",
-    "f                - toggle freeze display",
+    "ctrl+f           - toggle freeze display",
     "Ctrl+r           - reset statistics",
     "Ctrl+k           - flush DNS cache",
     "i                - show IP only",

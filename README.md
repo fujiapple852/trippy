@@ -659,7 +659,7 @@ command line option.
 | `address-mode-ip`      | Show IP address only                            | `i`      |
 | `address-mode-host`    | Show hostname only                              | `n`      |
 | `address-mode-both`    | Show both IP address and hostname               | `b`      |
-| `toggle-freeze`        | Toggle freezing the display                     | `f`      |
+| `toggle-freeze`        | Toggle freezing the display                     | `ctrl+f` |
 | `toggle-chart`         | Toggle the chart                                | `c`      |
 | `toggle-map`           | Toggle the GeoIp map                            | `m`      |
 | `expand-hosts`         | Expand the hosts shown per hop                  | `]`      |
