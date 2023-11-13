@@ -435,10 +435,10 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             constants::DEFAULT_REPORT_CYCLES,
         );
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
-        let protocol = match (args.udp, args.tcp, protocol) {
-            (false, false, Protocol::Icmp) => TracerProtocol::Icmp,
-            (false, false, Protocol::Udp) | (true, _, _) => TracerProtocol::Udp,
-            (false, false, Protocol::Tcp) | (_, true, _) => TracerProtocol::Tcp,
+        let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
+            (false, false, false, Protocol::Udp) | (true, _, _, _) => TracerProtocol::Udp,
+            (false, false, false, Protocol::Tcp) | (_, true, _, _) => TracerProtocol::Tcp,
+            (false, false, false, Protocol::Icmp) | (_, _, true, _) => TracerProtocol::Icmp,
         };
         let read_timeout = humantime::parse_duration(&read_timeout)?;
         let min_round_duration = humantime::parse_duration(&min_round_duration)?;

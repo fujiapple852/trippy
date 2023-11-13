@@ -34,12 +34,31 @@ pub struct Args {
     pub protocol: Option<Protocol>,
 
     /// Trace using the UDP protocol
-    #[arg(long, conflicts_with = "protocol", conflicts_with = "tcp")]
+    #[arg(
+        long,
+        conflicts_with = "protocol",
+        conflicts_with = "tcp",
+        conflicts_with = "icmp"
+    )]
     pub udp: bool,
 
     /// Trace using the TCP protocol
-    #[arg(long, conflicts_with = "protocol", conflicts_with = "udp")]
+    #[arg(
+        long,
+        conflicts_with = "protocol",
+        conflicts_with = "udp",
+        conflicts_with = "icmp"
+    )]
     pub tcp: bool,
+
+    /// Trace using the ICMP protocol
+    #[arg(
+        long,
+        conflicts_with = "protocol",
+        conflicts_with = "udp",
+        conflicts_with = "tcp"
+    )]
+    pub icmp: bool,
 
     /// Use IPv4 only
     #[arg(short = '4', long, conflicts_with = "ipv6")]
