@@ -48,7 +48,7 @@ etcetera = "0.8.0"
 toml = { version = "0.8.8", default-features = false, features = [ "parse" ] }
 indexmap = { version = "2.1.0", default-features = false }
 maxminddb = "0.23.0"
-tracing-subscriber = { version = "0.3.17", default-features = false, features = [ "json", "env-filter" ] }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = [ "json", "env-filter" ] }
 tracing-chrome = "0.7.1"
 petgraph = "0.6.4"
 
