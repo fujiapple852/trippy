@@ -13,6 +13,7 @@
 )]
 #![deny(unsafe_code)]
 
+use crate::backend::Backend;
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::geoip::GeoIpLookup;
 use crate::platform::Platform;
@@ -173,18 +174,13 @@ fn start_tracer(
         None => SourceAddr::discover(target_addr, cfg.port_direction, cfg.interface.as_deref())?,
         Some(addr) => SourceAddr::validate(addr)?,
     };
-    let trace_data = Arc::new(RwLock::new(Trace::new(cfg.tui_max_samples)));
     let channel_config = make_channel_config(cfg, source_addr, target_addr);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
-    {
-        let trace_data = trace_data.clone();
-        thread::Builder::new()
-            .name(format!("tracer-{}", tracer_config.trace_identifier.0))
-            .spawn(move || {
-                backend::run_backend(&tracer_config, &channel_config, trace_data)
-                    .expect("failed to run tracer backend");
-            })?;
-    }
+    let backend = Backend::new(tracer_config, channel_config, cfg.tui_max_samples);
+    let trace_data = backend.trace();
+    thread::Builder::new()
+        .name(format!("tracer-{}", tracer_config.trace_identifier.0))
+        .spawn(move || backend.start().expect("failed to run tracer backend"))?;
     Ok(make_trace_info(
         cfg,
         trace_data,
