@@ -365,6 +365,12 @@ Specify the location of the Trippy config file:
 trip www.example.com --config-file /path/to/trippy.toml
 ```
 
+Generate a template configuration file:
+
+```shell
+trip --print-config-template > trippy.toml
+```
+
 Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
 
 ```shell
@@ -691,7 +697,14 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
 - the Windows data directory (Windows only): `%APPDATA%`
 
-An annotated [template configuration file](trippy-config-sample.toml) is available.
+An annotated [template configuration file](https://github.com/fujiapple852/trippy/blob/0.8.0/trippy-config-sample.toml) 
+for Trippy `0.8.0` is available.
+
+Trippy (version `0.9.0` or later) can generate a template configuration file:
+
+```shell
+trip --print-config-template > trippy.toml
+```
 
 ## Frequently Asked Questions
 
