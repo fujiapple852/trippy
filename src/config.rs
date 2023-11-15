@@ -258,6 +258,10 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             );
             process::exit(0);
         }
+        if args.print_config_template {
+            println!("{}", include_str!("../trippy-config-sample.toml"));
+            process::exit(0);
+        }
         if let Some(generator) = args.generate {
             let mut cmd = Args::command();
             print_completions(generator, &mut cmd);
