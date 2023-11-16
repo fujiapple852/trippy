@@ -73,6 +73,7 @@ windows-sys = { version = "0.52.0", features = [
     "Win32_NetworkManagement_Ndis",
     "Win32_System_IO",
     "Win32_System_Threading",
+    "Win32_Security",
 ] }
 
 [dev-dependencies]
