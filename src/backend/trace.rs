@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::iter::once;
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
-use trippy::tracing::{Probe, ProbeStatus, TracerRound};
+use trippy::tracing::{Extensions, Probe, ProbeStatus, TracerRound};
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
@@ -121,6 +121,7 @@ pub struct Hop {
     mean: f64,
     m2: f64,
     samples: Vec<Duration>,
+    extensions: Option<Extensions>,
 }
 
 impl Hop {
@@ -200,6 +201,10 @@ impl Hop {
     pub fn samples(&self) -> &[Duration] {
         &self.samples
     }
+
+    pub fn extensions(&self) -> Option<&Extensions> {
+        self.extensions.as_ref()
+    }
 }
 
 impl Default for Hop {
@@ -216,6 +221,7 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+            extensions: None,
         }
     }
 }
@@ -319,6 +325,7 @@ impl TraceData {
                 }
                 let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
                 *hop.addrs.entry(host).or_default() += 1;
+                hop.extensions = probe.extensions.clone();
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;
