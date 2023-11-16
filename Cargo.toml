@@ -50,7 +50,6 @@ indexmap = { version = "2.1.0", default-features = false }
 maxminddb = "0.23.0"
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [ "json", "env-filter" ] }
 tracing-chrome = "0.7.1"
-petgraph = "0.6.4"
 
 # Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]
