@@ -21,6 +21,10 @@ use std::net::IpAddr;
 )]
 pub struct FlowId(pub u64);
 
+/// A time-to-live value.
+#[derive(Debug, Clone, Copy, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct Ttl(pub u8);
+
 impl Display for FlowId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -98,11 +102,12 @@ impl Flow {
     pub fn from_hops(hops: impl IntoIterator<Item = Option<IpAddr>>) -> Self {
         let entries = hops
             .into_iter()
-            .map(|addr| {
+            .enumerate()
+            .map(|(i, addr)| {
                 if let Some(addr) = addr {
-                    FlowEntry::Known(addr)
+                    FlowEntry::Known(Ttl(i as u8), addr)
                 } else {
-                    FlowEntry::Unknown
+                    FlowEntry::Unknown(Ttl(i as u8))
                 }
             })
             .collect();
@@ -127,10 +132,10 @@ impl Flow {
         let mut additions = 0;
         for (old, new) in self.entries.iter().zip(&flow.entries) {
             match (old, new) {
-                (FlowEntry::Known(fst), FlowEntry::Known(snd)) if fst != snd => {
+                (FlowEntry::Known(_, fst), FlowEntry::Known(_, snd)) if fst != snd => {
                     return CheckStatus::NoMatch;
                 }
-                (FlowEntry::Unknown, FlowEntry::Known(_)) => additions += 1,
+                (FlowEntry::Unknown(_), FlowEntry::Known(_, _)) => additions += 1,
                 _ => {}
             }
         }
@@ -149,7 +154,7 @@ impl Flow {
             .zip_longest(flow.entries.iter())
             .map(|eob| match eob {
                 EitherOrBoth::Both(left, right) => match (left, right) {
-                    (FlowEntry::Unknown, FlowEntry::Known(_)) => *right,
+                    (FlowEntry::Unknown(_), FlowEntry::Known(_, _)) => *right,
                     _ => *left,
                 },
                 EitherOrBoth::Left(left) => *left,
@@ -177,20 +182,20 @@ pub enum CheckStatus {
 }
 
 /// An entry in a `Flow`.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum FlowEntry {
     /// An unknown flow entry.
-    Unknown,
+    Unknown(Ttl),
     /// A known flow entry with an `IpAddr`.
-    Known(IpAddr),
+    Known(Ttl, IpAddr),
 }
 
 impl Display for FlowEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unknown => f.write_str("*"),
-            Self::Known(addr) => {
-                write!(f, "{addr}")
+            Self::Unknown(ttl) => write!(f, "{} *", ttl.0),
+            Self::Known(ttl, addr) => {
+                write!(f, "{} {addr}", ttl.0)
             }
         }
     }

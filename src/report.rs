@@ -1,4 +1,4 @@
-use crate::backend::flows::FlowEntry;
+use crate::backend::flows::{FlowEntry, FlowId, Ttl};
 use crate::backend::trace::Trace;
 use crate::TraceInfo;
 use anyhow::anyhow;
@@ -6,15 +6,14 @@ use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
 use parking_lot::RwLock;
-use petgraph::dot::{Config, Dot};
-use petgraph::graphmap::DiGraphMap;
 use serde::{Serialize, Serializer};
-use std::fmt::{Debug, Formatter};
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
-use trippy::dns::{DnsResolver, Resolver};
+use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
@@ -278,34 +277,191 @@ pub fn run_report_silent(info: &TraceInfo, report_cycles: usize) -> anyhow::Resu
 }
 
 /// Run a trace and generate a dot file.
-pub fn run_report_dot(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
-    struct DotWrapper<'a>(Dot<'a, &'a DiGraphMap<IpAddr, ()>>);
-    impl Debug for DotWrapper<'_> {
+pub fn run_report_dot(
+    info: &TraceInfo,
+    report_cycles: usize,
+    resolver: &DnsResolver,
+) -> anyhow::Result<()> {
+    #[derive(Debug)]
+    struct Weights(Vec<FlowId>);
+    impl Display for Weights {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            self.0.fmt(f)
+            write!(f, "{}", self.0.iter().format(", "))
         }
     }
+
+    #[derive(Debug, Clone)]
+    struct Node {
+        id: usize,
+        addr: IpAddr,
+        ttl: Ttl,
+        names: Vec<String>,
+        as_info: AsInfo,
+    }
+
+    #[derive(Debug, Clone)]
+    struct Edge {
+        from: usize,
+        to: usize,
+        value: HashSet<FlowId>,
+    }
+
+    // impl Display for Node<'_> {
+    //     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    //         self.entry.fmt(f)
+    //     }
+    // }
+
+    let mut next_id = 0;
+    let mut nodes: HashMap<IpAddr, Node> = HashMap::new();
+    let mut edges: HashMap<(usize, usize), Edge> = HashMap::new();
+
+    // Nodes should be unique for (addr, ttl) so that Unknown nodes at the different ttl's are not conflated (ok to conflate at same ttl?)
+
     wait_for_round(&info.data, report_cycles)?;
     let trace = info.data.read().clone();
-    let mut graph: DiGraphMap<IpAddr, ()> = DiGraphMap::new();
-    for (flow, _id) in trace.flows() {
+    for (flow, flow_id) in trace.flows() {
         for (fst, snd) in flow.entries.windows(2).map(|pair| (pair[0], pair[1])) {
-            match (fst, snd) {
-                (FlowEntry::Known(addr1), FlowEntry::Known(addr2)) => {
-                    graph.add_edge(addr1, addr2, ());
+            let fst_id = match fst {
+                FlowEntry::Known(ttl, addr) => {
+                    nodes
+                        .entry(addr)
+                        .or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            let entry = resolver.reverse_lookup_with_asinfo(addr);
+                            let (addr, names, as_info) = match entry {
+                                DnsEntry::Resolved(Resolved::WithAsInfo(addr, names, as_info)) => {
+                                    (addr, names, as_info)
+                                }
+                                DnsEntry::Resolved(Resolved::Normal(addr, names)) => {
+                                    (addr, names, AsInfo::default())
+                                }
+                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info)) => {
+                                    (addr, vec![String::from("unknown")], as_info)
+                                }
+                                _ => (addr, vec![String::from("unknown")], AsInfo::default()),
+                            };
+                            Node {
+                                id,
+                                addr,
+                                ttl,
+                                names,
+                                as_info,
+                            }
+                        })
+                        .id
                 }
-                (FlowEntry::Known(addr1), FlowEntry::Unknown) => {
-                    graph.add_edge(addr1, IpAddr::V4(Ipv4Addr::UNSPECIFIED), ());
+                FlowEntry::Unknown(ttl) => {
+                    nodes
+                        .entry(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
+                        .or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            Node {
+                                id,
+                                addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                                ttl,
+                                names: vec![String::from("unknown")],
+                                as_info: AsInfo::default(),
+                            }
+                        })
+                        .id
                 }
-                (FlowEntry::Unknown, FlowEntry::Known(addr2)) => {
-                    graph.add_edge(IpAddr::V4(Ipv4Addr::UNSPECIFIED), addr2, ());
+            };
+            let snd_id = match snd {
+                FlowEntry::Known(ttl, addr) => {
+                    nodes
+                        .entry(addr)
+                        .or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            let entry = resolver.reverse_lookup_with_asinfo(addr);
+                            let (addr, names, as_info) = match entry {
+                                DnsEntry::Resolved(Resolved::WithAsInfo(addr, names, as_info)) => {
+                                    (addr, names, as_info)
+                                }
+                                DnsEntry::Resolved(Resolved::Normal(addr, names)) => {
+                                    (addr, names, AsInfo::default())
+                                }
+                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info)) => {
+                                    (addr, vec![String::from("unknown")], as_info)
+                                }
+                                _ => (addr, vec![String::from("unknown")], AsInfo::default()),
+                            };
+                            Node {
+                                id,
+                                addr,
+                                ttl,
+                                names,
+                                as_info,
+                            }
+                        })
+                        .id
                 }
-                _ => {}
-            }
+                FlowEntry::Unknown(ttl) => {
+                    nodes
+                        .entry(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
+                        .or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            Node {
+                                id,
+                                addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                                ttl,
+                                names: vec![String::from("unknown")],
+                                as_info: AsInfo::default(),
+                            }
+                        })
+                        .id
+                }
+            };
+
+            // Edges
+
+            edges
+                .entry((fst_id, snd_id))
+                .or_insert_with(|| Edge {
+                    from: fst_id,
+                    to: snd_id,
+                    value: HashSet::new(),
+                })
+                .value
+                .insert(*flow_id);
         }
     }
-    let dot = DotWrapper(Dot::with_config(&graph, &[Config::EdgeNoLabel]));
-    print!("{dot:?}");
+
+    println!("digraph {{");
+    println!("    node [shape=plaintext]");
+    for node in nodes.values().sorted_by_key(|node| node.id) {
+        let as_label = if node.as_info.asn.is_empty() {
+            format!("n/a")
+        } else {
+            format!("AS{}", node.as_info.asn)
+        };
+        let label = format!(
+            r#"<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4"><tr><td>{}</td><td>{}</td></tr><tr><td COLSPAN="2">{}</td></tr></TABLE>>"#,
+            node.addr,
+            as_label,
+            node.names.join(", ")
+        );
+
+        println!("    {} [ label = {} ]", node.id, label);
+    }
+    for (_, edge) in edges {
+        println!(
+            "    {} -> {} [ label = \"[{}]\" ]",
+            edge.from,
+            edge.to,
+            edge.value
+                .iter()
+                .map(|flow_id| flow_id.0)
+                .sorted()
+                .join(", ")
+        );
+    }
+    println!("}}");
+
     Ok(())
 }
 
