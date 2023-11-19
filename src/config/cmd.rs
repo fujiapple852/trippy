@@ -209,7 +209,7 @@ pub struct Args {
     #[arg(long)]
     pub generate: Option<Shell>,
 
-    /// Print a template toml config file.
+    /// Print a template toml config file and exit.
     #[arg(long)]
     pub print_config_template: bool,
 
