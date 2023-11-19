@@ -251,7 +251,7 @@ Trace without requiring elevated privileges (supported platforms only, see [priv
 trip example.com --unprivileged
 ```
 
-Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--udp` & `--tcp`):
+Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--icmp`, `--udp` & `--tcp`):
 
 ```shell
 trip example.com -p udp
