@@ -411,10 +411,13 @@ Options:
           - markdown: Generate a markdown text table report for N cycles
           - csv:      Generate a CSV report for N cycles
           - json:     Generate a JSON report for N cycles
+          - dot:      Generate a Graphviz DOT file for N cycles
+          - flows:    Display all flows
           - silent:   Do not generate any tracing output for N cycles
 
-   -u, --unprivileged
-          Trace without requiring elevated privileges on supported platforms [default: false]
+  -u, --unprivileged
+          Trace without requiring elevated privileges on supported platforms
+          [default: false]
 
   -p, --protocol <PROTOCOL>
           Tracing protocol [default: icmp]
@@ -430,8 +433,11 @@ Options:
       --tcp
           Trace using the TCP protocol
 
+      --icmp
+          Trace using the ICMP protocol
+
   -4, --ipv4
-          use IPv4 only
+          Use IPv4 only
 
   -6, --ipv6
           Use IPv6 only
@@ -462,7 +468,7 @@ Options:
           The initial sequence number [default: 33000]
 
   -R, --multipath-strategy <MULTIPATH_STRATEGY>
-          The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default:
+          The Equal-cost Multi-Path routing strategy (UDP only) [default:
           classic]
 
           Possible values:
@@ -504,6 +510,9 @@ Options:
           - resolv:     Resolve using the `/etc/resolv.conf` DNS configuration
           - google:     Resolve using the Google `8.8.8.8` DNS service
           - cloudflare: Resolve using the Cloudflare `1.1.1.1` DNS service
+
+  -y, --dns-resolve-all
+          Trace to all IPs resolved from DNS lookup [default: false]
 
       --dns-timeout <DNS_TIMEOUT>
           The maximum time to wait to perform DNS queries [default: 5s]
@@ -552,6 +561,9 @@ Options:
       --tui-refresh-rate <TUI_REFRESH_RATE>
           The Tui refresh rate [default: 100ms]
 
+      --tui-privacy-max-ttl <TUI_PRIVACY_MAX_TTL>
+          The maximum ttl of hops which will be masked for privacy [default: 0]
+
       --tui-theme-colors <TUI_THEME_COLORS>
           The TUI theme colors [item=color,item=color,..]
 
@@ -574,6 +586,9 @@ Options:
           Generate shell completion
 
           [possible values: bash, elvish, fish, powershell, zsh]
+
+      --print-config-template
+          Print a template toml config file and exit
 
       --log-format <LOG_FORMAT>
           The debug log format [default: pretty]
