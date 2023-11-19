@@ -337,6 +337,12 @@ Lookup and display `short` (or `long` or `location` or `off`) GeoIp information 
 trip example.com --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
 ```
 
+Hide the IP address, hostname and GeoIp for the first two hops:
+
+```shell
+trip example.com --tui-privacy-max-ttl 2
+```
+
 Customize the color theme:
 
 ```shell
