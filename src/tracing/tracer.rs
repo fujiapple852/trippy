@@ -953,7 +953,7 @@ mod state {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "assertion failed: !state.in_round(Sequence(64491))")]
         fn test_in_delayed_probe_not_in_round() {
             let mut state = TracerState::new(cfg(Sequence(64000)));
             for _ in 0..55 {
