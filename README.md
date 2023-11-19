@@ -17,7 +17,6 @@ issues.
     * [Features](#features)
     * [Versions](#versions)
     * [Distributions](#distributions)
-    * [Platforms](#platforms)
     * [Privileges](#privileges)
     * [Usage Examples](#usage-examples)
     * [Command Reference](#command-reference)
@@ -181,32 +180,6 @@ docker run -it fujiapple/trippy
 | NetBSD         | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-netbsd.tar.gz)       |
 | RPM Package    | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64.rpm)                         |
 | Debian Package | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy_x86_64-unknown-linux-gnu_0.8.0_amd64.deb) |
-
-## Platforms
-
-Trippy has been (lightly...) tested on the following platforms:
-
-### IPv4
-
-| Platform | ICMP | UDP | TCP | Notes                                                         |
-|----------|------|-----|-----|---------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ✅   |                                                               |
-| macOS    | ✅    | ✅   | ✅   |                                                               |
-| NetBSD   | ✅    | ✅   | ✅   |                                                               |
-| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
-
-### IPv6
-
-| Platform | ICMP | UDP | TCP | Notes                                                         |
-|----------|------|-----|-----|---------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ✅   |                                                               |
-| macOS    | ✅    | ✅   | ✅   |                                                               |
-| NetBSD   | ✅    | ✅   | ✅   |                                                               |
-| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
 
 ## Privileges
 
