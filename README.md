@@ -318,6 +318,18 @@ Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds 
 trip example.com -m json -C 5
 ```
 
+Generate a [Graphviz](https://graphviz.org) `DOT` file report of all tracing flows for a TCP trace after 5 rounds:
+
+```shell
+trip example.com --tcp -m dot -C 5
+```
+
+Generate a textual report of all tracing flows for a UDP trace after 5 rounds:
+
+```shell
+trip example.com --udp -m flows -C 5
+```
+
 Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, `resolv`):
 
 ```shell
