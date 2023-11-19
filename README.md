@@ -765,7 +765,7 @@ see [here](https://github.com/fujiapple852/trippy/issues/578#issuecomment-156514
 
 ## Acknowledgements
 
-Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs),
+Trippy is made possible by [ratatui](https://github.com/ratatui-org/ratatui) (formerly [tui-rs](https://github.com/fdehau/tui-rs)),
 [crossterm](https://github.com/crossterm-rs/crossterm) as well
 as [several](https://github.com/fujiapple852/trippy/blob/master/Cargo.toml) foundational Rust libraries.
 
