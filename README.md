@@ -342,7 +342,7 @@ Lookup AS information for all discovered IP addresses (not yet available for the
 see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
-trip www.example.com -r google -z true
+trip www.example.com -r google -z
 ```
 
 Lookup and display `short` (or `long` or `location` or `off`) GeoIp information from a `mmdb` file:
