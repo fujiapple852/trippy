@@ -370,7 +370,7 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
 
 /// From [rfc4443] (section 2.4, point c):
 ///
-///    "Every ICMPv6 error message (type < 128) MUST include as much of
+///    "Every `ICMPv6` error message (type < 128) MUST include as much of
 ///    the IPv6 offending (invoking) packet (the packet that caused the
 ///    error) as possible without making the error message packet exceed
 ///    the minimum IPv6 MTU"
