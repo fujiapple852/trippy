@@ -15,6 +15,7 @@ issues.
 
 * [Trippy](#trippy)
     * [Features](#features)
+    * [Versions](#versions)
     * [Distributions](#distributions)
     * [Platforms](#platforms)
     * [Privileges](#privileges)
@@ -68,6 +69,21 @@ issues.
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD, FreeBSD, Windows)
 - Capabilities aware application (Linux only)
+
+## Versions
+
+The following table lists ths versions of Trippy that are available and links to the corresponding release note and
+documentation:
+
+| Version   | Release Date | Status     | Release Note                                                      | Documentation                                              |
+|-----------|--------------|------------|-------------------------------------------------------------------|------------------------------------------------------------|
+| 0.9.0-dev | n/a          | Dev        | n/a                                                               | [docs](https://github.com/fujiapple852/trippy/tree/master) |
+| 0.8.0     | 2023-05-15   | Stable     | [note](https://github.com/fujiapple852/trippy/releases/tag/0.8.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.8.0)  |
+| 0.7.0     | 2023-03-25   | Deprecated | [note](https://github.com/fujiapple852/trippy/releases/tag/0.7.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.7.0)  | 
+| 0.6.0     | 2022-08-19   | Deprecated | [note](https://github.com/fujiapple852/trippy/releases/tag/0.6.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.6.0)  | 
+
+> [!NOTE]
+> Only the latest _stable_ release of Trippy is supported.
 
 ## Distributions
 
@@ -712,7 +728,7 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
 - the Windows data directory (Windows only): `%APPDATA%`
 
-An annotated [template configuration file](https://github.com/fujiapple852/trippy/blob/0.8.0/trippy-config-sample.toml) 
+An annotated [template configuration file](https://github.com/fujiapple852/trippy/blob/0.8.0/trippy-config-sample.toml)
 for Trippy `0.8.0` is available.
 
 Trippy (version `0.9.0` or later) can generate a template configuration file:
