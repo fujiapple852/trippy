@@ -39,7 +39,7 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [linux-gnu, linux-musl, linux-arm, macos, macos-arm, netbsd, win-msvc]
+        build: [linux-gnu, linux-musl, linux-arm, macos, macos-arm, netbsd, win-msvc, armv7-linux-gnueabihf, armv7-linux-musleabihf, armv7-linux-musleabi]
         include:
           - build: linux-gnu
             os: ubuntu-22.04
@@ -62,6 +62,15 @@ jobs:
           - build: win-msvc
             os: windows-2022
             target: x86_64-pc-windows-msvc
+          - build: armv7-linux-gnueabihf
+            os: ubuntu-22.04
+            target: armv7-unknown-linux-gnueabihf
+          - build: armv7-linux-musleabihf
+            os: ubuntu-22.04
+            target: armv7-unknown-linux-musleabihf
+          - build: armv7-linux-musleabi
+            os: ubuntu-22.04
+            target: armv7-unknown-linux-musleabi
 
     steps:
       - name: Checkout repository
