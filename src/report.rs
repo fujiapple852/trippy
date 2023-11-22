@@ -15,6 +15,9 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use trippy::dns::{DnsResolver, Resolver};
+use trippy::tracing::{
+    Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension,
+};
 
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
@@ -87,6 +90,7 @@ pub struct ReportInfo {
 pub struct ReportHop {
     ttl: u8,
     hosts: Vec<Host>,
+    extensions: ReportExtensions,
     #[serde(serialize_with = "fixed_width")]
     loss_pct: f64,
     sent: usize,
@@ -109,6 +113,97 @@ pub struct Host {
     pub hostname: String,
 }
 
+// TODO flatten and rename structs/enums
+// TODO From impl for ReportHop
+// TODO move report structs/enums to sub-module
+
+#[derive(Serialize)]
+pub struct ReportExtensions {
+    pub extensions: Vec<ReportExtension>,
+}
+
+impl From<Extensions> for ReportExtensions {
+    fn from(value: Extensions) -> Self {
+        Self {
+            extensions: value
+                .extensions
+                .into_iter()
+                .map(ReportExtension::from)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub enum ReportExtension {
+    #[serde(rename = "unknown")]
+    Unknown(ReportUnknownExtension),
+    #[serde(rename = "mpls")]
+    Mpls(ReportMplsLabelStack),
+}
+
+impl From<Extension> for ReportExtension {
+    fn from(value: Extension) -> Self {
+        match value {
+            Extension::Unknown(unknown) => Self::Unknown(ReportUnknownExtension::from(unknown)),
+            Extension::Mpls(mpls) => Self::Mpls(ReportMplsLabelStack::from(mpls)),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ReportMplsLabelStack {
+    pub members: Vec<ReportMplsLabelStackMember>,
+}
+
+impl From<MplsLabelStack> for ReportMplsLabelStack {
+    fn from(value: MplsLabelStack) -> Self {
+        Self {
+            members: value
+                .members
+                .into_iter()
+                .map(ReportMplsLabelStackMember::from)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ReportMplsLabelStackMember {
+    pub label: u32,
+    pub exp: u8,
+    pub bos: u8,
+    pub ttl: u8,
+}
+
+impl From<MplsLabelStackMember> for ReportMplsLabelStackMember {
+    fn from(value: MplsLabelStackMember) -> Self {
+        Self {
+            label: value.label,
+            exp: value.exp,
+            bos: value.bos,
+            ttl: value.ttl,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ReportUnknownExtension {
+    pub class_num: u8,
+    pub class_subtype: u8,
+    pub bytes: Vec<u8>,
+}
+
+impl From<UnknownExtension> for ReportUnknownExtension {
+    fn from(value: UnknownExtension) -> Self {
+        Self {
+            class_num: value.class_num,
+            class_subtype: value.class_subtype,
+            bytes: value.bytes,
+        }
+    }
+}
+
 #[allow(clippy::trivially_copy_pass_by_ref)]
 fn fixed_width<S>(val: &f64, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -117,7 +212,7 @@ where
     serializer.serialize_str(&format!("{val:.2}"))
 }
 
-/// Generate a CSV report of trace data.
+/// Generate a json report of trace data.
 pub fn run_report_json(
     info: &TraceInfo,
     report_cycles: usize,
@@ -135,9 +230,12 @@ pub fn run_report_json(
                     hostname: resolver.reverse_lookup(*ip).to_string(),
                 })
                 .collect();
+            let extensions =
+                ReportExtensions::from(hop.extensions().map(ToOwned::to_owned).unwrap_or_default());
             ReportHop {
                 ttl: hop.ttl(),
                 hosts,
+                extensions,
                 loss_pct: hop.loss_pct(),
                 sent: hop.total_sent(),
                 last: hop.last_ms().unwrap_or_default(),
@@ -246,6 +344,27 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
         for hop in trace_data.hops(Trace::default_flow_id()) {
             let ttl = hop.ttl();
             let addrs = hop.addrs().collect::<Vec<_>>();
+            let exts = if let Some(ext) = hop.extensions() {
+                ext.extensions
+                    .iter()
+                    .map(|ext| match ext {
+                        Extension::Unknown(unknown) => {
+                            format!(
+                                "unknown(class={}, subtype={}, bytes=[{:02x}])",
+                                unknown.class_num,
+                                unknown.class_subtype,
+                                unknown.bytes.iter().format(" ")
+                            )
+                        }
+                        Extension::Mpls(mpls) => {
+                            let labels = mpls.members.iter().map(|m| m.label).join(", ");
+                            format!("mpls(labels={labels})")
+                        }
+                    })
+                    .join("+")
+            } else {
+                String::from("none")
+            };
             let sent = hop.total_sent();
             let recv = hop.total_recv();
             let last = hop
@@ -264,7 +383,7 @@ pub fn run_report_stream(info: &TraceInfo) -> anyhow::Result<()> {
             let avg = hop.avg_ms();
             let loss_pct = hop.loss_pct();
             println!(
-                "ttl={ttl} addrs={addrs:?} loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last} best={best} worst={worst} avg={avg:.1} stddev={stddev:.1}"
+                "ttl={ttl} addrs={addrs:?} exts={exts}, loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last} best={best} worst={worst} avg={avg:.1} stddev={stddev:.1}"
             );
         }
         sleep(info.min_round_duration);
