@@ -39,7 +39,7 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [linux-gnu, linux-musl, linux-arm, macos, macos-arm, netbsd, win-msvc, armv7-linux-gnueabihf, armv7-linux-musleabihf, armv7-linux-musleabi]
+        build: [linux-gnu, linux-musl, linux-arm, aarch64-unknown-linux-musl, macos, macos-arm, netbsd, win-msvc, x86_64-unknown-freebsd, armv7-linux-gnueabihf, armv7-linux-musleabihf, armv7-linux-musleabi, x86_64-pc-windows-gnu, aarch64-pc-windows-msvc]
         include:
           - build: linux-gnu
             os: ubuntu-22.04
@@ -50,6 +50,9 @@ jobs:
           - build: linux-arm
             os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
+          - build: aarch64-unknown-linux-musl
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-musl
           - build: macos
             os: macos-latest
             target: x86_64-apple-darwin
@@ -59,9 +62,18 @@ jobs:
           - build: netbsd
             os: ubuntu-22.04
             target: x86_64-unknown-netbsd
+          - build: x86_64-unknown-freebsd
+            os: ubuntu-22.04
+            target: x86_64-unknown-freebsd
           - build: win-msvc
             os: windows-2022
             target: x86_64-pc-windows-msvc
+          - build: x86_64-pc-windows-gnu
+            os: ubuntu-22.04
+            target: x86_64-pc-windows-gnu
+          - build: aarch64-pc-windows-msvc
+            os: windows-2022
+            target: aarch64-pc-windows-msvc
           - build: armv7-linux-gnueabihf
             os: ubuntu-22.04
             target: armv7-unknown-linux-gnueabihf
@@ -108,7 +120,7 @@ jobs:
         run: |
           staging="trippy-${{ needs.create-release.outputs.trip_version }}-${{ matrix.target }}"
           mkdir -p "$staging"
-          if [ "${{ matrix.os }}" = "windows-2022" ]; then
+          if [ "${{ matrix.os }}" = "windows-2022" ] || [ "${{ matrix.build }}" = "x86_64-pc-windows-gnu" ]; then
             cp "target/${{ matrix.target }}/release/trip.exe" "$staging/"
             7z a -tzip "$staging.zip" "$staging"
             echo "ASSET=$staging.zip" >> $GITHUB_ENV
