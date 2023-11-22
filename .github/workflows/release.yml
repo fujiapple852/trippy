@@ -39,41 +39,29 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [linux-gnu, linux-musl, linux-arm, aarch64-unknown-linux-musl, macos, macos-arm, netbsd, win-msvc, x86_64-unknown-freebsd, armv7-linux-gnueabihf, armv7-linux-musleabihf, armv7-linux-musleabi, x86_64-pc-windows-gnu, aarch64-pc-windows-msvc]
+        build: [
+          x86_64-linux-gnu, x86_64-linux-musl, aarch64-linux-gnu, aarch64-linux-musl,
+          armv7-linux-gnueabihf, armv7-linux-musleabihf, armv7-linux-musleabi,
+          x86_64-apple-darwin, aarch64-apple-darwin,
+          x86_64-pc-windows-msvc, x86_64-pc-windows-gnu, aarch64-pc-windows-msvc,
+          x86_64-netbsd, x86_64-freebsd
+        ]
         include:
-          - build: linux-gnu
+          # Linux (x86_64 & aarch64)
+          - build: x86_64-linux-gnu
             os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-          - build: linux-musl
+          - build: x86_64-linux-musl
             os: ubuntu-22.04
             target: x86_64-unknown-linux-musl
-          - build: linux-arm
+          - build: aarch64-linux-gnu
             os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
-          - build: aarch64-unknown-linux-musl
+          - build: aarch64-linux-musl
             os: ubuntu-22.04
             target: aarch64-unknown-linux-musl
-          - build: macos
-            os: macos-latest
-            target: x86_64-apple-darwin
-          - build: macos-arm
-            os: macos-latest
-            target: aarch64-apple-darwin
-          - build: netbsd
-            os: ubuntu-22.04
-            target: x86_64-unknown-netbsd
-          - build: x86_64-unknown-freebsd
-            os: ubuntu-22.04
-            target: x86_64-unknown-freebsd
-          - build: win-msvc
-            os: windows-2022
-            target: x86_64-pc-windows-msvc
-          - build: x86_64-pc-windows-gnu
-            os: ubuntu-22.04
-            target: x86_64-pc-windows-gnu
-          - build: aarch64-pc-windows-msvc
-            os: windows-2022
-            target: aarch64-pc-windows-msvc
+
+          # Linux (armv7)
           - build: armv7-linux-gnueabihf
             os: ubuntu-22.04
             target: armv7-unknown-linux-gnueabihf
@@ -83,6 +71,33 @@ jobs:
           - build: armv7-linux-musleabi
             os: ubuntu-22.04
             target: armv7-unknown-linux-musleabi
+
+          # macOS (x86_64 & aarch64)
+          - build: x86_64-apple-darwin
+            os: macos-latest
+            target: x86_64-apple-darwin
+          - build: aarch64-apple-darwin
+            os: macos-latest
+            target: aarch64-apple-darwin
+
+          # Windows (x86_64 & aarch64)
+          - build: x86_64-pc-windows-msvc
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
+          - build: x86_64-pc-windows-gnu
+            os: ubuntu-22.04
+            target: x86_64-pc-windows-gnu
+          - build: aarch64-pc-windows-msvc
+            os: windows-2022
+            target: aarch64-pc-windows-msvc
+
+          # BSD (x86_64)
+          - build: x86_64-netbsd
+            os: ubuntu-22.04
+            target: x86_64-unknown-netbsd
+          - build: x86_64-freebsd
+            os: ubuntu-22.04
+            target: x86_64-unknown-freebsd
 
     steps:
       - name: Checkout repository
