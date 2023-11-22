@@ -170,7 +170,7 @@ tos = 0
 #
 # Extension objects with an unknown class will be parsed to capture generic information including the class, subtype,
 # length and payload bytes.
-icmp_extensions = false
+icmp-extensions = false
 
 # The socket read timeout [default: 10ms]
 read-timeout = "10ms"
