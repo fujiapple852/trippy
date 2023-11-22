@@ -4,7 +4,9 @@ use crate::tracing::packet::icmp_extension::extension_object::{ClassNum, Extensi
 use crate::tracing::packet::icmp_extension::extension_structure::ExtensionsPacket;
 use crate::tracing::packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
 use crate::tracing::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
-use crate::tracing::probe::{Extension, Extensions, MplsLabelStack, MplsLabelStackMember};
+use crate::tracing::probe::{
+    Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension,
+};
 use crate::tracing::util::Required;
 
 /// The supported ICMP extension version number.
@@ -35,7 +37,7 @@ impl TryFrom<ExtensionsPacket<'_>> for Extensions {
                         .req()
                         .map(|mpls| Extension::Mpls(MplsLabelStack::from(mpls)))
                 }
-                _ => Ok(Extension::Unknown),
+                _ => Ok(Extension::Unknown(UnknownExtension::from(obj))),
             })
             .collect::<Result<_, _>>()?;
         Ok(Self { extensions })
@@ -61,6 +63,16 @@ impl From<MplsLabelStackMemberPacket<'_>> for MplsLabelStackMember {
             exp: value.get_exp(),
             bos: value.get_bos(),
             ttl: value.get_ttl(),
+        }
+    }
+}
+
+impl From<ExtensionObjectPacket<'_>> for UnknownExtension {
+    fn from(value: ExtensionObjectPacket<'_>) -> Self {
+        Self {
+            class_num: value.get_class_num().id(),
+            class_subtype: value.get_class_subtype().0,
+            bytes: value.payload().to_owned(),
         }
     }
 }

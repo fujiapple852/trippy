@@ -154,11 +154,16 @@ pub struct Extensions {
 }
 
 /// A probe response extension.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
-    #[default]
-    Unknown,
+    Unknown(UnknownExtension),
     Mpls(MplsLabelStack),
+}
+
+impl Default for Extension {
+    fn default() -> Self {
+        Self::Unknown(UnknownExtension::default())
+    }
 }
 
 /// The members of a MPLS probe response extension.
@@ -174,6 +179,14 @@ pub struct MplsLabelStackMember {
     pub exp: u8,
     pub bos: u8,
     pub ttl: u8,
+}
+
+/// An unknown ICMP extension.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct UnknownExtension {
+    pub class_num: u8,
+    pub class_subtype: u8,
+    pub bytes: Vec<u8>,
 }
 
 /// The data in the probe response.
