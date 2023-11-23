@@ -64,6 +64,9 @@ pub const DEFAULT_STRATEGY_PAYLOAD_PATTERN: u8 = 0;
 /// The default value for `tos`.
 pub const DEFAULT_STRATEGY_TOS: u8 = 0;
 
+/// The default value for `icmp-extensions`.
+pub const DEFAULT_ICMP_EXTENSIONS: bool = false;
+
 /// The default value for `read-timeout`.
 pub const DEFAULT_STRATEGY_READ_TIMEOUT: &str = "10ms";
 
