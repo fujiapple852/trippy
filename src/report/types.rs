@@ -2,6 +2,7 @@ use crate::backend;
 use itertools::Itertools;
 use serde::{Serialize, Serializer};
 use std::fmt::{Display, Formatter};
+use std::net::IpAddr;
 use trippy::dns::Resolver;
 
 #[derive(Serialize)]
@@ -18,7 +19,7 @@ pub struct Info {
 #[derive(Serialize)]
 pub struct Hop {
     pub ttl: u8,
-    pub hosts: Vec<Host>,
+    pub hosts: Hosts,
     pub extensions: Extensions,
     #[serde(serialize_with = "fixed_width")]
     pub loss_pct: f64,
@@ -38,20 +39,8 @@ pub struct Hop {
 
 impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
     fn from((value, resolver): (&backend::trace::Hop, &R)) -> Self {
-        let hosts: Vec<_> = value
-            .addrs()
-            .map(|ip| Host {
-                ip: ip.to_string(),
-                hostname: resolver.reverse_lookup(*ip).to_string(),
-            })
-            .collect();
-
-        let extensions = Extensions::from(
-            value
-                .extensions()
-                .map(ToOwned::to_owned)
-                .unwrap_or_default(),
-        );
+        let hosts = Hosts::from((value.addrs(), resolver));
+        let extensions = value.extensions().map(Extensions::from).unwrap_or_default();
         Self {
             ttl: value.ttl(),
             hosts,
@@ -69,21 +58,54 @@ impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
 }
 
 #[derive(Serialize)]
-pub struct Host {
-    pub ip: String,
-    pub hostname: String,
+pub struct Hosts(pub Vec<Host>);
+
+impl<'a, R: Resolver, I: Iterator<Item = &'a IpAddr>> From<(I, &R)> for Hosts {
+    fn from((value, resolver): (I, &R)) -> Self {
+        Self(
+            value
+                .map(|ip| Host {
+                    ip: *ip,
+                    hostname: resolver.reverse_lookup(*ip).to_string(),
+                })
+                .collect(),
+        )
+    }
+}
+
+impl Display for Hosts {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.iter().format(", "))
+    }
 }
 
 #[derive(Serialize)]
+pub struct Host {
+    pub ip: IpAddr,
+    pub hostname: String,
+}
+
+impl Display for Host {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.ip)
+    }
+}
+
+#[derive(Default, Serialize)]
 #[serde(transparent)]
 pub struct Extensions {
     pub extensions: Vec<Extension>,
 }
 
-impl From<trippy::tracing::Extensions> for Extensions {
-    fn from(value: trippy::tracing::Extensions) -> Self {
+impl From<&trippy::tracing::Extensions> for Extensions {
+    fn from(value: &trippy::tracing::Extensions) -> Self {
         Self {
-            extensions: value.extensions.into_iter().map(Extension::from).collect(),
+            extensions: value
+                .extensions
+                .iter()
+                .cloned()
+                .map(Extension::from)
+                .collect(),
         }
     }
 }

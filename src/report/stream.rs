@@ -16,11 +16,7 @@ pub fn report<R: Resolver>(info: &TraceInfo, resolver: &R) -> anyhow::Result<()>
         for hop in trace_data.hops(Trace::default_flow_id()) {
             let hop = Hop::from((hop, resolver));
             let ttl = hop.ttl;
-            let addrs = hop
-                .hosts
-                .iter()
-                .map(|host| host.ip.clone())
-                .collect::<Vec<_>>(); // TODO
+            let addrs = hop.hosts.to_string();
             let exts = hop.extensions.to_string();
             let sent = hop.sent;
             let recv = hop.recv;
@@ -31,7 +27,7 @@ pub fn report<R: Resolver>(info: &TraceInfo, resolver: &R) -> anyhow::Result<()>
             let avg = hop.avg;
             let loss_pct = hop.loss_pct;
             println!(
-                "ttl={ttl} addrs={addrs:?} exts={exts}, loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last:.1} best={best:.1} worst={worst:.1} avg={avg:.1} stddev={stddev:.1}"
+                "ttl={ttl} addrs={addrs} exts={exts}, loss_pct={loss_pct:.1}, sent={sent} recv={recv} last={last:.1} best={best:.1} worst={worst:.1} avg={avg:.1} stddev={stddev:.1}"
             );
         }
         sleep(info.min_round_duration);

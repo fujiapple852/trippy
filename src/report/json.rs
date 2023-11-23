@@ -18,7 +18,7 @@ pub fn report<R: Resolver>(
     let report = Report {
         info: Info {
             target: Host {
-                ip: info.target_addr.to_string(),
+                ip: info.target_addr,
                 hostname: info.target_hostname.to_string(),
             },
         },
