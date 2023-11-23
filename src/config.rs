@@ -30,7 +30,7 @@ pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
 
 /// The tool mode.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Mode {
     /// Display interactive TUI.
@@ -54,7 +54,7 @@ pub enum Mode {
 }
 
 /// The tracing protocol.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Protocol {
     /// Internet Control Message Protocol
@@ -66,7 +66,7 @@ pub enum Protocol {
 }
 
 /// The address family.
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressFamily {
     /// Internet Protocol V4
@@ -76,7 +76,7 @@ pub enum AddressFamily {
 }
 
 /// The strategy Equal-cost Multi-Path routing strategy.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum MultipathStrategyConfig {
     /// The src or dest port is used to store the sequence number.
@@ -88,7 +88,7 @@ pub enum MultipathStrategyConfig {
 }
 
 /// How to render the addresses.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressMode {
     /// Show IP address only.
@@ -100,7 +100,7 @@ pub enum AddressMode {
 }
 
 /// How to render AS information.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AsMode {
     /// Show the ASN.
@@ -120,7 +120,7 @@ pub enum AsMode {
 /// How to render `GeoIp` information in the hop table.
 ///
 /// Note that the hop details view is always shown using the `Long` representation.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GeoIpMode {
     /// Do not display GeoIp data.
@@ -147,7 +147,7 @@ pub enum GeoIpMode {
 }
 
 /// How DNS queries will be resolved.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DnsResolveMethodConfig {
     /// Resolve using the OS resolver.
@@ -161,7 +161,7 @@ pub enum DnsResolveMethodConfig {
 }
 
 /// How to format log data.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LogFormat {
     /// Display log data in a compact format.
@@ -175,7 +175,7 @@ pub enum LogFormat {
 }
 
 /// How to log event spans.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LogSpanEvents {
     /// Do not display event spans.
@@ -186,7 +186,8 @@ pub enum LogSpanEvents {
     Full,
 }
 
-/// Fully parsed and validate configuration.
+/// Fully parsed and validated configuration.
+#[derive(Debug, Eq, PartialEq)]
 pub struct TrippyConfig {
     pub targets: Vec<String>,
     pub protocol: TracerProtocol,
