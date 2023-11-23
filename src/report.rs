@@ -8,16 +8,13 @@ use itertools::Itertools;
 use parking_lot::RwLock;
 use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
-use serde::{Serialize, Serializer};
 use std::fmt::{Debug, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use trippy::dns::{DnsResolver, Resolver};
-use trippy::tracing::{
-    Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension,
-};
+use trippy::tracing::Extension;
 
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
@@ -75,141 +72,182 @@ pub fn run_report_csv(
     Ok(())
 }
 
-#[derive(Serialize)]
-pub struct Report {
-    pub info: ReportInfo,
-    pub hops: Vec<ReportHop>,
-}
+use report_types::*;
 
-#[derive(Serialize)]
-pub struct ReportInfo {
-    pub target: Host,
-}
+pub mod report_types {
+    use crate::backend::trace::Hop;
+    use serde::{Serialize, Serializer};
+    use trippy::dns::Resolver;
+    use trippy::tracing::{
+        Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension,
+    };
 
-#[derive(Serialize)]
-pub struct ReportHop {
-    ttl: u8,
-    hosts: Vec<Host>,
-    extensions: ReportExtensions,
-    #[serde(serialize_with = "fixed_width")]
-    loss_pct: f64,
-    sent: usize,
-    #[serde(serialize_with = "fixed_width")]
-    last: f64,
-    recv: usize,
-    #[serde(serialize_with = "fixed_width")]
-    avg: f64,
-    #[serde(serialize_with = "fixed_width")]
-    best: f64,
-    #[serde(serialize_with = "fixed_width")]
-    worst: f64,
-    #[serde(serialize_with = "fixed_width")]
-    stddev: f64,
-}
+    #[derive(Serialize)]
+    pub struct Report {
+        pub info: ReportInfo,
+        pub hops: Vec<ReportHop>,
+    }
 
-#[derive(Serialize)]
-pub struct Host {
-    pub ip: String,
-    pub hostname: String,
-}
+    #[derive(Serialize)]
+    pub struct ReportInfo {
+        pub target: ReportHost,
+    }
 
-// TODO flatten and rename structs/enums
-// TODO From impl for ReportHop
-// TODO move report structs/enums to sub-module
+    #[derive(Serialize)]
+    pub struct ReportHop {
+        ttl: u8,
+        hosts: Vec<ReportHost>,
+        extensions: ReportExtensions,
+        #[serde(serialize_with = "fixed_width")]
+        loss_pct: f64,
+        sent: usize,
+        #[serde(serialize_with = "fixed_width")]
+        last: f64,
+        recv: usize,
+        #[serde(serialize_with = "fixed_width")]
+        avg: f64,
+        #[serde(serialize_with = "fixed_width")]
+        best: f64,
+        #[serde(serialize_with = "fixed_width")]
+        worst: f64,
+        #[serde(serialize_with = "fixed_width")]
+        stddev: f64,
+    }
 
-#[derive(Serialize)]
-pub struct ReportExtensions {
-    pub extensions: Vec<ReportExtension>,
-}
-
-impl From<Extensions> for ReportExtensions {
-    fn from(value: Extensions) -> Self {
-        Self {
-            extensions: value
-                .extensions
-                .into_iter()
-                .map(ReportExtension::from)
-                .collect(),
+    impl<R: Resolver> From<(&'_ Hop, &'_ R)> for ReportHop {
+        fn from((value, resolver): (&Hop, &R)) -> Self {
+            let hosts: Vec<_> = value
+                .addrs()
+                .map(|ip| ReportHost {
+                    ip: ip.to_string(),
+                    hostname: resolver.reverse_lookup(*ip).to_string(),
+                })
+                .collect();
+            let extensions = ReportExtensions::from(
+                value
+                    .extensions()
+                    .map(ToOwned::to_owned)
+                    .unwrap_or_default(),
+            );
+            Self {
+                ttl: value.ttl(),
+                hosts,
+                extensions,
+                loss_pct: value.loss_pct(),
+                sent: value.total_sent(),
+                last: value.last_ms().unwrap_or_default(),
+                recv: value.total_recv(),
+                avg: value.avg_ms(),
+                best: value.best_ms().unwrap_or_default(),
+                worst: value.worst_ms().unwrap_or_default(),
+                stddev: value.stddev_ms(),
+            }
         }
     }
-}
 
-#[derive(Serialize)]
-pub enum ReportExtension {
-    #[serde(rename = "unknown")]
-    Unknown(ReportUnknownExtension),
-    #[serde(rename = "mpls")]
-    Mpls(ReportMplsLabelStack),
-}
+    #[derive(Serialize)]
+    pub struct ReportHost {
+        pub ip: String,
+        pub hostname: String,
+    }
 
-impl From<Extension> for ReportExtension {
-    fn from(value: Extension) -> Self {
-        match value {
-            Extension::Unknown(unknown) => Self::Unknown(ReportUnknownExtension::from(unknown)),
-            Extension::Mpls(mpls) => Self::Mpls(ReportMplsLabelStack::from(mpls)),
+    // TODO flatten and rename structs/enums
+    // TODO move report structs/enums to sub-module
+
+    #[derive(Serialize)]
+    pub struct ReportExtensions {
+        pub extensions: Vec<ReportExtension>,
+    }
+
+    impl From<Extensions> for ReportExtensions {
+        fn from(value: Extensions) -> Self {
+            Self {
+                extensions: value
+                    .extensions
+                    .into_iter()
+                    .map(ReportExtension::from)
+                    .collect(),
+            }
         }
     }
-}
 
-#[derive(Serialize)]
-pub struct ReportMplsLabelStack {
-    pub members: Vec<ReportMplsLabelStackMember>,
-}
+    #[derive(Serialize)]
+    pub enum ReportExtension {
+        #[serde(rename = "unknown")]
+        Unknown(ReportUnknownExtension),
+        #[serde(rename = "mpls")]
+        Mpls(ReportMplsLabelStack),
+    }
 
-impl From<MplsLabelStack> for ReportMplsLabelStack {
-    fn from(value: MplsLabelStack) -> Self {
-        Self {
-            members: value
-                .members
-                .into_iter()
-                .map(ReportMplsLabelStackMember::from)
-                .collect(),
+    impl From<Extension> for ReportExtension {
+        fn from(value: Extension) -> Self {
+            match value {
+                Extension::Unknown(unknown) => Self::Unknown(ReportUnknownExtension::from(unknown)),
+                Extension::Mpls(mpls) => Self::Mpls(ReportMplsLabelStack::from(mpls)),
+            }
         }
     }
-}
 
-#[derive(Serialize)]
-pub struct ReportMplsLabelStackMember {
-    pub label: u32,
-    pub exp: u8,
-    pub bos: u8,
-    pub ttl: u8,
-}
+    #[derive(Serialize)]
+    pub struct ReportMplsLabelStack {
+        pub members: Vec<ReportMplsLabelStackMember>,
+    }
 
-impl From<MplsLabelStackMember> for ReportMplsLabelStackMember {
-    fn from(value: MplsLabelStackMember) -> Self {
-        Self {
-            label: value.label,
-            exp: value.exp,
-            bos: value.bos,
-            ttl: value.ttl,
+    impl From<MplsLabelStack> for ReportMplsLabelStack {
+        fn from(value: MplsLabelStack) -> Self {
+            Self {
+                members: value
+                    .members
+                    .into_iter()
+                    .map(ReportMplsLabelStackMember::from)
+                    .collect(),
+            }
         }
     }
-}
 
-#[derive(Serialize)]
-pub struct ReportUnknownExtension {
-    pub class_num: u8,
-    pub class_subtype: u8,
-    pub bytes: Vec<u8>,
-}
+    #[derive(Serialize)]
+    pub struct ReportMplsLabelStackMember {
+        pub label: u32,
+        pub exp: u8,
+        pub bos: u8,
+        pub ttl: u8,
+    }
 
-impl From<UnknownExtension> for ReportUnknownExtension {
-    fn from(value: UnknownExtension) -> Self {
-        Self {
-            class_num: value.class_num,
-            class_subtype: value.class_subtype,
-            bytes: value.bytes,
+    impl From<MplsLabelStackMember> for ReportMplsLabelStackMember {
+        fn from(value: MplsLabelStackMember) -> Self {
+            Self {
+                label: value.label,
+                exp: value.exp,
+                bos: value.bos,
+                ttl: value.ttl,
+            }
         }
     }
-}
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn fixed_width<S>(val: &f64, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(&format!("{val:.2}"))
+    #[derive(Serialize)]
+    pub struct ReportUnknownExtension {
+        pub class_num: u8,
+        pub class_subtype: u8,
+        pub bytes: Vec<u8>,
+    }
+
+    impl From<UnknownExtension> for ReportUnknownExtension {
+        fn from(value: UnknownExtension) -> Self {
+            Self {
+                class_num: value.class_num,
+                class_subtype: value.class_subtype,
+                bytes: value.bytes,
+            }
+        }
+    }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn fixed_width<S>(val: &f64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{val:.2}"))
+    }
 }
 
 /// Generate a json report of trace data.
@@ -222,35 +260,11 @@ pub fn run_report_json(
     let hops: Vec<ReportHop> = trace
         .hops(Trace::default_flow_id())
         .iter()
-        .map(|hop| {
-            let hosts: Vec<_> = hop
-                .addrs()
-                .map(|ip| Host {
-                    ip: ip.to_string(),
-                    hostname: resolver.reverse_lookup(*ip).to_string(),
-                })
-                .collect();
-            let extensions =
-                ReportExtensions::from(hop.extensions().map(ToOwned::to_owned).unwrap_or_default());
-            ReportHop {
-                ttl: hop.ttl(),
-                hosts,
-                extensions,
-                loss_pct: hop.loss_pct(),
-                sent: hop.total_sent(),
-                last: hop.last_ms().unwrap_or_default(),
-                recv: hop.total_recv(),
-                avg: hop.avg_ms(),
-                best: hop.best_ms().unwrap_or_default(),
-                worst: hop.worst_ms().unwrap_or_default(),
-                stddev: hop.stddev_ms(),
-            }
-        })
+        .map(|hop| ReportHop::from((hop, resolver)))
         .collect();
-
     let report = Report {
         info: ReportInfo {
-            target: Host {
+            target: ReportHost {
                 ip: info.target_addr.to_string(),
                 hostname: info.target_hostname.to_string(),
             },
