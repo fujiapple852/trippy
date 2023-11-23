@@ -208,4 +208,13 @@ impl Platform {
     fn needs_privileges() -> bool {
         true
     }
+
+    #[cfg(test)]
+    pub fn dummy_for_test() -> Self {
+        Self {
+            pid: 0,
+            has_privileges: true,
+            needs_privileges: false,
+        }
+    }
 }
