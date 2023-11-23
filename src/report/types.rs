@@ -17,26 +17,26 @@ pub struct Info {
 
 #[derive(Serialize)]
 pub struct Hop {
-    ttl: u8,
-    hosts: Vec<Host>,
-    extensions: Extensions,
+    pub ttl: u8,
+    pub hosts: Vec<Host>,
+    pub extensions: Extensions,
     #[serde(serialize_with = "fixed_width")]
-    loss_pct: f64,
-    sent: usize,
+    pub loss_pct: f64,
+    pub sent: usize,
     #[serde(serialize_with = "fixed_width")]
-    last: f64,
-    recv: usize,
+    pub last: f64,
+    pub recv: usize,
     #[serde(serialize_with = "fixed_width")]
-    avg: f64,
+    pub avg: f64,
     #[serde(serialize_with = "fixed_width")]
-    best: f64,
+    pub best: f64,
     #[serde(serialize_with = "fixed_width")]
-    worst: f64,
+    pub worst: f64,
     #[serde(serialize_with = "fixed_width")]
-    stddev: f64,
+    pub stddev: f64,
 }
 
-impl<R: Resolver> From<(&'_ backend::trace::Hop, &'_ R)> for Hop {
+impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
     fn from((value, resolver): (&backend::trace::Hop, &R)) -> Self {
         let hosts: Vec<_> = value
             .addrs()
@@ -45,6 +45,7 @@ impl<R: Resolver> From<(&'_ backend::trace::Hop, &'_ R)> for Hop {
                 hostname: resolver.reverse_lookup(*ip).to_string(),
             })
             .collect();
+
         let extensions = Extensions::from(
             value
                 .extensions()
@@ -165,11 +166,7 @@ impl From<trippy::tracing::MplsLabelStackMember> for MplsLabelStackMember {
 
 impl Display for MplsLabelStackMember {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "member(label={}, exp={}, bos={}, ttl={})",
-            self.label, self.exp, self.bos, self.ttl
-        )
+        write!(f, "{}", self.label)
     }
 }
 
