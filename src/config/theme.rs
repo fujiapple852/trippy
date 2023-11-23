@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use strum::{EnumString, EnumVariantNames};
 
 /// Tui color theme.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TuiTheme {
     /// The default background color.
     ///
@@ -248,7 +248,7 @@ pub enum TuiThemeItem {
 }
 
 /// A TUI color.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize)]
 #[serde(try_from = "String")]
 pub enum TuiColor {
     Black,

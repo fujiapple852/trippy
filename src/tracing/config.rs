@@ -27,7 +27,7 @@ impl Display for PrivilegeMode {
 }
 
 /// The address family.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum TracerAddrFamily {
     /// Internet Protocol V4
     Ipv4,
@@ -45,7 +45,7 @@ impl Display for TracerAddrFamily {
 }
 
 /// The tracing protocol.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum TracerProtocol {
     /// Internet Control Message Protocol
     Icmp,
@@ -110,7 +110,7 @@ impl Display for MultipathStrategy {
 }
 
 /// Whether to fix the src, dest or both ports for a trace.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PortDirection {
     /// Trace without any source or destination port (i.e. for ICMP tracing).
     None,

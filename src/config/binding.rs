@@ -8,7 +8,7 @@ use std::str::FromStr;
 use strum::{AsRefStr, EnumString, EnumVariantNames};
 
 /// Tui keyboard bindings.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
     pub toggle_help_alt: TuiKeyBinding,
