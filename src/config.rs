@@ -233,19 +233,19 @@ pub struct TrippyConfig {
     pub log_span_events: LogSpanEvents,
 }
 
-impl TryFrom<(Args, &Platform)> for TrippyConfig {
-    type Error = anyhow::Error;
+impl TrippyConfig {
+    pub fn from(args: Args, platform: &Platform) -> anyhow::Result<Self> {
+        let cfg_file = Self::read_config_file(&args)?;
+        Self::build_config(args, cfg_file, platform)
+    }
 
     #[allow(clippy::too_many_lines)]
-    fn try_from(data: (Args, &Platform)) -> Result<Self, Self::Error> {
-        let (
-            args,
-            &Platform {
-                pid,
-                has_privileges,
-                needs_privileges,
-            },
-        ) = data;
+    fn build_config(args: Args, cfg_file: ConfigFile, platform: &Platform) -> anyhow::Result<Self> {
+        let &Platform {
+            pid,
+            has_privileges,
+            needs_privileges,
+        } = platform;
         if args.print_tui_theme_items {
             println!(
                 "TUI theme color items: {}",
@@ -269,13 +269,6 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             print_completions(generator, &mut cmd);
             process::exit(0);
         }
-        let cfg_file = if let Some(cfg) = args.config_file {
-            file::read_config_file(cfg)?
-        } else if let Some(cfg) = file::read_default_config_file()? {
-            cfg
-        } else {
-            ConfigFile::default()
-        };
         let cfg_file_trace = cfg_file.trippy.unwrap_or_default();
         let cfg_file_strategy = cfg_file.strategy.unwrap_or_default();
         let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
@@ -594,6 +587,16 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             log_filter,
             log_span_events,
         })
+    }
+
+    fn read_config_file(args: &Args) -> anyhow::Result<ConfigFile> {
+        if let Some(cfg) = &args.config_file {
+            file::read_config_file(cfg)
+        } else if let Some(cfg) = file::read_default_config_file()? {
+            Ok(cfg)
+        } else {
+            Ok(ConfigFile::default())
+        }
     }
 }
 

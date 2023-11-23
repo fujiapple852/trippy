@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     Platform::acquire_privileges()?;
     let platform = Platform::discover()?;
-    let cfg = TrippyConfig::try_from((args, &platform))?;
+    let cfg = TrippyConfig::from(args, &platform)?;
     let _guard = configure_logging(&cfg);
     let resolver = start_dns_resolver(&cfg)?;
     let geoip_lookup = create_geoip_lookup(&cfg)?;
