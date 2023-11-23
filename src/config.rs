@@ -375,7 +375,7 @@ impl TrippyConfig {
         let icmp_extensions = cfg_layer_bool_flag(
             args.icmp_extensions,
             cfg_file_strategy.icmp_extensions,
-            false,
+            constants::DEFAULT_ICMP_EXTENSIONS,
         );
         let read_timeout = cfg_layer(
             args.read_timeout,
