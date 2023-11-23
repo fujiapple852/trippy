@@ -1,5 +1,7 @@
 use crate::backend;
+use itertools::Itertools;
 use serde::{Serialize, Serializer};
+use std::fmt::{Display, Formatter};
 use trippy::dns::Resolver;
 
 #[derive(Serialize)]
@@ -85,6 +87,12 @@ impl From<trippy::tracing::Extensions> for Extensions {
     }
 }
 
+impl Display for Extensions {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.extensions.iter().format(" + "))
+    }
+}
+
 #[derive(Serialize)]
 pub enum Extension {
     #[serde(rename = "unknown")]
@@ -104,6 +112,15 @@ impl From<trippy::tracing::Extension> for Extension {
     }
 }
 
+impl Display for Extension {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unknown(unknown) => unknown.fmt(f),
+            Self::Mpls(mpls) => mpls.fmt(f),
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct MplsLabelStack {
     pub members: Vec<MplsLabelStackMember>,
@@ -118,6 +135,12 @@ impl From<trippy::tracing::MplsLabelStack> for MplsLabelStack {
                 .map(MplsLabelStackMember::from)
                 .collect(),
         }
+    }
+}
+
+impl Display for MplsLabelStack {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "mpls(labels={})", self.members.iter().format(", "))
     }
 }
 
@@ -140,6 +163,16 @@ impl From<trippy::tracing::MplsLabelStackMember> for MplsLabelStackMember {
     }
 }
 
+impl Display for MplsLabelStackMember {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "member(label={}, exp={}, bos={}, ttl={})",
+            self.label, self.exp, self.bos, self.ttl
+        )
+    }
+}
+
 #[derive(Serialize)]
 pub struct UnknownExtension {
     pub class_num: u8,
@@ -154,6 +187,18 @@ impl From<trippy::tracing::UnknownExtension> for UnknownExtension {
             class_subtype: value.class_subtype,
             bytes: value.bytes,
         }
+    }
+}
+
+impl Display for UnknownExtension {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "unknown(class={}, subtype={}, bytes=[{:02x}])",
+            self.class_num,
+            self.class_subtype,
+            self.bytes.iter().format(" ")
+        )
     }
 }
 
