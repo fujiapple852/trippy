@@ -235,7 +235,13 @@ pub struct TrippyConfig {
 
 impl TrippyConfig {
     pub fn from(args: Args, platform: &Platform) -> anyhow::Result<Self> {
-        let cfg_file = Self::read_config_file(&args)?;
+        let cfg_file = if let Some(cfg) = &args.config_file {
+            file::read_config_file(cfg)?
+        } else if let Some(cfg) = file::read_default_config_file()? {
+            cfg
+        } else {
+            ConfigFile::default()
+        };
         Self::build_config(args, cfg_file, platform)
     }
 
@@ -587,15 +593,91 @@ impl TrippyConfig {
             log_span_events,
         })
     }
+}
 
-    fn read_config_file(args: &Args) -> anyhow::Result<ConfigFile> {
-        if let Some(cfg) = &args.config_file {
-            file::read_config_file(cfg)
-        } else if let Some(cfg) = file::read_default_config_file()? {
-            Ok(cfg)
-        } else {
-            Ok(ConfigFile::default())
+impl Default for TrippyConfig {
+    fn default() -> Self {
+        Self {
+            targets: vec![],
+            protocol: protocol(constants::DEFAULT_STRATEGY_PROTOCOL),
+            addr_family: addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            first_ttl: constants::DEFAULT_STRATEGY_FIRST_TTL,
+            max_ttl: constants::DEFAULT_STRATEGY_MAX_TTL,
+            min_round_duration: duration(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+            max_round_duration: duration(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
+            grace_duration: duration(constants::DEFAULT_STRATEGY_GRACE_DURATION),
+            max_inflight: constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
+            initial_sequence: constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+            tos: constants::DEFAULT_STRATEGY_TOS,
+            icmp_extensions: constants::DEFAULT_ICMP_EXTENSIONS,
+            read_timeout: duration(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
+            packet_size: constants::DEFAULT_STRATEGY_PACKET_SIZE,
+            payload_pattern: constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+            source_addr: None,
+            interface: None,
+            multipath_strategy: multipath_strategy(constants::DEFAULT_STRATEGY_MULTIPATH),
+            port_direction: PortDirection::None,
+            dns_timeout: duration(constants::DEFAULT_DNS_TIMEOUT),
+            dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
+            dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
+            tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
+            tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
+            tui_refresh_rate: duration(constants::DEFAULT_TUI_REFRESH_RATE),
+            tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
+            tui_address_mode: constants::DEFAULT_TUI_ADDRESS_MODE,
+            tui_as_mode: constants::DEFAULT_TUI_AS_MODE,
+            tui_geoip_mode: constants::DEFAULT_TUI_GEOIP_MODE,
+            tui_max_addrs: None,
+            tui_theme: TuiTheme::default(),
+            tui_bindings: TuiBindings::default(),
+            mode: constants::DEFAULT_MODE,
+            privilege_mode: privilege_mode(constants::DEFAULT_UNPRIVILEGED),
+            dns_resolve_all: constants::DEFAULT_DNS_RESOLVE_ALL,
+            report_cycles: constants::DEFAULT_REPORT_CYCLES,
+            geoip_mmdb_file: None,
+            max_rounds: None,
+            verbose: false,
+            log_format: constants::DEFAULT_LOG_FORMAT,
+            log_filter: String::from(constants::DEFAULT_LOG_FILTER),
+            log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
         }
+    }
+}
+
+fn duration(duration: &str) -> Duration {
+    humantime::parse_duration(duration).expect("valid duration")
+}
+
+fn protocol(protocol: Protocol) -> TracerProtocol {
+    match protocol {
+        Protocol::Icmp => TracerProtocol::Icmp,
+        Protocol::Udp => TracerProtocol::Udp,
+        Protocol::Tcp => TracerProtocol::Tcp,
+    }
+}
+
+fn privilege_mode(unprivileged: bool) -> PrivilegeMode {
+    if unprivileged {
+        PrivilegeMode::Unprivileged
+    } else {
+        PrivilegeMode::Privileged
+    }
+}
+
+fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
+    match dns_resolve_method {
+        DnsResolveMethodConfig::System => ResolveMethod::System,
+        DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
+        DnsResolveMethodConfig::Google => ResolveMethod::Google,
+        DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
+    }
+}
+
+fn multipath_strategy(multipath_strategy: MultipathStrategyConfig) -> MultipathStrategy {
+    match multipath_strategy {
+        MultipathStrategyConfig::Classic => MultipathStrategy::Classic,
+        MultipathStrategyConfig::Paris => MultipathStrategy::Paris,
+        MultipathStrategyConfig::Dublin => MultipathStrategy::Dublin,
     }
 }
 
@@ -869,5 +951,42 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
     } else {
         let dup_str = duplicates.iter().join(", ");
         Err(anyhow!("Duplicate key bindings: {dup_str}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_default() {
+        let args = args(&["trip", "example.com"]);
+        let cfg_file = ConfigFile::default();
+        let platform = Platform::dummy_for_test();
+        let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
+        let expected = TrippyConfig {
+            targets: vec![String::from("example.com")],
+            ..TrippyConfig::default()
+        };
+        pretty_assertions::assert_eq!(expected, config);
+    }
+
+    #[test]
+    fn test_config_sample() {
+        let args = args(&["trip", "example.com"]);
+        let cfg_file: ConfigFile =
+            toml::from_str(include_str!("../trippy-config-sample.toml")).unwrap();
+        let platform = Platform::dummy_for_test();
+        let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
+        let expected = TrippyConfig {
+            targets: vec![String::from("example.com")],
+            ..TrippyConfig::default()
+        };
+        pretty_assertions::assert_eq!(expected, config);
+    }
+
+    fn args(args: &[&str]) -> Args {
+        use clap::Parser;
+        Args::parse_from(args.iter().map(std::ffi::OsString::from))
     }
 }
