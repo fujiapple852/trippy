@@ -199,14 +199,14 @@ fn run_frontend(
 ) -> anyhow::Result<()> {
     match args.mode {
         Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
-        Mode::Stream => report::run_report_stream(&traces[0])?,
-        Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Dot => report::run_report_dot(&traces[0], args.report_cycles)?,
-        Mode::Flows => report::run_report_flows(&traces[0], args.report_cycles)?,
-        Mode::Silent => report::run_report_silent(&traces[0], args.report_cycles)?,
+        Mode::Stream => report::stream::report(&traces[0])?,
+        Mode::Csv => report::csv::report(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Pretty => report::table::report_pretty(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Markdown => report::table::report_md(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Dot => report::dot::report(&traces[0], args.report_cycles)?,
+        Mode::Flows => report::flows::report(&traces[0], args.report_cycles)?,
+        Mode::Silent => report::silent::report(&traces[0], args.report_cycles)?,
     }
     Ok(())
 }
