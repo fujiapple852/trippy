@@ -1,6 +1,6 @@
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
-    MultipathStrategyConfig, Protocol,
+    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat,
+    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
 };
 use std::time::Duration;
 
@@ -30,6 +30,9 @@ pub const DEFAULT_LOG_FILTER: &str = "trippy=debug";
 
 /// The default value for `protocol`.
 pub const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
+
+/// The default value for `addr-family`.
+pub const DEFAULT_ADDRESS_FAMILY: AddressFamily = AddressFamily::Ipv4;
 
 /// The default value for `min-round-duration`.
 pub const DEFAULT_STRATEGY_MIN_ROUND_DURATION: &str = "1s";
