@@ -3,30 +3,30 @@ use crate::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
-use trippy::dns::{DnsResolver, Resolver};
+use trippy::dns::Resolver;
 
 /// Generate a markdown table report of trace data.
-pub fn report_md(
+pub fn report_md<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
-    resolver: &DnsResolver,
+    resolver: &R,
 ) -> anyhow::Result<()> {
     run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN)
 }
 
 /// Generate a pretty table report of trace data.
-pub fn report_pretty(
+pub fn report_pretty<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
-    resolver: &DnsResolver,
+    resolver: &R,
 ) -> anyhow::Result<()> {
     run_report_table(info, report_cycles, resolver, UTF8_FULL)
 }
 
-fn run_report_table(
+fn run_report_table<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
-    resolver: &DnsResolver,
+    resolver: &R,
     preset: &str,
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
