@@ -12,6 +12,7 @@ pub mod json;
 pub mod silent;
 pub mod stream;
 pub mod table;
+mod types;
 
 /// Block until trace data for round `round` is available.
 fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyhow::Result<Trace> {
