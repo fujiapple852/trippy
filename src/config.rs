@@ -456,9 +456,8 @@ impl TrippyConfig {
             })
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
-            (false, false, Some(AddressFamily::Ipv4) | None) | (true, _, _) => {
-                TracerAddrFamily::Ipv4
-            }
+            (false, false, None) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
             (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
@@ -597,6 +596,13 @@ impl TrippyConfig {
         } else {
             Ok(ConfigFile::default())
         }
+    }
+}
+
+fn addr_family(addr_family: AddressFamily) -> TracerAddrFamily {
+    match addr_family {
+        AddressFamily::Ipv4 => TracerAddrFamily::Ipv4,
+        AddressFamily::Ipv6 => TracerAddrFamily::Ipv6,
     }
 }
 
