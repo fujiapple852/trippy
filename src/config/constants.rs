@@ -85,6 +85,9 @@ pub const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 /// The default value for `tui-geoip-mode`.
 pub const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Off;
 
+/// The default value for `tui-max-addrs`.
+pub const DEFAULT_TUI_MAX_ADDRS: u8 = 0;
+
 /// The default value for `tui-address-mode`.
 pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 
