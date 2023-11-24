@@ -9,13 +9,56 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Add IPs field to `csv` and all tabular reports ([#597](https://github.com/fujiapple852/trippy/issues/597))
+- Added support for tracing flows ([#776](https://github.com/fujiapple852/trippy/issues/776))
+- Added support for `icmp` extensions ([#33](https://github.com/fujiapple852/trippy/issues/33))
+- Added support for `MPLS` label stack class `icmp` extension
+  objects ([#753](https://github.com/fujiapple852/trippy/issues/753))
+- Added support for Paris multipath routing for `IPv6/udp` ([#749](https://github.com/fujiapple852/trippy/issues/749))
+- Added support for `--unprivileged` (`-u`) tracing (macOS
+  only) ([#101](https://github.com/fujiapple852/trippy/issues/101))
+- Added support for `--tui-privacy-max-ttl` flag to hide host and IP details for low ttl
+  hops ([#766](https://github.com/fujiapple852/trippy/issues/766))
+- Added support for tracing to all IPs for a dns entry ([#743](https://github.com/fujiapple852/trippy/issues/743))
+- Added `dot` report mode to output hop graph in Graphviz `DOT`
+  format ([#582](https://github.com/fujiapple852/trippy/issues/582))
+- Added `flows` report mode to output a list of all unique tracing
+  flows ([#770](https://github.com/fujiapple852/trippy/issues/770))
+- Added `--icmp-extensions` (`-e`) flag for parsing `IPv4`/`IPv6` `icmp`
+  extensions ([#751](https://github.com/fujiapple852/trippy/issues/751))
+- Added `--print-config-template` flag to output a template config file
+  file ([#792](https://github.com/fujiapple852/trippy/issues/792))
+- Added `--icmp` command line shortcut ([#649](https://github.com/fujiapple852/trippy/issues/649))
+- Added IPs field to `csv` and all tabular reports ([#597](https://github.com/fujiapple852/trippy/issues/597))
+- Added support for `ToggleHelpAlt` key binding ([#694](https://github.com/fujiapple852/trippy/issues/694))
+- Added panic handing to Tui ([#784](https://github.com/fujiapple852/trippy/issues/784))
+- Added Windows `scoop` package ([#462](https://github.com/fujiapple852/trippy/issues/462))
+- Added Windows `winget` package ([#460](https://github.com/fujiapple852/trippy/issues/460))
+- Publish `musl` Debian `deb` release asset ([#568](https://github.com/fujiapple852/trippy/issues/568))
+- Publish `armv7` Linux release assets ([#712](https://github.com/fujiapple852/trippy/issues/712))
+- Publish `aarch64-apple-darwin` macOS (aka Apple Silicon) release
+  assets ([#801](https://github.com/fujiapple852/trippy/issues/801))
+- Added additional Tier 1 and Tier 2 release targets ([#811](https://github.com/fujiapple852/trippy/issues/811))
 
 ### Changed
+
+- [BREAKING CHANGE] Added `icmp` extension object data in `json` and `stream`
+  reports ([#806](https://github.com/fujiapple852/trippy/issues/806))
+- [BREAKING CHANGE] Command line flags `--dns-lookup-as-info` and `--tui-preserve-screen` no longer require a boolean
+- argument ([#708](https://github.com/fujiapple852/trippy/issues/708))
+- [BREAKING CHANGE] Default key binding for `ToggleFreeze` changed from `f` to `ctrl+f`
+- Expose DNS resolver module as part of `trippy` library ([#754](https://github.com/fujiapple852/trippy/issues/754))
+- Replaced unmaintained `tui-rs` crate with `ratatui` crate ([#569](https://github.com/fujiapple852/trippy/issues/569))
 
 ### Fixed
 
 - Reverse DNS lookup not working in reports ([#509](https://github.com/fujiapple852/trippy/issues/509))
+- Crash on NetBSD when resizing window ([#276](https://github.com/fujiapple852/trippy/issues/276))
+- Protocol mismatch causes a tracer panic ([#745](https://github.com/fujiapple852/trippy/issues/745))
+- Incorrect row height in Tui hop detail navigation view for hops with no
+  responses ([#765](https://github.com/fujiapple852/trippy/issues/765))
+- Sending sockets needlessly created for some tracing modes ([#647](https://github.com/fujiapple852/trippy/issues/647))
+- Incorrect byte order used in `Ipv4` packet length
+  calculation ([#686](https://github.com/fujiapple852/trippy/issues/686))
 
 ## [0.8.0] - 2023-05-15
 
