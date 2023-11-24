@@ -106,13 +106,13 @@ addr-family = "ipv4"
 #
 # The minimum time that must elapse before a tracing round is considered
 # complete, regardless of whether the target is discovered or not.
-min-round-duration = "1000ms"
+min-round-duration = "1s"
 
 # The maximum duration of every round [default: 1s]
 #
 # The maximum time that may elapse before a tracing round is considered
 # complete, regardless of whether the target is discovered or not.
-max-round-duration = "1000ms"
+max-round-duration = "1s"
 
 # The round grace period [default: 100ms]
 #
