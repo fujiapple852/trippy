@@ -45,7 +45,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reports ([#806](https://github.com/fujiapple852/trippy/issues/806))
 - [BREAKING CHANGE] Command line flags `--dns-lookup-as-info` and `--tui-preserve-screen` no longer require a boolean
 - argument ([#708](https://github.com/fujiapple852/trippy/issues/708))
-- [BREAKING CHANGE] Default key binding for `ToggleFreeze` changed from `f` to `ctrl+f`
+- [BREAKING CHANGE] Default key binding for `ToggleFreeze` changed from `f`
+  to `ctrl+f` ([#785](https://github.com/fujiapple852/trippy/issues/785))
 - Expose DNS resolver module as part of `trippy` library ([#754](https://github.com/fujiapple852/trippy/issues/754))
 - Replaced unmaintained `tui-rs` crate with `ratatui` crate ([#569](https://github.com/fujiapple852/trippy/issues/569))
 
