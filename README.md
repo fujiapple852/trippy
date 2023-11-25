@@ -168,18 +168,18 @@ nix-env -iA trippy
 docker run -it fujiapple/trippy
 ```
 
-### Binary Assets
+### Binary Asset Download
 
-| Platform       | Arch    | Asset                                                                                                                   |
-|----------------|---------|-------------------------------------------------------------------------------------------------------------------------|
-| Linux (gnu)    | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-gnu.tar.gz)    |
-| Linux (musl)   | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-musl.tar.gz)   |
-| Linux (gnu)    | aarch64 | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-aarch64-unknown-linux-gnu.tar.gz)   |
-| macOS          | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-apple-darwin.tar.gz)         |
-| Windows (msvc) | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-pc-windows-msvc.zip)         |
-| NetBSD         | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-netbsd.tar.gz)       |
-| RPM Package    | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64.rpm)                         |
-| Debian Package | x86_64  | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy_x86_64-unknown-linux-gnu_0.8.0_amd64.deb) |
+| OS             | Arch      | Env      | Current                                                                                                                 | Previous                                                                                                                |
+|----------------|-----------|----------|-------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Linux          | `x86_64`  | `gnu`    | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-gnu.tar.gz)    | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-unknown-linux-gnu.tar.gz)    |
+| Linux          | `x86_64`  | `musl`   | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-musl.tar.gz)   | n/a                                                                                                                     |
+| Linux          | `aarch64` | `gnu`    | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-aarch64-unknown-linux-gnu.tar.gz)   | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-aarch64-unknown-linux-gnu.tar.gz)   |
+| macOS          | `x86_64`  | `darwin` | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-apple-darwin.tar.gz)         | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-apple-darwin.tar.gz)         |
+| Windows        | `x86_64`  | `msvc`   | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-pc-windows-msvc.zip)         | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-pc-windows-msvc.zip)         |
+| NetBSD         | `x86_64`  | n/a      | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-netbsd.tar.gz)       | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64-unknown-netbsd.tar.gz)       |
+| RPM Package    | `x86_64`  | `gnu`    | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64.rpm)                         | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy-0.7.0-x86_64.rpm)                         |
+| Debian Package | `x86_64`  | `gnu`    | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy_x86_64-unknown-linux-gnu_0.8.0_amd64.deb) | [0.7.0](https://github.com/fujiapple852/trippy/releases/download/0.7.0/trippy_x86_64-unknown-linux-gnu_0.7.0_amd64.deb) |
 
 ## Privileges
 
