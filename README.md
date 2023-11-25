@@ -349,6 +349,12 @@ Lookup and display `short` (or `long` or `location` or `off`) GeoIp information 
 trip example.com --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
 ```
 
+Parse `icmp` extensions:
+
+```shell
+trip example.com -e
+```
+
 Hide the IP address, hostname and GeoIp for the first two hops:
 
 ```shell
