@@ -13,38 +13,41 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for `icmp` extensions ([#33](https://github.com/fujiapple852/trippy/issues/33))
 - Added support for `MPLS` label stack class `icmp` extension
   objects ([#753](https://github.com/fujiapple852/trippy/issues/753))
-- Added support for Paris multipath routing for `IPv6/udp` ([#749](https://github.com/fujiapple852/trippy/issues/749))
-- Added support for `--unprivileged` (`-u`) tracing (macOS
+- Added support for [paris](https://github.com/libparistraceroute/libparistraceroute) ECMP routing
+  for `IPv6/udp` ([#749](https://github.com/fujiapple852/trippy/issues/749))
+- Added `--unprivileged` (`-u`) flag to allow tracing without elevated privileges (macOS
   only) ([#101](https://github.com/fujiapple852/trippy/issues/101))
-- Added support for `--tui-privacy-max-ttl` flag to hide host and IP details for low ttl
+- Added `--tui-privacy-max-ttl` flag to hide host and IP details for low ttl
   hops ([#766](https://github.com/fujiapple852/trippy/issues/766))
-- Added support for tracing to all IPs for a dns entry ([#743](https://github.com/fujiapple852/trippy/issues/743))
-- Added `dot` report mode to output hop graph in Graphviz `DOT`
+- Added `--dns-resolve-all` (`-y`) flag to allow tracing to all IPs resolved from DNS lookup
+  entry ([#743](https://github.com/fujiapple852/trippy/issues/743))
+- Added `dot` report mode (`-m dot`) to output hop graph in Graphviz `DOT`
   format ([#582](https://github.com/fujiapple852/trippy/issues/582))
-- Added `flows` report mode to output a list of all unique tracing
+- Added `flows` report mode (`-m flows`) to output a list of all unique tracing
   flows ([#770](https://github.com/fujiapple852/trippy/issues/770))
 - Added `--icmp-extensions` (`-e`) flag for parsing `IPv4`/`IPv6` `icmp`
   extensions ([#751](https://github.com/fujiapple852/trippy/issues/751))
-- Added `--print-config-template` flag to output a template config file
+- Added `--print-config-template` flag to output a template config
   file ([#792](https://github.com/fujiapple852/trippy/issues/792))
-- Added `--icmp` command line shortcut ([#649](https://github.com/fujiapple852/trippy/issues/649))
-- Added IPs field to `csv` and all tabular reports ([#597](https://github.com/fujiapple852/trippy/issues/597))
+- Added `--icmp` flag as a shortcut for `--protocol icmp` ([#649](https://github.com/fujiapple852/trippy/issues/649))
 - Added support for `ToggleHelpAlt` key binding ([#694](https://github.com/fujiapple852/trippy/issues/694))
 - Added panic handing to Tui ([#784](https://github.com/fujiapple852/trippy/issues/784))
-- Added Windows `scoop` package ([#462](https://github.com/fujiapple852/trippy/issues/462))
-- Added Windows `winget` package ([#460](https://github.com/fujiapple852/trippy/issues/460))
-- Publish `musl` Debian `deb` release asset ([#568](https://github.com/fujiapple852/trippy/issues/568))
-- Publish `armv7` Linux release assets ([#712](https://github.com/fujiapple852/trippy/issues/712))
-- Publish `aarch64-apple-darwin` macOS (aka Apple Silicon) release
+- Added official Windows `scoop` package ([#462](https://github.com/fujiapple852/trippy/issues/462))
+- Added official Windows `winget` package ([#460](https://github.com/fujiapple852/trippy/issues/460))
+- Release `musl` Debian `deb` binary asset ([#568](https://github.com/fujiapple852/trippy/issues/568))
+- Release `armv7` Linux binary assets ([#712](https://github.com/fujiapple852/trippy/issues/712))
+- Release `aarch64-apple-darwin` (aka macOS Apple Silicon) binary
   assets ([#801](https://github.com/fujiapple852/trippy/issues/801))
-- Added additional Tier 1 and Tier 2 release targets ([#811](https://github.com/fujiapple852/trippy/issues/811))
+- Added additional Rust Tier 1 and Tier 2 binary assets ([#811](https://github.com/fujiapple852/trippy/issues/811))
 
 ### Changed
 
-- [BREAKING CHANGE] Added `icmp` extension object data in `json` and `stream`
+- [BREAKING CHANGE] `icmp` extension object data added to `json` and `stream`
   reports ([#806](https://github.com/fujiapple852/trippy/issues/806))
+- [BREAKING CHANGE] IPs field added to `csv` and all tabular
+  reports ([#597](https://github.com/fujiapple852/trippy/issues/597))
 - [BREAKING CHANGE] Command line flags `--dns-lookup-as-info` and `--tui-preserve-screen` no longer require a boolean
-- argument ([#708](https://github.com/fujiapple852/trippy/issues/708))
+  argument ([#708](https://github.com/fujiapple852/trippy/issues/708))
 - [BREAKING CHANGE] Default key binding for `ToggleFreeze` changed from `f`
   to `ctrl+f` ([#785](https://github.com/fujiapple852/trippy/issues/785))
 - Expose DNS resolver module as part of `trippy` library ([#754](https://github.com/fujiapple852/trippy/issues/754))
@@ -53,13 +56,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Reverse DNS lookup not working in reports ([#509](https://github.com/fujiapple852/trippy/issues/509))
-- Crash on NetBSD when resizing window ([#276](https://github.com/fujiapple852/trippy/issues/276))
-- Protocol mismatch causes a tracer panic ([#745](https://github.com/fujiapple852/trippy/issues/745))
+- Crash on NetBSD during window resizing ([#276](https://github.com/fujiapple852/trippy/issues/276))
+- Protocol mismatch causes tracer panic ([#745](https://github.com/fujiapple852/trippy/issues/745))
 - Incorrect row height in Tui hop detail navigation view for hops with no
   responses ([#765](https://github.com/fujiapple852/trippy/issues/765))
-- Sending sockets needlessly created for some tracing modes ([#647](https://github.com/fujiapple852/trippy/issues/647))
-- Incorrect byte order used in `Ipv4` packet length
-  calculation ([#686](https://github.com/fujiapple852/trippy/issues/686))
+- Unnecessary socket creation in certain tracing modes ([#647](https://github.com/fujiapple852/trippy/issues/647))
+- Incorrect byte order in `IPv4` packet length calculation ([#686](https://github.com/fujiapple852/trippy/issues/686))
 
 ## [0.8.0] - 2023-05-15
 
@@ -266,6 +268,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Initial WIP release of `trippy`
+
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.8.0...master
 
 [0.8.0]: https://github.com/fujiapple852/trippy/compare/0.7.0...0.8.0
 
