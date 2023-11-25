@@ -45,14 +45,20 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
             render_map_canvas_world(ctx, theme.map_world_color);
             ctx.layer();
             for entry in entries {
-                render_map_canvas_pin(ctx, entry);
-                render_map_canvas_radius(ctx, entry, theme.map_radius_color);
-                render_map_canvas_selected(
-                    ctx,
-                    entry,
-                    app.selected_hop_or_target(),
-                    theme.map_selected_color,
-                );
+                let any_show = entry
+                    .hops
+                    .iter()
+                    .any(|hop| *hop > app.tui_config.privacy_max_ttl);
+                if !app.hide_private_hops || any_show {
+                    render_map_canvas_pin(ctx, entry);
+                    render_map_canvas_radius(ctx, entry, theme.map_radius_color);
+                    render_map_canvas_selected(
+                        ctx,
+                        entry,
+                        app.selected_hop_or_target(),
+                        theme.map_selected_color,
+                    );
+                }
             }
         })
         .marker(Marker::Braille)
