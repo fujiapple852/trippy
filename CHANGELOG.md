@@ -34,7 +34,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `--print-config-template` flag to output a template config
   file ([#792](https://github.com/fujiapple852/trippy/issues/792))
 - Added `--icmp` flag as a shortcut for `--protocol icmp` ([#649](https://github.com/fujiapple852/trippy/issues/649))
-- Added support for `ToggleHelpAlt` key binding ([#694](https://github.com/fujiapple852/trippy/issues/694))
+- Added `toggle-help-alt` (default: `?`) key binding to show or hide
+  help ([#694](https://github.com/fujiapple852/trippy/issues/694))
 - Added panic handing to Tui ([#784](https://github.com/fujiapple852/trippy/issues/784))
 - Added official Windows `scoop` package ([#462](https://github.com/fujiapple852/trippy/issues/462))
 - Added official Windows `winget` package ([#460](https://github.com/fujiapple852/trippy/issues/460))
