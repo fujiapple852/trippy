@@ -19,6 +19,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   only) ([#101](https://github.com/fujiapple852/trippy/issues/101))
 - Added `--tui-privacy-max-ttl` flag to hide host and IP details for low ttl
   hops ([#766](https://github.com/fujiapple852/trippy/issues/766))
+- Added `TogglePrivacy` (default: `p`) key binding to show or hide private
+  hops ([#823](https://github.com/fujiapple852/trippy/issues/823))
 - Added `--dns-resolve-all` (`-y`) flag to allow tracing to all IPs resolved from DNS lookup
   entry ([#743](https://github.com/fujiapple852/trippy/issues/743))
 - Added `dot` report mode (`-m dot`) to output hop graph in Graphviz `DOT`
