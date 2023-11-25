@@ -35,7 +35,7 @@ impl TuiConfig {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         refresh_rate: Duration,
-        privacy_ttl: u8,
+        privacy_max_ttl: u8,
         preserve_screen: bool,
         address_mode: AddressMode,
         lookup_as_info: bool,
@@ -48,7 +48,7 @@ impl TuiConfig {
     ) -> Self {
         Self {
             refresh_rate,
-            privacy_max_ttl: privacy_ttl,
+            privacy_max_ttl,
             preserve_screen,
             address_mode,
             lookup_as_info,
