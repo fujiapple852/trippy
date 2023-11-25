@@ -106,10 +106,8 @@ fn run_app<B: Backend>(
                         app.previous_hop();
                     } else if bindings.previous_trace.check(key) {
                         app.previous_trace();
-                        app.clear();
                     } else if bindings.next_trace.check(key) {
                         app.next_trace();
-                        app.clear();
                     } else if bindings.next_hop_address.check(key) {
                         app.next_hop_address();
                     } else if bindings.previous_hop_address.check(key) {
