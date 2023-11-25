@@ -516,8 +516,10 @@ Options:
           The repeating pattern in the payload of the ICMP packet [default: 0]
 
   -Q, --tos <TOS>
-          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default:
-          0]
+          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+
+  -e, --icmp-extensions
+          Parse ICMP extensions
 
       --read-timeout <READ_TIMEOUT>
           The socket read timeout [default: 10ms]
