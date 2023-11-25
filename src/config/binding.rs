@@ -26,6 +26,7 @@ pub struct TuiBindings {
     pub toggle_chart: TuiKeyBinding,
     pub toggle_map: TuiKeyBinding,
     pub toggle_flows: TuiKeyBinding,
+    pub toggle_privacy: TuiKeyBinding,
     pub expand_hosts: TuiKeyBinding,
     pub contract_hosts: TuiKeyBinding,
     pub expand_hosts_max: TuiKeyBinding,
@@ -62,6 +63,7 @@ impl Default for TuiBindings {
             toggle_chart: TuiKeyBinding::new(KeyCode::Char('c')),
             toggle_map: TuiKeyBinding::new(KeyCode::Char('m')),
             toggle_flows: TuiKeyBinding::new(KeyCode::Char('f')),
+            toggle_privacy: TuiKeyBinding::new(KeyCode::Char('p')),
             expand_hosts: TuiKeyBinding::new(KeyCode::Char(']')),
             contract_hosts: TuiKeyBinding::new(KeyCode::Char('[')),
             expand_hosts_max: TuiKeyBinding::new(KeyCode::Char('}')),
@@ -109,6 +111,7 @@ impl TuiBindings {
             (self.toggle_chart, TuiCommandItem::ToggleChart),
             (self.toggle_map, TuiCommandItem::ToggleMap),
             (self.toggle_flows, TuiCommandItem::ToggleFlows),
+            (self.toggle_privacy, TuiCommandItem::TogglePrivacy),
             (self.expand_hosts, TuiCommandItem::ExpandHosts),
             (self.expand_hosts_max, TuiCommandItem::ExpandHostsMax),
             (self.contract_hosts, TuiCommandItem::ContractHosts),
@@ -208,6 +211,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&TuiCommandItem::ToggleFlows)
                 .or(cfg.toggle_flows.as_ref())
                 .unwrap_or(&Self::default().toggle_flows),
+            toggle_privacy: *cmd_items
+                .get(&TuiCommandItem::ToggleFlows)
+                .or(cfg.toggle_privacy.as_ref())
+                .unwrap_or(&Self::default().toggle_privacy),
             toggle_map: *cmd_items
                 .get(&TuiCommandItem::ToggleMap)
                 .or(cfg.toggle_map.as_ref())
@@ -515,6 +522,8 @@ pub enum TuiCommandItem {
     ToggleMap,
     /// Toggle the flows panel.
     ToggleFlows,
+    /// Toggle hop privacy mode.
+    TogglePrivacy,
     /// Expand hosts.
     ExpandHosts,
     /// Expand hosts to max.

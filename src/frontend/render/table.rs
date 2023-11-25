@@ -83,7 +83,7 @@ fn render_table_row(
     let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
-        render_hostname(hop, dns, geoip_lookup, config)
+        render_hostname(app, hop, dns, geoip_lookup)
     };
     let loss_pct_cell = render_loss_pct_cell(hop);
     let total_sent_cell = render_total_sent_cell(hop);
@@ -187,21 +187,21 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
 
 /// Render hostname table cell (normal mode).
 fn render_hostname(
+    app: &TuiApp,
     hop: &Hop,
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
-    config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
-        if config.privacy_max_ttl >= hop.ttl() {
+        if app.hide_private_hops && app.tui_config.privacy_max_ttl >= hop.ttl() {
             (String::from("**Hidden**"), 1)
         } else {
-            match config.max_addrs {
+            match app.tui_config.max_addrs {
                 None => {
                     let hostnames = hop
                         .addrs_with_counts()
                         .map(|(addr, &freq)| {
-                            format_address(addr, freq, hop, dns, geoip_lookup, config)
+                            format_address(addr, freq, hop, dns, geoip_lookup, &app.tui_config)
                         })
                         .join("\n");
                     let count = hop.addr_count().clamp(1, u8::MAX as usize);
@@ -214,7 +214,7 @@ fn render_hostname(
                         .rev()
                         .take(max_addr as usize)
                         .map(|(addr, &freq)| {
-                            format_address(addr, freq, hop, dns, geoip_lookup, config)
+                            format_address(addr, freq, hop, dns, geoip_lookup, &app.tui_config)
                         })
                         .join("\n");
                     let count = hop.addr_count().clamp(1, max_addr as usize);
@@ -342,7 +342,7 @@ fn render_hostname_with_details(
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let (rendered, count) = if hop.total_recv() > 0 {
-        if config.privacy_max_ttl >= hop.ttl() {
+        if app.hide_private_hops && config.privacy_max_ttl >= hop.ttl() {
             let height = if config.lookup_as_info { 6 } else { 3 };
             (String::from("**Hidden**"), height)
         } else {
