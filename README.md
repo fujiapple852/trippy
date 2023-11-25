@@ -716,6 +716,7 @@ command line option.
 | `toggle-chart`         | Toggle the chart                                | `c`      |
 | `toggle-map`           | Toggle the GeoIp map                            | `m`      |
 | `toggle-flows`         | Toggle the flows                                | `f`      |
+| `toggle-privacy`       | Toggle the hop privacy                          | `p`      |
 | `expand-hosts`         | Expand the hosts shown per hop                  | `]`      |
 | `expand-hosts-max`     | Expand the hosts shown per hop to the maximum   | `}`      |
 | `contract-hosts`       | Contract the hosts shown per hop                | `[`      |
