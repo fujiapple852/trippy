@@ -207,7 +207,7 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
             toggle_flows: *cmd_items
                 .get(&TuiCommandItem::ToggleFlows)
                 .or(cfg.toggle_flows.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('f'))),
+                .unwrap_or(&Self::default().toggle_flows),
             toggle_map: *cmd_items
                 .get(&TuiCommandItem::ToggleMap)
                 .or(cfg.toggle_map.as_ref())
