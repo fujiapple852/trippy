@@ -142,15 +142,17 @@ impl TuiApp {
     }
 
     pub fn next_trace(&mut self) {
-        if self.trace_selected < self.trace_info.len() - 1 {
+        if self.trace_info.len() > 1 && self.trace_selected < self.trace_info.len() - 1 {
             self.trace_selected += 1;
+            self.clear();
         }
     }
 
     pub fn previous_trace(&mut self) {
-        if self.trace_selected > 0 {
+        if self.trace_info.len() > 1 && self.trace_selected > 0 {
             self.trace_selected -= 1;
-        };
+            self.clear();
+        }
     }
 
     pub fn next_hop_address(&mut self) {
