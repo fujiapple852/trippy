@@ -136,6 +136,8 @@ fn run_app<B: Backend>(
                         app.toggle_map();
                     } else if bindings.toggle_flows.check(key) {
                         app.toggle_flows();
+                    } else if bindings.toggle_privacy.check(key) {
+                        app.toggle_privacy();
                     } else if bindings.contract_hosts_min.check(key) {
                         app.contract_hosts_min();
                     } else if bindings.expand_hosts_max.check(key) {

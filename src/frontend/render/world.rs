@@ -138,7 +138,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
             }
         })
         .collect::<Vec<_>>();
-    let info = if app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
+    let info = if app.hide_private_hops && app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
         "**Hidden**".to_string()
     } else {
         match locations.as_slice() {
