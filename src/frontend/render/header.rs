@@ -11,6 +11,7 @@ use trippy::dns::{ResolveMethod, Resolver};
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.
+#[allow(clippy::too_many_lines)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title(format!(" Trippy v{} ", clap::crate_version!()))
@@ -83,6 +84,11 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
+    let plural_flows = if app.tracer_data().flows().len() > 1 {
+        "flows"
+    } else {
+        "flow"
+    };
     let left_line = vec![
         Line::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -98,8 +104,10 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),
             Span::raw(format!(
-                ", discovered {} hops",
-                app.tracer_data().hops(app.selected_flow).len()
+                ", discovered {} hops and {} unique {}",
+                app.tracer_data().hops(app.selected_flow).len(),
+                app.tracer_data().flows().len(),
+                plural_flows
             )),
         ]),
     ];
