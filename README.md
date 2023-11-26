@@ -568,6 +568,15 @@ Options:
           - allocated:    Display the allocated date
           - name:         Display the AS name
 
+      --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>
+          How to render ICMP extensions [default: off]
+
+          Possible values:
+          - off:  Do not show `icmp` extensions
+          - mpls: Show MPLS label(s) only
+          - full: Show full `icmp` extension data for all known extensions
+          - all:  Show full `icmp` extension data for all classes
+
       --tui-geoip-mode <TUI_GEOIP_MODE>
           How to render GeoIp information [default: short]
 
