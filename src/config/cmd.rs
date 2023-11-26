@@ -161,7 +161,7 @@ pub struct Args {
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 
-    /// How to render ICMP extensions [default: mpls]
+    /// How to render ICMP extensions [default: off]
     #[arg(value_enum, long)]
     pub tui_icmp_extension_mode: Option<IcmpExtensionMode>,
 
