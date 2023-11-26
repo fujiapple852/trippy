@@ -129,7 +129,7 @@ pub enum IcmpExtensionMode {
     ///
     /// For MPLS the fields shown are `label`, `ttl`, `exp` & `bos`.
     Full,
-    /// Show full `icmp` extension data for all known and unknown classes.
+    /// Show full `icmp` extension data for all classes.
     ///
     /// This is the same as `Full`, but also shows `class`, `subtype` and
     /// `object` for unknown extensions.

@@ -246,7 +246,7 @@ tui-as-mode = "asn"
 #   off             - Do not show icmp extensions [default]
 #   mpls            - Show MPLS label(s) only
 #   full            - Show full icmp extension data for all known extensions
-#   all             - Show full icmp extension data for all known and unknown classes
+#   all             - Show full icmp extension data for all classes
 tui-icmp-extension-mode = "off"
 
 # How to render GeoIp information.
