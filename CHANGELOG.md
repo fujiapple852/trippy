@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.9.0] - 2023-11-28
+
+### Added
+
 - Added support for tracing flows ([#776](https://github.com/fujiapple852/trippy/issues/776))
 - Added support for `icmp` extensions ([#33](https://github.com/fujiapple852/trippy/issues/33))
 - Added support for `MPLS` label stack class `icmp` extension
@@ -277,7 +285,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.8.0...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.9.0...master
+
+[0.9.0]: https://github.com/fujiapple852/trippy/compare/0.8.0...0.9.0
 
 [0.8.0]: https://github.com/fujiapple852/trippy/compare/0.7.0...0.8.0
 
