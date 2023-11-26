@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "network-programming"]
 readme = "README.md"
 license = "Apache-2.0"
 edition = "2021"
-exclude = ["assets/"]
+exclude = ["assets/legacy", "assets/0.8.0/*.png"]
 
 [[bin]]
 bench = false
