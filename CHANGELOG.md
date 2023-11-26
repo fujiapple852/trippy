@@ -31,6 +31,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   flows ([#770](https://github.com/fujiapple852/trippy/issues/770))
 - Added `--icmp-extensions` (`-e`) flag for parsing `IPv4`/`IPv6` `icmp`
   extensions ([#751](https://github.com/fujiapple852/trippy/issues/751))
+- Added `--tui-icmp-extension-mode` flag to control how `icmp` extensions are
+  rendered ([#752](https://github.com/fujiapple852/trippy/issues/752))
 - Added `--print-config-template` flag to output a template config
   file ([#792](https://github.com/fujiapple852/trippy/issues/792))
 - Added `--icmp` flag as a shortcut for `--protocol icmp` ([#649](https://github.com/fujiapple852/trippy/issues/649))
@@ -55,6 +57,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   argument ([#708](https://github.com/fujiapple852/trippy/issues/708))
 - [BREAKING CHANGE] Default key binding for `ToggleFreeze` changed from `f`
   to `ctrl+f` ([#785](https://github.com/fujiapple852/trippy/issues/785))
+- Always render AS lines in hop details mode ([#825](https://github.com/fujiapple852/trippy/issues/825))
 - Expose DNS resolver module as part of `trippy` library ([#754](https://github.com/fujiapple852/trippy/issues/754))
 - Replaced unmaintained `tui-rs` crate with `ratatui` crate ([#569](https://github.com/fujiapple852/trippy/issues/569))
 
