@@ -341,20 +341,17 @@ fn render_hostname_with_details(
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
-    let (rendered, count) = if hop.total_recv() > 0 {
+    let rendered = if hop.total_recv() > 0 {
         if app.hide_private_hops && config.privacy_max_ttl >= hop.ttl() {
-            let height = if config.lookup_as_info { 6 } else { 3 };
-            (String::from("**Hidden**"), height)
+            String::from("**Hidden**")
         } else {
             let index = app.selected_hop_address;
             format_details(hop, index, dns, geoip_lookup, config)
         }
     } else {
-        let height = if config.lookup_as_info { 6 } else { 3 };
-        (String::from("No response"), height)
+        String::from("No response")
     };
-    let cell = Cell::from(rendered);
-    (cell, count)
+    (Cell::from(rendered), 6)
 }
 
 /// Format hop details.
@@ -364,72 +361,48 @@ fn format_details(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
-) -> (String, u16) {
+) -> String {
     let Some(addr) = hop.addrs().nth(offset) else {
-        return (format!("Error: no addr for index {offset}"), 1);
+        return format!("Error: no addr for index {offset}");
     };
     let count = hop.addr_count();
     let index = offset + 1;
     let geoip = geoip_lookup.lookup(*addr).unwrap_or_default();
-
-    if config.lookup_as_info {
-        let dns_entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
-        match dns_entry {
-            DnsEntry::Pending(addr) => {
-                let details = fmt_details_with_asn(addr, index, count, None, None, geoip);
-                (details, 6)
-            }
-            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
-                let details =
-                    fmt_details_with_asn(addr, index, count, Some(hosts), Some(asinfo), geoip);
-                (details, 6)
-            }
-            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => {
-                let details =
-                    fmt_details_with_asn(addr, index, count, Some(vec![]), Some(asinfo), geoip);
-                (details, 6)
-            }
-            DnsEntry::Failed(ip) => {
-                let details = format!("Failed: {ip}");
-                (details, 1)
-            }
-            DnsEntry::Timeout(ip) => {
-                let details = format!("Timeout: {ip}");
-                (details, 1)
-            }
-            DnsEntry::Resolved(Resolved::Normal(_, _))
-            | DnsEntry::NotFound(Unresolved::Normal(_)) => unreachable!(),
-        }
+    let dns_entry = if config.lookup_as_info {
+        dns.lazy_reverse_lookup_with_asinfo(*addr)
     } else {
-        let dns_entry = dns.lazy_reverse_lookup(*addr);
-        match dns_entry {
-            DnsEntry::Pending(addr) => {
-                let details = fmt_details_no_asn(addr, index, count, None, geoip);
-                (details, 3)
-            }
-            DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(hosts), geoip);
-                (details, 3)
-            }
-            DnsEntry::NotFound(Unresolved::Normal(addr)) => {
-                let details = fmt_details_no_asn(addr, index, count, Some(vec![]), geoip);
-                (details, 3)
-            }
-            DnsEntry::Failed(ip) => {
-                let details = format!("Failed: {ip}");
-                (details, 1)
-            }
-            DnsEntry::Timeout(ip) => {
-                let details = format!("Timeout: {ip}");
-                (details, 1)
-            }
-            DnsEntry::Resolved(Resolved::WithAsInfo(_, _, _))
-            | DnsEntry::NotFound(Unresolved::WithAsInfo(_, _)) => unreachable!(),
+        dns.lazy_reverse_lookup(*addr)
+    };
+    match dns_entry {
+        DnsEntry::Pending(addr) => fmt_details_line(addr, index, count, None, None, geoip, config),
+        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => {
+            fmt_details_line(addr, index, count, Some(hosts), Some(asinfo), geoip, config)
+        }
+        DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => fmt_details_line(
+            addr,
+            index,
+            count,
+            Some(vec![]),
+            Some(asinfo),
+            geoip,
+            config,
+        ),
+        DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
+            fmt_details_line(addr, index, count, Some(hosts), None, geoip, config)
+        }
+        DnsEntry::NotFound(Unresolved::Normal(addr)) => {
+            fmt_details_line(addr, index, count, Some(vec![]), None, geoip, config)
+        }
+        DnsEntry::Failed(ip) => {
+            format!("Failed: {ip}")
+        }
+        DnsEntry::Timeout(ip) => {
+            format!("Timeout: {ip}")
         }
     }
 }
 
-/// Format hostname details with AS information.
+/// Format hostname detail lines.
 ///
 /// Format as follows:
 ///
@@ -438,29 +411,28 @@ fn format_details(
 /// Host: hkg07s50-in-f14.1e100.net
 /// AS Name: AS15169 GOOGLE, US
 /// AS Info: 142.250.0.0/15 arin 2012-05-24
+/// Geo: United States, North America
+/// Pos: 37.751, -97.822 (~1000km)
 /// ```
-///
-/// If `hostnames` or `asinfo` is `None` it is rendered as `<pending>`
-/// If `hostnames` or `asinfo` is `Some(vec![])` it is rendered as `<not found>`
-fn fmt_details_with_asn(
+fn fmt_details_line(
     addr: IpAddr,
     index: usize,
     count: usize,
     hostnames: Option<Vec<String>>,
     asinfo: Option<AsInfo>,
     geoip: Option<Rc<GeoIpCity>>,
+    config: &TuiConfig,
 ) -> String {
-    let as_formatted = if let Some(info) = asinfo {
-        if info.asn.is_empty() {
+    let as_formatted = match (config.lookup_as_info, asinfo) {
+        (false, _) => "AS Name: <not enabled>\nAS Info: <not enabled>".to_string(),
+        (true, None) => "AS Name: <awaited>\nAS Info: <awaited>".to_string(),
+        (true, Some(info)) if info.asn.is_empty() => {
             "AS Name: <not found>\nAS Info: <not found>".to_string()
-        } else {
-            format!(
-                "AS Name: AS{} {}\nAS Info: {} {} {}",
-                info.asn, info.name, info.prefix, info.registry, info.allocated
-            )
         }
-    } else {
-        "AS Name: <awaited>\nAS Info: <awaited>".to_string()
+        (true, Some(info)) => format!(
+            "AS Name: AS{} {}\nAS Info: {} {} {}",
+            info.asn, info.name, info.prefix, info.registry, info.allocated
+        ),
     };
     let hosts_rendered = if let Some(hosts) = hostnames {
         if hosts.is_empty() {
@@ -484,48 +456,6 @@ fn fmt_details_with_asn(
         "Geo: <not found>\nPos: <not found>".to_string()
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}")
-}
-
-/// Format hostname details without AS information.
-///
-/// Format as follows:
-///
-/// ```
-/// 172.217.24.78 [1 of 2]
-/// Host: hkg07s50-in-f14.1e100.net
-/// ```
-///
-/// If `hostnames` is `None` it is rendered as `<pending>`
-/// If `hostnames` is `Some(vec![])` it is rendered as `<not found>`
-fn fmt_details_no_asn(
-    addr: IpAddr,
-    index: usize,
-    count: usize,
-    hostnames: Option<Vec<String>>,
-    geoip: Option<Rc<GeoIpCity>>,
-) -> String {
-    let hosts_rendered = if let Some(hosts) = hostnames {
-        if hosts.is_empty() {
-            "Host: <not found>".to_string()
-        } else {
-            format!("Host: {}", hosts.join(" "))
-        }
-    } else {
-        "Host: <awaited>".to_string()
-    };
-    let geoip_formatted = if let Some(geo) = geoip {
-        let (lat, long, radius) = geo.coordinates().unwrap_or_default();
-        format!(
-            "Geo: {}\nPos: {}, {} (~{}km)",
-            geo.long_name(),
-            lat,
-            long,
-            radius
-        )
-    } else {
-        "Geo: <not found>\nPos: <not found>".to_string()
-    };
-    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{geoip_formatted}")
 }
 
 const TABLE_HEADER: [&str; 11] = [
