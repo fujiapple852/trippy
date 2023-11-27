@@ -270,7 +270,7 @@ fn make_echo_request_icmp_packet(
 ) -> TraceResult<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
-    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
+    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
     icmp.set_icmp_code(IcmpCode(0));
     icmp.set_identifier(identifier.0);
@@ -348,10 +348,10 @@ fn extract_probe_resp(
 ) -> TraceResult<Option<ProbeResponse>> {
     let recv = SystemTime::now();
     let src = IpAddr::V4(ipv4.get_source());
-    let icmp_v4 = IcmpPacket::new_view(ipv4.payload()).req()?;
+    let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
-            let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
+            let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
             let (nested_ipv4, extension) = if icmp_extensions {
                 let ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
                 let ext = packet.extension().map(Extensions::try_from).transpose()?;
@@ -365,7 +365,7 @@ fn extract_probe_resp(
             })
         }
         IcmpType::DestinationUnreachable => {
-            let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
+            let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
             let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
             let extension = if icmp_extensions {
                 packet.extension().map(Extensions::try_from).transpose()?
@@ -381,7 +381,7 @@ fn extract_probe_resp(
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
-                let packet = EchoReplyPacket::new_view(icmp_v4.packet()).req()?;
+                let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
@@ -427,7 +427,7 @@ fn extract_probe_resp_seq(
 
 #[instrument]
 fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequestPacket<'a>> {
-    Ok(EchoRequestPacket::new_view(ipv4.payload()).req()?)
+    Ok(EchoRequestPacket::new_view(ipv4.payload())?)
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
