@@ -17,7 +17,7 @@ pub enum TracerError {
     UnknownInterface(String),
     #[error("invalid config: {0}")]
     BadConfig(String),
-    #[error("missing required field: {0}")]
+    #[error("{0}")]
     Required(#[from] RequiredError),
     #[error("IO error: {0}")]
     IoError(#[from] IoError),
