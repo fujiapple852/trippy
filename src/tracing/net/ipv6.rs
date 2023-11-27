@@ -180,7 +180,7 @@ pub fn recv_icmp_probe<S: Socket>(
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
         Ok((bytes_read, addr)) => {
-            let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read]).req()?;
+            let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read])?;
             let src_addr = match addr.as_ref().req()? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
@@ -269,7 +269,7 @@ fn make_echo_request_icmp_packet(
 ) -> TraceResult<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
-    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
+    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
     icmp.set_icmp_code(IcmpCode(0));
     icmp.set_identifier(identifier.0);
@@ -301,7 +301,7 @@ fn extract_probe_resp(
     let ip = IpAddr::V6(src);
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
-            let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
+            let packet = TimeExceededPacket::new_view(icmp_v6.packet())?;
             let (nested_ipv6, extension) = if icmp_extensions {
                 let ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
                 let ext = packet.extension().map(Extensions::try_from).transpose()?;
@@ -315,7 +315,7 @@ fn extract_probe_resp(
             })
         }
         IcmpType::DestinationUnreachable => {
-            let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
+            let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet())?;
             let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
             let extension = if icmp_extensions {
                 packet.extension().map(Extensions::try_from).transpose()?
@@ -331,7 +331,7 @@ fn extract_probe_resp(
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
-                let packet = EchoReplyPacket::new_view(icmp_v6.packet()).req()?;
+                let packet = EchoReplyPacket::new_view(icmp_v6.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
@@ -373,7 +373,7 @@ fn extract_probe_resp_seq(
 }
 
 fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
-    let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload()).req()?;
+    let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload())?;
     Ok((
         echo_request_packet.get_identifier(),
         echo_request_packet.get_sequence(),

@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use std::fmt::{Debug, Formatter};
 
 /// The type of `ICMPv6` packet.
@@ -59,24 +60,31 @@ pub struct IcmpPacket<'a> {
 }
 
 impl<'a> IcmpPacket<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Option<IcmpPacket<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> PacketResult<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("IcmpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &'a [u8]) -> Option<IcmpPacket<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> PacketResult<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("IcmpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
@@ -186,6 +194,7 @@ mod tests {
 
 pub mod echo_request {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
@@ -206,24 +215,31 @@ pub mod echo_request {
     }
 
     impl<'a> EchoRequestPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<EchoRequestPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<EchoRequestPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<EchoRequestPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<EchoRequestPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -408,6 +424,7 @@ pub mod echo_request {
 
 pub mod echo_reply {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
@@ -428,24 +445,31 @@ pub mod echo_reply {
     }
 
     impl<'a> EchoReplyPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<EchoReplyPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<EchoReplyPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<EchoReplyPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<EchoReplyPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -630,6 +654,7 @@ pub mod echo_reply {
 
 pub mod time_exceeded {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
@@ -650,24 +675,31 @@ pub mod time_exceeded {
     }
 
     impl<'a> TimeExceededPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<TimeExceededPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<TimeExceededPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<TimeExceededPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<TimeExceededPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -844,6 +876,7 @@ pub mod time_exceeded {
 
 pub mod destination_unreachable {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv6::{IcmpCode, IcmpType};
@@ -865,24 +898,31 @@ pub mod destination_unreachable {
     }
 
     impl<'a> DestinationUnreachablePacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<DestinationUnreachablePacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<DestinationUnreachablePacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<DestinationUnreachablePacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<DestinationUnreachablePacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
