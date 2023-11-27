@@ -1,5 +1,4 @@
 use crate::tracing::packet::error::PacketError;
-use crate::tracing::util::RequiredError;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::ErrorKind;
@@ -20,8 +19,6 @@ pub enum TracerError {
     UnknownInterface(String),
     #[error("invalid config: {0}")]
     BadConfig(String),
-    #[error("{0}")]
-    Required(#[from] RequiredError),
     #[error("IO error: {0}")]
     IoError(#[from] IoError),
     #[error("insufficient buffer capacity")]
