@@ -290,7 +290,7 @@ fn make_udp_packet<'a>(
     payload: &'_ [u8],
 ) -> TraceResult<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
+    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
@@ -433,7 +433,7 @@ fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequest
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
 #[instrument]
 fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
-    let nested = UdpPacket::new_view(ipv4.payload()).req()?;
+    let nested = UdpPacket::new_view(ipv4.payload())?;
     Ok((
         nested.get_source(),
         nested.get_destination(),

@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use crate::tracing::packet::fmt_payload;
 use std::fmt::{Debug, Formatter};
 
@@ -16,24 +17,31 @@ pub struct UdpPacket<'a> {
 }
 
 impl<'a> UdpPacket<'a> {
-    pub fn new(packet: &mut [u8]) -> Option<UdpPacket<'_>> {
+    pub fn new(packet: &mut [u8]) -> PacketResult<UdpPacket<'_>> {
         if packet.len() >= UdpPacket::minimum_packet_size() {
-            Some(UdpPacket {
+            Ok(UdpPacket {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("UdpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &[u8]) -> Option<UdpPacket<'_>> {
+    pub fn new_view(packet: &[u8]) -> PacketResult<UdpPacket<'_>> {
         if packet.len() >= UdpPacket::minimum_packet_size() {
-            Some(UdpPacket {
+            Ok(UdpPacket {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("UdpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
