@@ -459,10 +459,10 @@ fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
-        let tcp_packet = TcpPacket::new_view(&buf).req()?;
+        let tcp_packet = TcpPacket::new_view(&buf)?;
         Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     } else {
-        let tcp_packet = TcpPacket::new_view(nested_tcp).req()?;
+        let tcp_packet = TcpPacket::new_view(nested_tcp)?;
         Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     }
 }
