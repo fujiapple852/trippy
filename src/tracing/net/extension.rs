@@ -7,7 +7,6 @@ use crate::tracing::packet::icmp_extension::mpls_label_stack_member::MplsLabelSt
 use crate::tracing::probe::{
     Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension,
 };
-use crate::tracing::util::Required;
 
 /// The supported ICMP extension version number.
 const ICMP_EXTENSION_VERSION: u8 = 2;
@@ -16,7 +15,7 @@ impl TryFrom<&[u8]> for Extensions {
     type Error = TracerError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from(ExtensionsPacket::new_view(value).req()?)
+        Self::try_from(ExtensionsPacket::new_view(value)?)
     }
 }
 
@@ -24,17 +23,16 @@ impl TryFrom<ExtensionsPacket<'_>> for Extensions {
     type Error = TracerError;
 
     fn try_from(value: ExtensionsPacket<'_>) -> Result<Self, Self::Error> {
-        let header = ExtensionHeaderPacket::new_view(value.header()).req()?;
+        let header = ExtensionHeaderPacket::new_view(value.header())?;
         if header.get_version() != ICMP_EXTENSION_VERSION {
             return Ok(Self::default());
         }
         let extensions = value
             .objects()
-            .flat_map(|obj| ExtensionObjectPacket::new_view(obj).req())
+            .flat_map(ExtensionObjectPacket::new_view)
             .map(|obj| match obj.get_class_num() {
                 ClassNum::MultiProtocolLabelSwitchingLabelStack => {
                     MplsLabelStackPacket::new_view(obj.payload())
-                        .req()
                         .map(|mpls| Extension::Mpls(MplsLabelStack::from(mpls)))
                 }
                 _ => Ok(Extension::Unknown(UnknownExtension::from(obj))),
@@ -49,7 +47,7 @@ impl From<MplsLabelStackPacket<'_>> for MplsLabelStack {
         Self {
             members: value
                 .members()
-                .flat_map(|member| MplsLabelStackMemberPacket::new_view(member).req())
+                .flat_map(MplsLabelStackMemberPacket::new_view)
                 .map(MplsLabelStackMember::from)
                 .collect(),
         }
