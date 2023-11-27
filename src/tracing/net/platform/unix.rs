@@ -71,7 +71,7 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
     icmp.set_sequence(0);
     icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
     let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
-    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf).req()?;
+    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
     ipv4.set_protocol(packet::IpProtocol::Icmp);

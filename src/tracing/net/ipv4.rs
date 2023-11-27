@@ -211,7 +211,7 @@ pub fn recv_icmp_probe<S: Socket>(
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
-            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read]).req()?;
+            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
             Ok(extract_probe_resp(protocol, icmp_extensions, &ipv4)?)
         }
         Err(err) => match err.kind() {
@@ -314,7 +314,7 @@ fn make_ipv4_packet<'a>(
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
     let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
     let ipv4_flags_and_fragment_offset_header = ipv4_byte_order.adjust_length(DONT_FRAGMENT);
-    let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
+    let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize])?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
     ipv4.set_total_length(ipv4_total_length_header);
@@ -353,11 +353,11 @@ fn extract_probe_resp(
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
             let (nested_ipv4, extension) = if icmp_extensions {
-                let ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+                let ipv4 = Ipv4Packet::new_view(packet.payload())?;
                 let ext = packet.extension().map(Extensions::try_from).transpose()?;
                 (ipv4, ext)
             } else {
-                let ipv4 = Ipv4Packet::new_view(packet.payload_raw()).req()?;
+                let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
                 (ipv4, None)
             };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
@@ -366,7 +366,7 @@ fn extract_probe_resp(
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
-            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            let nested_ipv4 = Ipv4Packet::new_view(packet.payload())?;
             let extension = if icmp_extensions {
                 packet.extension().map(Extensions::try_from).transpose()?
             } else {
