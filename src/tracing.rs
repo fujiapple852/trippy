@@ -5,7 +5,6 @@ mod net;
 mod probe;
 mod tracer;
 mod types;
-mod util;
 
 /// Packet wire formats.
 pub mod packet;
