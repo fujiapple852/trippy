@@ -2,7 +2,6 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::socket::Socket;
-use crate::tracing::util::Required;
 use itertools::Itertools;
 use nix::{
     sys::select::FdSet,
@@ -147,7 +146,7 @@ pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr
         IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?;
     socket.connect(SocketAddr::new(target_addr, port))?;
-    Ok(socket.local_addr()?.req()?.ip())
+    Ok(socket.local_addr()?.ok_or(TracerError::MissingAddr)?.ip())
 }
 
 /// A network socket.

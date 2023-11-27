@@ -18,7 +18,6 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
-use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
@@ -181,7 +180,7 @@ pub fn recv_icmp_probe<S: Socket>(
     match recv_socket.recv_from(&mut buf) {
         Ok((bytes_read, addr)) => {
             let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read])?;
-            let src_addr = match addr.as_ref().req()? {
+            let src_addr = match addr.as_ref().ok_or(TracerError::MissingAddr)? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
             };
@@ -208,7 +207,10 @@ pub fn recv_tcp_socket<S: Socket>(
     let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.req()?.ip();
+            let addr = tcp_socket
+                .peer_addr()?
+                .ok_or(TracerError::MissingAddr)?
+                .ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),

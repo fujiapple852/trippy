@@ -18,7 +18,6 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
-use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -230,7 +229,10 @@ pub fn recv_tcp_socket<S: Socket>(
     let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.req()?.ip();
+            let addr = tcp_socket
+                .peer_addr()?
+                .ok_or(TracerError::MissingAddr)?
+                .ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
