@@ -803,60 +803,55 @@ pub mod mpls_label_stack_member {
 
 pub mod extension_splitter {
     use crate::tracing::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
-
-    const ICMP_ORIG_DATAGRAM_MIN_LENGTH: usize = 128;
     const MIN_HEADER: usize = ExtensionHeaderPacket::minimum_packet_size();
 
-    /// Separate an ICMP payload from ICMP extensions as defined in rfc4884.
-    ///
-    /// Applies to `TimeExceeded` and `DestinationUnreachable` ICMP messages only.
-    ///
     /// From rfc4884 (section 3) entitled "Summary of Changes to ICMP":
     ///
     /// "When the ICMP Extension Structure is appended to an ICMP message
     /// and that ICMP message contains an "original datagram" field, the
     /// "original datagram" field MUST contain at least 128 octets."
+    const ICMP_ORIG_DATAGRAM_MIN_LENGTH: usize = 128;
+
+    /// Separate an ICMP payload from ICMP extensions as defined in rfc4884.
+    ///
+    /// Applies to `TimeExceeded` and `DestinationUnreachable` ICMP messages only.
     #[must_use]
-    pub fn split(rfc4884_length: u8, icmp_payload: &[u8]) -> (&[u8], Option<&[u8]>) {
-        let length = usize::from(rfc4884_length * 4);
+    pub fn split(length: usize, icmp_payload: &[u8]) -> (&[u8], Option<&[u8]>) {
+        // If the rfc4884 length field provided is larger than the payload length then
+        // the full payload is returned without any extension.
         if length > icmp_payload.len() {
-            return (&[], None);
+            return (icmp_payload, None);
         }
         if icmp_payload.len() > ICMP_ORIG_DATAGRAM_MIN_LENGTH {
             if length > ICMP_ORIG_DATAGRAM_MIN_LENGTH {
                 // a 'compliant' ICMP extension longer than 128 octets.
-                do_split(length, icmp_payload)
+                match icmp_payload.split_at(length) {
+                    (payload, extension) if extension.len() >= MIN_HEADER => {
+                        (payload, Some(extension))
+                    }
+                    _ => (icmp_payload, None),
+                }
             } else if length > 0 {
-                // a 'compliant' ICMP extension padded to at least 128 octets.
-                match do_split(ICMP_ORIG_DATAGRAM_MIN_LENGTH, icmp_payload) {
-                    (&[], ext) => (&[], ext),
-                    (payload, extension) => (&payload[..length], extension),
+                // a 'compliant' ICMP extension padded to at least 128 octets
+                // so we trim the original datagram to rfc4884 length.
+                match icmp_payload.split_at(ICMP_ORIG_DATAGRAM_MIN_LENGTH) {
+                    (payload, extension) if extension.len() >= MIN_HEADER => {
+                        (&payload[..length], Some(extension))
+                    }
+                    _ => (&icmp_payload, None),
                 }
             } else {
                 // a 'non-compliant' ICMP extension padded to 128 octets.
-                do_split(ICMP_ORIG_DATAGRAM_MIN_LENGTH, icmp_payload)
+                match icmp_payload.split_at(ICMP_ORIG_DATAGRAM_MIN_LENGTH) {
+                    (payload, extension) if extension.len() >= MIN_HEADER => {
+                        (payload, Some(extension))
+                    }
+                    _ => (icmp_payload, None),
+                }
             }
         } else {
             // no extension present
             (icmp_payload, None)
-        }
-    }
-
-    /// Split the ICMP payload into payload and extension parts.
-    ///
-    /// If the extension is not empty and is at least as long as the minimum
-    /// extension header then Some(extension) is returned.
-    ///
-    /// If the extension is empty then None is returned.
-    ///
-    /// If the extension is non-empty but not as long as the minimum extension
-    /// header then the payload is invalid and so we return an empty payload
-    /// and extension.
-    fn do_split(index: usize, icmp_payload: &[u8]) -> (&[u8], Option<&[u8]>) {
-        match icmp_payload.split_at(index) {
-            (payload, extension) if extension.len() >= MIN_HEADER => (payload, Some(extension)),
-            (payload, extension) if extension.is_empty() => (payload, None),
-            _ => (&[], None),
         }
     }
 
@@ -887,9 +882,8 @@ pub mod extension_splitter {
         // bytes) so payload is 12 bytes and there is no extension.
         #[test]
         fn test_split_payload_with_compliant_empty_extension() {
-            let rfc4884_length = 3;
             let icmp_payload: [u8; 12] = [0; 12];
-            let (payload, extension) = split(rfc4884_length, &icmp_payload);
+            let (payload, extension) = split(3 * 4, &icmp_payload);
             assert_eq!(payload, &[0; 12]);
             assert_eq!(extension, None);
         }
@@ -898,28 +892,34 @@ pub mod extension_splitter {
         #[test]
         fn test_split_payload_with_compliant_minimal_extension() {
             let icmp_payload: [u8; 132] = [0; 132];
-            let (payload, extension) = split(32, &icmp_payload);
+            let (payload, extension) = split(32 * 4, &icmp_payload);
             assert_eq!(payload, &[0; 128]);
             assert_eq!(extension, Some([0; 4].as_slice()));
         }
 
         // Test handling of an ICMP payload which has an rfc4884 length that
         // is longer than the original datagram.
+        //
+        // For such invalid packets we assume there is no extension.
         #[test]
         fn test_split_payload_with_invalid_rfc4884_length() {
             let icmp_payload: [u8; 128] = [0; 128];
-            let (payload, extension) = split(33, &icmp_payload);
-            assert!(payload.is_empty() && extension.is_none());
+            let (payload, extension) = split(33 * 4, &icmp_payload);
+            assert_eq!(payload, &[0; 128]);
+            assert!(extension.is_none());
         }
 
         // Test handling of an ICMP payload which has a compliant extension
         // which is not as long as the minimum size for an ICMP extension
         // header (4 bytes).
+        //
+        // For such invalid packets we assume there is no extension.
         #[test]
         fn test_split_payload_with_compliant_invalid_extension() {
             let icmp_payload: [u8; 129] = [0; 129];
-            let (payload, extension) = split(32, &icmp_payload);
-            assert!(payload.is_empty() && extension.is_none());
+            let (payload, extension) = split(32 * 4, &icmp_payload);
+            assert_eq!(payload, &[0; 129]);
+            assert!(extension.is_none());
         }
 
         // This ICMP TimeExceeded packet which contains single `MPLS` extension
