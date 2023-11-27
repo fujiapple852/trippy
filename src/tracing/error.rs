@@ -1,3 +1,4 @@
+use crate::tracing::packet::error::PacketError;
 use crate::tracing::util::RequiredError;
 use std::fmt::{Display, Formatter};
 use std::io;
@@ -13,6 +14,8 @@ pub type TraceResult<T> = Result<T, TracerError>;
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
+    #[error("invalid packet: {0}")]
+    PacketError(#[from] PacketError),
     #[error("unknown interface: {0}")]
     UnknownInterface(String),
     #[error("invalid config: {0}")]
