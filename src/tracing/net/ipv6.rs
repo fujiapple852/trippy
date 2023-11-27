@@ -303,11 +303,11 @@ fn extract_probe_resp(
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet())?;
             let (nested_ipv6, extension) = if icmp_extensions {
-                let ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+                let ipv6 = Ipv6Packet::new_view(packet.payload())?;
                 let ext = packet.extension().map(Extensions::try_from).transpose()?;
                 (ipv6, ext)
             } else {
-                let ipv6 = Ipv6Packet::new_view(packet.payload_raw()).req()?;
+                let ipv6 = Ipv6Packet::new_view(packet.payload_raw())?;
                 (ipv6, None)
             };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
@@ -316,7 +316,7 @@ fn extract_probe_resp(
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet())?;
-            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            let nested_ipv6 = Ipv6Packet::new_view(packet.payload())?;
             let extension = if icmp_extensions {
                 packet.extension().map(Extensions::try_from).transpose()?
             } else {

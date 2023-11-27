@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use crate::tracing::packet::{fmt_payload, IpProtocol};
 use std::fmt::{Debug, Formatter};
 use std::net::Ipv6Addr;
@@ -21,24 +22,31 @@ pub struct Ipv6Packet<'a> {
 }
 
 impl<'a> Ipv6Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Option<Ipv6Packet<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> PacketResult<Ipv6Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("Ipv6Packet"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &'a [u8]) -> Option<Ipv6Packet<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> PacketResult<Ipv6Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("Ipv6Packet"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
