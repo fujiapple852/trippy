@@ -64,7 +64,7 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
 fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
     use crate::tracing::packet;
     let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
-    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf).req()?;
+    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
     icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
     icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
     icmp.set_identifier(0);
