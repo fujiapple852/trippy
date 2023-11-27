@@ -1,5 +1,8 @@
 mod buffer;
 
+/// Packet errors.
+pub mod error;
+
 /// Functions for calculating network checksums.
 pub mod checksum;
 
