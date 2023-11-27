@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use crate::tracing::packet::{fmt_payload, IpProtocol};
 use std::fmt::{Debug, Formatter};
 use std::net::Ipv4Addr;
@@ -25,24 +26,31 @@ pub struct Ipv4Packet<'a> {
 }
 
 impl<'a> Ipv4Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Option<Ipv4Packet<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> PacketResult<Ipv4Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("Ipv4Packet"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &'a [u8]) -> Option<Ipv4Packet<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> PacketResult<Ipv4Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("Ipv4Packet"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
