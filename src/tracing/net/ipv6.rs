@@ -409,6 +409,6 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
 fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
-    let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
+    let tcp_packet = TcpPacket::new_view(ipv6.payload())?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
 }
