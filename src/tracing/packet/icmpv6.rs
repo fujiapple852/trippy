@@ -730,6 +730,11 @@ pub mod time_exceeded {
         }
 
         #[must_use]
+        pub fn payload_raw(&self) -> &[u8] {
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
+        }
+
+        #[must_use]
         pub fn extension(&self) -> Option<&[u8]> {
             let (_, extension) = self.split_payload_extension();
             extension
@@ -946,6 +951,11 @@ pub mod destination_unreachable {
         pub fn payload(&self) -> &[u8] {
             let (payload, _) = self.split_payload_extension();
             payload
+        }
+
+        #[must_use]
+        pub fn payload_raw(&self) -> &[u8] {
+            &self.buf.as_slice()[Self::minimum_packet_size()..]
         }
 
         #[must_use]
