@@ -248,7 +248,7 @@ fn make_udp_packet<'a>(
     payload: &'_ [u8],
 ) -> TraceResult<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
+    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
@@ -381,7 +381,7 @@ fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
 }
 
 fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
-    let udp_packet = UdpPacket::new_view(ipv6.payload()).req()?;
+    let udp_packet = UdpPacket::new_view(ipv6.payload())?;
     Ok((
         udp_packet.get_source(),
         udp_packet.get_destination(),
