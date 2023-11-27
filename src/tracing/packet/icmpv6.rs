@@ -736,9 +736,9 @@ pub mod time_exceeded {
         }
 
         fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
-            let rfc4884_length = self.get_length();
+            let length = usize::from(self.get_length() * 8);
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
-            split(rfc4884_length, icmp_payload)
+            split(length, icmp_payload)
         }
     }
 
@@ -955,9 +955,12 @@ pub mod destination_unreachable {
         }
 
         fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
-            let rfc4884_length = self.get_length();
+            // From rfc4884:
+            //
+            // "For ICMPv6 messages, the length attribute represents 64-bit words"
+            let length = usize::from(self.get_length() * 8);
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
-            split(rfc4884_length, icmp_payload)
+            split(length, icmp_payload)
         }
     }
 
