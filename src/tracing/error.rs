@@ -30,6 +30,8 @@ pub enum TracerError {
     AddressNotAvailable(SocketAddr),
     #[error("invalid source IP address: {0}")]
     InvalidSourceAddr(IpAddr),
+    #[error("missing address from socket call")]
+    MissingAddr,
 }
 
 /// Custom IO error result.
