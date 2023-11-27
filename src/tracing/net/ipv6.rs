@@ -302,11 +302,13 @@ fn extract_probe_resp(
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
-            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
-            let extension = if icmp_extensions {
-                packet.extension().map(Extensions::try_from).transpose()?
+            let (nested_ipv6, extension) = if icmp_extensions {
+                let ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+                let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                (ipv6, ext)
             } else {
-                None
+                let ipv6 = Ipv6Packet::new_view(packet.payload_raw()).req()?;
+                (ipv6, None)
             };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                 ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq), extension)

@@ -352,11 +352,13 @@ fn extract_probe_resp(
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
-            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
-            let extension = if icmp_extensions {
-                packet.extension().map(Extensions::try_from).transpose()?
+            let (nested_ipv4, extension) = if icmp_extensions {
+                let ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+                let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                (ipv4, ext)
             } else {
-                None
+                let ipv4 = Ipv4Packet::new_view(packet.payload_raw()).req()?;
+                (ipv4, None)
             };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
                 ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq), extension)
