@@ -229,6 +229,12 @@ tui-address-mode = "host"
 #   name            - Display the AS name
 tui-as-mode = "asn"
 
+# The grid columns that can be customized to suit.
+# Allowed values are: H O L S R A V B W D T
+# H=#, O=Host,L=Loss%, S=Snt, R=Recv, A=Last, V=Avg, B=Best, W=Wrst, D=StDev, T=Sts
+# The required columns are # & Host others can be 
+custom-columns = ['H','O','L','S','R','A','V','B','W','D','T']
+
 # How to render GeoIp information.
 #
 # Allowed values are:

@@ -229,6 +229,7 @@ pub struct TrippyConfig {
     pub log_format: LogFormat,
     pub log_filter: String,
     pub log_span_events: LogSpanEvents,
+    pub tui_grid_headings: Vec<char>,
 }
 
 impl TryFrom<(Args, &Platform)> for TrippyConfig {
@@ -434,6 +435,14 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_report.report_cycles,
             constants::DEFAULT_REPORT_CYCLES,
         );
+        let tui_grid_headings: Vec<char> =
+            match (args.tui_custom_headers, cfg_file_tui.custom_columns) {
+                (Some(headers), Some(_)) => headers.split(',').flat_map(|s| s.chars()).collect(),
+                (Some(headers), None) => headers.split(',').flat_map(|s| s.chars()).collect(),
+                (None, Some(headers)) => headers,
+                (None, None) => constants::DEFAULT_TABLE_HEADINGS.to_vec(),
+            };
+
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
             (false, false, false, Protocol::Udp) | (true, _, _, _) => TracerProtocol::Udp,
@@ -581,6 +590,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             log_format,
             log_filter,
             log_span_events,
+            tui_grid_headings,
         })
     }
 }

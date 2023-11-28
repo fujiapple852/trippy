@@ -29,6 +29,8 @@ pub struct TuiConfig {
     pub theme: Theme,
     /// The Tui keyboard bindings.
     pub bindings: Bindings,
+    //// The default grid
+    pub grid_headers: Vec<char>,
 }
 
 impl TuiConfig {
@@ -45,6 +47,7 @@ impl TuiConfig {
         max_samples: usize,
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
+        grid_headers: Vec<char>,
     ) -> Self {
         Self {
             refresh_rate,
@@ -58,6 +61,7 @@ impl TuiConfig {
             max_samples,
             theme: Theme::from(tui_theme),
             bindings: Bindings::from(*tui_bindings),
+            grid_headers,
         }
     }
 }

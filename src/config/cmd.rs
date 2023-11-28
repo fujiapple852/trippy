@@ -157,6 +157,10 @@ pub struct Args {
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 
+    /// The Custom headers to be displayed that contains comma-sep string
+    #[arg(long)]
+    pub tui_custom_headers: Option<String>,
+
     /// How to render GeoIp information [default: short]
     #[arg(value_enum, long)]
     pub tui_geoip_mode: Option<GeoIpMode>,

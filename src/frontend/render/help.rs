@@ -25,7 +25,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
     f.render_widget(control, area);
 }
 
-const HELP_LINES: [&str; 20] = [
+const HELP_LINES: [&str; 21] = [
     "[up] & [down]    - select hop",
     "[left] & [right] - select trace",
     ", & .            - select hop address",
@@ -45,5 +45,6 @@ const HELP_LINES: [&str; 20] = [
     "z                - toggle AS information (if available)",
     "h or ?           - toggle help",
     "s                - toggle settings",
+    "t                - toggle Table dialog",
     "q                - quit",
 ];

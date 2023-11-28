@@ -29,13 +29,26 @@ use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved}
 /// - The standard deviation round-trip time for all probes at this hop (`StDev`)
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
-    let header = render_table_header(app.tui_config.theme);
+    let config = &app.tui_config;
+    let short_cols = &config.grid_headers;
+    let cols = get_column_headings(&short_cols);
+    let widths = get_column_widths(&short_cols);
+    let header = render_table_header(app.tui_config.theme, &cols);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app
         .tracer_data()
         .hops(Trace::default_flow_id())
         .iter()
-        .map(|hop| render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config));
+        .map(|hop| {
+            render_table_row(
+                app,
+                hop,
+                &app.resolver,
+                &app.geoip_lookup,
+                &app.tui_config,
+                &cols,
+            )
+        });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -51,13 +64,13 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text_color),
         )
         .highlight_style(selected_style)
-        .widths(&TABLE_WIDTH);
+        .widths(widths.as_slice());
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }
 
 /// Render the table header.
-fn render_table_header(theme: Theme) -> Row<'static> {
-    let header_cells = TABLE_HEADER
+fn render_table_header(theme: Theme, grid_headers: &Vec<&'static str>) -> Row<'static> {
+    let header_cells = grid_headers
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().fg(theme.hops_table_header_text_color)));
     Row::new(header_cells)
@@ -73,6 +86,7 @@ fn render_table_row(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
+    custom_headers: &Vec<&'static str>,
 ) -> Row<'static> {
     let is_selected_hop = app
         .selected_hop()
@@ -95,19 +109,41 @@ fn render_table_row(
     let worst_cell = render_worst_cell(hop);
     let stddev_cell = render_stddev_cell(hop);
     let status_cell = render_status_cell(hop, is_target);
-    let cells = [
-        ttl_cell,
-        hostname_cell,
-        loss_pct_cell,
-        total_sent_cell,
-        total_recv_cell,
-        last_cell,
-        avg_cell,
-        best_cell,
-        worst_cell,
-        stddev_cell,
-        status_cell,
-    ];
+
+    let mut cells: Vec<Cell<'_>> = vec![];
+    if custom_headers.contains(&DEFAULT_HEADING_HOPS) {
+        cells.push(ttl_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_HOST) {
+        cells.push(hostname_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_LOSS) {
+        cells.push(loss_pct_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_SENT) {
+        cells.push(total_sent_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_RECV) {
+        cells.push(total_recv_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_LAST) {
+        cells.push(last_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_AVG) {
+        cells.push(avg_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_BEST) {
+        cells.push(best_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_WRST) {
+        cells.push(worst_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_STDEV) {
+        cells.push(stddev_cell);
+    }
+    if custom_headers.contains(&DEFAULT_HEADING_STS) {
+        cells.push(status_cell);
+    }
     let row_color = if is_in_round {
         config.theme.hops_table_row_active_text_color
     } else {
@@ -528,21 +564,69 @@ fn fmt_details_no_asn(
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{geoip_formatted}")
 }
+fn get_column_widths(custom: &Vec<char>) -> Vec<Constraint> {
+    let widths = vec![
+        HEADING_WIDTH_HOPS,
+        HEADING_WIDTH_HOST,
+        HEADING_WIDTH_LOSS,
+        HEADING_WIDTH_SENT,
+        HEADING_WIDTH_RECV,
+        HEADING_WIDTH_LAST,
+        HEADING_WIDTH_AVG,
+        HEADING_WIDTH_BEST,
+        HEADING_WIDTH_WRST,
+        HEADING_WIDTH_STDEV,
+        HEADING_WIDTH_STS,
+    ];
+    ABBREVIATED_COLUMNS
+        .iter()
+        .filter(|&c| custom.contains(c))
+        .map(|&c| widths[ABBREVIATED_COLUMNS.iter().position(|&x| x == c).unwrap()])
+        .collect()
+}
+fn get_column_headings(custom: &Vec<char>) -> Vec<&'static str> {
+    let headings = vec![
+        DEFAULT_HEADING_HOPS,
+        DEFAULT_HEADING_HOST,
+        DEFAULT_HEADING_LOSS,
+        DEFAULT_HEADING_SENT,
+        DEFAULT_HEADING_RECV,
+        DEFAULT_HEADING_LAST,
+        DEFAULT_HEADING_AVG,
+        DEFAULT_HEADING_BEST,
+        DEFAULT_HEADING_WRST,
+        DEFAULT_HEADING_STDEV,
+        DEFAULT_HEADING_STS,
+    ];
+    ABBREVIATED_COLUMNS
+        .iter()
+        .filter(|&c| custom.contains(&c))
+        .map(|&c| headings[ABBREVIATED_COLUMNS.iter().position(|&x| x == c).unwrap()])
+        .collect()
+}
 
-const TABLE_HEADER: [&str; 11] = [
-    "#", "Host", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StDev", "Sts",
-];
+const ABBREVIATED_COLUMNS: [char; 11] = ['H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'];
 
-const TABLE_WIDTH: [Constraint; 11] = [
-    Constraint::Percentage(3),
-    Constraint::Percentage(42),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-];
+const HEADING_WIDTH_HOPS: Constraint = Constraint::Percentage(3);
+const HEADING_WIDTH_HOST: Constraint = Constraint::Percentage(42);
+const HEADING_WIDTH_LOSS: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_SENT: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_RECV: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_LAST: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_AVG: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_BEST: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_WRST: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_STDEV: Constraint = Constraint::Percentage(5);
+const HEADING_WIDTH_STS: Constraint = Constraint::Percentage(5);
+
+const DEFAULT_HEADING_HOPS: &'static str = "#";
+const DEFAULT_HEADING_HOST: &'static str = "Host";
+const DEFAULT_HEADING_LOSS: &'static str = "Loss%";
+const DEFAULT_HEADING_SENT: &'static str = "Snt";
+const DEFAULT_HEADING_RECV: &'static str = "Recv";
+const DEFAULT_HEADING_LAST: &'static str = "Last";
+const DEFAULT_HEADING_AVG: &'static str = "Avg";
+const DEFAULT_HEADING_BEST: &'static str = "Best";
+const DEFAULT_HEADING_WRST: &'static str = "Wrst";
+const DEFAULT_HEADING_STDEV: &'static str = "StDev";
+const DEFAULT_HEADING_STS: &'static str = "Sts";

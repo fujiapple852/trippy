@@ -15,7 +15,7 @@ use trippy::tracing::PortDirection;
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let all_settings = format_all_settings(app);
     let (name, info, items) = &all_settings[app.settings_tab_selected];
-    let area = util::centered_rect(60, 60, f.size());
+    let area = util::centered_rect(70, 60, f.size());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(SETTINGS_TABLE_WIDTH.as_ref())
@@ -176,6 +176,10 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
                 .max_addrs
                 .map_or_else(|| String::from("auto"), |m| m.to_string()),
         ),
+        SettingsItem::new(
+            "tui-table-columns",
+            format!("{:?}", app.tui_config.grid_headers),
+        ),
     ]
 }
 
@@ -261,6 +265,7 @@ fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
 fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let binds = &app.tui_config.bindings;
     vec![
+        SettingsItem::new("toggle-table-dialog", format!("{}", binds.toggle_table_dialog)),
         SettingsItem::new("toggle-help", format!("{}", binds.toggle_help)),
         SettingsItem::new("toggle-help-alt", format!("{}", binds.toggle_help_alt)),
         SettingsItem::new("toggle-settings", format!("{}", binds.toggle_settings)),
@@ -399,7 +404,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 8),
+    ("Tui", 9),
     ("Trace", 14),
     ("Dns", 4),
     ("GeoIp", 1),

@@ -74,6 +74,13 @@ fn run_app<B: Backend>(
                         {
                             app.toggle_help();
                         }
+                    } else if app.show_table_dialog {
+                        if bindings.toggle_table_dialog.check(key)
+                            || bindings.clear_selection.check(key)
+                            || bindings.quit.check(key)
+                        {
+                            app.toggle_table_dialog();
+                        }
                     } else if app.show_settings {
                         if bindings.toggle_settings.check(key)
                             || bindings.clear_selection.check(key)
@@ -92,6 +99,8 @@ fn run_app<B: Backend>(
                     } else if bindings.toggle_help.check(key) || bindings.toggle_help_alt.check(key)
                     {
                         app.toggle_help();
+                    } else if bindings.toggle_table_dialog.check(key) {
+                        app.toggle_table_dialog();
                     } else if bindings.toggle_settings.check(key) {
                         app.toggle_settings();
                     } else if bindings.next_hop.check(key) {

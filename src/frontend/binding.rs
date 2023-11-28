@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 /// Tui key bindings.
 #[derive(Debug, Clone, Copy)]
 pub struct Bindings {
+    pub toggle_table_dialog: KeyBinding,
     pub toggle_help: KeyBinding,
     pub toggle_help_alt: KeyBinding,
     pub toggle_settings: KeyBinding,
@@ -38,6 +39,7 @@ pub struct Bindings {
 impl From<TuiBindings> for Bindings {
     fn from(value: TuiBindings) -> Self {
         Self {
+            toggle_table_dialog: KeyBinding::from(value.toggle_table_dialog),
             toggle_help: KeyBinding::from(value.toggle_help),
             toggle_help_alt: KeyBinding::from(value.toggle_help_alt),
             toggle_settings: KeyBinding::from(value.toggle_settings),

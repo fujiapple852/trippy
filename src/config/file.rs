@@ -141,6 +141,7 @@ pub struct ConfigTui {
     pub tui_geoip_mode: Option<GeoIpMode>,
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
+    pub custom_columns: Option<Vec<char>>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -178,6 +179,7 @@ pub struct ConfigThemeColors {
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigBindings {
+    pub toggle_table_dialog: Option<TuiKeyBinding>,
     pub toggle_help: Option<TuiKeyBinding>,
     pub toggle_help_alt: Option<TuiKeyBinding>,
     pub toggle_settings: Option<TuiKeyBinding>,
