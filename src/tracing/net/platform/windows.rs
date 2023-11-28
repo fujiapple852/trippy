@@ -111,7 +111,7 @@ pub struct SocketImpl {
     ol: Box<OVERLAPPED>,
     buf: Vec<u8>,
     from: Box<SOCKADDR_STORAGE>,
-    bytes_read: Box<RefCell<u32>>,
+    bytes_read: RefCell<Box<u32>>,
 }
 
 #[allow(clippy::cast_possible_wrap)]
@@ -131,7 +131,7 @@ impl SocketImpl {
         let from = Box::new(Self::new_sockaddr_storage());
         let ol = Box::new(Self::new_overlapped());
         let buf = vec![0u8; MAX_PACKET_SIZE];
-        let bytes_read = Box::new(RefCell::new(0));
+        let bytes_read = RefCell::new(Box::new(0));
         Ok(Self {
             inner,
             ol,
@@ -266,7 +266,7 @@ impl SocketImpl {
             |res| { res == 0 }
         )
         .map_err(|err| IoError::Other(err, IoOperation::WSAGetOverlappedResult))?;
-        *self.bytes_read.borrow_mut() = bytes_read;
+        *self.bytes_read.borrow_mut().as_mut() = bytes_read;
         Ok(())
     }
 
@@ -531,7 +531,7 @@ impl Socket for SocketImpl {
     #[instrument(skip(self, buf), ret)]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
         buf.copy_from_slice(self.buf.as_slice());
-        let bytes_read = *self.bytes_read.borrow() as usize;
+        let bytes_read = *self.bytes_read.borrow().as_ref() as usize;
         tracing::debug!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
         self.post_recv_from()?;
         Ok(bytes_read)
