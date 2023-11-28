@@ -317,6 +317,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_max_flows,
         args.tui_theme,
         &args.tui_bindings,
+        &args.tui_custom_columns,
     )
 }
 

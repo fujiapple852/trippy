@@ -18,6 +18,7 @@ use trippy::dns::DnsResolver;
 use tui_app::TuiApp;
 
 mod binding;
+mod columns;
 mod config;
 mod render;
 mod theme;

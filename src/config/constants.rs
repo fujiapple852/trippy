@@ -85,6 +85,9 @@ pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 /// The default value for `tui-as-mode`.
 pub const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 
+/// The default value for `tui-custom-columns`.
+pub const DEFAULT_CUSTOM_COLUMNS: &str = "HOLSRAVBWDT";
+
 /// The default value for `tui-icmp-extension-mode`.
 pub const DEFAULT_TUI_ICMP_EXTENSION_MODE: IcmpExtensionMode = IcmpExtensionMode::Off;
 
