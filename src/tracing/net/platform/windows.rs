@@ -111,7 +111,7 @@ pub struct SocketImpl {
     ol: Box<OVERLAPPED>,
     buf: Vec<u8>,
     from: Box<SOCKADDR_STORAGE>,
-    bytes_read: Box<RefCell<u32>>,
+    bytes_read: RefCell<u32>,
 }
 
 #[allow(clippy::cast_possible_wrap)]
@@ -131,7 +131,7 @@ impl SocketImpl {
         let from = Box::new(Self::new_sockaddr_storage());
         let ol = Box::new(Self::new_overlapped());
         let buf = vec![0u8; MAX_PACKET_SIZE];
-        let bytes_read = Box::new(RefCell::new(0));
+        let bytes_read = RefCell::new(0);
         Ok(Self {
             inner,
             ol,
