@@ -138,3 +138,9 @@ pub const MIN_PACKET_SIZE: u16 = 28;
 
 /// The maximum packet size we allow.
 pub const MAX_PACKET_SIZE: u16 = 1024;
+
+pub const TUI_CUSTOM_COLUMNS: [char; 11] = ['H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'];
+
+pub const CSV_CUSTOM_COLUMNS: [char; 13] = [
+    'G', 'I', 'H', 'O', 'T', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D',
+];
