@@ -20,12 +20,14 @@ use trippy::tracing::{
 
 mod binding;
 mod cmd;
+mod columns;
 mod constants;
 mod file;
 mod theme;
 
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
+pub use columns::{TuiColumn, TuiColumns};
 pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
 
@@ -237,6 +239,7 @@ pub struct TrippyConfig {
     pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
+    pub tui_custom_columns: TuiColumns,
     pub tui_icmp_extension_mode: IcmpExtensionMode,
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
@@ -445,6 +448,14 @@ impl TrippyConfig {
             constants::DEFAULT_TUI_AS_MODE,
         );
 
+        let columns = cfg_layer(
+            args.tui_custom_columns,
+            cfg_file_tui.tui_custom_columns,
+            String::from(constants::DEFAULT_CUSTOM_COLUMNS),
+        );
+
+        let tui_custom_columns = TuiColumns::try_from(columns.as_str())?;
+
         let tui_icmp_extension_mode = cfg_layer(
             args.tui_icmp_extension_mode,
             cfg_file_tui.tui_icmp_extension_mode,
@@ -570,6 +581,7 @@ impl TrippyConfig {
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
         validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
+        validate_tui_custom_columns(&tui_custom_columns)?;
         let tui_theme_items = args
             .tui_theme_colors
             .into_iter()
@@ -611,6 +623,7 @@ impl TrippyConfig {
             tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
+            tui_custom_columns,
             tui_icmp_extension_mode,
             tui_geoip_mode,
             tui_max_addrs,
@@ -677,6 +690,7 @@ impl Default for TrippyConfig {
             log_format: constants::DEFAULT_LOG_FORMAT,
             log_filter: String::from(constants::DEFAULT_LOG_FILTER),
             log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
+            tui_custom_columns: TuiColumns::default(),
         }
     }
 }
@@ -775,6 +789,20 @@ fn validate_privilege(
             "unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee {} for details",
             PRIVILEGE_URL
         ))),
+    }
+}
+
+fn validate_tui_custom_columns(tui_custom_columns: &TuiColumns) -> anyhow::Result<()> {
+    let duplicates = tui_custom_columns.find_duplicates();
+    if tui_custom_columns.0.is_empty() {
+        Err(anyhow!(
+            "Missing or no custom columns - The command line or config file value is blank"
+        ))
+    } else if duplicates.is_empty() {
+        Ok(())
+    } else {
+        let dup_str = duplicates.iter().join(", ");
+        Err(anyhow!("Duplicate custom columns: {dup_str}"))
     }
 }
 

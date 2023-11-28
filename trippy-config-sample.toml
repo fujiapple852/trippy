@@ -216,7 +216,6 @@ dns-timeout = "5s"
 # Only applicable for modes pretty, markdown, csv and json.
 report-cycles = 10
 
-
 #
 # General Tui Configuration.
 #
@@ -241,7 +240,26 @@ tui-address-mode = "host"
 #   name            - Display the AS name
 tui-as-mode = "asn"
 
-# How to render ICMP extensions
+# Custom columns to be displayed in the TUI hops table.
+#
+# Allowed values are:
+#
+#   H - Ttl
+#   O - Hostname
+#   L - Loss %
+#   S - Probes sent
+#   R - Responses received
+#   A - Last RTT
+#   V - Average RTT
+#   B - Best RTT
+#   W - Worst RTT
+#   D - Stddev
+#   T - Status
+#
+# The columns will be shown in the order specified.
+tui-custom-columns = "HOLSRAVBWDT"
+
+# How to render ICMP extensions.
 #
 #   off             - Do not show icmp extensions [default]
 #   mpls            - Show MPLS label(s) only

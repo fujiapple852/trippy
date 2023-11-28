@@ -223,6 +223,7 @@ pub struct ConfigTui {
     pub tui_geoip_mode: Option<GeoIpMode>,
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
+    pub tui_custom_columns: Option<String>,
 }
 
 impl Default for ConfigTui {
@@ -235,6 +236,7 @@ impl Default for ConfigTui {
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),
+            tui_custom_columns: Some(String::from(super::constants::DEFAULT_CUSTOM_COLUMNS)),
             tui_icmp_extension_mode: Some(super::constants::DEFAULT_TUI_ICMP_EXTENSION_MODE),
             tui_geoip_mode: Some(super::constants::DEFAULT_TUI_GEOIP_MODE),
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),

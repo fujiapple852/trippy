@@ -161,6 +161,10 @@ pub struct Args {
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 
+    /// Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]
+    #[arg(long)]
+    pub tui_custom_columns: Option<String>,
+
     /// How to render ICMP extensions [default: off]
     #[arg(value_enum, long)]
     pub tui_icmp_extension_mode: Option<IcmpExtensionMode>,

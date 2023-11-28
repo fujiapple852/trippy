@@ -1,5 +1,6 @@
 use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
+use crate::frontend::columns::{Column, Columns};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -30,12 +31,20 @@ use trippy::tracing::{Extension, Extensions, MplsLabelStackMember, UnknownExtens
 /// - The standard deviation round-trip time for all probes at this hop (`StDev`)
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
-    let header = render_table_header(app.tui_config.theme);
+    let config = &app.tui_config;
+    let widths = get_column_widths(&config.tui_columns);
+    let header = render_table_header(app.tui_config.theme, &config.tui_columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows =
-        app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
-            render_table_row(app, hop, &app.resolver, &app.geoip_lookup, &app.tui_config)
-        });
+    let rows = app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
+        render_table_row(
+            app,
+            hop,
+            &app.resolver,
+            &app.geoip_lookup,
+            &app.tui_config,
+            &config.tui_columns,
+        )
+    });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -51,15 +60,16 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text_color),
         )
         .highlight_style(selected_style)
-        .widths(&TABLE_WIDTH);
+        .widths(widths.as_slice())
+        .column_spacing(1);
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }
 
 /// Render the table header.
-fn render_table_header(theme: Theme) -> Row<'static> {
-    let header_cells = TABLE_HEADER
-        .iter()
-        .map(|h| Cell::from(*h).style(Style::default().fg(theme.hops_table_header_text_color)));
+fn render_table_header(theme: Theme, table_columns: &Columns) -> Row<'static> {
+    let header_cells = table_columns.0.iter().map(|c| {
+        Cell::from(c.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
+    });
     Row::new(header_cells)
         .style(Style::default().bg(theme.hops_table_header_bg_color))
         .height(1)
@@ -73,41 +83,33 @@ fn render_table_row(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
+    custom_columns: &Columns,
 ) -> Row<'static> {
     let is_selected_hop = app
         .selected_hop()
         .map(|h| h.ttl() == hop.ttl())
         .unwrap_or_default();
-    let is_target = app.tracer_data().is_target(hop, app.selected_flow);
     let is_in_round = app.tracer_data().is_in_round(hop, app.selected_flow);
-    let ttl_cell = render_ttl_cell(hop);
-    let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
+    let (_, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
         render_hostname(app, hop, dns, geoip_lookup)
     };
-    let loss_pct_cell = render_loss_pct_cell(hop);
-    let total_sent_cell = render_total_sent_cell(hop);
-    let total_recv_cell = render_total_recv_cell(hop);
-    let last_cell = render_last_cell(hop);
-    let avg_cell = render_avg_cell(hop);
-    let best_cell = render_best_cell(hop);
-    let worst_cell = render_worst_cell(hop);
-    let stddev_cell = render_stddev_cell(hop);
-    let status_cell = render_status_cell(hop, is_target);
-    let cells = [
-        ttl_cell,
-        hostname_cell,
-        loss_pct_cell,
-        total_sent_cell,
-        total_recv_cell,
-        last_cell,
-        avg_cell,
-        best_cell,
-        worst_cell,
-        stddev_cell,
-        status_cell,
-    ];
+    let cells: Vec<Cell<'_>> = custom_columns
+        .0
+        .iter()
+        .map(|column| {
+            new_cell(
+                *column,
+                is_selected_hop,
+                app,
+                hop,
+                dns,
+                geoip_lookup,
+                config,
+            )
+        })
+        .collect();
     let row_color = if is_in_round {
         config.theme.hops_table_row_active_text_color
     } else {
@@ -119,6 +121,38 @@ fn render_table_row(
         .style(Style::default().fg(row_color))
 }
 
+///Returns a Cell matched on short char of the Column
+fn new_cell(
+    column: Column,
+    is_selected_hop: bool,
+    app: &TuiApp,
+    hop: &Hop,
+    dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
+    config: &TuiConfig,
+) -> Cell<'static> {
+    let is_target = app.tracer_data().is_target(hop, app.selected_flow);
+    match column {
+        Column::Ttl => render_ttl_cell(hop),
+        Column::Host => {
+            let (host_cell, _) = if is_selected_hop && app.show_hop_details {
+                render_hostname_with_details(app, hop, dns, geoip_lookup, config)
+            } else {
+                render_hostname(app, hop, dns, geoip_lookup)
+            };
+            host_cell
+        }
+        Column::LossPct => render_loss_pct_cell(hop),
+        Column::Sent => render_total_sent_cell(hop),
+        Column::Received => render_total_recv_cell(hop),
+        Column::Last => render_last_cell(hop),
+        Column::Average => render_avg_cell(hop),
+        Column::Best => render_best_cell(hop),
+        Column::Worst => render_worst_cell(hop),
+        Column::StdDev => render_stddev_cell(hop),
+        Column::Status => render_status_cell(hop, is_target),
+    }
+}
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(format!("{}", hop.ttl()))
 }
@@ -572,20 +606,13 @@ fn fmt_details_line(
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
 }
 
-const TABLE_HEADER: [&str; 11] = [
-    "#", "Host", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StDev", "Sts",
-];
-
-const TABLE_WIDTH: [Constraint; 11] = [
-    Constraint::Percentage(3),
-    Constraint::Percentage(42),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-    Constraint::Percentage(5),
-];
+/// Transforms current columns list into percentages
+///
+/// Returns the percentage constraints of columns
+fn get_column_widths(columns: &Columns) -> Vec<Constraint> {
+    columns
+        .0
+        .iter()
+        .map(|c| Constraint::Percentage(c.width_pct()))
+        .collect()
+}
