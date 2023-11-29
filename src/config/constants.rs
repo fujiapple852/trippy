@@ -76,6 +76,9 @@ pub const DEFAULT_STRATEGY_READ_TIMEOUT: &str = "10ms";
 /// The default value for `tui-max-samples`.
 pub const DEFAULT_TUI_MAX_SAMPLES: usize = 256;
 
+/// The default value for `tui-max-flows`.
+pub const DEFAULT_TUI_MAX_FLOWS: usize = 64;
+
 /// The default value for `tui-preserve-screen`.
 pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 

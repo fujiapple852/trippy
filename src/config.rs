@@ -231,6 +231,7 @@ pub struct TrippyConfig {
     pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
     pub tui_max_samples: usize,
+    pub tui_max_flows: usize,
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
     pub tui_privacy_max_ttl: u8,
@@ -412,6 +413,11 @@ impl TrippyConfig {
             args.tui_max_samples,
             cfg_file_tui.tui_max_samples,
             constants::DEFAULT_TUI_MAX_SAMPLES,
+        );
+        let tui_max_flows = cfg_layer(
+            args.tui_max_flows,
+            cfg_file_tui.tui_max_flows,
+            constants::DEFAULT_TUI_MAX_FLOWS,
         );
         let tui_preserve_screen = cfg_layer_bool_flag(
             args.tui_preserve_screen,
@@ -599,6 +605,7 @@ impl TrippyConfig {
             dns_resolve_method,
             dns_lookup_as_info,
             tui_max_samples,
+            tui_max_flows,
             tui_preserve_screen,
             tui_refresh_rate,
             tui_privacy_max_ttl,
@@ -649,6 +656,7 @@ impl Default for TrippyConfig {
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
             tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
+            tui_max_flows: constants::DEFAULT_TUI_MAX_FLOWS,
             tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
             tui_refresh_rate: duration(constants::DEFAULT_TUI_REFRESH_RATE),
             tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,

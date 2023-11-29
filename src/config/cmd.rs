@@ -177,6 +177,10 @@ pub struct Args {
     #[arg(long, short = 's')]
     pub tui_max_samples: Option<usize>,
 
+    /// The maximum number of flows to show [default: 64]
+    #[arg(long)]
+    pub tui_max_flows: Option<usize>,
+
     /// Preserve the screen on exit [default: false]
     #[arg(long)]
     pub tui_preserve_screen: bool,

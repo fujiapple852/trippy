@@ -314,6 +314,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_geoip_mode,
         args.tui_max_addrs,
         args.tui_max_samples,
+        args.tui_max_flows,
         args.tui_theme,
         &args.tui_bindings,
     )
