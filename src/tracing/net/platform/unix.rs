@@ -79,7 +79,7 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
     ipv4.set_destination(Ipv4Addr::LOCALHOST);
     ipv4.set_total_length(total_length);
     ipv4.set_payload(icmp.packet());
-    let probe_socket = SocketImpl::new_dgram_ipv4(Protocol::ICMPV4)
+    let mut probe_socket = SocketImpl::new_dgram_ipv4(Protocol::ICMPV4)
         .or_else(|_| SocketImpl::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW)))?;
     probe_socket.set_header_included(true)?;
     let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
@@ -141,7 +141,7 @@ pub fn is_host_unreachable_error(_code: i32) -> bool {
 /// Note that no packets are transmitted by this method.
 #[instrument(ret)]
 pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
-    let socket = match target_addr {
+    let mut socket = match target_addr {
         IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
         IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?;
@@ -209,12 +209,12 @@ impl Socket for SocketImpl {
     #[instrument]
     fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
-            let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+            let mut socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
             socket.set_nonblocking(true)?;
             socket.set_header_included(true)?;
             Ok(socket)
         } else {
-            let socket = Self::new(Domain::IPV4, Type::DGRAM, Protocol::ICMPV4)?;
+            let mut socket = Self::new(Domain::IPV4, Type::DGRAM, Protocol::ICMPV4)?;
             socket.set_nonblocking(true)?;
             socket.set_header_included(true)?;
             Ok(socket)
@@ -235,7 +235,7 @@ impl Socket for SocketImpl {
     #[instrument]
     fn new_udp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
-            let socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
+            let mut socket = Self::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW))?;
             socket.set_nonblocking(true)?;
             socket.set_header_included(true)?;
             Ok(socket)
@@ -260,7 +260,7 @@ impl Socket for SocketImpl {
     #[instrument]
     fn new_recv_socket_ipv4(addr: Ipv4Addr, raw: bool) -> IoResult<Self> {
         if raw {
-            let socket = Self::new_raw_ipv4(Protocol::ICMPV4)?;
+            let mut socket = Self::new_raw_ipv4(Protocol::ICMPV4)?;
             socket.set_nonblocking(true)?;
             socket.set_header_included(true)?;
             Ok(socket)
@@ -284,14 +284,14 @@ impl Socket for SocketImpl {
     }
     #[instrument]
     fn new_stream_socket_ipv4() -> IoResult<Self> {
-        let socket = Self::new(Domain::IPV4, Type::STREAM, Protocol::TCP)?;
+        let mut socket = Self::new(Domain::IPV4, Type::STREAM, Protocol::TCP)?;
         socket.set_nonblocking(true)?;
         socket.set_reuse_port(true)?;
         Ok(socket)
     }
     #[instrument]
     fn new_stream_socket_ipv6() -> IoResult<Self> {
-        let socket = Self::new(Domain::IPV6, Type::STREAM, Protocol::TCP)?;
+        let mut socket = Self::new(Domain::IPV6, Type::STREAM, Protocol::TCP)?;
         socket.set_nonblocking(true)?;
         socket.set_reuse_port(true)?;
         Ok(socket)
@@ -311,44 +311,44 @@ impl Socket for SocketImpl {
             .map_err(|err| IoError::Bind(err, address))
     }
     #[instrument(skip(self))]
-    fn set_tos(&self, tos: u32) -> IoResult<()> {
+    fn set_tos(&mut self, tos: u32) -> IoResult<()> {
         self.inner
             .set_tos(tos)
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
     }
     #[instrument(skip(self))]
-    fn set_ttl(&self, ttl: u32) -> IoResult<()> {
+    fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
         self.inner
             .set_ttl(ttl)
             .map_err(|err| IoError::Other(err, IoOperation::SetTtl))
     }
     #[instrument(skip(self))]
-    fn set_reuse_port(&self, reuse: bool) -> IoResult<()> {
+    fn set_reuse_port(&mut self, reuse: bool) -> IoResult<()> {
         self.inner
             .set_reuse_port(reuse)
             .map_err(|err| IoError::Other(err, IoOperation::SetReusePort))
     }
     #[instrument(skip(self))]
-    fn set_header_included(&self, included: bool) -> IoResult<()> {
+    fn set_header_included(&mut self, included: bool) -> IoResult<()> {
         self.inner
             .set_header_included(included)
             .map_err(|err| IoError::Other(err, IoOperation::SetHeaderIncluded))
     }
     #[instrument(skip(self))]
-    fn set_unicast_hops_v6(&self, hops: u8) -> IoResult<()> {
+    fn set_unicast_hops_v6(&mut self, hops: u8) -> IoResult<()> {
         self.inner
             .set_unicast_hops_v6(u32::from(hops))
             .map_err(|err| IoError::Other(err, IoOperation::SetUnicastHopsV6))
     }
     #[instrument(skip(self))]
-    fn connect(&self, address: SocketAddr) -> IoResult<()> {
+    fn connect(&mut self, address: SocketAddr) -> IoResult<()> {
         tracing::debug!(?address);
         self.inner
             .connect(&SockAddr::from(address))
             .map_err(|err| IoError::Connect(err, address))
     }
     #[instrument(skip(self, buf))]
-    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> IoResult<()> {
+    fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> IoResult<()> {
         tracing::debug!(buf = format!("{:02x?}", buf.iter().format(" ")), ?addr);
         self.inner
             .send_to(buf, &SockAddr::from(addr))
@@ -356,7 +356,7 @@ impl Socket for SocketImpl {
         Ok(())
     }
     #[instrument(skip(self))]
-    fn is_readable(&self, timeout: Duration) -> IoResult<bool> {
+    fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
         let mut read = FdSet::new();
         read.insert(&self.inner);
         let readable = nix::sys::select::select(
@@ -376,7 +376,7 @@ impl Socket for SocketImpl {
         }
     }
     #[instrument(skip(self))]
-    fn is_writable(&self) -> IoResult<bool> {
+    fn is_writable(&mut self) -> IoResult<bool> {
         let mut write = FdSet::new();
         write.insert(&self.inner);
         let writable = nix::sys::select::select(
@@ -421,13 +421,13 @@ impl Socket for SocketImpl {
         Ok(bytes_read)
     }
     #[instrument(skip(self))]
-    fn shutdown(&self) -> IoResult<()> {
+    fn shutdown(&mut self) -> IoResult<()> {
         self.inner
             .shutdown(Shutdown::Both)
             .map_err(|err| IoError::Other(err, IoOperation::Shutdown))
     }
     #[instrument(skip(self), ret)]
-    fn peer_addr(&self) -> IoResult<Option<SocketAddr>> {
+    fn peer_addr(&mut self) -> IoResult<Option<SocketAddr>> {
         let addr = self
             .inner
             .peer_addr()
@@ -437,19 +437,19 @@ impl Socket for SocketImpl {
         Ok(addr)
     }
     #[instrument(skip(self), ret)]
-    fn take_error(&self) -> IoResult<Option<io::Error>> {
+    fn take_error(&mut self) -> IoResult<Option<io::Error>> {
         self.inner
             .take_error()
             .map_err(|err| IoError::Other(err, IoOperation::TakeError))
     }
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     #[instrument(skip(self), ret)]
-    fn icmp_error_info(&self) -> IoResult<IpAddr> {
+    fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
         Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
     }
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     #[instrument(skip(self))]
-    fn close(&self) -> IoResult<()> {
+    fn close(&mut self) -> IoResult<()> {
         Ok(())
     }
 }

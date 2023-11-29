@@ -27,22 +27,22 @@ where
     /// Create (non-raw) IPv6/UDP socket for local address validation.
     fn new_udp_dgram_socket_ipv6() -> Result<Self>;
     fn bind(&mut self, address: SocketAddr) -> Result<()>;
-    fn set_tos(&self, tos: u32) -> Result<()>;
-    fn set_ttl(&self, ttl: u32) -> Result<()>;
-    fn set_reuse_port(&self, reuse: bool) -> Result<()>;
-    fn set_header_included(&self, included: bool) -> Result<()>;
-    fn set_unicast_hops_v6(&self, hops: u8) -> Result<()>;
-    fn connect(&self, address: SocketAddr) -> Result<()>;
-    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> Result<()>;
+    fn set_tos(&mut self, tos: u32) -> Result<()>;
+    fn set_ttl(&mut self, ttl: u32) -> Result<()>;
+    fn set_reuse_port(&mut self, reuse: bool) -> Result<()>;
+    fn set_header_included(&mut self, included: bool) -> Result<()>;
+    fn set_unicast_hops_v6(&mut self, hops: u8) -> Result<()>;
+    fn connect(&mut self, address: SocketAddr) -> Result<()>;
+    fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> Result<()>;
     /// Returns true if the socket becomes readable before the timeout, false otherwise.
-    fn is_readable(&self, timeout: Duration) -> Result<bool>;
+    fn is_readable(&mut self, timeout: Duration) -> Result<bool>;
     /// Returns true if the socket is currently writeable, false otherwise.
-    fn is_writable(&self) -> Result<bool>;
+    fn is_writable(&mut self) -> Result<bool>;
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)>;
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
-    fn shutdown(&self) -> Result<()>;
-    fn peer_addr(&self) -> Result<Option<SocketAddr>>;
-    fn take_error(&self) -> Result<Option<std::io::Error>>;
-    fn icmp_error_info(&self) -> Result<IpAddr>;
-    fn close(&self) -> Result<()>;
+    fn shutdown(&mut self) -> Result<()>;
+    fn peer_addr(&mut self) -> Result<Option<SocketAddr>>;
+    fn take_error(&mut self) -> Result<Option<std::io::Error>>;
+    fn icmp_error_info(&mut self) -> Result<IpAddr>;
+    fn close(&mut self) -> Result<()>;
 }

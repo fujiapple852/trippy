@@ -200,7 +200,7 @@ pub fn recv_icmp_probe<S: Socket>(
 
 #[instrument(skip(tcp_socket))]
 pub fn recv_tcp_socket<S: Socket>(
-    tcp_socket: &S,
+    tcp_socket: &mut S,
     sequence: Sequence,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
