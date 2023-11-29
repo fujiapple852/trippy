@@ -593,6 +593,9 @@ Options:
   -s, --tui-max-samples <TUI_MAX_SAMPLES>
           The maximum number of samples to record per hop [default: 256]
 
+      --tui-max-flows <TUI_MAX_FLOWS>
+          The maximum number of flows to show [default: 64]
+
       --tui-preserve-screen
           Preserve the screen on exit [default: false]
 
