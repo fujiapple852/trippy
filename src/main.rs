@@ -54,6 +54,13 @@ fn main() -> anyhow::Result<()> {
     let resolver = start_dns_resolver(&cfg)?;
     let geoip_lookup = create_geoip_lookup(&cfg)?;
     let addrs = resolve_targets(&cfg, &resolver)?;
+    if addrs.is_empty() {
+        return Err(anyhow!(
+            "failed to find any valid IP{} addresses for {}",
+            cfg.addr_family,
+            cfg.targets.join(", ")
+        ));
+    }
     let traces = start_tracers(&cfg, &addrs, platform.pid)?;
     Platform::drop_privileges()?;
     run_frontend(&cfg, resolver, geoip_lookup, traces)?;
