@@ -157,7 +157,7 @@ pub struct Args {
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 
-    /// The Custom headers to be displayed that contains comma-sep string
+    /// The Custom columns to be displayed that contains comma-sep string [possible values: 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T']
     #[arg(long)]
     pub tui_custom_headers: Option<String>,
 

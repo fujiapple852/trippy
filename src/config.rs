@@ -537,6 +537,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
         validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
+        validate_custom_headings(&tui_grid_headings)?;
         let tui_theme_items = args
             .tui_theme_colors
             .into_iter()
@@ -647,6 +648,14 @@ fn validate_privilege(
         ))),
     }
 }
+fn validate_custom_headings(tui_grid_headings: &Vec<char>) -> anyhow::Result<()> {
+    if !tui_grid_headings.iter().all(|&c| constants::DEFAULT_TABLE_HEADINGS.to_vec().contains(&c)) {
+        Err(anyhow!("Invalid column found - Allowed upper case values 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
+    } else {
+        Ok(())
+    }
+}
+
 
 fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
     if matches!(mode, Mode::Tui) && verbose {
