@@ -266,6 +266,9 @@ tui-max-addrs = 0
 # The maximum number of samples to record per hop [default: 256]
 tui-max-samples = 256
 
+# The maximum number of flows to show [default: 40]
+tui-max-flows = 64
+
 # Whether to preserve the screen on exit [default: false]
 tui-preserve-screen = false
 

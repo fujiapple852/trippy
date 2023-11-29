@@ -213,6 +213,7 @@ impl Default for ConfigReport {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigTui {
     pub tui_max_samples: Option<usize>,
+    pub tui_max_flows: Option<usize>,
     pub tui_preserve_screen: Option<bool>,
     pub tui_refresh_rate: Option<String>,
     pub tui_privacy_max_ttl: Option<u8>,
@@ -228,6 +229,7 @@ impl Default for ConfigTui {
     fn default() -> Self {
         Self {
             tui_max_samples: Some(super::constants::DEFAULT_TUI_MAX_SAMPLES),
+            tui_max_flows: Some(super::constants::DEFAULT_TUI_MAX_FLOWS),
             tui_preserve_screen: Some(super::constants::DEFAULT_TUI_PRESERVE_SCREEN),
             tui_refresh_rate: Some(String::from(super::constants::DEFAULT_TUI_REFRESH_RATE)),
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),

@@ -137,6 +137,7 @@ impl TuiApp {
             })
             .sorted_by(order_flows)
             .rev()
+            .take(self.tui_config.max_flows)
             .collect::<Vec<_>>();
     }
 

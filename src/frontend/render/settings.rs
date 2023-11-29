@@ -149,6 +149,7 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<Set
 fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
     vec![
         SettingsItem::new("tui-max-samples", format!("{}", app.tui_config.max_samples)),
+        SettingsItem::new("tui-max-flows", format!("{}", app.tui_config.max_flows)),
         SettingsItem::new(
             "tui-preserve-screen",
             format!("{}", app.tui_config.preserve_screen),
@@ -419,7 +420,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 8),
+    ("Tui", 9),
     ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
