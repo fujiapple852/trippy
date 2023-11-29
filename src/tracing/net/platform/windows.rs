@@ -251,7 +251,7 @@ impl SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn get_overlapped_result(&self) -> IoResult<()> {
+    fn get_overlapped_result(&mut self) -> IoResult<()> {
         let mut bytes_read = 0;
         let mut flags = 0;
         let ol = *self.ol;
@@ -309,7 +309,7 @@ impl Socket for SocketImpl {
     #[instrument]
     fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
-            let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+            let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
             sock.set_non_blocking(true)?;
             sock.set_header_included(true)?;
             Ok(sock)
@@ -332,7 +332,7 @@ impl Socket for SocketImpl {
     #[instrument]
     fn new_udp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
-            let sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
+            let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
             sock.set_non_blocking(true)?;
             sock.set_header_included(true)?;
             Ok(sock)
@@ -381,7 +381,7 @@ impl Socket for SocketImpl {
 
     #[instrument]
     fn new_stream_socket_ipv4() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
+        let mut sock = Self::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
         sock.set_reuse_port(true)?;
         Ok(sock)
@@ -389,7 +389,7 @@ impl Socket for SocketImpl {
 
     #[instrument]
     fn new_stream_socket_ipv6() -> IoResult<Self> {
-        let sock = Self::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
+        let mut sock = Self::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
         sock.set_reuse_port(true)?;
         Ok(sock)
@@ -422,21 +422,21 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn set_tos(&self, tos: u32) -> IoResult<()> {
+    fn set_tos(&mut self, tos: u32) -> IoResult<()> {
         self.inner
             .set_tos(tos)
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
     }
 
     #[instrument(skip(self))]
-    fn set_ttl(&self, ttl: u32) -> IoResult<()> {
+    fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
         self.inner
             .set_ttl(ttl)
             .map_err(|err| IoError::Other(err, IoOperation::SetTtl))
     }
 
     #[instrument(skip(self))]
-    fn set_reuse_port(&self, is_reuse_port: bool) -> IoResult<()> {
+    fn set_reuse_port(&mut self, is_reuse_port: bool) -> IoResult<()> {
         self.setsockopt_bool(SOL_SOCKET as _, SO_REUSE_UNICASTPORT as _, is_reuse_port)
             .or_else(|_| {
                 self.setsockopt_bool(SOL_SOCKET as _, SO_PORT_SCALABILITY as _, is_reuse_port)
@@ -445,21 +445,21 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn set_header_included(&self, is_header_included: bool) -> IoResult<()> {
+    fn set_header_included(&mut self, is_header_included: bool) -> IoResult<()> {
         self.inner
             .set_header_included(is_header_included)
             .map_err(|err| IoError::Other(err, IoOperation::SetHeaderIncluded))
     }
 
     #[instrument(skip(self))]
-    fn set_unicast_hops_v6(&self, max_hops: u8) -> IoResult<()> {
+    fn set_unicast_hops_v6(&mut self, max_hops: u8) -> IoResult<()> {
         self.inner
             .set_unicast_hops_v6(max_hops.into())
             .map_err(|err| IoError::Other(err, IoOperation::SetUnicastHopsV6))
     }
 
     #[instrument(skip(self))]
-    fn connect(&self, addr: SocketAddr) -> IoResult<()> {
+    fn connect(&mut self, addr: SocketAddr) -> IoResult<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         syscall!(
             WSAEventSelect(
@@ -479,7 +479,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self, buf))]
-    fn send_to(&self, buf: &[u8], addr: SocketAddr) -> IoResult<()> {
+    fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> IoResult<()> {
         tracing::debug!(buf = format!("{:02x?}", buf.iter().format(" ")), ?addr);
         self.inner
             .send_to(buf, &SockAddr::from(addr))
@@ -488,7 +488,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn is_readable(&self, timeout: Duration) -> IoResult<bool> {
+    fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
         if !self.wait_for_event(timeout)? {
             return Ok(false);
         };
@@ -502,7 +502,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn is_writable(&self) -> IoResult<bool> {
+    fn is_writable(&mut self) -> IoResult<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
         };
@@ -538,14 +538,14 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn shutdown(&self) -> IoResult<()> {
+    fn shutdown(&mut self) -> IoResult<()> {
         self.inner
             .shutdown(std::net::Shutdown::Both)
             .map_err(|err| IoError::Other(err, IoOperation::Shutdown))
     }
 
     #[instrument(skip(self), ret)]
-    fn peer_addr(&self) -> IoResult<Option<SocketAddr>> {
+    fn peer_addr(&mut self) -> IoResult<Option<SocketAddr>> {
         Ok(self
             .inner
             .peer_addr()
@@ -554,7 +554,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self), ret)]
-    fn take_error(&self) -> IoResult<Option<Error>> {
+    fn take_error(&mut self) -> IoResult<Option<Error>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
             Ok(errno) => Ok(Some(Error::from_raw_os_error(errno))),
@@ -565,7 +565,7 @@ impl Socket for SocketImpl {
 
     #[instrument(skip(self), ret)]
     #[allow(unsafe_code)]
-    fn icmp_error_info(&self) -> IoResult<IpAddr> {
+    fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
         let icmp_error_info = self
             .getsockopt::<ICMP_ERROR_INFO>(
                 IPPROTO_TCP as _,
@@ -590,7 +590,7 @@ impl Socket for SocketImpl {
 
     // Interestingly, Socket2 sockets don't seem to call closesocket on drop??
     #[instrument(skip(self))]
-    fn close(&self) -> IoResult<()> {
+    fn close(&mut self) -> IoResult<()> {
         syscall!(closesocket(self.inner.as_raw_socket() as _), |res| res
             == SOCKET_ERROR)
         .map_err(|err| IoError::Other(err, IoOperation::Close))

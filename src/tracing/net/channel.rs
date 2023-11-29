@@ -7,7 +7,6 @@ use crate::tracing::{
     MultipathStrategy, PrivilegeMode, Probe, TracerChannelConfig, TracerProtocol,
 };
 use arrayvec::ArrayVec;
-use itertools::Itertools;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -215,17 +214,23 @@ impl<S: Socket> TracerChannel<S> {
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
         let found_index = self
             .tcp_probes
-            .iter()
-            .find_position(|&probe| probe.socket.is_writable().unwrap_or_default())
-            .map(|(i, _)| i);
+            .iter_mut()
+            .enumerate()
+            .find_map(|(index, probe)| {
+                if probe.socket.is_writable().unwrap_or_default() {
+                    Some(index)
+                } else {
+                    None
+                }
+            });
         if let Some(i) = found_index {
-            let probe = self.tcp_probes.remove(i);
+            let mut probe = self.tcp_probes.remove(i);
             match self.dest_addr {
                 IpAddr::V4(_) => {
-                    ipv4::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                    ipv4::recv_tcp_socket(&mut probe.socket, probe.sequence, self.dest_addr)
                 }
                 IpAddr::V6(_) => {
-                    ipv6::recv_tcp_socket(&probe.socket, probe.sequence, self.dest_addr)
+                    ipv6::recv_tcp_socket(&mut probe.socket, probe.sequence, self.dest_addr)
                 }
             }
         } else {
