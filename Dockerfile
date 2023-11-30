@@ -1,4 +1,4 @@
-FROM rust:1.72.0 as build-env
+FROM rust:1.74 as build-env
 RUN rustup target add x86_64-unknown-linux-musl
 WORKDIR /app
 COPY Cargo.toml /app
@@ -7,6 +7,7 @@ RUN mkdir /app/src
 RUN echo "fn main() {}" > /app/src/main.rs
 RUN cargo build --release --target=x86_64-unknown-linux-musl
 COPY src /app/src
+COPY trippy-config-sample.toml /app
 COPY README.md /app
 COPY LICENSE /app
 RUN cargo build --release --target=x86_64-unknown-linux-musl
