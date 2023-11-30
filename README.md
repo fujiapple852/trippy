@@ -46,18 +46,24 @@ issues.
 - Support for `classic`, `paris`
   and `dublin` [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
   strategies ([tracking issue](https://github.com/fujiapple852/trippy/issues/274))
+- RFC4884 [ICMP Multi-Part Messages](https://datatracker.ietf.org/doc/html/rfc4884)
+  - Generic Extension Objects
+  - MPLS Label Stacks
+- Unprivileged mode
 - Tui interface:
     - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Interactive chart of RTT for all hops in a trace with zooming capability
     - Interactive GeoIp world map
+    - Isolate and filter by individual tracing flows 
     - Customizable color theme & key bindings
     - Configuration via both command line arguments and a configuration file
     - Show multiple hosts per hop with ability to cap display to N hosts and show frequency %
     - Show hop details and navigate hosts within each hop
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
+    - Hop privacy
 - DNS:
     - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
     - Lazy reverse DNS queries
@@ -66,6 +72,8 @@ issues.
     - Lookup and display GeoIp information from local `mmdb` files
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
+    - Tracing `flows` report
+    - Graphviz `dot` charts
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD, FreeBSD, Windows)
 - Capabilities aware application (Linux only)
@@ -223,7 +231,7 @@ that feature.
 
 > [!NOTE]
 > Unprivileged mode is currently only supported on macOS. Linux support is possible and may be added in the future.
-> Unprivileged mode is not supported on NetBSD, OpenBSD, FreeBSD or Windows as these platforms do not support
+> Unprivileged mode is not supported on NetBSD, FreeBSD or Windows as these platforms do not support
 > the `IPPROTO_ICMP` socket type. See [#101](https://github.com/fujiapple852/trippy/issues/101) for further information.
 
 The unprivileged mode can be enabled by adding the `--unprivileged` (`-u`) command line flag or by adding
