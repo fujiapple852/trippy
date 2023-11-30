@@ -13,7 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-## [0.9.0] - 2023-11-28
+## [0.9.0] - 2023-11-30
 
 ### Added
 
