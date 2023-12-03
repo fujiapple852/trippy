@@ -12,7 +12,43 @@ use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
 use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
-
+#[derive(Debug, Clone)]
+pub struct Column {
+    pub display: &'static str,
+    pub short: char,
+    pub width_pct: u16,
+}
+impl Column {
+    pub fn new(display: &'static str, short: char, width_pct: u16) -> Self {
+        Column {
+            display,
+            short,
+            width_pct,
+        }
+    }
+    pub fn new_short(short: char) -> Self {
+        match short {
+            'H' => Column::new(DEFAULT_HEADING_HOPS, short, 3),
+            'O' => Column::new(DEFAULT_HEADING_HOST, short, 42),
+            'L' => Column::new(DEFAULT_HEADING_LOSS, short, 5),
+            'S' => Column::new(DEFAULT_HEADING_SENT, short, 5),
+            'R' => Column::new(DEFAULT_HEADING_RECV, short, 5),
+            'A' => Column::new(DEFAULT_HEADING_LAST, short, 5),
+            'V' => Column::new(DEFAULT_HEADING_AVG, short, 5),
+            'B' => Column::new(DEFAULT_HEADING_BEST, short, 5),
+            'W' => Column::new(DEFAULT_HEADING_WRST, short, 5),
+            'D' => Column::new(DEFAULT_HEADING_STDEV, short, 5),
+            'T' => Column::new(DEFAULT_HEADING_STS, short, 5),
+            _ => Column::new(DEFAULT_HEADING_HOPS, short, 3),
+        }
+    }
+}
+//Special version to compare the unique short column
+impl PartialEq for Column {
+    fn eq(&self, other: &Self) -> bool {
+        self.short == other.short
+    }
+}
 /// Render the table of data about the hops.
 ///
 /// For each hop, we show:
@@ -30,10 +66,10 @@ use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved}
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
-    let short_cols = &config.grid_headers;
-    let cols = get_column_headings(&short_cols);
-    let widths = get_column_widths(&short_cols);
-    let header = render_table_header(app.tui_config.theme, &cols);
+    let custom_columns = &config.custom_columns;
+    let columns = get_custom_columns(&custom_columns);
+    let widths = get_column_widths(&columns);
+    let header = render_table_header(app.tui_config.theme, &columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app
         .tracer_data()
@@ -46,7 +82,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 &app.resolver,
                 &app.geoip_lookup,
                 &app.tui_config,
-                &cols,
+                &columns,
             )
         });
     let table = Table::new(rows)
@@ -69,10 +105,10 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 }
 
 /// Render the table header.
-fn render_table_header(theme: Theme, grid_headers: &Vec<&'static str>) -> Row<'static> {
-    let header_cells = grid_headers
-        .iter()
-        .map(|h| Cell::from(*h).style(Style::default().fg(theme.hops_table_header_text_color)));
+fn render_table_header(theme: Theme, table_columns: &Vec<Column>) -> Row<'static> {
+    let header_cells = table_columns.iter().map(|c| {
+        Cell::from(c.display).style(Style::default().fg(theme.hops_table_header_text_color))
+    });
     Row::new(header_cells)
         .style(Style::default().bg(theme.hops_table_header_bg_color))
         .height(1)
@@ -86,64 +122,23 @@ fn render_table_row(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
-    custom_headers: &Vec<&'static str>,
+    custom_columns: &Vec<Column>,
 ) -> Row<'static> {
     let is_selected_hop = app
         .selected_hop()
         .map(|h| h.ttl() == hop.ttl())
         .unwrap_or_default();
-    let is_target = app.tracer_data().is_target(hop, Trace::default_flow_id());
     let is_in_round = app.tracer_data().is_in_round(hop, Trace::default_flow_id());
-    let ttl_cell = render_ttl_cell(hop);
-    let (hostname_cell, row_height) = if is_selected_hop && app.show_hop_details {
+    let (_, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
         render_hostname(hop, dns, geoip_lookup, config)
     };
-    let loss_pct_cell = render_loss_pct_cell(hop);
-    let total_sent_cell = render_total_sent_cell(hop);
-    let total_recv_cell = render_total_recv_cell(hop);
-    let last_cell = render_last_cell(hop);
-    let avg_cell = render_avg_cell(hop);
-    let best_cell = render_best_cell(hop);
-    let worst_cell = render_worst_cell(hop);
-    let stddev_cell = render_stddev_cell(hop);
-    let status_cell = render_status_cell(hop, is_target);
-
-    let mut cells: Vec<Cell<'_>> = vec![];
-    if custom_headers.contains(&DEFAULT_HEADING_HOPS) {
-        cells.push(ttl_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_HOST) {
-        cells.push(hostname_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_LOSS) {
-        cells.push(loss_pct_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_SENT) {
-        cells.push(total_sent_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_RECV) {
-        cells.push(total_recv_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_LAST) {
-        cells.push(last_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_AVG) {
-        cells.push(avg_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_BEST) {
-        cells.push(best_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_WRST) {
-        cells.push(worst_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_STDEV) {
-        cells.push(stddev_cell);
-    }
-    if custom_headers.contains(&DEFAULT_HEADING_STS) {
-        cells.push(status_cell);
-    }
+    //let mut cells: Vec<Cell<'_>> = vec![];
+    let cells: Vec<Cell<'_>> = custom_columns
+        .iter()
+        .map(|column| new_cell(column, is_selected_hop, app, hop, dns, geoip_lookup, config))
+        .collect();
     let row_color = if is_in_round {
         config.theme.hops_table_row_active_text_color
     } else {
@@ -154,7 +149,40 @@ fn render_table_row(
         .bottom_margin(0)
         .style(Style::default().fg(row_color))
 }
+///Returns a Cell matched on short char of the Column
+fn new_cell(
+    column: &Column,
+    is_selected_hop: bool,
+    app: &TuiApp,
+    hop: &Hop,
+    dns: &DnsResolver,
+    geoip_lookup: &GeoIpLookup,
+    config: &TuiConfig,
+) -> Cell<'static> {
+    let is_target = app.tracer_data().is_target(hop, Trace::default_flow_id());
 
+    match column.short {
+        'H' => render_ttl_cell(hop),
+        'O' => {
+            let (host_cell, _) = if is_selected_hop && app.show_hop_details {
+                render_hostname_with_details(app, hop, dns, geoip_lookup, config)
+            } else {
+                render_hostname(hop, dns, geoip_lookup, config)
+            };
+            host_cell
+        }
+        'L' => render_loss_pct_cell(hop),
+        'S' => render_total_sent_cell(hop),
+        'R' => render_total_recv_cell(hop),
+        'A' => render_last_cell(hop),
+        'V' => render_avg_cell(hop),
+        'B' => render_best_cell(hop),
+        'W' => render_worst_cell(hop),
+        'D' => render_stddev_cell(hop),
+        'T' => render_status_cell(hop, is_target),
+        _ => render_ttl_cell(hop),
+    }
+}
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(format!("{}", hop.ttl()))
 }
@@ -564,60 +592,15 @@ fn fmt_details_no_asn(
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{geoip_formatted}")
 }
-fn get_column_widths(custom: &Vec<char>) -> Vec<Constraint> {
-    let widths = vec![
-        HEADING_WIDTH_HOPS,
-        HEADING_WIDTH_HOST,
-        HEADING_WIDTH_LOSS,
-        HEADING_WIDTH_SENT,
-        HEADING_WIDTH_RECV,
-        HEADING_WIDTH_LAST,
-        HEADING_WIDTH_AVG,
-        HEADING_WIDTH_BEST,
-        HEADING_WIDTH_WRST,
-        HEADING_WIDTH_STDEV,
-        HEADING_WIDTH_STS,
-    ];
-    ABBREVIATED_COLUMNS
+fn get_custom_columns(custom: &Vec<char>) -> Vec<Column> {
+    custom.iter().map(|c| Column::new_short(*c)).collect_vec()
+}
+fn get_column_widths(custom: &Vec<Column>) -> Vec<Constraint> {
+    custom
         .iter()
-        .filter(|&c| custom.contains(c))
-        .map(|&c| widths[ABBREVIATED_COLUMNS.iter().position(|&x| x == c).unwrap()])
+        .map(|c| Constraint::Percentage(c.width_pct))
         .collect()
 }
-fn get_column_headings(custom: &Vec<char>) -> Vec<&'static str> {
-    let headings = vec![
-        DEFAULT_HEADING_HOPS,
-        DEFAULT_HEADING_HOST,
-        DEFAULT_HEADING_LOSS,
-        DEFAULT_HEADING_SENT,
-        DEFAULT_HEADING_RECV,
-        DEFAULT_HEADING_LAST,
-        DEFAULT_HEADING_AVG,
-        DEFAULT_HEADING_BEST,
-        DEFAULT_HEADING_WRST,
-        DEFAULT_HEADING_STDEV,
-        DEFAULT_HEADING_STS,
-    ];
-    ABBREVIATED_COLUMNS
-        .iter()
-        .filter(|&c| custom.contains(&c))
-        .map(|&c| headings[ABBREVIATED_COLUMNS.iter().position(|&x| x == c).unwrap()])
-        .collect()
-}
-
-const ABBREVIATED_COLUMNS: [char; 11] = ['H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'];
-
-const HEADING_WIDTH_HOPS: Constraint = Constraint::Percentage(3);
-const HEADING_WIDTH_HOST: Constraint = Constraint::Percentage(42);
-const HEADING_WIDTH_LOSS: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_SENT: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_RECV: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_LAST: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_AVG: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_BEST: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_WRST: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_STDEV: Constraint = Constraint::Percentage(5);
-const HEADING_WIDTH_STS: Constraint = Constraint::Percentage(5);
 
 const DEFAULT_HEADING_HOPS: &'static str = "#";
 const DEFAULT_HEADING_HOST: &'static str = "Host";

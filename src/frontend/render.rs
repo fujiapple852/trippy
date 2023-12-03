@@ -10,7 +10,6 @@ pub mod history;
 pub mod settings;
 pub mod splash;
 pub mod table;
-pub mod table_dialog;
 pub mod tabs;
 pub mod util;
 pub mod world;

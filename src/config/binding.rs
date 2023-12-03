@@ -10,7 +10,6 @@ use strum::{AsRefStr, EnumString, EnumVariantNames};
 /// Tui keyboard bindings.
 #[derive(Debug, Clone, Copy)]
 pub struct TuiBindings {
-    pub toggle_table_dialog: TuiKeyBinding,
     pub toggle_help: TuiKeyBinding,
     pub toggle_help_alt: TuiKeyBinding,
     pub toggle_settings: TuiKeyBinding,
@@ -47,7 +46,6 @@ impl TuiBindings {
     pub fn find_duplicates(&self) -> Vec<String> {
         let (_, duplicates) = [
             (self.toggle_help, TuiCommandItem::ToggleHelp),
-            (self.toggle_table_dialog, TuiCommandItem::ToggleHelp),
             (self.toggle_help_alt, TuiCommandItem::ToggleHelpAlt),
             (self.toggle_settings, TuiCommandItem::ToggleSettings),
             (self.previous_hop, TuiCommandItem::PreviousHop),
@@ -104,10 +102,6 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
     fn from(value: (HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)) -> Self {
         let (cmd_items, cfg) = value;
         Self {
-            toggle_table_dialog: *cmd_items
-                .get(&TuiCommandItem::ToggleTableDialog)
-                .or(cfg.toggle_table_dialog.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('t'))),
             toggle_help: *cmd_items
                 .get(&TuiCommandItem::ToggleHelp)
                 .or(cfg.toggle_help.as_ref())

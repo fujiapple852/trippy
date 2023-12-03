@@ -27,7 +27,6 @@ pub struct TuiApp {
     pub resolver: DnsResolver,
     pub geoip_lookup: GeoIpLookup,
     pub show_help: bool,
-    pub show_table_dialog: bool,
     pub show_settings: bool,
     pub show_hop_details: bool,
     pub show_chart: bool,
@@ -55,7 +54,6 @@ impl TuiApp {
             resolver,
             geoip_lookup,
             show_help: false,
-            show_table_dialog: false,
             show_settings: false,
             show_hop_details: false,
             show_chart: false,
@@ -217,10 +215,6 @@ impl TuiApp {
     pub fn clear(&mut self) {
         self.table_state.select(None);
         self.selected_hop_address = 0;
-    }
-
-    pub fn toggle_table_dialog(&mut self) {
-        self.show_table_dialog = !self.show_table_dialog;
     }
 
     pub fn toggle_help(&mut self) {

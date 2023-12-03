@@ -1,6 +1,7 @@
 use crate::backend::flows::FlowEntry;
 use crate::backend::trace::Trace;
 use crate::TraceInfo;
+use crate::frontend::TuiConfig;
 use anyhow::anyhow;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
@@ -10,20 +11,33 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
 use serde::{Serialize, Serializer};
 use std::fmt::{Debug, Formatter};
+use std::io;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use trippy::dns::{DnsResolver, Resolver};
 
+const DEFAULT_HEADINGS: [&str; 13] = [
+    "Target", "TargetIp", "Hop", "IPs", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best",
+    "Wrst", "StdDev",
+];
+
+struct HeaderPair<'a>(char, &'a str);
 /// Generate a CSV report of trace data.
 pub fn run_report_csv(
     info: &TraceInfo,
+    tui_config: TuiConfig,
     report_cycles: usize,
     resolver: &DnsResolver,
 ) -> anyhow::Result<()> {
     let trace = wait_for_round(&info.data, report_cycles)?;
-    println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
+    let _print_headers = tui_config.custom_columns;
+    
+    let mut wtr = csv::Writer::from_writer(io::stdout());
+    let _ = wtr.write_record(&DEFAULT_HEADINGS);
+    let _ = wtr.flush();
+    //println!("Target,TargetIp,Hop,IPs,Addrs,Loss%,Snt,Recv,Last,Avg,Best,Wrst,StdDev,");
     for hop in trace.hops(Trace::default_flow_id()) {
         let ttl = hop.ttl();
         let ips = hop.addrs().join(":");
@@ -49,12 +63,13 @@ pub fn run_report_csv(
         let worst = hop
             .worst_ms()
             .map_or_else(|| String::from("???"), |worst| format!("{worst:.1}"));
-        let stddev = hop.stddev_ms();
-        let avg = hop.avg_ms();
-        let loss_pct = hop.loss_pct();
-        println!(
-            "{},{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
-            info.target_hostname,
+        let stddev = format!("{:.1}", hop.stddev_ms());
+        let avg = format!("{:.1}%", hop.avg_ms());
+        let loss_pct = format!("{:.1}%", hop.loss_pct());
+        wtr.serialize((
+            // println!(
+            //     "{},{},{},{},{},{:.1}%,{},{},{},{:.1},{},{},{:.1}",
+            &info.target_hostname,
             info.target_addr,
             ttl,
             ip,
@@ -66,8 +81,9 @@ pub fn run_report_csv(
             avg,
             best,
             worst,
-            stddev
-        );
+            stddev,
+        ))?;
+        let _ = wtr.flush();
     }
     Ok(())
 }

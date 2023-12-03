@@ -204,7 +204,7 @@ fn run_frontend(
     match args.mode {
         Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
         Mode::Stream => report::run_report_stream(&traces[0])?,
-        Mode::Csv => report::run_report_csv(&traces[0], args.report_cycles, &resolver)?,
+        Mode::Csv => report::run_report_csv(&traces[0], make_tui_config(args),args.report_cycles, &resolver)?,
         Mode::Json => report::run_report_json(&traces[0], args.report_cycles, &resolver)?,
         Mode::Pretty => report::run_report_table_pretty(&traces[0], args.report_cycles, &resolver)?,
         Mode::Markdown => report::run_report_table_md(&traces[0], args.report_cycles, &resolver)?,
@@ -310,7 +310,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_max_samples,
         args.tui_theme,
         &args.tui_bindings,
-        args.tui_grid_headings.clone(),
+        args.tui_custom_columns.clone(),
     )
 }
 

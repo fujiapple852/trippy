@@ -178,7 +178,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "tui-table-columns",
-            format!("{:?}", app.tui_config.grid_headers),
+            format!("{:?}", app.tui_config.custom_columns),
         ),
     ]
 }
@@ -265,7 +265,6 @@ fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
 fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let binds = &app.tui_config.bindings;
     vec![
-        SettingsItem::new("toggle-table-dialog", format!("{}", binds.toggle_table_dialog)),
         SettingsItem::new("toggle-help", format!("{}", binds.toggle_help)),
         SettingsItem::new("toggle-help-alt", format!("{}", binds.toggle_help_alt)),
         SettingsItem::new("toggle-settings", format!("{}", binds.toggle_settings)),

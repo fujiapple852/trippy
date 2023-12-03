@@ -3,8 +3,6 @@ use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 
-use super::table_dialog;
-
 /// Render the application main screen.
 ///
 /// The layout of the TUI is as follows:
@@ -55,8 +53,6 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     }
     if app.show_settings {
         settings::render(f, app);
-    } else if app.show_table_dialog {
-        table_dialog::render(f, app);
     } else if app.show_help {
         help::render(f, app);
     }

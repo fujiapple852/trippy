@@ -159,7 +159,7 @@ pub struct Args {
 
     /// The Custom columns to be displayed that contains comma-sep string [possible values: 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T']
     #[arg(long)]
-    pub tui_custom_headers: Option<String>,
+    pub tui_custom_columns: Option<String>,
 
     /// How to render GeoIp information [default: short]
     #[arg(value_enum, long)]

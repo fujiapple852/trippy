@@ -179,7 +179,6 @@ pub struct ConfigThemeColors {
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigBindings {
-    pub toggle_table_dialog: Option<TuiKeyBinding>,
     pub toggle_help: Option<TuiKeyBinding>,
     pub toggle_help_alt: Option<TuiKeyBinding>,
     pub toggle_settings: Option<TuiKeyBinding>,

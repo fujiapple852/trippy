@@ -229,7 +229,7 @@ pub struct TrippyConfig {
     pub log_format: LogFormat,
     pub log_filter: String,
     pub log_span_events: LogSpanEvents,
-    pub tui_grid_headings: Vec<char>,
+    pub tui_custom_columns: Vec<char>,
 }
 
 impl TryFrom<(Args, &Platform)> for TrippyConfig {
@@ -435,8 +435,8 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_report.report_cycles,
             constants::DEFAULT_REPORT_CYCLES,
         );
-        let tui_grid_headings: Vec<char> =
-            match (args.tui_custom_headers, cfg_file_tui.custom_columns) {
+        let tui_custom_columns: Vec<char> =
+            match (args.tui_custom_columns, cfg_file_tui.custom_columns) {
                 (Some(headers), Some(_)) => headers.split(',').flat_map(|s| s.chars()).collect(),
                 (Some(headers), None) => headers.split(',').flat_map(|s| s.chars()).collect(),
                 (None, Some(headers)) => headers,
@@ -537,7 +537,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
         validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
-        validate_custom_headings(&tui_grid_headings)?;
+        validate_custom_headings(&tui_custom_columns)?;
         let tui_theme_items = args
             .tui_theme_colors
             .into_iter()
@@ -591,7 +591,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             log_format,
             log_filter,
             log_span_events,
-            tui_grid_headings,
+            tui_custom_columns,
         })
     }
 }
@@ -648,14 +648,16 @@ fn validate_privilege(
         ))),
     }
 }
-fn validate_custom_headings(tui_grid_headings: &Vec<char>) -> anyhow::Result<()> {
-    if !tui_grid_headings.iter().all(|&c| constants::DEFAULT_TABLE_HEADINGS.to_vec().contains(&c)) {
+fn validate_custom_headings(tui_custom_columns: &Vec<char>) -> anyhow::Result<()> {
+    if !tui_custom_columns
+        .iter()
+        .all(|&c| constants::DEFAULT_TABLE_HEADINGS.to_vec().contains(&c))
+    {
         Err(anyhow!("Invalid column found - Allowed upper case values 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
     } else {
         Ok(())
     }
 }
-
 
 fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
     if matches!(mode, Mode::Tui) && verbose {
