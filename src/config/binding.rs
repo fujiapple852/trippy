@@ -491,8 +491,6 @@ impl Display for TuiKeyBinding {
 #[allow(clippy::enum_variant_names)]
 pub enum TuiCommandItem {
     /// Toggle the help dialog.
-    ToggleTableDialog,
-    /// Toggle the help dialog.
     ToggleHelp,
     /// Alternative command to toggle the help dialog.
     ToggleHelpAlt,

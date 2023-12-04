@@ -47,6 +47,5 @@ const HELP_LINES: [&str; 22] = [
     "z                - toggle AS information (if available)",
     "h or ?           - toggle help",
     "s                - toggle settings",
-    "t                - toggle Table dialog",
     "q                - quit",
 ];

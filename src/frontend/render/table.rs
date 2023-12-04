@@ -22,7 +22,7 @@ pub struct Column {
 }
 impl Column {
     pub fn new(display: &'static str, short: char, width_pct: u16) -> Self {
-        Column {
+        Self {
             display,
             short,
             width_pct,
@@ -30,18 +30,18 @@ impl Column {
     }
     pub fn new_short(short: char) -> Self {
         match short {
-            'H' => Column::new(DEFAULT_HEADING_HOPS, short, 3),
-            'O' => Column::new(DEFAULT_HEADING_HOST, short, 42),
-            'L' => Column::new(DEFAULT_HEADING_LOSS, short, 5),
-            'S' => Column::new(DEFAULT_HEADING_SENT, short, 5),
-            'R' => Column::new(DEFAULT_HEADING_RECV, short, 5),
-            'A' => Column::new(DEFAULT_HEADING_LAST, short, 5),
-            'V' => Column::new(DEFAULT_HEADING_AVG, short, 5),
-            'B' => Column::new(DEFAULT_HEADING_BEST, short, 5),
-            'W' => Column::new(DEFAULT_HEADING_WRST, short, 5),
-            'D' => Column::new(DEFAULT_HEADING_STDEV, short, 5),
-            'T' => Column::new(DEFAULT_HEADING_STS, short, 5),
-            _ => Column::new(DEFAULT_HEADING_HOPS, short, 3),
+            'H' => Self::new(DEFAULT_HEADING_HOPS, short, 3),
+            'O' => Self::new(DEFAULT_HEADING_HOST, short, 42),
+            'L' => Self::new(DEFAULT_HEADING_LOSS, short, 5),
+            'S' => Self::new(DEFAULT_HEADING_SENT, short, 5),
+            'R' => Self::new(DEFAULT_HEADING_RECV, short, 5),
+            'A' => Self::new(DEFAULT_HEADING_LAST, short, 5),
+            'V' => Self::new(DEFAULT_HEADING_AVG, short, 5),
+            'B' => Self::new(DEFAULT_HEADING_BEST, short, 5),
+            'W' => Self::new(DEFAULT_HEADING_WRST, short, 5),
+            'D' => Self::new(DEFAULT_HEADING_STDEV, short, 5),
+            'T' => Self::new(DEFAULT_HEADING_STS, short, 5),
+            _ => todo!(),
         }
     }
 }
@@ -68,25 +68,21 @@ impl PartialEq for Column {
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
-    let custom_columns = &config.custom_columns;
-    let columns = get_custom_columns(&custom_columns);
+    let custom_columns = &config.tui_custom_columns;
+    let columns = custom_columns.iter().map(|c| Column::new_short(*c)).collect_vec();
     let widths = get_column_widths(&columns);
     let header = render_table_header(app.tui_config.theme, &columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app
-        .tracer_data()
-        .hops(Trace::default_flow_id())
-        .iter()
-        .map(|hop| {
-            render_table_row(
-                app,
-                hop,
-                &app.resolver,
-                &app.geoip_lookup,
-                &app.tui_config,
-                &columns,
-            )
-        });
+    let rows = app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
+        render_table_row(
+            app,
+            hop,
+            &app.resolver,
+            &app.geoip_lookup,
+            &app.tui_config,
+            &columns,
+        )
+    });
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -107,7 +103,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 }
 
 /// Render the table header.
-fn render_table_header(theme: Theme, table_columns: &Vec<Column>) -> Row<'static> {
+fn render_table_header(theme: Theme, table_columns: &[Column]) -> Row<'static> {
     let header_cells = table_columns.iter().map(|c| {
         Cell::from(c.display).style(Style::default().fg(theme.hops_table_header_text_color))
     });
@@ -124,13 +120,13 @@ fn render_table_row(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
-    custom_columns: &Vec<Column>,
+    custom_columns: &[Column],
 ) -> Row<'static> {
     let is_selected_hop = app
         .selected_hop()
         .map(|h| h.ttl() == hop.ttl())
         .unwrap_or_default();
-    let is_in_round = app.tracer_data().is_in_round(hop, Trace::default_flow_id());
+    let is_in_round = app.tracer_data().is_in_round(hop, app.selected_flow);
     let (_, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
@@ -161,7 +157,7 @@ fn new_cell(
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
 ) -> Cell<'static> {
-    let is_target = app.tracer_data().is_target(hop, Trace::default_flow_id());
+    let is_target = app.tracer_data().is_target(hop, app.selected_flow);
 
     match column.short {
         'H' => render_ttl_cell(hop),
@@ -169,7 +165,7 @@ fn new_cell(
             let (host_cell, _) = if is_selected_hop && app.show_hop_details {
                 render_hostname_with_details(app, hop, dns, geoip_lookup, config)
             } else {
-                render_hostname(hop, dns, geoip_lookup, config)
+                render_hostname(app, hop, dns, geoip_lookup)
             };
             host_cell
         }
@@ -182,7 +178,7 @@ fn new_cell(
         'W' => render_worst_cell(hop),
         'D' => render_stddev_cell(hop),
         'T' => render_status_cell(hop, is_target),
-        _ => render_ttl_cell(hop),
+        _ => todo!(),
     }
 }
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
@@ -637,23 +633,20 @@ fn fmt_details_line(
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
 }
-fn get_custom_columns(custom: &Vec<char>) -> Vec<Column> {
-    custom.iter().map(|c| Column::new_short(*c)).collect_vec()
-}
-fn get_column_widths(custom: &Vec<Column>) -> Vec<Constraint> {
+fn get_column_widths(custom: &[Column]) -> Vec<Constraint> {
     custom
         .iter()
         .map(|c| Constraint::Percentage(c.width_pct))
         .collect()
 }
-const DEFAULT_HEADING_HOPS: &'static str = "#";
-const DEFAULT_HEADING_HOST: &'static str = "Host";
-const DEFAULT_HEADING_LOSS: &'static str = "Loss%";
-const DEFAULT_HEADING_SENT: &'static str = "Snt";
-const DEFAULT_HEADING_RECV: &'static str = "Recv";
-const DEFAULT_HEADING_LAST: &'static str = "Last";
-const DEFAULT_HEADING_AVG: &'static str = "Avg";
-const DEFAULT_HEADING_BEST: &'static str = "Best";
-const DEFAULT_HEADING_WRST: &'static str = "Wrst";
-const DEFAULT_HEADING_STDEV: &'static str = "StDev";
-const DEFAULT_HEADING_STS: &'static str = "Sts";
+const DEFAULT_HEADING_HOPS: &str = "#";
+const DEFAULT_HEADING_HOST: &str = "Host";
+const DEFAULT_HEADING_LOSS: &str = "Loss%";
+const DEFAULT_HEADING_SENT: &str = "Snt";
+const DEFAULT_HEADING_RECV: & str = "Recv";
+const DEFAULT_HEADING_LAST: &str = "Last";
+const DEFAULT_HEADING_AVG: &str = "Avg";
+const DEFAULT_HEADING_BEST: &str = "Best";
+const DEFAULT_HEADING_WRST: &str = "Wrst";
+const DEFAULT_HEADING_STDEV: &str = "StDev";
+const DEFAULT_HEADING_STS: &str = "Sts";

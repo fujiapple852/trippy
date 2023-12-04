@@ -33,8 +33,10 @@ pub struct TuiConfig {
     pub theme: Theme,
     /// The Tui keyboard bindings.
     pub bindings: Bindings,
-    //// The default grid
-    pub custom_columns: Vec<char>,
+    //// The default custom columns for table
+    pub tui_custom_columns: Vec<char>,
+    //// The default custom columns for csv mode
+    pub csv_custom_columns: Vec<char>,
 }
 
 impl TuiConfig {
@@ -53,7 +55,8 @@ impl TuiConfig {
         max_flows: usize,
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
-        custom_columns: Vec<char>,
+        tui_custom_columns: Vec<char>,
+        csv_custom_columns: Vec<char>,
     ) -> Self {
         Self {
             refresh_rate,
@@ -69,7 +72,8 @@ impl TuiConfig {
             max_flows,
             theme: Theme::from(tui_theme),
             bindings: Bindings::from(*tui_bindings),
-            custom_columns,
+            tui_custom_columns,
+            csv_custom_columns,
         }
     }
 }

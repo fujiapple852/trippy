@@ -15,7 +15,7 @@ use trippy::tracing::PortDirection;
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let all_settings = format_all_settings(app);
     let (name, info, items) = &all_settings[app.settings_tab_selected];
-    let area = util::centered_rect(70, 60, f.size());
+    let area = util::centered_rect(75, 60, f.size());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(SETTINGS_TABLE_WIDTH.as_ref())
@@ -78,7 +78,7 @@ fn render_settings_table(
         .max()
         .unwrap_or_default()
         .max(30);
-    let table_widths = [Constraint::Min(item_width), Constraint::Length(60)];
+    let table_widths = [Constraint::Min(item_width), Constraint::Length(80)];
     let table = Table::new(rows)
         .header(header)
         .block(
@@ -178,8 +178,12 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
                 .map_or_else(|| String::from("auto"), |m| m.to_string()),
         ),
         SettingsItem::new(
-            "tui-table-columns",
-            format!("{:?}", app.tui_config.custom_columns),
+            "tui-custom-columns",
+            format!("{:?}", app.tui_config.tui_custom_columns),
+        ),
+        SettingsItem::new(
+            "csv-custom-columns",
+            format!("{:?}", app.tui_config.csv_custom_columns),
         ),
     ]
 }
@@ -424,7 +428,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 8),
+    ("Tui", 11),
     ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
