@@ -106,13 +106,13 @@ addr-family = "ipv4"
 #
 # The minimum time that must elapse before a tracing round is considered
 # complete, regardless of whether the target is discovered or not.
-min-round-duration = "1000ms"
+min-round-duration = "1s"
 
 # The maximum duration of every round [default: 1s]
 #
 # The maximum time that may elapse before a tracing round is considered
 # complete, regardless of whether the target is discovered or not.
-max-round-duration = "1000ms"
+max-round-duration = "1s"
 
 # The round grace period [default: 100ms]
 #
@@ -159,6 +159,18 @@ payload-pattern = 0
 #
 # This is also known as DSCP+ECN.
 tos = 0
+
+# Whether to parse ICMP extensions.
+#
+# If enabled, all extensions attached to incoming ICMP TimeExceeded and DestinationUnavailable messages will be parsed
+# and provided as part of the trace response data.
+#
+# The following ICMP Extension Object Classes are supported:
+#   1 - MPLS Label Stack Class (RFC4950)
+#
+# Extension objects with an unknown class will be parsed to capture generic information including the class, subtype,
+# length and payload bytes.
+icmp-extensions = false
 
 # The socket read timeout [default: 10ms]
 read-timeout = "10ms"
@@ -229,6 +241,14 @@ tui-address-mode = "host"
 #   name            - Display the AS name
 tui-as-mode = "asn"
 
+# How to render ICMP extensions
+#
+#   off             - Do not show icmp extensions [default]
+#   mpls            - Show MPLS label(s) only
+#   full            - Show full icmp extension data for all known extensions
+#   all             - Show full icmp extension data for all classes
+tui-icmp-extension-mode = "off"
+
 # The grid columns that can be customized to suit.
 # Allowed values are: H O L S R A V B W D T
 # H=#, O=Host,L=Loss%, S=Snt, R=Recv, A=Last, V=Avg, B=Best, W=Wrst, D=StDev, T=Sts
@@ -251,6 +271,9 @@ tui-max-addrs = 0
 
 # The maximum number of samples to record per hop [default: 256]
 tui-max-samples = 256
+
+# The maximum number of flows to show [default: 40]
+tui-max-flows = 64
 
 # Whether to preserve the screen on exit [default: false]
 tui-preserve-screen = false
@@ -285,6 +308,10 @@ hops-chart-unselected-color = "gray"
 hops-chart-axis-color = "darkgray"
 frequency-chart-bar-color = "green"
 frequency-chart-text-color = "gray"
+flows-chart-bar-selected-color = "green"
+flows-chart-bar-unselected-color = "darkgray"
+flows-chart-text-current-color = "lightgreen"
+flows-chart-text-non-current-color = "white"
 samples-chart-color = "yellow"
 help-dialog-bg-color = "blue"
 help-dialog-text-color = "gray"
@@ -322,6 +349,8 @@ address-mode-both = "b"
 toggle-freeze = "ctrl+f"
 toggle-chart = "c"
 toggle-map = "m"
+toggle-flows = "f"
+toggle-privacy = "p"
 expand-hosts = "]"
 expand-hosts-max = "}"
 contract-hosts = "["

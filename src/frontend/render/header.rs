@@ -1,4 +1,3 @@
-use crate::backend::trace::Trace;
 use crate::frontend::tui_app::TuiApp;
 use chrono::SecondsFormat;
 use humantime::format_duration;
@@ -12,6 +11,7 @@ use trippy::dns::{ResolveMethod, Resolver};
 use trippy::tracing::{PortDirection, TracerProtocol};
 
 /// Render the title, config, target, clock and keyboard controls.
+#[allow(clippy::too_many_lines)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title(format!(" Trippy v{} ", clap::crate_version!()))
@@ -76,9 +76,19 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .tui_config
         .max_addrs
         .map_or_else(|| String::from("auto"), |m| m.to_string());
+    let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
+        "on"
+    } else {
+        "off"
+    };
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
+    let plural_flows = if app.tracer_data().flows().len() > 1 {
+        "flows"
+    } else {
+        "flow"
+    };
     let left_line = vec![
         Line::from(vec![
             Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
@@ -87,15 +97,17 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         Line::from(vec![
             Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(format!(
-                "protocol={protocol} as-info={as_info} details={details} max-hosts={max_hosts}"
+                "protocol={protocol} as-info={as_info} details={details} max-hosts={max_hosts}, privacy={privacy}"
             )),
         ]),
         Line::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),
             Span::raw(format!(
-                ", discovered {} hops",
-                app.tracer_data().hops(Trace::default_flow_id()).len()
+                ", discovered {} hops and {} unique {}",
+                app.tracer_data().hops(app.selected_flow).len(),
+                app.tracer_data().flows().len(),
+                plural_flows
             )),
         ]),
     ];

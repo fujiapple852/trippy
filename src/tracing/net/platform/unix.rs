@@ -2,7 +2,6 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
 use crate::tracing::net::socket::Socket;
-use crate::tracing::util::Required;
 use itertools::Itertools;
 use nix::{
     sys::select::FdSet,
@@ -64,14 +63,14 @@ pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
 fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
     use crate::tracing::packet;
     let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
-    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf).req()?;
+    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
     icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
     icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
     icmp.set_identifier(0);
     icmp.set_sequence(0);
     icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
     let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
-    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf).req()?;
+    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
     ipv4.set_protocol(packet::IpProtocol::Icmp);
@@ -147,7 +146,7 @@ pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr
         IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
     }?;
     socket.connect(SocketAddr::new(target_addr, port))?;
-    Ok(socket.local_addr()?.req()?.ip())
+    Ok(socket.local_addr()?.ok_or(TracerError::MissingAddr)?.ip())
 }
 
 /// A network socket.

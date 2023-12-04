@@ -1,5 +1,8 @@
 mod buffer;
 
+/// Packet errors.
+pub mod error;
+
 /// Functions for calculating network checksums.
 pub mod checksum;
 
@@ -8,6 +11,9 @@ pub mod icmpv4;
 
 /// `ICMPv6` packets.
 pub mod icmpv6;
+
+/// `ICMP` extensions.
+pub mod icmp_extension;
 
 /// `IPv4` packets.
 pub mod ipv4;

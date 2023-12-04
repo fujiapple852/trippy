@@ -29,6 +29,7 @@ pub struct TracerChannel<S: Socket> {
     payload_pattern: PayloadPattern,
     multipath_strategy: MultipathStrategy,
     tos: TypeOfService,
+    icmp_extensions: bool,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
     send_socket: Option<S>,
@@ -68,6 +69,7 @@ impl<S: Socket> TracerChannel<S> {
             payload_pattern: config.payload_pattern,
             multipath_strategy: config.multipath_strategy,
             tos: config.tos,
+            icmp_extensions: config.icmp_extensions,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             send_socket,
@@ -95,7 +97,7 @@ impl<S: Socket> Network for TracerChannel<S> {
                 resp => Ok(resp),
             },
         }?;
-        if let Some(resp) = prob_response {
+        if let Some(resp) = &prob_response {
             tracing::debug!(?resp);
         }
         Ok(prob_response)
@@ -170,10 +172,10 @@ impl<S: Socket> TracerChannel<S> {
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
         let socket = match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_tcp_probe(probe, src_addr, dest_addr, self.tos)
+                ipv4::dispatch_tcp_probe(&probe, src_addr, dest_addr, self.tos)
             }
             (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_tcp_probe(probe, src_addr, dest_addr)
+                ipv6::dispatch_tcp_probe(&probe, src_addr, dest_addr)
             }
             _ => unreachable!(),
         }?;
@@ -187,8 +189,16 @@ impl<S: Socket> TracerChannel<S> {
     fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
-                IpAddr::V4(_) => ipv4::recv_icmp_probe(&mut self.recv_socket, self.protocol),
-                IpAddr::V6(_) => ipv6::recv_icmp_probe(&mut self.recv_socket, self.protocol),
+                IpAddr::V4(_) => ipv4::recv_icmp_probe(
+                    &mut self.recv_socket,
+                    self.protocol,
+                    self.icmp_extensions,
+                ),
+                IpAddr::V6(_) => ipv6::recv_icmp_probe(
+                    &mut self.recv_socket,
+                    self.protocol,
+                    self.icmp_extensions,
+                ),
             }
         } else {
             Ok(None)

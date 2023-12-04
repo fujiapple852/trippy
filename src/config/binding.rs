@@ -8,7 +8,7 @@ use std::str::FromStr;
 use strum::{AsRefStr, EnumString, EnumVariantNames};
 
 /// Tui keyboard bindings.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
     pub toggle_help_alt: TuiKeyBinding,
@@ -25,6 +25,8 @@ pub struct TuiBindings {
     pub toggle_freeze: TuiKeyBinding,
     pub toggle_chart: TuiKeyBinding,
     pub toggle_map: TuiKeyBinding,
+    pub toggle_flows: TuiKeyBinding,
+    pub toggle_privacy: TuiKeyBinding,
     pub expand_hosts: TuiKeyBinding,
     pub contract_hosts: TuiKeyBinding,
     pub expand_hosts_max: TuiKeyBinding,
@@ -37,6 +39,51 @@ pub struct TuiBindings {
     pub toggle_as_info: TuiKeyBinding,
     pub toggle_hop_details: TuiKeyBinding,
     pub quit: TuiKeyBinding,
+}
+
+impl Default for TuiBindings {
+    fn default() -> Self {
+        Self {
+            toggle_help: TuiKeyBinding::new(KeyCode::Char('h')),
+            toggle_help_alt: TuiKeyBinding::new(KeyCode::Char('?')),
+            toggle_settings: TuiKeyBinding::new(KeyCode::Char('s')),
+            previous_hop: TuiKeyBinding::new(KeyCode::Up),
+            next_hop: TuiKeyBinding::new(KeyCode::Down),
+            previous_trace: TuiKeyBinding::new(KeyCode::Left),
+            next_trace: TuiKeyBinding::new(KeyCode::Right),
+            previous_hop_address: TuiKeyBinding::new(KeyCode::Char(',')),
+            next_hop_address: TuiKeyBinding::new(KeyCode::Char('.')),
+            address_mode_ip: TuiKeyBinding::new(KeyCode::Char('i')),
+            address_mode_host: TuiKeyBinding::new(KeyCode::Char('n')),
+            address_mode_both: TuiKeyBinding::new(KeyCode::Char('b')),
+            toggle_freeze: TuiKeyBinding::new_with_modifier(
+                KeyCode::Char('f'),
+                KeyModifiers::CONTROL,
+            ),
+            toggle_chart: TuiKeyBinding::new(KeyCode::Char('c')),
+            toggle_map: TuiKeyBinding::new(KeyCode::Char('m')),
+            toggle_flows: TuiKeyBinding::new(KeyCode::Char('f')),
+            toggle_privacy: TuiKeyBinding::new(KeyCode::Char('p')),
+            expand_hosts: TuiKeyBinding::new(KeyCode::Char(']')),
+            contract_hosts: TuiKeyBinding::new(KeyCode::Char('[')),
+            expand_hosts_max: TuiKeyBinding::new(KeyCode::Char('}')),
+            contract_hosts_min: TuiKeyBinding::new(KeyCode::Char('{')),
+            chart_zoom_in: TuiKeyBinding::new(KeyCode::Char('=')),
+            chart_zoom_out: TuiKeyBinding::new(KeyCode::Char('-')),
+            clear_trace_data: TuiKeyBinding::new_with_modifier(
+                KeyCode::Char('r'),
+                KeyModifiers::CONTROL,
+            ),
+            clear_dns_cache: TuiKeyBinding::new_with_modifier(
+                KeyCode::Char('k'),
+                KeyModifiers::CONTROL,
+            ),
+            clear_selection: TuiKeyBinding::new(KeyCode::Esc),
+            toggle_as_info: TuiKeyBinding::new(KeyCode::Char('z')),
+            toggle_hop_details: TuiKeyBinding::new(KeyCode::Char('d')),
+            quit: TuiKeyBinding::new(KeyCode::Char('q')),
+        }
+    }
 }
 
 impl TuiBindings {
@@ -63,6 +110,8 @@ impl TuiBindings {
             (self.toggle_freeze, TuiCommandItem::ToggleFreeze),
             (self.toggle_chart, TuiCommandItem::ToggleChart),
             (self.toggle_map, TuiCommandItem::ToggleMap),
+            (self.toggle_flows, TuiCommandItem::ToggleFlows),
+            (self.toggle_privacy, TuiCommandItem::TogglePrivacy),
             (self.expand_hosts, TuiCommandItem::ExpandHosts),
             (self.expand_hosts_max, TuiCommandItem::ExpandHostsMax),
             (self.contract_hosts, TuiCommandItem::ContractHosts),
@@ -105,120 +154,119 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
             toggle_help: *cmd_items
                 .get(&TuiCommandItem::ToggleHelp)
                 .or(cfg.toggle_help.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('h'))),
+                .unwrap_or(&Self::default().toggle_help),
             toggle_help_alt: *cmd_items
                 .get(&TuiCommandItem::ToggleHelpAlt)
                 .or(cfg.toggle_help_alt.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('?'))),
+                .unwrap_or(&Self::default().toggle_help_alt),
             toggle_settings: *cmd_items
                 .get(&TuiCommandItem::ToggleSettings)
                 .or(cfg.toggle_settings.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('s'))),
+                .unwrap_or(&Self::default().toggle_settings),
             previous_hop: *cmd_items
                 .get(&TuiCommandItem::PreviousHop)
                 .or(cfg.previous_hop.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Up)),
+                .unwrap_or(&Self::default().previous_hop),
             next_hop: *cmd_items
                 .get(&TuiCommandItem::NextHop)
                 .or(cfg.next_hop.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Down)),
+                .unwrap_or(&Self::default().next_hop),
             previous_trace: *cmd_items
                 .get(&TuiCommandItem::PreviousTrace)
                 .or(cfg.previous_trace.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Left)),
+                .unwrap_or(&Self::default().previous_trace),
             next_trace: *cmd_items
                 .get(&TuiCommandItem::NextTrace)
                 .or(cfg.next_trace.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Right)),
+                .unwrap_or(&Self::default().next_trace),
             previous_hop_address: *cmd_items
                 .get(&TuiCommandItem::PreviousHopAddress)
                 .or(cfg.previous_hop_address.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(','))),
+                .unwrap_or(&Self::default().previous_hop_address),
             next_hop_address: *cmd_items
                 .get(&TuiCommandItem::NextHopAddress)
                 .or(cfg.next_hop_address.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('.'))),
+                .unwrap_or(&Self::default().next_hop_address),
             address_mode_ip: *cmd_items
                 .get(&TuiCommandItem::AddressModeIp)
                 .or(cfg.address_mode_ip.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('i'))),
+                .unwrap_or(&Self::default().address_mode_ip),
             address_mode_host: *cmd_items
                 .get(&TuiCommandItem::AddressModeHost)
                 .or(cfg.address_mode_host.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('n'))),
+                .unwrap_or(&Self::default().address_mode_host),
             address_mode_both: *cmd_items
                 .get(&TuiCommandItem::AddressModeBoth)
                 .or(cfg.address_mode_both.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('b'))),
+                .unwrap_or(&Self::default().address_mode_both),
             toggle_freeze: *cmd_items
                 .get(&TuiCommandItem::ToggleFreeze)
                 .or(cfg.toggle_freeze.as_ref())
-                .unwrap_or(&TuiKeyBinding::new_with_modifier(
-                    KeyCode::Char('f'),
-                    KeyModifiers::CONTROL,
-                )),
+                .unwrap_or(&Self::default().toggle_freeze),
             toggle_chart: *cmd_items
                 .get(&TuiCommandItem::ToggleChart)
                 .or(cfg.toggle_chart.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('c'))),
+                .unwrap_or(&Self::default().toggle_chart),
+            toggle_flows: *cmd_items
+                .get(&TuiCommandItem::ToggleFlows)
+                .or(cfg.toggle_flows.as_ref())
+                .unwrap_or(&Self::default().toggle_flows),
+            toggle_privacy: *cmd_items
+                .get(&TuiCommandItem::ToggleFlows)
+                .or(cfg.toggle_privacy.as_ref())
+                .unwrap_or(&Self::default().toggle_privacy),
             toggle_map: *cmd_items
                 .get(&TuiCommandItem::ToggleMap)
                 .or(cfg.toggle_map.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('m'))),
+                .unwrap_or(&Self::default().toggle_map),
             expand_hosts: *cmd_items
                 .get(&TuiCommandItem::ExpandHosts)
                 .or(cfg.expand_hosts.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char(']'))),
+                .unwrap_or(&Self::default().expand_hosts),
             contract_hosts: *cmd_items
                 .get(&TuiCommandItem::ContractHosts)
                 .or(cfg.contract_hosts.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('['))),
+                .unwrap_or(&Self::default().contract_hosts),
             expand_hosts_max: *cmd_items
                 .get(&TuiCommandItem::ExpandHostsMax)
                 .or(cfg.expand_hosts_max.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('}'))),
+                .unwrap_or(&Self::default().expand_hosts_max),
             contract_hosts_min: *cmd_items
                 .get(&TuiCommandItem::ContractHostsMin)
                 .or(cfg.contract_hosts_min.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('{'))),
+                .unwrap_or(&Self::default().contract_hosts_min),
             chart_zoom_in: *cmd_items
                 .get(&TuiCommandItem::ChartZoomIn)
                 .or(cfg.chart_zoom_in.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('='))),
+                .unwrap_or(&Self::default().chart_zoom_in),
             chart_zoom_out: *cmd_items
                 .get(&TuiCommandItem::ChartZoomOut)
                 .or(cfg.chart_zoom_out.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('-'))),
+                .unwrap_or(&Self::default().chart_zoom_out),
             clear_trace_data: *cmd_items
                 .get(&TuiCommandItem::ClearTraceData)
                 .or(cfg.clear_trace_data.as_ref())
-                .unwrap_or(&TuiKeyBinding::new_with_modifier(
-                    KeyCode::Char('r'),
-                    KeyModifiers::CONTROL,
-                )),
+                .unwrap_or(&Self::default().clear_trace_data),
             clear_dns_cache: *cmd_items
                 .get(&TuiCommandItem::ClearDnsCache)
                 .or(cfg.clear_dns_cache.as_ref())
-                .unwrap_or(&TuiKeyBinding::new_with_modifier(
-                    KeyCode::Char('k'),
-                    KeyModifiers::CONTROL,
-                )),
+                .unwrap_or(&Self::default().clear_dns_cache),
             clear_selection: *cmd_items
                 .get(&TuiCommandItem::ClearSelection)
                 .or(cfg.clear_selection.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Esc)),
+                .unwrap_or(&Self::default().clear_selection),
             toggle_as_info: *cmd_items
                 .get(&TuiCommandItem::ToggleASInfo)
                 .or(cfg.toggle_as_info.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('z'))),
+                .unwrap_or(&Self::default().toggle_as_info),
             toggle_hop_details: *cmd_items
                 .get(&TuiCommandItem::ToggleHopDetails)
                 .or(cfg.toggle_hop_details.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('d'))),
+                .unwrap_or(&Self::default().toggle_hop_details),
             quit: *cmd_items
                 .get(&TuiCommandItem::Quit)
                 .or(cfg.quit.as_ref())
-                .unwrap_or(&TuiKeyBinding::new(KeyCode::Char('q'))),
+                .unwrap_or(&Self::default().quit),
         }
     }
 }
@@ -474,6 +522,10 @@ pub enum TuiCommandItem {
     ToggleChart,
     /// Toggle the map.
     ToggleMap,
+    /// Toggle the flows panel.
+    ToggleFlows,
+    /// Toggle hop privacy mode.
+    TogglePrivacy,
     /// Expand hosts.
     ExpandHosts,
     /// Expand hosts to max.

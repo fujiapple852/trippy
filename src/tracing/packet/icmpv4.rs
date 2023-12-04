@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use std::fmt::{Debug, Formatter};
 
 /// The type of ICMP packet.
@@ -59,24 +60,31 @@ pub struct IcmpPacket<'a> {
 }
 
 impl<'a> IcmpPacket<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Option<IcmpPacket<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> PacketResult<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("IcmpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &'a [u8]) -> Option<IcmpPacket<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> PacketResult<IcmpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(Self {
+            Ok(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("IcmpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
@@ -186,6 +194,7 @@ mod tests {
 
 pub mod echo_request {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
@@ -206,24 +215,31 @@ pub mod echo_request {
     }
 
     impl<'a> EchoRequestPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<EchoRequestPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<EchoRequestPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<EchoRequestPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<EchoRequestPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -408,6 +424,7 @@ pub mod echo_request {
 
 pub mod echo_reply {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
@@ -428,24 +445,31 @@ pub mod echo_reply {
     }
 
     impl<'a> EchoReplyPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<EchoReplyPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<EchoReplyPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<EchoReplyPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<EchoReplyPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -630,13 +654,16 @@ pub mod echo_reply {
 
 pub mod time_exceeded {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
+    use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
     const CODE_OFFSET: usize = 1;
     const CHECKSUM_OFFSET: usize = 2;
+    const LENGTH_OFFSET: usize = 5;
 
     /// Represents an ICMP `TimeExceeded` packet.
     ///
@@ -648,24 +675,31 @@ pub mod time_exceeded {
     }
 
     impl<'a> TimeExceededPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<TimeExceededPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<TimeExceededPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<TimeExceededPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<TimeExceededPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -689,6 +723,11 @@ pub mod time_exceeded {
             u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
         }
 
+        #[must_use]
+        pub fn get_length(&self) -> u8 {
+            self.buf.read(LENGTH_OFFSET)
+        }
+
         pub fn set_icmp_type(&mut self, val: IcmpType) {
             *self.buf.write(TYPE_OFFSET) = val.id();
         }
@@ -699,6 +738,10 @@ pub mod time_exceeded {
 
         pub fn set_checksum(&mut self, val: u16) {
             self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
+        }
+
+        pub fn set_length(&mut self, val: u8) {
+            *self.buf.write(LENGTH_OFFSET) = val;
         }
 
         pub fn set_payload(&mut self, vals: &[u8]) {
@@ -714,7 +757,28 @@ pub mod time_exceeded {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
+            let (payload, _) = self.split_payload_extension();
+            payload
+        }
+
+        #[must_use]
+        pub fn payload_raw(&self) -> &[u8] {
             &self.buf.as_slice()[Self::minimum_packet_size()..]
+        }
+
+        #[must_use]
+        pub fn extension(&self) -> Option<&[u8]> {
+            let (_, extension) = self.split_payload_extension();
+            extension
+        }
+
+        fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
+            // From rfc4884:
+            //
+            // "For ICMPv4 messages, the length attribute represents 32-bit words
+            let length = usize::from(self.get_length() * 4);
+            let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
+            split(length, icmp_payload)
         }
     }
 
@@ -724,6 +788,7 @@ pub mod time_exceeded {
                 .field("icmp_type", &self.get_icmp_type())
                 .field("icmp_code", &self.get_icmp_code())
                 .field("checksum", &self.get_checksum())
+                .field("length", &self.get_length())
                 .field("payload", &fmt_payload(self.payload()))
                 .finish()
         }
@@ -785,12 +850,28 @@ pub mod time_exceeded {
         }
 
         #[test]
+        fn test_length() {
+            let mut buf = [0_u8; TimeExceededPacket::minimum_packet_size()];
+            let mut packet = TimeExceededPacket::new(&mut buf).unwrap();
+            packet.set_length(0);
+            assert_eq!(0, packet.get_length());
+            assert_eq!([0x00], packet.packet()[5..6]);
+            packet.set_length(8);
+            assert_eq!(8, packet.get_length());
+            assert_eq!([0x08], packet.packet()[5..6]);
+            packet.set_length(u8::MAX);
+            assert_eq!(u8::MAX, packet.get_length());
+            assert_eq!([0xFF], packet.packet()[5..6]);
+        }
+
+        #[test]
         fn test_view() {
             let buf = [0x0b, 0x00, 0xf4, 0xee, 0x00, 0x11, 0x00, 0x00];
             let packet = TimeExceededPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
             assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(62702, packet.get_checksum());
+            assert_eq!(17, packet.get_length());
             assert!(packet.payload().is_empty());
         }
     }
@@ -798,14 +879,16 @@ pub mod time_exceeded {
 
 pub mod destination_unreachable {
     use crate::tracing::packet::buffer::Buffer;
+    use crate::tracing::packet::error::{PacketError, PacketResult};
     use crate::tracing::packet::fmt_payload;
+    use crate::tracing::packet::icmp_extension::extension_splitter::split;
     use crate::tracing::packet::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
     const CODE_OFFSET: usize = 1;
     const CHECKSUM_OFFSET: usize = 2;
-    const UNUSED_OFFSET: usize = 4;
+    const LENGTH_OFFSET: usize = 5;
     const NEXT_HOP_MTU_OFFSET: usize = 6;
 
     /// Represents an ICMP `DestinationUnreachable` packet.
@@ -818,24 +901,31 @@ pub mod destination_unreachable {
     }
 
     impl<'a> DestinationUnreachablePacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Option<DestinationUnreachablePacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> PacketResult<DestinationUnreachablePacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
-        #[must_use]
-        pub fn new_view(packet: &'a [u8]) -> Option<DestinationUnreachablePacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> PacketResult<DestinationUnreachablePacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
-                Some(Self {
+                Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                None
+                Err(PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    Self::minimum_packet_size(),
+                    packet.len(),
+                ))
             }
         }
 
@@ -860,8 +950,8 @@ pub mod destination_unreachable {
         }
 
         #[must_use]
-        pub fn get_unused(&self) -> u16 {
-            u16::from_be_bytes(self.buf.get_bytes(UNUSED_OFFSET))
+        pub fn get_length(&self) -> u8 {
+            self.buf.read(LENGTH_OFFSET)
         }
 
         #[must_use]
@@ -881,8 +971,8 @@ pub mod destination_unreachable {
             self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
         }
 
-        pub fn set_unused(&mut self, val: u16) {
-            self.buf.set_bytes(UNUSED_OFFSET, val.to_be_bytes());
+        pub fn set_length(&mut self, val: u8) {
+            *self.buf.write(LENGTH_OFFSET) = val;
         }
 
         pub fn set_next_hop_mtu(&mut self, val: u16) {
@@ -902,7 +992,25 @@ pub mod destination_unreachable {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
+            let (payload, _) = self.split_payload_extension();
+            payload
+        }
+
+        #[must_use]
+        pub fn payload_raw(&self) -> &[u8] {
             &self.buf.as_slice()[Self::minimum_packet_size()..]
+        }
+
+        #[must_use]
+        pub fn extension(&self) -> Option<&[u8]> {
+            let (_, extension) = self.split_payload_extension();
+            extension
+        }
+
+        fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
+            let length = usize::from(self.get_length() * 4);
+            let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
+            split(length, icmp_payload)
         }
     }
 
@@ -912,7 +1020,7 @@ pub mod destination_unreachable {
                 .field("icmp_type", &self.get_icmp_type())
                 .field("icmp_code", &self.get_icmp_code())
                 .field("checksum", &self.get_checksum())
-                .field("unused", &self.get_unused())
+                .field("length", &self.get_length())
                 .field("next_hop_mtu", &self.get_next_hop_mtu())
                 .field("payload", &fmt_payload(self.payload()))
                 .finish()
@@ -975,12 +1083,28 @@ pub mod destination_unreachable {
         }
 
         #[test]
+        fn test_length() {
+            let mut buf = [0_u8; DestinationUnreachablePacket::minimum_packet_size()];
+            let mut packet = DestinationUnreachablePacket::new(&mut buf).unwrap();
+            packet.set_length(0);
+            assert_eq!(0, packet.get_length());
+            assert_eq!([0x00], packet.packet()[5..6]);
+            packet.set_length(8);
+            assert_eq!(8, packet.get_length());
+            assert_eq!([0x08], packet.packet()[5..6]);
+            packet.set_length(u8::MAX);
+            assert_eq!(u8::MAX, packet.get_length());
+            assert_eq!([0xFF], packet.packet()[5..6]);
+        }
+
+        #[test]
         fn test_view() {
             let buf = [0x03, 0x03, 0xdf, 0xdc, 0x00, 0x00, 0x00, 0x00];
             let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
             assert_eq!(IcmpCode(3), packet.get_icmp_code());
             assert_eq!(57308, packet.get_checksum());
+            assert_eq!(0, packet.get_length());
             assert!(packet.payload().is_empty());
         }
     }

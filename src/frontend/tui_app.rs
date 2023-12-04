@@ -1,9 +1,11 @@
+use crate::backend::flows::FlowId;
 use crate::backend::trace::Hop;
 use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::SETTINGS_TABS;
 use crate::geoip::GeoIpLookup;
 use crate::TraceInfo;
+use itertools::Itertools;
 use ratatui::widgets::TableState;
 use std::time::SystemTime;
 use trippy::dns::{DnsResolver, ResolveMethod};
@@ -24,11 +26,20 @@ pub struct TuiApp {
     ///
     /// Only used in detail mode.
     pub selected_hop_address: usize,
+    /// The FlowId of the selected flow.
+    ///
+    /// FlowId(0) represents the unified flow for the trace.
+    pub selected_flow: FlowId,
+    /// Ordered flow ids with counts.
+    pub flow_counts: Vec<(FlowId, usize)>,
     pub resolver: DnsResolver,
     pub geoip_lookup: GeoIpLookup,
     pub show_help: bool,
     pub show_settings: bool,
     pub show_hop_details: bool,
+    pub show_flows: bool,
+    /// Whether private hops should be shown or not.
+    pub hide_private_hops: bool,
     pub show_chart: bool,
     pub show_map: bool,
     pub frozen_start: Option<SystemTime>,
@@ -51,11 +62,15 @@ impl TuiApp {
             trace_selected: 0,
             settings_tab_selected: 0,
             selected_hop_address: 0,
+            selected_flow: Trace::default_flow_id(),
+            flow_counts: vec![],
             resolver,
             geoip_lookup,
             show_help: false,
             show_settings: false,
             show_hop_details: false,
+            show_flows: false,
+            hide_private_hops: true,
             show_chart: false,
             show_map: false,
             frozen_start: None,
@@ -78,15 +93,15 @@ impl TuiApp {
 
     pub fn selected_hop_or_target(&self) -> &Hop {
         self.table_state.selected().map_or_else(
-            || self.tracer_data().target_hop(Trace::default_flow_id()),
-            |s| &self.tracer_data().hops(Trace::default_flow_id())[s],
+            || self.tracer_data().target_hop(self.selected_flow),
+            |s| &self.tracer_data().hops(self.selected_flow)[s],
         )
     }
 
     pub fn selected_hop(&self) -> Option<&Hop> {
         self.table_state
             .selected()
-            .map(|s| &self.tracer_data().hops(Trace::default_flow_id())[s])
+            .map(|s| &self.tracer_data().hops(self.selected_flow)[s])
     }
 
     pub fn tracer_config(&self) -> &TraceInfo {
@@ -94,7 +109,7 @@ impl TuiApp {
     }
 
     pub fn clamp_selected_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if let Some(selected) = self.table_state.selected() {
             if selected > hop_count - 1 {
                 self.table_state.select(Some(hop_count - 1));
@@ -102,8 +117,32 @@ impl TuiApp {
         }
     }
 
+    pub fn update_order_flow_counts(&mut self) {
+        pub fn order_flows(
+            &(flow_id1, count1): &(FlowId, usize),
+            &(flow_id2, count2): &(FlowId, usize),
+        ) -> std::cmp::Ordering {
+            match count1.cmp(&count2) {
+                std::cmp::Ordering::Equal => flow_id2.cmp(&flow_id1),
+                ord => ord,
+            }
+        }
+        self.flow_counts = self
+            .tracer_data()
+            .flows()
+            .iter()
+            .map(|&(_, flow_id)| {
+                let count = self.tracer_data().round_count(flow_id);
+                (flow_id, count)
+            })
+            .sorted_by(order_flows)
+            .rev()
+            .take(self.tui_config.max_flows)
+            .collect::<Vec<_>>();
+    }
+
     pub fn next_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -123,7 +162,7 @@ impl TuiApp {
     }
 
     pub fn previous_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(Trace::default_flow_id()).len();
+        let hop_count = self.tracer_data().hops(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -142,15 +181,17 @@ impl TuiApp {
     }
 
     pub fn next_trace(&mut self) {
-        if self.trace_selected < self.trace_info.len() - 1 {
+        if self.trace_info.len() > 1 && self.trace_selected < self.trace_info.len() - 1 {
             self.trace_selected += 1;
+            self.clear();
         }
     }
 
     pub fn previous_trace(&mut self) {
-        if self.trace_selected > 0 {
+        if self.trace_info.len() > 1 && self.trace_selected > 0 {
             self.trace_selected -= 1;
-        };
+            self.clear();
+        }
     }
 
     pub fn next_hop_address(&mut self) {
@@ -164,6 +205,36 @@ impl TuiApp {
     pub fn previous_hop_address(&mut self) {
         if self.selected_hop().is_some() && self.selected_hop_address > 0 {
             self.selected_hop_address -= 1;
+        }
+    }
+
+    pub fn flow_count(&self) -> usize {
+        self.selected_tracer_data.flows().len()
+    }
+
+    pub fn next_flow(&mut self) {
+        if self.show_flows {
+            let (cur_index, _) = self
+                .flow_counts
+                .iter()
+                .find_position(|(flow_id, _)| *flow_id == self.selected_flow)
+                .unwrap();
+            if cur_index < self.flow_counts.len() - 1 {
+                self.selected_flow = self.flow_counts[cur_index + 1].0;
+            }
+        }
+    }
+
+    pub fn previous_flow(&mut self) {
+        if self.show_flows {
+            let (cur_index, _) = self
+                .flow_counts
+                .iter()
+                .find_position(|(flow_id, _)| *flow_id == self.selected_flow)
+                .unwrap();
+            if cur_index > 0 {
+                self.selected_flow = self.flow_counts[cur_index - 1].0;
+            }
         }
     }
 
@@ -251,6 +322,24 @@ impl TuiApp {
         self.show_chart = false;
     }
 
+    pub fn toggle_flows(&mut self) {
+        if self.trace_info.len() == 1 {
+            if self.show_flows {
+                self.selected_flow = FlowId(0);
+                self.show_flows = false;
+                self.selected_hop_address = 0;
+            } else if self.flow_count() > 0 {
+                self.selected_flow = FlowId(1);
+                self.show_flows = true;
+                self.selected_hop_address = 0;
+            }
+        }
+    }
+
+    pub fn toggle_privacy(&mut self) {
+        self.hide_private_hops = !self.hide_private_hops;
+    }
+
     pub fn toggle_asinfo(&mut self) {
         match self.resolver.config().resolve_method {
             ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
@@ -299,7 +388,7 @@ impl TuiApp {
     /// The maximum number of hosts per hop for the currently selected trace.
     pub fn max_hosts(&self) -> u8 {
         self.selected_tracer_data
-            .hops(Trace::default_flow_id())
+            .hops(self.selected_flow)
             .iter()
             .map(|h| h.addrs().count())
             .max()

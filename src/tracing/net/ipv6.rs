@@ -14,11 +14,10 @@ use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{
-    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp,
+    Extensions, ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp,
+    ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
-use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
@@ -158,7 +157,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
 
 #[instrument(skip(probe))]
 pub fn dispatch_tcp_probe<S: Socket>(
-    probe: Probe,
+    probe: &Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
 ) -> TraceResult<S> {
@@ -175,16 +174,22 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: TracerProtocol,
+    icmp_extensions: bool,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
         Ok((bytes_read, addr)) => {
-            let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read]).req()?;
-            let src_addr = match addr.as_ref().req()? {
+            let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read])?;
+            let src_addr = match addr.as_ref().ok_or(TracerError::MissingAddr)? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
             };
-            Ok(extract_probe_resp(protocol, &icmp_v6, *src_addr)?)
+            Ok(extract_probe_resp(
+                protocol,
+                icmp_extensions,
+                &icmp_v6,
+                *src_addr,
+            )?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -202,7 +207,10 @@ pub fn recv_tcp_socket<S: Socket>(
     let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.req()?.ip();
+            let addr = tcp_socket
+                .peer_addr()?
+                .ok_or(TracerError::MissingAddr)?
+                .ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -221,11 +229,10 @@ pub fn recv_tcp_socket<S: Socket>(
                 }
                 if platform::is_host_unreachable_error(code) {
                     let error_addr = tcp_socket.icmp_error_info()?;
-                    return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                        SystemTime::now(),
-                        error_addr,
-                        resp_seq,
-                    ))));
+                    return Ok(Some(ProbeResponse::TimeExceeded(
+                        ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        None,
+                    )));
                 }
             }
         }
@@ -243,7 +250,7 @@ fn make_udp_packet<'a>(
     payload: &'_ [u8],
 ) -> TraceResult<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
+    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
@@ -264,7 +271,7 @@ fn make_echo_request_icmp_packet(
 ) -> TraceResult<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
-    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
+    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
     icmp.set_icmp_code(IcmpCode(0));
     icmp.set_identifier(identifier.0);
@@ -288,6 +295,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    icmp_extensions: bool,
     icmp_v6: &IcmpPacket<'_>,
     src: Ipv6Addr,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -295,22 +303,37 @@ fn extract_probe_resp(
     let ip = IpAddr::V6(src);
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
-            let packet = TimeExceededPacket::new_view(icmp_v6.packet()).req()?;
-            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            let packet = TimeExceededPacket::new_view(icmp_v6.packet())?;
+            let (nested_ipv6, extension) = if icmp_extensions {
+                let ipv6 = Ipv6Packet::new_view(packet.payload())?;
+                let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                (ipv6, ext)
+            } else {
+                let ipv6 = Ipv6Packet::new_view(packet.payload_raw())?;
+                (ipv6, None)
+            };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
-                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq))
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq), extension)
             })
         }
         IcmpType::DestinationUnreachable => {
-            let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet()).req()?;
-            let nested_ipv6 = Ipv6Packet::new_view(packet.payload()).req()?;
+            let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet())?;
+            let nested_ipv6 = Ipv6Packet::new_view(packet.payload())?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
-                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, ip, resp_seq))
+                ProbeResponse::DestinationUnreachable(
+                    ProbeResponseData::new(recv, ip, resp_seq),
+                    extension,
+                )
             })
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
-                let packet = EchoReplyPacket::new_view(icmp_v6.packet()).req()?;
+                let packet = EchoReplyPacket::new_view(icmp_v6.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
@@ -352,7 +375,7 @@ fn extract_probe_resp_seq(
 }
 
 fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
-    let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload()).req()?;
+    let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload())?;
     Ok((
         echo_request_packet.get_identifier(),
         echo_request_packet.get_sequence(),
@@ -360,7 +383,7 @@ fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
 }
 
 fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
-    let udp_packet = UdpPacket::new_view(ipv6.payload()).req()?;
+    let udp_packet = UdpPacket::new_view(ipv6.payload())?;
     Ok((
         udp_packet.get_source(),
         udp_packet.get_destination(),
@@ -370,7 +393,7 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
 
 /// From [rfc4443] (section 2.4, point c):
 ///
-///    "Every ICMPv6 error message (type < 128) MUST include as much of
+///    "Every `ICMPv6` error message (type < 128) MUST include as much of
 ///    the IPv6 offending (invoking) packet (the packet that caused the
 ///    error) as possible without making the error message packet exceed
 ///    the minimum IPv6 MTU"
@@ -388,6 +411,6 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
 fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
-    let tcp_packet = TcpPacket::new_view(ipv6.payload()).req()?;
+    let tcp_packet = TcpPacket::new_view(ipv6.payload())?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
 }

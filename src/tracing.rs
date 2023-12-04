@@ -5,7 +5,6 @@ mod net;
 mod probe;
 mod tracer;
 mod types;
-mod util;
 
 /// Packet wire formats.
 pub mod packet;
@@ -17,5 +16,8 @@ pub use config::{
 pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;
 pub use net::SocketImpl;
-pub use probe::{IcmpPacketType, Probe, ProbeStatus};
+pub use probe::{
+    Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
+    ProbeStatus, UnknownExtension,
+};
 pub use tracer::{Tracer, TracerRound};

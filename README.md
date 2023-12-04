@@ -1,6 +1,7 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.8.0)
+[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.9.0)
 [![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
+[![#trippy-dev:matrix.org](https://img.shields.io/badge/matrix/trippy-dev:matrix.org-blue)](https://matrix.to/#/#trippy-dev:matrix.org)
 
 # Trippy
 
@@ -15,8 +16,8 @@ issues.
 
 * [Trippy](#trippy)
     * [Features](#features)
+    * [Versions](#versions)
     * [Distributions](#distributions)
-    * [Platforms](#platforms)
     * [Privileges](#privileges)
     * [Usage Examples](#usage-examples)
     * [Command Reference](#command-reference)
@@ -45,18 +46,24 @@ issues.
 - Support for `classic`, `paris`
   and `dublin` [Equal Cost Multi-path Routing](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing)
   strategies ([tracking issue](https://github.com/fujiapple852/trippy/issues/274))
+- RFC4884 [ICMP Multi-Part Messages](https://datatracker.ietf.org/doc/html/rfc4884)
+    - Generic Extension Objects
+    - MPLS Label Stacks
+- Unprivileged mode
 - Tui interface:
     - Trace multiple targets simultaneously from a single instance of Trippy
     - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Interactive chart of RTT for all hops in a trace with zooming capability
     - Interactive GeoIp world map
+    - Isolate and filter by individual tracing flows
     - Customizable color theme & key bindings
     - Configuration via both command line arguments and a configuration file
     - Show multiple hosts per hop with ability to cap display to N hosts and show frequency %
     - Show hop details and navigate hosts within each hop
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
+    - Hop privacy
 - DNS:
     - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
     - Lazy reverse DNS queries
@@ -65,9 +72,27 @@ issues.
     - Lookup and display GeoIp information from local `mmdb` files
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
+    - Tracing `flows` report
+    - Graphviz `dot` charts
     - configurable reporting cycles
 - Runs on multiple platform (macOS, Linux, NetBSD, FreeBSD, Windows)
 - Capabilities aware application (Linux only)
+
+## Versions
+
+The following table lists ths versions of Trippy that are available and links to the corresponding release note and
+documentation:
+
+| Version    | Release Date | Status      | Release Note                                                      | Documentation                                              |
+|------------|--------------|-------------|-------------------------------------------------------------------|------------------------------------------------------------|
+| 0.10.0-dev | n/a          | Development | n/a                                                               | [docs](https://github.com/fujiapple852/trippy/tree/master) |
+| 0.9.0      | 2023-11-30   | Current     | [note](https://github.com/fujiapple852/trippy/releases/tag/0.9.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.9.0)  |
+| 0.8.0      | 2023-05-15   | Previous    | [note](https://github.com/fujiapple852/trippy/releases/tag/0.8.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.8.0)  |
+| 0.7.0      | 2023-03-25   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.7.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.7.0)  | 
+| 0.6.0      | 2022-08-19   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.6.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.6.0)  | 
+
+> [!NOTE]
+> Only the _latest patch versions_ of both the _current_ and _previous_ releases of Trippy are supported.
 
 ## Distributions
 
@@ -75,7 +100,7 @@ issues.
 
 ### Cargo
 
-[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.8.0)
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.9.0)
 
 ```shell
 cargo install trippy
@@ -131,7 +156,7 @@ pkg install trippy
 
 ### Pacman (Arch Linux)
 
-[![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://archlinux.org/packages/community/x86_64/trippy)
+[![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://archlinux.org/packages/extra/x86_64/trippy)
 
 ```shell
 pacman -S trippy
@@ -153,31 +178,27 @@ nix-env -iA trippy
 docker run -it fujiapple/trippy
 ```
 
-## Platforms
+### Binary Asset Download
 
-Trippy has been (lightly...) tested on the following platforms:
-
-### IPv4
-
-| Platform | ICMP | UDP | TCP | Notes                                                         |
-|----------|------|-----|-----|---------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ✅   |                                                               |
-| macOS    | ✅    | ✅   | ✅   |                                                               |
-| NetBSD   | ✅    | ✅   | ✅   |                                                               |
-| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
-
-### IPv6
-
-| Platform | ICMP | UDP | TCP | Notes                                                         |
-|----------|------|-----|-----|---------------------------------------------------------------|
-| Linux    | ✅    | ✅   | ✅   |                                                               |
-| macOS    | ✅    | ✅   | ✅   |                                                               |
-| NetBSD   | ✅    | ✅   | ✅   |                                                               |
-| OpenBSD  | ⏳    | ⏳   | ⏳   | See [#213](https://github.com/fujiapple852/trippy/issues/213) |
-| FreeBSD  | ✅    | ✅   | ✅   | See [#214](https://github.com/fujiapple852/trippy/issues/214) |
-| Windows  | ✅    | ✅   | ✅   | See [#98](https://github.com/fujiapple852/trippy/issues/98)   |
+| OS      | Arch      | Env          | Current                                                                                                                    | Previous                                                                                                                |
+|---------|-----------|--------------|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Linux   | `x86_64`  | `gnu`        | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-unknown-linux-gnu.tar.gz)       | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-gnu.tar.gz)    |
+| Linux   | `x86_64`  | `musl`       | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-unknown-linux-musl.tar.gz)      | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-linux-musl.tar.gz)   |
+| Linux   | `aarch64` | `gnu`        | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-aarch64-unknown-linux-gnu.tar.gz)      | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-aarch64-unknown-linux-gnu.tar.gz)   |
+| Linux   | `aarch64` | `musl`       | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-aarch64-unknown-linux-musl.tar.gz)     | n/a                                                                                                                     |
+| Linux   | `arm7`    | `gnueabihf`  | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-armv7-unknown-linux-gnueabihf.tar.gz)  | n/a                                                                                                                     |
+| Linux   | `arm7`    | `musleabi`   | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-armv7-unknown-linux-musleabi.tar.gz)   | n/a                                                                                                                     |
+| Linux   | `arm7`    | `musleabihf` | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-armv7-unknown-linux-musleabihf.tar.gz) | n/a                                                                                                                     |
+| macOS   | `x86_64`  | `darwin`     | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-apple-darwin.tar.gz)            | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-apple-darwin.tar.gz)         |
+| macOS   | `aarch64` | `darwin`     | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-aarch64-apple-darwin.tar.gz)           | n/a                                                                                                                     |
+| Windows | `x86_64`  | `msvc`       | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-pc-windows-msvc.zip)            | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-pc-windows-msvc.zip)         |
+| Windows | `x86_64`  | `gnu`        | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-pc-windows-gnu.zip)             | n/a                                                                                                                     |
+| Windows | `aarch64` | `msvc`       | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-aarch64-pc-windows-msvc.zip)           | n/a                                                                                                                     |
+| FreeBSD | `x86_64`  | n/a          | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-unknown-freebsd.tar.gz)         | n/a                                                                                                                     |
+| NetBSD  | `x86_64`  | n/a          | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64-unknown-netbsd.tar.gz)          | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64-unknown-netbsd.tar.gz)       |
+| RPM     | `x86_64`  | `gnu`        | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64.rpm)                            | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy-0.8.0-x86_64.rpm)                         |
+| Debian  | `x86_64`  | `gnu`        | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy_x86_64-unknown-linux-gnu_0.9.0_amd64.deb)    | [0.8.0](https://github.com/fujiapple852/trippy/releases/download/0.8.0/trippy_x86_64-unknown-linux-gnu_0.8.0_amd64.deb) |
+| Debian  | `x86_64`  | `musl`       | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy_x86_64-unknown-linux-musl_0.9.0_amd64.deb)   | n/a                                                                                                                     |
 
 ## Privileges
 
@@ -190,7 +211,7 @@ certain platforms, with some limitations.
 1: Run as `root` user via `sudo`:
 
 ```shell
-sudo trip www.example.com
+sudo trip example.com
 ```
 
 2: `chown` `trip` as the `root` user and set the `setuid` bit:
@@ -220,7 +241,7 @@ that feature.
 
 > [!NOTE]
 > Unprivileged mode is currently only supported on macOS. Linux support is possible and may be added in the future.
-> Unprivileged mode is not supported on NetBSD, OpenBSD, FreeBSD or Windows as these platforms do not support
+> Unprivileged mode is not supported on NetBSD, FreeBSD or Windows as these platforms do not support
 > the `IPPROTO_ICMP` socket type. See [#101](https://github.com/fujiapple852/trippy/issues/101) for further information.
 
 The unprivileged mode can be enabled by adding the `--unprivileged` (`-u`) command line flag or by adding
@@ -240,105 +261,129 @@ unprivileged = true
 Basic usage with default parameters:
 
 ```shell
-trip www.example.com
+trip example.com
 ```
 
 Trace without requiring elevated privileges (supported platforms only, see [privileges](#privileges)):
 
 ```shell
-trip www.example.com --unprivileged
+trip example.com --unprivileged
 ```
 
-Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--udp` & `--tcp`):
+Trace using the `udp` (or `tcp` or `icmp`) protocol (also aliases `--icmp`, `--udp` & `--tcp`):
 
 ```shell
-trip www.example.com -p udp
+trip example.com -p udp
 ```
 
 Trace to multiple targets simultaneously (`icmp` protocol only,
 see [#72](https://github.com/fujiapple852/trippy/issues/72)):
 
 ```shell
-trip www.example.com google.com crates.io
+trip example.com google.com crates.io
 ```
 
 Trace with a minimum round time of `250ms` and a grace period of `50ms`:
 
 ```shell
-trip www.example.com -i 250ms -g 50ms
+trip example.com -i 250ms -g 50ms
 ```
 
 Trace with a custom first and maximum `time-to-live`:
 
 ```shell
-trip www.example.com --first-ttl 2 --max-ttl 10
+trip example.com --first-ttl 2 --max-ttl 10
 ```
 
 Use custom destination port `443` for `tcp` tracing:
 
 ```shell
-trip www.example.com -p tcp -P 443
+trip example.com -p tcp -P 443
 ```
 
 Use custom source port `5000` for `udp` tracing:
 
 ```shell
-trip www.example.com -p udp -S 5000
+trip example.com -p udp -S 5000
 ```
 
 Use the `dublin` (or `paris`) ECMP routing strategy for `udp` with fixed source and destination ports:
 
 ```shell
-trip www.example.com -p udp -R dublin -S 5000 -P 3500
+trip example.com -p udp -R dublin -S 5000 -P 3500
 ```
 
 Trace with a custom source address:
 
 ```shell
-trip www.example.com -p tcp -A 127.0.0.1
+trip example.com -p tcp -A 127.0.0.1
 ```
 
 Trace with a source address determined by the IPv4 address for interface `en0`:
 
 ```shell
-trip www.example.com -p tcp -I en0
+trip example.com -p tcp -I en0
 ```
 
 Trace using `IPv6`:
 
 ```shell
-trip www.example.com -6
+trip example.com -6
 ```
 
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
-trip www.example.com -m json -C 5
+trip example.com -m json -C 5
+```
+
+Generate a [Graphviz](https://graphviz.org) `DOT` file report of all tracing flows for a TCP trace after 5 rounds:
+
+```shell
+trip example.com --tcp -m dot -C 5
+```
+
+Generate a textual report of all tracing flows for a UDP trace after 5 rounds:
+
+```shell
+trip example.com --udp -m flows -C 5
 ```
 
 Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, `resolv`):
 
 ```shell
-trip www.example.com -r google
+trip example.com -r google
 ```
 
 Lookup AS information for all discovered IP addresses (not yet available for the `system` resolver,
 see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
-trip www.example.com -r google -z true
+trip example.com -r google -z
 ```
 
 Lookup and display `short` (or `long` or `location` or `off`) GeoIp information from a `mmdb` file:
 
 ```shell
-trip www.example.com --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
+trip example.com --geoip-mmdb-file GeoLite2-City.mmdb --tui-geoip-mode short
+```
+
+Parse `icmp` extensions:
+
+```shell
+trip example.com -e
+```
+
+Hide the IP address, hostname and GeoIp for the first two hops:
+
+```shell
+trip example.com --tui-privacy-max-ttl 2
 ```
 
 Customize the color theme:
 
 ```shell
-trip www.example.com --tui-theme-colors bg-color=blue,text-color=ffff00
+trip example.com --tui-theme-colors bg-color=blue,text-color=ffff00
 ```
 
 List all Tui items that can have a custom color theme:
@@ -350,7 +395,7 @@ trip --print-tui-theme-items
 Customize the key bindings:
 
 ```shell
-trip www.example.com --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
+trip example.com --tui-key-bindings previous-hop=k,next-hop=j,quit=shift-q
 ```
 
 List all Tui commands that can have a custom key binding:
@@ -362,7 +407,13 @@ trip --print-tui-binding-commands
 Specify the location of the Trippy config file:
 
 ```shell
-trip www.example.com --config-file /path/to/trippy.toml
+trip example.com --config-file /path/to/trippy.toml
+```
+
+Generate a template configuration file:
+
+```shell
+trip --print-config-template > trippy.toml
 ```
 
 Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
@@ -374,7 +425,7 @@ trip --generate bash
 Run in `silent` tracing mode and output `compact` trace logging with `full` span events:
 
 ```shell
-trip www.example.com -m silent -v --log-format compact --log-span-events full
+trip example.com -m silent -v --log-format compact --log-span-events full
 ```
 
 ## Command Reference
@@ -382,7 +433,7 @@ trip www.example.com -m silent -v --log-format compact --log-span-events full
 > [!NOTE]
 > Trippy command line arguments may be given in any order and my occur both before and after the targets.
 
-```shell
+```text
 A network diagnostic tool
 
 Usage: trip [OPTIONS] [TARGETS]...
@@ -405,10 +456,13 @@ Options:
           - markdown: Generate a markdown text table report for N cycles
           - csv:      Generate a CSV report for N cycles
           - json:     Generate a JSON report for N cycles
+          - dot:      Generate a Graphviz DOT file for N cycles
+          - flows:    Display all flows
           - silent:   Do not generate any tracing output for N cycles
 
-   -u, --unprivileged
-          Trace without requiring elevated privileges on supported platforms [default: false]
+  -u, --unprivileged
+          Trace without requiring elevated privileges on supported platforms
+          [default: false]
 
   -p, --protocol <PROTOCOL>
           Tracing protocol [default: icmp]
@@ -424,8 +478,11 @@ Options:
       --tcp
           Trace using the TCP protocol
 
+      --icmp
+          Trace using the ICMP protocol
+
   -4, --ipv4
-          use IPv4 only
+          Use IPv4 only
 
   -6, --ipv6
           Use IPv6 only
@@ -456,7 +513,7 @@ Options:
           The initial sequence number [default: 33000]
 
   -R, --multipath-strategy <MULTIPATH_STRATEGY>
-          The Equal-cost Multi-Path routing strategy (IPv4/UDP only) [default:
+          The Equal-cost Multi-Path routing strategy (UDP only) [default:
           classic]
 
           Possible values:
@@ -484,8 +541,10 @@ Options:
           The repeating pattern in the payload of the ICMP packet [default: 0]
 
   -Q, --tos <TOS>
-          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default:
-          0]
+          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+
+  -e, --icmp-extensions
+          Parse ICMP extensions
 
       --read-timeout <READ_TIMEOUT>
           The socket read timeout [default: 10ms]
@@ -498,6 +557,9 @@ Options:
           - resolv:     Resolve using the `/etc/resolv.conf` DNS configuration
           - google:     Resolve using the Google `8.8.8.8` DNS service
           - cloudflare: Resolve using the Cloudflare `1.1.1.1` DNS service
+
+  -y, --dns-resolve-all
+          Trace to all IPs resolved from DNS lookup [default: false]
 
       --dns-timeout <DNS_TIMEOUT>
           The maximum time to wait to perform DNS queries [default: 5s]
@@ -525,6 +587,15 @@ Options:
           - allocated:    Display the allocated date
           - name:         Display the AS name
 
+      --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>
+          How to render ICMP extensions [default: off]
+
+          Possible values:
+          - off:  Do not show `icmp` extensions
+          - mpls: Show MPLS label(s) only
+          - full: Show full `icmp` extension data for all known extensions
+          - all:  Show full `icmp` extension data for all classes
+
       --tui-geoip-mode <TUI_GEOIP_MODE>
           How to render GeoIp information [default: short]
 
@@ -540,11 +611,17 @@ Options:
   -s, --tui-max-samples <TUI_MAX_SAMPLES>
           The maximum number of samples to record per hop [default: 256]
 
+      --tui-max-flows <TUI_MAX_FLOWS>
+          The maximum number of flows to show [default: 64]
+
       --tui-preserve-screen
           Preserve the screen on exit [default: false]
 
       --tui-refresh-rate <TUI_REFRESH_RATE>
           The Tui refresh rate [default: 100ms]
+
+      --tui-privacy-max-ttl <TUI_PRIVACY_MAX_TTL>
+          The maximum ttl of hops which will be masked for privacy [default: 0]
 
       --tui-theme-colors <TUI_THEME_COLORS>
           The TUI theme colors [item=color,item=color,..]
@@ -568,6 +645,9 @@ Options:
           Generate shell completion
 
           [possible values: bash, elvish, fish, powershell, zsh]
+
+      --print-config-template
+          Print a template toml config file and exit
 
       --log-format <LOG_FORMAT>
           The debug log format [default: pretty]
@@ -604,35 +684,39 @@ Options:
 The following table lists the default Tui color theme. These can be overridden with the `--tui-theme-colors` command
 line option.
 
-| Item                                 | Description                                          | Default    |
-|--------------------------------------|------------------------------------------------------|------------|
-| `bg-color`                           | The default background color                         | `Black`    |
-| `border-color`                       | The default color of borders                         | `Gray`     |
-| `text-color`                         | The default color of text                            | `Gray`     |
-| `tab-text-color`                     | The color of the text in traces tabs                 | `Green`    |
-| `hops-table-header-bg-color`         | The background color of the hops table header        | `White`    |
-| `hops-table-header-text-color`       | The color of text in the hops table header           | `Black`    |
-| `hops-table-row-active-text-color`   | The color of text of active rows in the hops table   | `Gray`     |
-| `hops-table-row-inactive-text-color` | The color of text of inactive rows in the hops table | `DarkGray` |
-| `hops-chart-selected-color`          | The color of the selected series in the hops chart   | `Green`    |
-| `hops-chart-unselected-color`        | The color of the unselected series in the hops chart | `Gray`     |
-| `hops-chart-axis-color`              | The color of the axis in the hops chart              | `DarkGray` |
-| `frequency-chart-bar-color`          | The color of bars in the frequency chart             | `Green`    |
-| `frequency-chart-text-color`         | The color of text in the bars of the frequency chart | `Gray`     |
-| `samples-chart-color`                | The color of the samples chart                       | `Yellow`   |
-| `help-dialog-bg-color`               | The background color of the help dialog              | `Blue`     |
-| `help-dialog-text-color`             | The color of the text in the help dialog             | `Gray`     |
-| `settings-dialog-bg-color`           | The background color of the settings dialog          | `blue`     |
-| `settings-tab-text-color`            | The color of the text in settings dialog tabs        | `green`    |
-| `settings-table-header-text-color`   | The color of text in the settings table header       | `black`    |
-| `settings-table-header-bg-color`     | The background color of the settings table header    | `white`    |
-| `settings-table-row-text-color`      | The color of text of rows in the settings table      | `gray`     |
-| `map-world-color`                    | The color of the map world diagram                   | `white`    |
-| `map-radius-color`                   | The color of the map accuracy radius circle          | `yellow`   |
-| `map-selected-color`                 | The color of the map selected item box               | `green`    |
-| `map-info-panel-border-color`        | The color of border of the map info panel            | `gray`     |
-| `map-info-panel-bg-color`            | The background color of the map info panel           | `black`    |
-| `map-info-panel-text-color`          | The color of text in the map info panel              | `gray`     |
+| Item                                 | Description                                               | Default      |
+|--------------------------------------|-----------------------------------------------------------|--------------|
+| `bg-color`                           | The default background color                              | `Black`      |
+| `border-color`                       | The default color of borders                              | `Gray`       |
+| `text-color`                         | The default color of text                                 | `Gray`       |
+| `tab-text-color`                     | The color of the text in traces tabs                      | `Green`      |
+| `hops-table-header-bg-color`         | The background color of the hops table header             | `White`      |
+| `hops-table-header-text-color`       | The color of text in the hops table header                | `Black`      |
+| `hops-table-row-active-text-color`   | The color of text of active rows in the hops table        | `Gray`       |
+| `hops-table-row-inactive-text-color` | The color of text of inactive rows in the hops table      | `DarkGray`   |
+| `hops-chart-selected-color`          | The color of the selected series in the hops chart        | `Green`      |
+| `hops-chart-unselected-color`        | The color of the unselected series in the hops chart      | `Gray`       |
+| `hops-chart-axis-color`              | The color of the axis in the hops chart                   | `DarkGray`   |
+| `frequency-chart-bar-color`          | The color of bars in the frequency chart                  | `Green`      |
+| `frequency-chart-text-color`         | The color of text in the bars of the frequency chart      | `Gray`       |
+| `flows-chart-bar-selected-color`     | The color of the selected flow bar in the flows chart     | `Green`      |
+| `flows-chart-bar-unselected-color`   | The color of the unselected flow bar in the flows chart   | `DarkGray`   |
+| `flows-chart-text-current-color`     | The color of the current flow text in the flows chart     | `LightGreen` |
+| `flows-chart-text-non-current-color` | The color of the non-current flow text in the flows chart | `White`      |
+| `samples-chart-color`                | The color of the samples chart                            | `Yellow`     |
+| `help-dialog-bg-color`               | The background color of the help dialog                   | `Blue`       |
+| `help-dialog-text-color`             | The color of the text in the help dialog                  | `Gray`       |
+| `settings-dialog-bg-color`           | The background color of the settings dialog               | `blue`       |
+| `settings-tab-text-color`            | The color of the text in settings dialog tabs             | `green`      |
+| `settings-table-header-text-color`   | The color of text in the settings table header            | `black`      |
+| `settings-table-header-bg-color`     | The background color of the settings table header         | `white`      |
+| `settings-table-row-text-color`      | The color of text of rows in the settings table           | `gray`       |
+| `map-world-color`                    | The color of the map world diagram                        | `white`      |
+| `map-radius-color`                   | The color of the map accuracy radius circle               | `yellow`     |
+| `map-selected-color`                 | The color of the map selected item box                    | `green`      |
+| `map-info-panel-border-color`        | The color of border of the map info panel                 | `gray`       |
+| `map-info-panel-bg-color`            | The background color of the map info panel                | `black`      |
+| `map-info-panel-text-color`          | The color of text in the map info panel                   | `gray`       |
 
 The supported colors are:
 
@@ -662,6 +746,8 @@ command line option.
 | `toggle-freeze`        | Toggle freezing the display                     | `ctrl+f` |
 | `toggle-chart`         | Toggle the chart                                | `c`      |
 | `toggle-map`           | Toggle the GeoIp map                            | `m`      |
+| `toggle-flows`         | Toggle the flows                                | `f`      |
+| `toggle-privacy`       | Toggle the hop privacy                          | `p`      |
 | `expand-hosts`         | Expand the hosts shown per hop                  | `]`      |
 | `expand-hosts-max`     | Expand the hosts shown per hop to the maximum   | `}`      |
 | `contract-hosts`       | Contract the hosts shown per hop                | `[`      |
@@ -691,7 +777,15 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
 - the Windows data directory (Windows only): `%APPDATA%`
 
-An annotated [template configuration file](trippy-config-sample.toml) is available.
+An annotated template configuration file is available
+for [0.8.0](https://github.com/fujiapple852/trippy/blob/0.8.0/trippy-config-sample.toml)
+and [0.9.0](https://github.com/fujiapple852/trippy/blob/0.9.0/trippy-config-sample.toml).
+
+Trippy (version `0.9.0` or later) can generate a template configuration file:
+
+```shell
+trip --print-config-template > trippy.toml
+```
 
 ## Frequently Asked Questions
 
@@ -735,7 +829,8 @@ see [here](https://github.com/fujiapple852/trippy/issues/578#issuecomment-156514
 
 ## Acknowledgements
 
-Trippy is made possible by [tui-rs](https://github.com/fdehau/tui-rs),
+Trippy is made possible by [ratatui](https://github.com/ratatui-org/ratatui) (
+formerly [tui-rs](https://github.com/fdehau/tui-rs)),
 [crossterm](https://github.com/crossterm-rs/crossterm) as well
 as [several](https://github.com/fujiapple852/trippy/blob/master/Cargo.toml) foundational Rust libraries.
 

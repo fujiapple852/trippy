@@ -1,4 +1,4 @@
-use crate::tracing::util::RequiredError;
+use crate::tracing::packet::error::PacketError;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::ErrorKind;
@@ -13,12 +13,12 @@ pub type TraceResult<T> = Result<T, TracerError>;
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
+    #[error("invalid packet: {0}")]
+    PacketError(#[from] PacketError),
     #[error("unknown interface: {0}")]
     UnknownInterface(String),
     #[error("invalid config: {0}")]
     BadConfig(String),
-    #[error("missing required field: {0}")]
-    Required(#[from] RequiredError),
     #[error("IO error: {0}")]
     IoError(#[from] IoError),
     #[error("insufficient buffer capacity")]
@@ -27,6 +27,8 @@ pub enum TracerError {
     AddressNotAvailable(SocketAddr),
     #[error("invalid source IP address: {0}")]
     InvalidSourceAddr(IpAddr),
+    #[error("missing address from socket call")]
+    MissingAddr,
 }
 
 /// Custom IO error result.

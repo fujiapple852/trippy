@@ -149,6 +149,7 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<Set
 fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
     vec![
         SettingsItem::new("tui-max-samples", format!("{}", app.tui_config.max_samples)),
+        SettingsItem::new("tui-max-flows", format!("{}", app.tui_config.max_flows)),
         SettingsItem::new(
             "tui-preserve-screen",
             format!("{}", app.tui_config.preserve_screen),
@@ -220,6 +221,7 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new("packet-size", format!("{}", cfg.packet_size)),
         SettingsItem::new("payload-pattern", format!("{}", cfg.payload_pattern)),
+        SettingsItem::new("icmp-extensions", format!("{}", cfg.icmp_extensions)),
         SettingsItem::new("interface", interface),
         SettingsItem::new("multipath-strategy", cfg.multipath_strategy.to_string()),
         SettingsItem::new("target-port", dst_port),
@@ -283,6 +285,8 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("toggle-freeze", format!("{}", binds.toggle_freeze)),
         SettingsItem::new("toggle-chart", format!("{}", binds.toggle_chart)),
         SettingsItem::new("toggle-map", format!("{}", binds.toggle_map)),
+        SettingsItem::new("toggle-flows", format!("{}", binds.toggle_flows)),
+        SettingsItem::new("toggle-privacy", format!("{}", binds.toggle_privacy)),
         SettingsItem::new("expand-hosts", format!("{}", binds.expand_hosts)),
         SettingsItem::new("expand-hosts-max", format!("{}", binds.expand_hosts_max)),
         SettingsItem::new("contract-hosts", format!("{}", binds.contract_hosts)),
@@ -305,6 +309,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
 }
 
 /// Format theme settings.
+#[allow(clippy::too_many_lines)]
 fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let theme = &app.tui_config.theme;
     vec![
@@ -347,6 +352,22 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new(
             "frequency-chart-text-color",
             theme::fmt_color(theme.frequency_chart_text_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-bar-selected-color",
+            theme::fmt_color(theme.flows_chart_bar_selected_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-bar-unselected-color",
+            theme::fmt_color(theme.flows_chart_bar_unselected_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-text-current-color",
+            theme::fmt_color(theme.flows_chart_text_current_color),
+        ),
+        SettingsItem::new(
+            "flows-chart-text-non-current-color",
+            theme::fmt_color(theme.flows_chart_text_non_current_color),
         ),
         SettingsItem::new(
             "samples-chart-color ",
@@ -403,12 +424,12 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 9),
-    ("Trace", 14),
+    ("Tui", 8),
+    ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
-    ("Bindings", 26),
-    ("Theme", 27),
+    ("Bindings", 29),
+    ("Theme", 31),
 ];
 
 /// The settings table header.

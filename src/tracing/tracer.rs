@@ -144,17 +144,19 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
         let next = network.recv_probe()?;
         match next {
-            Some(ProbeResponse::TimeExceeded(data)) => {
+            Some(ProbeResponse::TimeExceeded(data, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 let is_target = host == self.config.target_addr;
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
-                    st.complete_probe_time_exceeded(sequence, host, received, is_target);
+                    st.complete_probe_time_exceeded(
+                        sequence, host, received, is_target, extensions,
+                    );
                 }
             }
-            Some(ProbeResponse::DestinationUnreachable(data)) => {
+            Some(ProbeResponse::DestinationUnreachable(data, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) {
-                    st.complete_probe_unreachable(sequence, host, received);
+                    st.complete_probe_unreachable(sequence, host, received, extensions);
                 }
             }
             Some(ProbeResponse::EchoReply(data)) => {
@@ -279,11 +281,13 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 /// the `TracerState` struct.
 mod state {
     use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
+    use crate::tracing::probe::Extensions;
     use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
     use crate::tracing::{
         IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus, TracerConfig,
         TracerProtocol,
     };
+    use std::array::from_fn;
     use std::net::IpAddr;
     use std::time::SystemTime;
     use tracing::instrument;
@@ -347,7 +351,7 @@ mod state {
         pub fn new(config: TracerConfig) -> Self {
             Self {
                 config,
-                buffer: [Probe::default(); BUFFER_SIZE as usize],
+                buffer: from_fn(|_| Probe::default()),
                 sequence: config.initial_sequence,
                 round_sequence: config.initial_sequence,
                 ttl: config.first_ttl,
@@ -368,7 +372,7 @@ mod state {
 
         /// Get the `Probe` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> Probe {
-            self.buffer[usize::from(sequence - self.round_sequence)]
+            self.buffer[usize::from(sequence - self.round_sequence)].clone()
         }
 
         pub const fn ttl(&self) -> TimeToLive {
@@ -430,7 +434,7 @@ mod state {
                 self.round,
                 SystemTime::now(),
             );
-            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe.clone();
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive(1);
             debug_assert!(self.sequence < Sequence(u16::MAX));
@@ -460,7 +464,7 @@ mod state {
                 self.round,
                 SystemTime::now(),
             );
-            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe;
+            self.buffer[usize::from(self.sequence - self.round_sequence)] = probe.clone();
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
@@ -553,6 +557,7 @@ mod state {
             host: IpAddr,
             received: SystemTime,
             is_target: bool,
+            extensions: Option<Extensions>,
         ) {
             self.complete_probe(
                 sequence,
@@ -560,6 +565,7 @@ mod state {
                 host,
                 received,
                 is_target,
+                extensions,
             );
         }
 
@@ -570,8 +576,16 @@ mod state {
             sequence: Sequence,
             host: IpAddr,
             received: SystemTime,
+            extensions: Option<Extensions>,
         ) {
-            self.complete_probe(sequence, IcmpPacketType::Unreachable, host, received, true);
+            self.complete_probe(
+                sequence,
+                IcmpPacketType::Unreachable,
+                host,
+                received,
+                true,
+                extensions,
+            );
         }
 
         /// Mark the `Probe` at `sequence` completed as `EchoReply` and update the round state.
@@ -582,7 +596,14 @@ mod state {
             host: IpAddr,
             received: SystemTime,
         ) {
-            self.complete_probe(sequence, IcmpPacketType::EchoReply, host, received, true);
+            self.complete_probe(
+                sequence,
+                IcmpPacketType::EchoReply,
+                host,
+                received,
+                true,
+                None,
+            );
         }
 
         /// Mark the `Probe` at `sequence` completed as `NotApplicable` and update the round state.
@@ -599,6 +620,7 @@ mod state {
                 host,
                 received,
                 true,
+                None,
             );
         }
 
@@ -623,6 +645,7 @@ mod state {
             host: IpAddr,
             received: SystemTime,
             is_target: bool,
+            extensions: Option<Extensions>,
         ) {
             // Retrieve and update the `Probe` at `sequence`.
             let probe = self
@@ -630,8 +653,9 @@ mod state {
                 .with_status(ProbeStatus::Complete)
                 .with_icmp_packet_type(icmp_packet_type)
                 .with_host(host)
-                .with_received(received);
-            self.buffer[usize::from(sequence - self.round_sequence)] = probe;
+                .with_received(received)
+                .with_extensions(extensions);
+            self.buffer[usize::from(sequence - self.round_sequence)] = probe.clone();
 
             // If this `Probe` found the target then we set the `target_tll` if not already set,
             // being careful to account for `Probes` being received out-of-order.
@@ -737,7 +761,7 @@ mod state {
             // Update the state of the probe 1 after receiving a TimeExceeded
             let received_1 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            state.complete_probe_time_exceeded(Sequence(33000), host, received_1, false);
+            state.complete_probe_time_exceeded(Sequence(33000), host, received_1, false, None);
 
             // Validate the state of the probe 1 after the update
             let probe_1_fetch = state.probe_at(Sequence(33000));
@@ -766,8 +790,8 @@ mod state {
             // Validate the probes() iterator returns returns only a single probe
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_1_fetch, probe_next1);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_1_fetch, probe_next1);
                 assert_eq!(None, probe_iter.next());
             }
 
@@ -809,7 +833,7 @@ mod state {
             // Update the state of probe 2 after receiving a TimeExceeded
             let received_2 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            state.complete_probe_time_exceeded(Sequence(33001), host, received_2, false);
+            state.complete_probe_time_exceeded(Sequence(33001), host, received_2, false, None);
             let probe_2_recv = state.probe_at(Sequence(33001));
 
             // Validate the TracerState after the update to probe 2
@@ -825,10 +849,10 @@ mod state {
             // Validate the probes() iterator returns the two probes in the states we expect
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_2_recv, probe_next1);
-                let probe_next2 = *probe_iter.next().unwrap();
-                assert_eq!(probe_3, probe_next2);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_2_recv, probe_next1);
+                let probe_next2 = probe_iter.next().unwrap();
+                assert_eq!(&probe_3, probe_next2);
             }
 
             // Update the state of probe 3 after receiving a EchoReply
@@ -850,10 +874,10 @@ mod state {
             // Validate the probes() iterator returns the two probes in the states we expect
             {
                 let mut probe_iter = state.probes().iter();
-                let probe_next1 = *probe_iter.next().unwrap();
-                assert_eq!(probe_2_recv, probe_next1);
-                let probe_next2 = *probe_iter.next().unwrap();
-                assert_eq!(probe_3_recv, probe_next2);
+                let probe_next1 = probe_iter.next().unwrap();
+                assert_eq!(&probe_2_recv, probe_next1);
+                let probe_next2 = probe_iter.next().unwrap();
+                assert_eq!(&probe_3_recv, probe_next2);
             }
         }
 
@@ -953,7 +977,7 @@ mod state {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "assertion failed: !state.in_round(Sequence(64491))")]
         fn test_in_delayed_probe_not_in_round() {
             let mut state = TracerState::new(cfg(Sequence(64000)));
             for _ in 0..55 {

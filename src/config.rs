@@ -30,7 +30,7 @@ pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
 
 /// The tool mode.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Mode {
     /// Display interactive TUI.
@@ -54,7 +54,7 @@ pub enum Mode {
 }
 
 /// The tracing protocol.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Protocol {
     /// Internet Control Message Protocol
@@ -66,7 +66,7 @@ pub enum Protocol {
 }
 
 /// The address family.
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressFamily {
     /// Internet Protocol V4
@@ -76,7 +76,7 @@ pub enum AddressFamily {
 }
 
 /// The strategy Equal-cost Multi-Path routing strategy.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum MultipathStrategyConfig {
     /// The src or dest port is used to store the sequence number.
@@ -88,7 +88,7 @@ pub enum MultipathStrategyConfig {
 }
 
 /// How to render the addresses.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressMode {
     /// Show IP address only.
@@ -100,7 +100,7 @@ pub enum AddressMode {
 }
 
 /// How to render AS information.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AsMode {
     /// Show the ASN.
@@ -117,10 +117,29 @@ pub enum AsMode {
     Name,
 }
 
+/// How to render `icmp` extensions in the hops table.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum IcmpExtensionMode {
+    /// Do not show `icmp` extensions.
+    Off,
+    /// Show MPLS label(s) only.
+    Mpls,
+    /// Show full `icmp` extension data for all known extensions.
+    ///
+    /// For MPLS the fields shown are `label`, `ttl`, `exp` & `bos`.
+    Full,
+    /// Show full `icmp` extension data for all classes.
+    ///
+    /// This is the same as `Full`, but also shows `class`, `subtype` and
+    /// `object` for unknown extensions.
+    All,
+}
+
 /// How to render `GeoIp` information in the hop table.
 ///
 /// Note that the hop details view is always shown using the `Long` representation.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GeoIpMode {
     /// Do not display GeoIp data.
@@ -147,7 +166,7 @@ pub enum GeoIpMode {
 }
 
 /// How DNS queries will be resolved.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DnsResolveMethodConfig {
     /// Resolve using the OS resolver.
@@ -161,7 +180,7 @@ pub enum DnsResolveMethodConfig {
 }
 
 /// How to format log data.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LogFormat {
     /// Display log data in a compact format.
@@ -175,7 +194,7 @@ pub enum LogFormat {
 }
 
 /// How to log event spans.
-#[derive(Debug, Copy, Clone, ValueEnum, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LogSpanEvents {
     /// Do not display event spans.
@@ -186,7 +205,8 @@ pub enum LogSpanEvents {
     Full,
 }
 
-/// Fully parsed and validate configuration.
+/// Fully parsed and validated configuration.
+#[derive(Debug, Eq, PartialEq)]
 pub struct TrippyConfig {
     pub targets: Vec<String>,
     pub protocol: TracerProtocol,
@@ -199,6 +219,7 @@ pub struct TrippyConfig {
     pub max_inflight: u8,
     pub initial_sequence: u16,
     pub tos: u8,
+    pub icmp_extensions: bool,
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
@@ -210,11 +231,13 @@ pub struct TrippyConfig {
     pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
     pub tui_max_samples: usize,
+    pub tui_max_flows: usize,
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
     pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
+    pub tui_icmp_extension_mode: IcmpExtensionMode,
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
@@ -232,19 +255,25 @@ pub struct TrippyConfig {
     pub tui_custom_columns: Vec<char>,
 }
 
-impl TryFrom<(Args, &Platform)> for TrippyConfig {
-    type Error = anyhow::Error;
+impl TrippyConfig {
+    pub fn from(args: Args, platform: &Platform) -> anyhow::Result<Self> {
+        let cfg_file = if let Some(cfg) = &args.config_file {
+            file::read_config_file(cfg)?
+        } else if let Some(cfg) = file::read_default_config_file()? {
+            cfg
+        } else {
+            ConfigFile::default()
+        };
+        Self::build_config(args, cfg_file, platform)
+    }
 
     #[allow(clippy::too_many_lines)]
-    fn try_from(data: (Args, &Platform)) -> Result<Self, Self::Error> {
-        let (
-            args,
-            &Platform {
-                pid,
-                has_privileges,
-                needs_privileges,
-            },
-        ) = data;
+    fn build_config(args: Args, cfg_file: ConfigFile, platform: &Platform) -> anyhow::Result<Self> {
+        let &Platform {
+            pid,
+            has_privileges,
+            needs_privileges,
+        } = platform;
         if args.print_tui_theme_items {
             println!(
                 "TUI theme color items: {}",
@@ -259,18 +288,15 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             );
             process::exit(0);
         }
+        if args.print_config_template {
+            println!("{}", include_str!("../trippy-config-sample.toml"));
+            process::exit(0);
+        }
         if let Some(generator) = args.generate {
             let mut cmd = Args::command();
             print_completions(generator, &mut cmd);
             process::exit(0);
         }
-        let cfg_file = if let Some(cfg) = args.config_file {
-            file::read_config_file(cfg)?
-        } else if let Some(cfg) = file::read_default_config_file()? {
-            cfg
-        } else {
-            ConfigFile::default()
-        };
         let cfg_file_trace = cfg_file.trippy.unwrap_or_default();
         let cfg_file_strategy = cfg_file.strategy.unwrap_or_default();
         let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
@@ -374,6 +400,11 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_strategy.tos,
             constants::DEFAULT_STRATEGY_TOS,
         );
+        let icmp_extensions = cfg_layer_bool_flag(
+            args.icmp_extensions,
+            cfg_file_strategy.icmp_extensions,
+            constants::DEFAULT_ICMP_EXTENSIONS,
+        );
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
@@ -383,6 +414,11 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             args.tui_max_samples,
             cfg_file_tui.tui_max_samples,
             constants::DEFAULT_TUI_MAX_SAMPLES,
+        );
+        let tui_max_flows = cfg_layer(
+            args.tui_max_flows,
+            cfg_file_tui.tui_max_flows,
+            constants::DEFAULT_TUI_MAX_FLOWS,
         );
         let tui_preserve_screen = cfg_layer_bool_flag(
             args.tui_preserve_screen,
@@ -409,6 +445,13 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             cfg_file_tui.tui_as_mode,
             constants::DEFAULT_TUI_AS_MODE,
         );
+
+        let tui_icmp_extension_mode = cfg_layer(
+            args.tui_icmp_extension_mode,
+            cfg_file_tui.tui_icmp_extension_mode,
+            constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
+        );
+
         let tui_geoip_mode = cfg_layer(
             args.tui_geoip_mode,
             cfg_file_tui.tui_geoip_mode,
@@ -461,9 +504,8 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             })
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
-            (false, false, Some(AddressFamily::Ipv4) | None) | (true, _, _) => {
-                TracerAddrFamily::Ipv4
-            }
+            (false, false, None) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
             (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
@@ -565,6 +607,7 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             packet_size,
             payload_pattern,
             tos,
+            icmp_extensions,
             source_addr,
             interface,
             port_direction,
@@ -572,11 +615,13 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             dns_resolve_method,
             dns_lookup_as_info,
             tui_max_samples,
+            tui_max_flows,
             tui_preserve_screen,
             tui_refresh_rate,
             tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
+            tui_icmp_extension_mode,
             tui_geoip_mode,
             tui_max_addrs,
             tui_theme,
@@ -593,6 +638,101 @@ impl TryFrom<(Args, &Platform)> for TrippyConfig {
             log_span_events,
             tui_custom_columns,
         })
+    }
+}
+
+impl Default for TrippyConfig {
+    fn default() -> Self {
+        Self {
+            targets: vec![],
+            protocol: protocol(constants::DEFAULT_STRATEGY_PROTOCOL),
+            addr_family: addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            first_ttl: constants::DEFAULT_STRATEGY_FIRST_TTL,
+            max_ttl: constants::DEFAULT_STRATEGY_MAX_TTL,
+            min_round_duration: duration(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+            max_round_duration: duration(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
+            grace_duration: duration(constants::DEFAULT_STRATEGY_GRACE_DURATION),
+            max_inflight: constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
+            initial_sequence: constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+            tos: constants::DEFAULT_STRATEGY_TOS,
+            icmp_extensions: constants::DEFAULT_ICMP_EXTENSIONS,
+            read_timeout: duration(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
+            packet_size: constants::DEFAULT_STRATEGY_PACKET_SIZE,
+            payload_pattern: constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+            source_addr: None,
+            interface: None,
+            multipath_strategy: multipath_strategy(constants::DEFAULT_STRATEGY_MULTIPATH),
+            port_direction: PortDirection::None,
+            dns_timeout: duration(constants::DEFAULT_DNS_TIMEOUT),
+            dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
+            dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
+            tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
+            tui_max_flows: constants::DEFAULT_TUI_MAX_FLOWS,
+            tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
+            tui_refresh_rate: duration(constants::DEFAULT_TUI_REFRESH_RATE),
+            tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
+            tui_address_mode: constants::DEFAULT_TUI_ADDRESS_MODE,
+            tui_as_mode: constants::DEFAULT_TUI_AS_MODE,
+            tui_icmp_extension_mode: constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
+            tui_geoip_mode: constants::DEFAULT_TUI_GEOIP_MODE,
+            tui_max_addrs: None,
+            tui_theme: TuiTheme::default(),
+            tui_bindings: TuiBindings::default(),
+            mode: constants::DEFAULT_MODE,
+            privilege_mode: privilege_mode(constants::DEFAULT_UNPRIVILEGED),
+            dns_resolve_all: constants::DEFAULT_DNS_RESOLVE_ALL,
+            report_cycles: constants::DEFAULT_REPORT_CYCLES,
+            geoip_mmdb_file: None,
+            max_rounds: None,
+            verbose: false,
+            log_format: constants::DEFAULT_LOG_FORMAT,
+            log_filter: String::from(constants::DEFAULT_LOG_FILTER),
+            log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
+        }
+    }
+}
+
+fn duration(duration: &str) -> Duration {
+    humantime::parse_duration(duration).expect("valid duration")
+}
+
+fn protocol(protocol: Protocol) -> TracerProtocol {
+    match protocol {
+        Protocol::Icmp => TracerProtocol::Icmp,
+        Protocol::Udp => TracerProtocol::Udp,
+        Protocol::Tcp => TracerProtocol::Tcp,
+    }
+}
+
+fn privilege_mode(unprivileged: bool) -> PrivilegeMode {
+    if unprivileged {
+        PrivilegeMode::Unprivileged
+    } else {
+        PrivilegeMode::Privileged
+    }
+}
+
+fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
+    match dns_resolve_method {
+        DnsResolveMethodConfig::System => ResolveMethod::System,
+        DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
+        DnsResolveMethodConfig::Google => ResolveMethod::Google,
+        DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
+    }
+}
+
+fn multipath_strategy(multipath_strategy: MultipathStrategyConfig) -> MultipathStrategy {
+    match multipath_strategy {
+        MultipathStrategyConfig::Classic => MultipathStrategy::Classic,
+        MultipathStrategyConfig::Paris => MultipathStrategy::Paris,
+        MultipathStrategyConfig::Dublin => MultipathStrategy::Dublin,
+    }
+}
+
+fn addr_family(addr_family: AddressFamily) -> TracerAddrFamily {
+    match addr_family {
+        AddressFamily::Ipv4 => TracerAddrFamily::Ipv4,
+        AddressFamily::Ipv6 => TracerAddrFamily::Ipv6,
     }
 }
 
@@ -869,5 +1009,42 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
     } else {
         let dup_str = duplicates.iter().join(", ");
         Err(anyhow!("Duplicate key bindings: {dup_str}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_default() {
+        let args = args(&["trip", "example.com"]);
+        let cfg_file = ConfigFile::default();
+        let platform = Platform::dummy_for_test();
+        let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
+        let expected = TrippyConfig {
+            targets: vec![String::from("example.com")],
+            ..TrippyConfig::default()
+        };
+        pretty_assertions::assert_eq!(expected, config);
+    }
+
+    #[test]
+    fn test_config_sample() {
+        let args = args(&["trip", "example.com"]);
+        let cfg_file: ConfigFile =
+            toml::from_str(include_str!("../trippy-config-sample.toml")).unwrap();
+        let platform = Platform::dummy_for_test();
+        let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
+        let expected = TrippyConfig {
+            targets: vec![String::from("example.com")],
+            ..TrippyConfig::default()
+        };
+        pretty_assertions::assert_eq!(expected, config);
+    }
+
+    fn args(args: &[&str]) -> Args {
+        use clap::Parser;
+        Args::parse_from(args.iter().map(std::ffi::OsString::from))
     }
 }

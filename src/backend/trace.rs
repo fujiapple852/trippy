@@ -5,14 +5,19 @@ use std::collections::HashMap;
 use std::iter::once;
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
-use trippy::tracing::{Probe, ProbeStatus, TracerRound};
+use trippy::tracing::{Extensions, Probe, ProbeStatus, TracerRound};
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
 pub struct Trace {
     max_samples: usize,
+    /// The flow id for the current round.
+    round_flow_id: FlowId,
+    /// Tracing data per registered flow id.
     trace_data: HashMap<FlowId, TraceData>,
+    /// Flow registry.
     registry: FlowRegistry,
+    /// Tracing error message.
     error: Option<String>,
 }
 
@@ -22,6 +27,7 @@ impl Trace {
         Self {
             trace_data: once((Self::default_flow_id(), TraceData::new(max_samples)))
                 .collect::<HashMap<FlowId, TraceData>>(),
+            round_flow_id: Self::default_flow_id(),
             max_samples,
             registry: FlowRegistry::new(),
             error: None,
@@ -68,6 +74,11 @@ impl Trace {
         self.trace_data[&flow_id].round_count()
     }
 
+    /// The `FlowId` for the current round.
+    pub fn round_flow_id(&self) -> FlowId {
+        self.round_flow_id
+    }
+
     /// The registry of flows in the trace.
     pub fn flows(&self) -> &[(Flow, FlowId)] {
         self.registry.flows()
@@ -94,6 +105,7 @@ impl Trace {
                 .map(|p| p.host),
         );
         let flow_id = self.registry.register(flow);
+        self.round_flow_id = flow_id;
         self.update_trace_flow(Self::default_flow_id(), round);
         self.update_trace_flow(flow_id, round);
     }
@@ -110,17 +122,28 @@ impl Trace {
 /// Information about a single `Hop` within a `Trace`.
 #[derive(Debug, Clone)]
 pub struct Hop {
+    /// The ttl of this hop.
     ttl: u8,
+    /// The addrs of this hop and associated counts.
     addrs: IndexMap<IpAddr, usize>,
+    /// The total probes sent for this hop.
     total_sent: usize,
+    /// The total probes received for this hop.
     total_recv: usize,
+    /// The total round trip time for this hop across all rounds.
     total_time: Duration,
+    /// The round trip time for this hop in the current round.
     last: Option<Duration>,
+    /// The best round trip time for this hop across all rounds.
     best: Option<Duration>,
+    /// The worst round trip time for this hop across all rounds.
     worst: Option<Duration>,
+    /// The history of round trip times across the last N rounds.
+    samples: Vec<Duration>,
+    /// The ICMP extensions for this hop.
+    extensions: Option<Extensions>,
     mean: f64,
     m2: f64,
-    samples: Vec<Duration>,
 }
 
 impl Hop {
@@ -200,6 +223,10 @@ impl Hop {
     pub fn samples(&self) -> &[Duration] {
         &self.samples
     }
+
+    pub fn extensions(&self) -> Option<&Extensions> {
+        self.extensions.as_ref()
+    }
 }
 
 impl Default for Hop {
@@ -216,6 +243,7 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+            extensions: None,
         }
     }
 }
@@ -319,6 +347,7 @@ impl TraceData {
                 }
                 let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
                 *hop.addrs.entry(host).or_default() += 1;
+                hop.extensions = probe.extensions.clone();
             }
             ProbeStatus::Awaited => {
                 let index = usize::from(probe.ttl.0) - 1;

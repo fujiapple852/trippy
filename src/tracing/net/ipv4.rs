@@ -14,11 +14,10 @@ use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{
-    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp,
+    Extensions, ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp,
+    ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
-use crate::tracing::util::Required;
 use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -187,7 +186,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
 
 #[instrument(skip(probe))]
 pub fn dispatch_tcp_probe<S: Socket>(
-    probe: Probe,
+    probe: &Probe,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     tos: TypeOfService,
@@ -206,12 +205,13 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: TracerProtocol,
+    icmp_extensions: bool,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
-            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read]).req()?;
-            Ok(extract_probe_resp(protocol, &ipv4)?)
+            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
+            Ok(extract_probe_resp(protocol, icmp_extensions, &ipv4)?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -229,7 +229,10 @@ pub fn recv_tcp_socket<S: Socket>(
     let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket.peer_addr()?.req()?.ip();
+            let addr = tcp_socket
+                .peer_addr()?
+                .ok_or(TracerError::MissingAddr)?
+                .ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -248,11 +251,10 @@ pub fn recv_tcp_socket<S: Socket>(
                 }
                 if platform::is_host_unreachable_error(code) {
                     let error_addr = tcp_socket.icmp_error_info()?;
-                    return Ok(Some(ProbeResponse::TimeExceeded(ProbeResponseData::new(
-                        SystemTime::now(),
-                        error_addr,
-                        resp_seq,
-                    ))));
+                    return Ok(Some(ProbeResponse::TimeExceeded(
+                        ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        None,
+                    )));
                 }
             }
         }
@@ -270,7 +272,7 @@ fn make_echo_request_icmp_packet(
 ) -> TraceResult<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
-    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size]).req()?;
+    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
     icmp.set_icmp_type(IcmpType::EchoRequest);
     icmp.set_icmp_code(IcmpCode(0));
     icmp.set_identifier(identifier.0);
@@ -290,7 +292,7 @@ fn make_udp_packet<'a>(
     payload: &'_ [u8],
 ) -> TraceResult<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size]).req()?;
+    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
     udp.set_destination(dest_port);
     udp.set_length(udp_packet_size as u16);
@@ -314,7 +316,7 @@ fn make_ipv4_packet<'a>(
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
     let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
     let ipv4_flags_and_fragment_offset_header = ipv4_byte_order.adjust_length(DONT_FRAGMENT);
-    let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize]).req()?;
+    let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize])?;
     ipv4.set_version(4);
     ipv4.set_header_length(5);
     ipv4.set_total_length(ipv4_total_length_header);
@@ -343,29 +345,45 @@ fn udp_payload_size(packet_size: usize) -> usize {
 #[instrument]
 fn extract_probe_resp(
     protocol: TracerProtocol,
+    icmp_extensions: bool,
     ipv4: &Ipv4Packet<'_>,
 ) -> TraceResult<Option<ProbeResponse>> {
     let recv = SystemTime::now();
     let src = IpAddr::V4(ipv4.get_source());
-    let icmp_v4 = IcmpPacket::new_view(ipv4.payload()).req()?;
+    let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
-            let packet = TimeExceededPacket::new_view(icmp_v4.packet()).req()?;
-            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
+            let (nested_ipv4, extension) = if icmp_extensions {
+                let ipv4 = Ipv4Packet::new_view(packet.payload())?;
+                let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                (ipv4, ext)
+            } else {
+                let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
+                (ipv4, None)
+            };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
-                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq))
+                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq), extension)
             })
         }
         IcmpType::DestinationUnreachable => {
-            let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet()).req()?;
-            let nested_ipv4 = Ipv4Packet::new_view(packet.payload()).req()?;
+            let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
+            let nested_ipv4 = Ipv4Packet::new_view(packet.payload())?;
+            let extension = if icmp_extensions {
+                packet.extension().map(Extensions::try_from).transpose()?
+            } else {
+                None
+            };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
-                ProbeResponse::DestinationUnreachable(ProbeResponseData::new(recv, src, resp_seq))
+                ProbeResponse::DestinationUnreachable(
+                    ProbeResponseData::new(recv, src, resp_seq),
+                    extension,
+                )
             })
         }
         IcmpType::EchoReply => match protocol {
             TracerProtocol::Icmp => {
-                let packet = EchoReplyPacket::new_view(icmp_v4.packet()).req()?;
+                let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
@@ -411,13 +429,13 @@ fn extract_probe_resp_seq(
 
 #[instrument]
 fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequestPacket<'a>> {
-    Ok(EchoRequestPacket::new_view(ipv4.payload()).req()?)
+    Ok(EchoRequestPacket::new_view(ipv4.payload())?)
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
 #[instrument]
 fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
-    let nested = UdpPacket::new_view(ipv4.payload()).req()?;
+    let nested = UdpPacket::new_view(ipv4.payload())?;
     Ok((
         nested.get_source(),
         nested.get_destination(),
@@ -443,10 +461,10 @@ fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         buf[..nested_tcp.len()].copy_from_slice(nested_tcp);
-        let tcp_packet = TcpPacket::new_view(&buf).req()?;
+        let tcp_packet = TcpPacket::new_view(&buf)?;
         Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     } else {
-        let tcp_packet = TcpPacket::new_view(nested_tcp).req()?;
+        let tcp_packet = TcpPacket::new_view(nested_tcp)?;
         Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
     }
 }

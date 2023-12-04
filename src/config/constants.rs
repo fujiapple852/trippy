@@ -1,6 +1,6 @@
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
-    MultipathStrategyConfig, Protocol,
+    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
 };
 use std::time::Duration;
 
@@ -30,6 +30,9 @@ pub const DEFAULT_LOG_FILTER: &str = "trippy=debug";
 
 /// The default value for `protocol`.
 pub const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
+
+/// The default value for `addr-family`.
+pub const DEFAULT_ADDRESS_FAMILY: AddressFamily = AddressFamily::Ipv4;
 
 /// The default value for `min-round-duration`.
 pub const DEFAULT_STRATEGY_MIN_ROUND_DURATION: &str = "1s";
@@ -64,11 +67,17 @@ pub const DEFAULT_STRATEGY_PAYLOAD_PATTERN: u8 = 0;
 /// The default value for `tos`.
 pub const DEFAULT_STRATEGY_TOS: u8 = 0;
 
+/// The default value for `icmp-extensions`.
+pub const DEFAULT_ICMP_EXTENSIONS: bool = false;
+
 /// The default value for `read-timeout`.
 pub const DEFAULT_STRATEGY_READ_TIMEOUT: &str = "10ms";
 
 /// The default value for `tui-max-samples`.
 pub const DEFAULT_TUI_MAX_SAMPLES: usize = 256;
+
+/// The default value for `tui-max-flows`.
+pub const DEFAULT_TUI_MAX_FLOWS: usize = 64;
 
 /// The default value for `tui-preserve-screen`.
 pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
@@ -76,8 +85,14 @@ pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 /// The default value for `tui-as-mode`.
 pub const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 
+/// The default value for `tui-icmp-extension-mode`.
+pub const DEFAULT_TUI_ICMP_EXTENSION_MODE: IcmpExtensionMode = IcmpExtensionMode::Off;
+
 /// The default value for `tui-geoip-mode`.
 pub const DEFAULT_TUI_GEOIP_MODE: GeoIpMode = GeoIpMode::Off;
+
+/// The default value for `tui-max-addrs`.
+pub const DEFAULT_TUI_MAX_ADDRS: u8 = 0;
 
 /// The default value for `tui-address-mode`.
 pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;

@@ -1,4 +1,4 @@
-use crate::backend::trace::{Hop, Trace};
+use crate::backend::trace::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -45,14 +45,20 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
             render_map_canvas_world(ctx, theme.map_world_color);
             ctx.layer();
             for entry in entries {
-                render_map_canvas_pin(ctx, entry);
-                render_map_canvas_radius(ctx, entry, theme.map_radius_color);
-                render_map_canvas_selected(
-                    ctx,
-                    entry,
-                    app.selected_hop_or_target(),
-                    theme.map_selected_color,
-                );
+                let any_show = entry
+                    .hops
+                    .iter()
+                    .any(|hop| *hop > app.tui_config.privacy_max_ttl);
+                if !app.hide_private_hops || any_show {
+                    render_map_canvas_pin(ctx, entry);
+                    render_map_canvas_radius(ctx, entry, theme.map_radius_color);
+                    render_map_canvas_selected(
+                        ctx,
+                        entry,
+                        app.selected_hop_or_target(),
+                        theme.map_selected_color,
+                    );
+                }
             }
         })
         .marker(Marker::Braille)
@@ -138,7 +144,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
             }
         })
         .collect::<Vec<_>>();
-    let info = if app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
+    let info = if app.hide_private_hops && app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
         "**Hidden**".to_string()
     } else {
         match locations.as_slice() {
@@ -186,7 +192,7 @@ struct MapEntry {
 /// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
 fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
-    for hop in app.tracer_data().hops(Trace::default_flow_id()) {
+    for hop in app.tracer_data().hops(app.selected_flow) {
         for addr in hop.addrs() {
             if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {

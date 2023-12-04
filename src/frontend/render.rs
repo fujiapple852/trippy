@@ -2,6 +2,7 @@ pub mod app;
 pub mod body;
 pub mod bsod;
 pub mod chart;
+pub mod flows;
 pub mod footer;
 pub mod header;
 pub mod help;

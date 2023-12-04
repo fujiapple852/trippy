@@ -1,8 +1,8 @@
 use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, LogFormat, LogSpanEvents, Mode,
-    MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
+    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
@@ -14,7 +14,7 @@ use clap_complete::Shell;
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
-    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "generate"]))]
+    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate"]))]
     pub targets: Vec<String>,
 
     /// Config file
@@ -129,6 +129,10 @@ pub struct Args {
     #[arg(short = 'Q', long)]
     pub tos: Option<u8>,
 
+    /// Parse ICMP extensions
+    #[arg(short = 'e', long)]
+    pub icmp_extensions: bool,
+
     /// The socket read timeout [default: 10ms]
     #[arg(long)]
     pub read_timeout: Option<String>,
@@ -161,6 +165,10 @@ pub struct Args {
     #[arg(long)]
     pub tui_custom_columns: Option<String>,
 
+    /// How to render ICMP extensions [default: off]
+    #[arg(value_enum, long)]
+    pub tui_icmp_extension_mode: Option<IcmpExtensionMode>,
+
     /// How to render GeoIp information [default: short]
     #[arg(value_enum, long)]
     pub tui_geoip_mode: Option<GeoIpMode>,
@@ -172,6 +180,10 @@ pub struct Args {
     /// The maximum number of samples to record per hop [default: 256]
     #[arg(long, short = 's')]
     pub tui_max_samples: Option<usize>,
+
+    /// The maximum number of flows to show [default: 64]
+    #[arg(long)]
+    pub tui_max_flows: Option<usize>,
 
     /// Preserve the screen on exit [default: false]
     #[arg(long)]
@@ -212,6 +224,10 @@ pub struct Args {
     /// Generate shell completion
     #[arg(long)]
     pub generate: Option<Shell>,
+
+    /// Print a template toml config file and exit.
+    #[arg(long)]
+    pub print_config_template: bool,
 
     /// The debug log format [default: pretty]
     #[arg(long)]

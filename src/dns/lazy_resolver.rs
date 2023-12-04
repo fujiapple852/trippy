@@ -15,7 +15,7 @@ pub struct Config {
 }
 
 /// How DNS queries will be resolved.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ResolveMethod {
     /// Resolve using the OS resolver.
     System,

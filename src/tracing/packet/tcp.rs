@@ -1,4 +1,5 @@
 use crate::tracing::packet::buffer::Buffer;
+use crate::tracing::packet::error::{PacketError, PacketResult};
 use crate::tracing::packet::fmt_payload;
 use std::fmt::{Debug, Formatter};
 
@@ -22,24 +23,31 @@ pub struct TcpPacket<'a> {
 }
 
 impl<'a> TcpPacket<'a> {
-    pub fn new(packet: &mut [u8]) -> Option<TcpPacket<'_>> {
+    pub fn new(packet: &mut [u8]) -> PacketResult<TcpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(TcpPacket {
+            Ok(TcpPacket {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("TcpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
-    #[must_use]
-    pub fn new_view(packet: &[u8]) -> Option<TcpPacket<'_>> {
+    pub fn new_view(packet: &[u8]) -> PacketResult<TcpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
-            Some(TcpPacket {
+            Ok(TcpPacket {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            None
+            Err(PacketError::InsufficientPacketBuffer(
+                String::from("TcpPacket"),
+                Self::minimum_packet_size(),
+                packet.len(),
+            ))
         }
     }
 
