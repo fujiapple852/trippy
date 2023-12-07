@@ -163,7 +163,7 @@ impl Column {
             'B' => Self::new(DEFAULT_HEADING_BEST, short),
             'W' => Self::new(DEFAULT_HEADING_WRST, short),
             'D' => Self::new(DEFAULT_HEADING_STDEV, short),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }

@@ -69,7 +69,10 @@ impl PartialEq for Column {
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
     let custom_columns = &config.tui_custom_columns;
-    let columns = custom_columns.iter().map(|c| Column::new_short(*c)).collect_vec();
+    let columns = custom_columns
+        .iter()
+        .map(|c| Column::new_short(*c))
+        .collect_vec();
     let widths = get_column_widths(&columns);
     let header = render_table_header(app.tui_config.theme, &columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
@@ -643,7 +646,7 @@ const DEFAULT_HEADING_HOPS: &str = "#";
 const DEFAULT_HEADING_HOST: &str = "Host";
 const DEFAULT_HEADING_LOSS: &str = "Loss%";
 const DEFAULT_HEADING_SENT: &str = "Snt";
-const DEFAULT_HEADING_RECV: & str = "Recv";
+const DEFAULT_HEADING_RECV: &str = "Recv";
 const DEFAULT_HEADING_LAST: &str = "Last";
 const DEFAULT_HEADING_AVG: &str = "Avg";
 const DEFAULT_HEADING_BEST: &str = "Best";

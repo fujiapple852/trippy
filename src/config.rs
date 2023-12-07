@@ -806,12 +806,8 @@ fn validate_tui_custom_columns(tui_custom_columns: &[char]) -> anyhow::Result<()
         .all(|&c| constants::TUI_CUSTOM_COLUMNS.to_vec().contains(&c))
     {
         match validate_duplicates(tui_custom_columns) {
-            Some(c) => {
-                Err(anyhow!(format!("Duplicate custom TUI column found: {}", c)))
-            }
-            None => {
-                Ok(())
-            }
+            Some(c) => Err(anyhow!(format!("Duplicate custom TUI column found: {}", c))),
+            None => Ok(()),
         }
     } else {
         Err(anyhow!("Invalid column found - Allowed upper case values 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
@@ -823,12 +819,8 @@ fn validate_csv_custom_columns(csv_custom_columns: &[char]) -> anyhow::Result<()
         .all(|&c| constants::CSV_CUSTOM_COLUMNS.to_vec().contains(&c))
     {
         match validate_duplicates(csv_custom_columns) {
-            Some(c) => {
-                Err(anyhow!(format!("Duplicate custom CSV column found: {}", c)))
-            }
-            None => {
-                Ok(())
-            }
+            Some(c) => Err(anyhow!(format!("Duplicate custom CSV column found: {}", c))),
+            None => Ok(()),
         }
     } else {
         Err(anyhow!("Invalid column found - Allowed upper case values 'G','I','H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
