@@ -124,7 +124,7 @@ brew install trippy
 
 ### WinGet (Windows)
 
-[![winget package](https://repology.org/badge/version-for-repo/winget/trippy.svg)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.8.0)
+[![winget package](https://repology.org/badge/version-for-repo/winget/trippy.svg)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.9.0)
 
 ```shell
 winget install trippy
