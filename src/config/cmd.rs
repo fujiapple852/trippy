@@ -161,13 +161,9 @@ pub struct Args {
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 
-    /// The Custom columns to be displayed that contains comma-sep string [possible values: 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T']
+    /// Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]
     #[arg(long)]
     pub tui_custom_columns: Option<String>,
-
-    /// The Custom columns to be displayed that contains comma-sep string [possible values: 'G','I','H', 'O', 'T', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D']
-    #[arg(long)]
-    pub csv_custom_columns: Option<String>,
 
     /// How to render ICMP extensions [default: off]
     #[arg(value_enum, long)]

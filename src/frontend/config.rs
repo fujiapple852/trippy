@@ -1,6 +1,7 @@
-use crate::config::{AddressMode, AsMode, GeoIpMode, TuiTheme};
+use crate::config::{AddressMode, AsMode, GeoIpMode, TuiColumns, TuiTheme};
 use crate::config::{IcmpExtensionMode, TuiBindings};
 use crate::frontend::binding::Bindings;
+use crate::frontend::columns::Columns;
 use crate::frontend::theme::Theme;
 use std::time::Duration;
 
@@ -33,10 +34,8 @@ pub struct TuiConfig {
     pub theme: Theme,
     /// The Tui keyboard bindings.
     pub bindings: Bindings,
-    //// The default custom columns for table
-    pub tui_custom_columns: Vec<char>,
-    //// The default custom columns for csv mode
-    pub csv_custom_columns: Vec<char>,
+    /// The columns to display in the hops table.
+    pub tui_columns: Columns,
 }
 
 impl TuiConfig {
@@ -55,8 +54,7 @@ impl TuiConfig {
         max_flows: usize,
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
-        tui_custom_columns: Vec<char>,
-        csv_custom_columns: Vec<char>,
+        tui_columns: &TuiColumns,
     ) -> Self {
         Self {
             refresh_rate,
@@ -72,8 +70,7 @@ impl TuiConfig {
             max_flows,
             theme: Theme::from(tui_theme),
             bindings: Bindings::from(*tui_bindings),
-            tui_custom_columns,
-            csv_custom_columns,
+            tui_columns: Columns::from(tui_columns.clone()),
         }
     }
 }

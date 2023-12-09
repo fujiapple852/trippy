@@ -6,7 +6,7 @@ use clap_complete::{generate, Generator};
 use file::ConfigFile;
 use itertools::Itertools;
 use serde::Deserialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::net::IpAddr;
 use std::process;
 use std::str::FromStr;
@@ -20,12 +20,14 @@ use trippy::tracing::{
 
 mod binding;
 mod cmd;
+mod columns;
 mod constants;
 mod file;
 mod theme;
 
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
+pub use columns::{TuiColumn, TuiColumns};
 pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme};
 
@@ -237,6 +239,7 @@ pub struct TrippyConfig {
     pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
+    pub tui_custom_columns: TuiColumns,
     pub tui_icmp_extension_mode: IcmpExtensionMode,
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
@@ -252,8 +255,6 @@ pub struct TrippyConfig {
     pub log_format: LogFormat,
     pub log_filter: String,
     pub log_span_events: LogSpanEvents,
-    pub tui_custom_columns: Vec<char>,
-    pub csv_custom_columns: Vec<char>,
 }
 
 impl TrippyConfig {
@@ -447,6 +448,22 @@ impl TrippyConfig {
             constants::DEFAULT_TUI_AS_MODE,
         );
 
+        // // TODO need to pick this over cfg file or merge?
+        // let tui_custom_columns = args
+        //     .tui_custom_columns
+        //     .as_deref()
+        //     .map(TuiColumns::try_from)
+        //     .transpose()?
+        //     .unwrap_or_default();
+
+        let columns = cfg_layer(
+            args.tui_custom_columns,
+            cfg_file_tui.tui_custom_columns,
+            String::from(constants::DEFAULT_CUSTOM_COLUMNS),
+        );
+
+        let tui_custom_columns = TuiColumns::try_from(columns.as_str())?;
+
         let tui_icmp_extension_mode = cfg_layer(
             args.tui_icmp_extension_mode,
             cfg_file_tui.tui_icmp_extension_mode,
@@ -479,21 +496,6 @@ impl TrippyConfig {
             cfg_file_report.report_cycles,
             constants::DEFAULT_REPORT_CYCLES,
         );
-        let tui_custom_columns: Vec<char> =
-            match (args.tui_custom_columns, cfg_file_tui.tui_custom_columns) {
-                (Some(headers), Some(_)) => headers.split(',').flat_map(|s| s.chars()).collect(),
-                (Some(headers), None) => headers.split(',').flat_map(|s| s.chars()).collect(),
-                (None, Some(headers)) => headers,
-                (None, None) => constants::TUI_CUSTOM_COLUMNS.to_vec(),
-            };
-        let csv_custom_columns: Vec<char> =
-            match (args.csv_custom_columns, cfg_file_report.csv_custom_columns) {
-                (Some(headers), Some(_)) => headers.split(',').flat_map(|s| s.chars()).collect(),
-                (Some(headers), None) => headers.split(',').flat_map(|s| s.chars()).collect(),
-                (None, Some(headers)) => headers,
-                (None, None) => constants::CSV_CUSTOM_COLUMNS.to_vec(),
-            };
-
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
             (false, false, false, Protocol::Udp) | (true, _, _, _) => TracerProtocol::Udp,
@@ -588,7 +590,6 @@ impl TrippyConfig {
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
         validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
         validate_tui_custom_columns(&tui_custom_columns)?;
-        validate_csv_custom_columns(&csv_custom_columns)?;
         let tui_theme_items = args
             .tui_theme_colors
             .into_iter()
@@ -630,6 +631,7 @@ impl TrippyConfig {
             tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
+            tui_custom_columns,
             tui_icmp_extension_mode,
             tui_geoip_mode,
             tui_max_addrs,
@@ -645,8 +647,6 @@ impl TrippyConfig {
             log_format,
             log_filter,
             log_span_events,
-            tui_custom_columns,
-            csv_custom_columns,
         })
     }
 }
@@ -698,8 +698,7 @@ impl Default for TrippyConfig {
             log_format: constants::DEFAULT_LOG_FORMAT,
             log_filter: String::from(constants::DEFAULT_LOG_FILTER),
             log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
-            tui_custom_columns: constants::TUI_CUSTOM_COLUMNS.to_vec(),
-            csv_custom_columns: constants::CSV_CUSTOM_COLUMNS.to_vec(),
+            tui_custom_columns: TuiColumns::default(),
         }
     }
 }
@@ -800,35 +799,15 @@ fn validate_privilege(
         ))),
     }
 }
-fn validate_tui_custom_columns(tui_custom_columns: &[char]) -> anyhow::Result<()> {
-    if tui_custom_columns
-        .iter()
-        .all(|&c| constants::TUI_CUSTOM_COLUMNS.to_vec().contains(&c))
-    {
-        match validate_duplicates(tui_custom_columns) {
-            Some(c) => Err(anyhow!(format!("Duplicate custom TUI column found: {}", c))),
-            None => Ok(()),
-        }
+
+fn validate_tui_custom_columns(tui_custom_columns: &TuiColumns) -> anyhow::Result<()> {
+    let duplicates = tui_custom_columns.find_duplicates();
+    if duplicates.is_empty() {
+        Ok(())
     } else {
-        Err(anyhow!("Invalid column found - Allowed upper case values 'H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
+        let dup_str = duplicates.iter().join(", ");
+        Err(anyhow!("Duplicate custom columns: {dup_str}"))
     }
-}
-fn validate_csv_custom_columns(csv_custom_columns: &[char]) -> anyhow::Result<()> {
-    if csv_custom_columns
-        .iter()
-        .all(|&c| constants::CSV_CUSTOM_COLUMNS.to_vec().contains(&c))
-    {
-        match validate_duplicates(csv_custom_columns) {
-            Some(c) => Err(anyhow!(format!("Duplicate custom CSV column found: {}", c))),
-            None => Ok(()),
-        }
-    } else {
-        Err(anyhow!("Invalid column found - Allowed upper case values 'G','I','H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'"))
-    }
-}
-fn validate_duplicates(custom_colums: &[char]) -> Option<char> {
-    let mut check = HashSet::new();
-    return custom_colums.iter().find(|&&c| !check.insert(c)).copied();
 }
 
 fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {

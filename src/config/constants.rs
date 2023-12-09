@@ -85,6 +85,9 @@ pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 /// The default value for `tui-as-mode`.
 pub const DEFAULT_TUI_AS_MODE: AsMode = AsMode::Asn;
 
+/// The default value for `tui-custom-columns`.
+pub const DEFAULT_CUSTOM_COLUMNS: &str = "HOLSRAVBWDT";
+
 /// The default value for `tui-icmp-extension-mode`.
 pub const DEFAULT_TUI_ICMP_EXTENSION_MODE: IcmpExtensionMode = IcmpExtensionMode::Off;
 
@@ -138,9 +141,3 @@ pub const MIN_PACKET_SIZE: u16 = 28;
 
 /// The maximum packet size we allow.
 pub const MAX_PACKET_SIZE: u16 = 1024;
-
-pub const TUI_CUSTOM_COLUMNS: [char; 11] = ['H', 'O', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D', 'T'];
-
-pub const CSV_CUSTOM_COLUMNS: [char; 13] = [
-    'G', 'I', 'H', 'O', 'T', 'L', 'S', 'R', 'A', 'V', 'B', 'W', 'D',
-];

@@ -1,5 +1,6 @@
 use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
+use crate::frontend::columns::{Column, Columns};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -14,43 +15,6 @@ use std::rc::Rc;
 use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 use trippy::tracing::{Extension, Extensions, MplsLabelStackMember, UnknownExtension};
 
-#[derive(Debug, Clone)]
-pub struct Column {
-    pub display: &'static str,
-    pub short: char,
-    pub width_pct: u16,
-}
-impl Column {
-    pub fn new(display: &'static str, short: char, width_pct: u16) -> Self {
-        Self {
-            display,
-            short,
-            width_pct,
-        }
-    }
-    pub fn new_short(short: char) -> Self {
-        match short {
-            'H' => Self::new(DEFAULT_HEADING_HOPS, short, 3),
-            'O' => Self::new(DEFAULT_HEADING_HOST, short, 42),
-            'L' => Self::new(DEFAULT_HEADING_LOSS, short, 5),
-            'S' => Self::new(DEFAULT_HEADING_SENT, short, 5),
-            'R' => Self::new(DEFAULT_HEADING_RECV, short, 5),
-            'A' => Self::new(DEFAULT_HEADING_LAST, short, 5),
-            'V' => Self::new(DEFAULT_HEADING_AVG, short, 5),
-            'B' => Self::new(DEFAULT_HEADING_BEST, short, 5),
-            'W' => Self::new(DEFAULT_HEADING_WRST, short, 5),
-            'D' => Self::new(DEFAULT_HEADING_STDEV, short, 5),
-            'T' => Self::new(DEFAULT_HEADING_STS, short, 5),
-            _ => todo!(),
-        }
-    }
-}
-//Special version to compare the unique short column
-impl PartialEq for Column {
-    fn eq(&self, other: &Self) -> bool {
-        self.short == other.short
-    }
-}
 /// Render the table of data about the hops.
 ///
 /// For each hop, we show:
@@ -68,13 +32,8 @@ impl PartialEq for Column {
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
-    let custom_columns = &config.tui_custom_columns;
-    let columns = custom_columns
-        .iter()
-        .map(|c| Column::new_short(*c))
-        .collect_vec();
-    let widths = get_column_widths(&columns);
-    let header = render_table_header(app.tui_config.theme, &columns);
+    let widths = get_column_widths(&config.tui_columns);
+    let header = render_table_header(app.tui_config.theme, &config.tui_columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
         render_table_row(
@@ -83,7 +42,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
             &app.resolver,
             &app.geoip_lookup,
             &app.tui_config,
-            &columns,
+            &config.tui_columns,
         )
     });
     let table = Table::new(rows)
@@ -106,9 +65,9 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 }
 
 /// Render the table header.
-fn render_table_header(theme: Theme, table_columns: &[Column]) -> Row<'static> {
-    let header_cells = table_columns.iter().map(|c| {
-        Cell::from(c.display).style(Style::default().fg(theme.hops_table_header_text_color))
+fn render_table_header(theme: Theme, table_columns: &Columns) -> Row<'static> {
+    let header_cells = table_columns.0.iter().map(|c| {
+        Cell::from(c.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
     });
     Row::new(header_cells)
         .style(Style::default().bg(theme.hops_table_header_bg_color))
@@ -123,7 +82,7 @@ fn render_table_row(
     dns: &DnsResolver,
     geoip_lookup: &GeoIpLookup,
     config: &TuiConfig,
-    custom_columns: &[Column],
+    custom_columns: &Columns,
 ) -> Row<'static> {
     let is_selected_hop = app
         .selected_hop()
@@ -136,8 +95,19 @@ fn render_table_row(
         render_hostname(app, hop, dns, geoip_lookup)
     };
     let cells: Vec<Cell<'_>> = custom_columns
+        .0
         .iter()
-        .map(|column| new_cell(column, is_selected_hop, app, hop, dns, geoip_lookup, config))
+        .map(|column| {
+            new_cell(
+                *column,
+                is_selected_hop,
+                app,
+                hop,
+                dns,
+                geoip_lookup,
+                config,
+            )
+        })
         .collect();
     let row_color = if is_in_round {
         config.theme.hops_table_row_active_text_color
@@ -151,7 +121,7 @@ fn render_table_row(
 }
 ///Returns a Cell matched on short char of the Column
 fn new_cell(
-    column: &Column,
+    column: Column,
     is_selected_hop: bool,
     app: &TuiApp,
     hop: &Hop,
@@ -160,10 +130,9 @@ fn new_cell(
     config: &TuiConfig,
 ) -> Cell<'static> {
     let is_target = app.tracer_data().is_target(hop, app.selected_flow);
-
-    match column.short {
-        'H' => render_ttl_cell(hop),
-        'O' => {
+    match column {
+        Column::Ttl => render_ttl_cell(hop),
+        Column::Host => {
             let (host_cell, _) = if is_selected_hop && app.show_hop_details {
                 render_hostname_with_details(app, hop, dns, geoip_lookup, config)
             } else {
@@ -171,16 +140,15 @@ fn new_cell(
             };
             host_cell
         }
-        'L' => render_loss_pct_cell(hop),
-        'S' => render_total_sent_cell(hop),
-        'R' => render_total_recv_cell(hop),
-        'A' => render_last_cell(hop),
-        'V' => render_avg_cell(hop),
-        'B' => render_best_cell(hop),
-        'W' => render_worst_cell(hop),
-        'D' => render_stddev_cell(hop),
-        'T' => render_status_cell(hop, is_target),
-        _ => todo!(),
+        Column::LossPct => render_loss_pct_cell(hop),
+        Column::Sent => render_total_sent_cell(hop),
+        Column::Received => render_total_recv_cell(hop),
+        Column::Last => render_last_cell(hop),
+        Column::Average => render_avg_cell(hop),
+        Column::Best => render_best_cell(hop),
+        Column::Worst => render_worst_cell(hop),
+        Column::StdDev => render_stddev_cell(hop),
+        Column::Status => render_status_cell(hop, is_target),
     }
 }
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
@@ -635,21 +603,10 @@ fn fmt_details_line(
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
 }
-fn get_column_widths(custom: &[Column]) -> Vec<Constraint> {
-    custom
+fn get_column_widths(columns: &Columns) -> Vec<Constraint> {
+    columns
+        .0
         .iter()
-        .map(|c| Constraint::Percentage(c.width_pct))
+        .map(|c| Constraint::Percentage(c.width_pct()))
         .collect()
 }
-
-const DEFAULT_HEADING_HOPS: &str = "#";
-const DEFAULT_HEADING_HOST: &str = "Host";
-const DEFAULT_HEADING_LOSS: &str = "Loss%";
-const DEFAULT_HEADING_SENT: &str = "Snt";
-const DEFAULT_HEADING_RECV: &str = "Recv";
-const DEFAULT_HEADING_LAST: &str = "Last";
-const DEFAULT_HEADING_AVG: &str = "Avg";
-const DEFAULT_HEADING_BEST: &str = "Best";
-const DEFAULT_HEADING_WRST: &str = "Wrst";
-const DEFAULT_HEADING_STDEV: &str = "StDev";
-const DEFAULT_HEADING_STS: &str = "Sts";

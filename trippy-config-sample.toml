@@ -216,12 +216,6 @@ dns-timeout = "5s"
 # Only applicable for modes pretty, markdown, csv and json.
 report-cycles = 10
 
-# The custom columns that can be changed to suit.
-# Allowed values are: G I H O T L S R A V B W D
-# Target=G, I=TargetIp, H=Hop, O=Host,T=Addr, L=Loss%, S=Snt, R=Recv, A=Last, V=Avg, B=Best, W=Wrst, D=StDev
-# The order of columns will be output as is
-csv-custom-columns = ['G','I','H','O','T','L','S','R','A','V','B','W','D']
-
 #
 # General Tui Configuration.
 #
@@ -246,19 +240,32 @@ tui-address-mode = "host"
 #   name            - Display the AS name
 tui-as-mode = "asn"
 
-# How to render ICMP extensions
+# Custom columns to be displayed in the TUI hops table.
+#
+# Allowed values are:
+#
+#   H - Ttl
+#   O - Hostname
+#   L - Loss %
+#   S - Probes sent
+#   R - Responses received
+#   A - Last RTT
+#   V - Average RTT
+#   B - Best RTT
+#   W - Worst RTT
+#   D - Stddev
+#   T - Status
+#
+# The columns will be shown in the order specified.
+tui-custom-columns = "HOLSRAVBWDT"
+
+# How to render ICMP extensions.
 #
 #   off             - Do not show icmp extensions [default]
 #   mpls            - Show MPLS label(s) only
 #   full            - Show full icmp extension data for all known extensions
 #   all             - Show full icmp extension data for all classes
 tui-icmp-extension-mode = "off"
-
-# The custom columns that can be changed to suit.
-# Allowed values are: H O L S R A V B W D T
-# H=#, O=Host,L=Loss%, S=Snt, R=Recv, A=Last, V=Avg, B=Best, W=Wrst, D=StDev, T=Sts
-# The order of columns will be output as is
-tui-custom-columns = ['H','O','L','S','R','A','V','B','W','D','T']
 
 # How to render GeoIp information.
 #

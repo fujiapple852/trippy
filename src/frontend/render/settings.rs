@@ -179,11 +179,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "tui-custom-columns",
-            format!("{:?}", app.tui_config.tui_custom_columns),
-        ),
-        SettingsItem::new(
-            "csv-custom-columns",
-            format!("{:?}", app.tui_config.csv_custom_columns),
+            format!("{:?}", app.tui_config.tui_columns),
         ),
     ]
 }
@@ -428,7 +424,7 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 6] = [
-    ("Tui", 11),
+    ("Tui", 10),
     ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),

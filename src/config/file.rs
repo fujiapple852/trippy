@@ -199,14 +199,12 @@ impl Default for ConfigDns {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigReport {
     pub report_cycles: Option<usize>,
-    pub csv_custom_columns: Option<Vec<char>>,
 }
 
 impl Default for ConfigReport {
     fn default() -> Self {
         Self {
             report_cycles: Some(super::constants::DEFAULT_REPORT_CYCLES),
-            csv_custom_columns: Some(super::constants::CSV_CUSTOM_COLUMNS.to_vec()),
         }
     }
 }
@@ -225,7 +223,7 @@ pub struct ConfigTui {
     pub tui_geoip_mode: Option<GeoIpMode>,
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
-    pub tui_custom_columns: Option<Vec<char>>,
+    pub tui_custom_columns: Option<String>,
 }
 
 impl Default for ConfigTui {
@@ -238,11 +236,11 @@ impl Default for ConfigTui {
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),
+            tui_custom_columns: Some(String::from(super::constants::DEFAULT_CUSTOM_COLUMNS)),
             tui_icmp_extension_mode: Some(super::constants::DEFAULT_TUI_ICMP_EXTENSION_MODE),
             tui_geoip_mode: Some(super::constants::DEFAULT_TUI_GEOIP_MODE),
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),
             geoip_mmdb_file: None,
-            tui_custom_columns: Some(super::constants::TUI_CUSTOM_COLUMNS.to_vec()),
         }
     }
 }
