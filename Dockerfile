@@ -1,20 +1,26 @@
-FROM alpine@sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd as build-env
+FROM alpine:3.19.0 as build-env
 
 RUN apk add --no-cache \
     curl=8.5.0-r0 \
     build-base=0.5-r3 \
     --repository=https://dl-cdn.alpinelinux.org/alpine/v3.19/main
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.70.0
 
-ADD ./ /app
+COPY Cargo* /home
 
-RUN source "$HOME/.cargo/env" && cd /app && cargo build --release
+RUN mkdir /home/src && echo "fn main() {}" > /home/src/main.rs
 
-FROM alpine@sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd
+RUN source "$HOME/.cargo/env" && cd /home && cargo +1.70.0 build --release
 
-RUN apk add --no-cache ncurses=6.4_p20231125-r0 --repository=https://dl-cdn.alpinelinux.org/alpine/v3.19/main
+ADD ./ /home
 
-COPY --from=build-env /app/target/release/trip /
+RUN source "$HOME/.cargo/env" && cd /home && cargo +1.70.0 build --release
+
+FROM scratch
+
+COPY --from=build-env /home/target/release/trip /
+
+COPY LICENSE /
 
 ENTRYPOINT ["./trip"]
