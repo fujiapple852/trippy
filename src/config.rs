@@ -73,6 +73,8 @@ pub enum AddressFamily {
     Ipv4,
     /// Internet Protocol V6
     Ipv6,
+    /// Both Internet Protocol V4 or V6
+    Any,
 }
 
 /// The strategy Equal-cost Multi-Path routing strategy.
@@ -496,6 +498,7 @@ impl TrippyConfig {
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
             (false, false, None) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            (false, false, Some(AddressFamily::Any)) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
             (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
             (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
         };
@@ -507,6 +510,9 @@ impl TrippyConfig {
             }
             (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv6) => Err(anyhow!(
                 "Dublin multipath strategy not implemented for IPv6 yet!"
+            )),
+            (MultipathStrategyConfig::Dublin, TracerAddrFamily::Any) => Err(anyhow!(
+                "Dublin multipath strategy not implemented for IPv6 yet! You need to force IPv4."
             )),
         }?;
         let port_direction = match (protocol, source_port, target_port, multipath_strategy_cfg) {
@@ -722,6 +728,7 @@ fn addr_family(addr_family: AddressFamily) -> TracerAddrFamily {
     match addr_family {
         AddressFamily::Ipv4 => TracerAddrFamily::Ipv4,
         AddressFamily::Ipv6 => TracerAddrFamily::Ipv6,
+        AddressFamily::Any => TracerAddrFamily::Any,
     }
 }
 

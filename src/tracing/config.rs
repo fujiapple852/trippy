@@ -33,6 +33,8 @@ pub enum TracerAddrFamily {
     Ipv4,
     /// Internet Protocol V6
     Ipv6,
+    /// Both Internet Protocol V4 or V6
+    Any
 }
 
 impl Display for TracerAddrFamily {
@@ -40,6 +42,7 @@ impl Display for TracerAddrFamily {
         match self {
             Self::Ipv4 => write!(f, "v4"),
             Self::Ipv6 => write!(f, "v6"),
+            Self::Any => write!(f, "v4v6"),
         }
     }
 }

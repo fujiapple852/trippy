@@ -76,6 +76,9 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
         TracerAddrFamily::Ipv6 => {
             DnsResolver::start(Config::new_ipv6(cfg.dns_resolve_method, cfg.dns_timeout))?
         }
+        TracerAddrFamily::Any => {
+            DnsResolver::start(Config::new_any(cfg.dns_resolve_method, cfg.dns_timeout))?
+        }
     })
 }
 

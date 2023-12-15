@@ -34,6 +34,8 @@ pub enum IpAddrFamily {
     Ipv4,
     /// Internet Protocol v6.
     Ipv6,
+    /// Both Internet Protocol V4 or V6
+    Any,
 }
 
 impl Config {
@@ -53,6 +55,16 @@ impl Config {
         Self {
             resolve_method,
             addr_family: IpAddrFamily::Ipv6,
+            timeout,
+        }
+    }
+
+    /// Create an Any IP version `Config`
+    #[must_use]
+    pub fn new_any(resolve_method: ResolveMethod, timeout: Duration) -> Self {
+        Self {
+            resolve_method,
+            addr_family: IpAddrFamily::Any,
             timeout,
         }
     }
@@ -170,6 +182,7 @@ mod inner {
                 options.ip_strategy = match config.addr_family {
                     IpAddrFamily::Ipv4 => LookupIpStrategy::Ipv4Only,
                     IpAddrFamily::Ipv6 => LookupIpStrategy::Ipv6Only,
+                    IpAddrFamily::Any => LookupIpStrategy::default(),
                 };
                 let res = match config.resolve_method {
                     ResolveMethod::Resolv => Resolver::from_system_conf(),
@@ -216,6 +229,8 @@ mod inner {
                             (self.config.addr_family, addr),
                             (IpAddrFamily::Ipv4, IpAddr::V4(_))
                                 | (IpAddrFamily::Ipv6, IpAddr::V6(_))
+                                | (IpAddrFamily::Any, IpAddr::V4(_))
+                                | (IpAddrFamily::Any, IpAddr::V6(_))
                         )
                     })
                     .collect::<Vec<_>>()),
