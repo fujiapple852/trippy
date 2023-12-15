@@ -1,12 +1,12 @@
 use anyhow::Context;
 use itertools::Itertools;
-use maxminddb::geoip2::City;
 use maxminddb::Reader;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::path::Path;
 use std::rc::Rc;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct GeoIpCity {
@@ -56,14 +56,162 @@ impl GeoIpCity {
 
     pub fn coordinates(&self) -> Option<(f64, f64, u16)> {
         match (self.latitude, self.longitude, self.accuracy_radius) {
-            (Some(lat), Some(long), Some(raduis)) => Some((lat, long, raduis)),
+            (Some(lat), Some(long), Some(radius)) => Some((lat, long, radius)),
             _ => None,
         }
     }
 }
 
-impl From<City<'_>> for GeoIpCity {
-    fn from(value: City<'_>) -> Self {
+mod ipinfo {
+    use serde::{Deserialize, Serialize};
+    use serde_with::serde_as;
+
+    /// ipinfo.io's mmdb database format.
+    ///
+    /// Support both the "IP to Geolocation Extended" and "IP to Country + ASN" database formats.
+    ///
+    /// IP to Geolocation Extended Database:
+    /// See <https://ipinfo.io/developers/ip-to-geolocation-extended/>
+    ///
+    /// IP to Country + ASN Database;
+    /// See <https://ipinfo.io/developers/ip-to-country-asn-database/>
+    #[serde_as]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct IpInfoGeoIp {
+        /// "42.48948"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub latitude: Option<String>,
+        /// "-83.14465"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub longitude: Option<String>,
+        /// "500"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub radius: Option<String>,
+        /// "Royal Oak"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub city: Option<String>,
+        /// "Michigan"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub region: Option<String>,
+        /// "48067"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub postal_code: Option<String>,
+        /// "US"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub country: Option<String>,
+        /// "Japan"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub country_name: Option<String>,
+        /// "Asia"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub continent_name: Option<String>,
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_empty() {
+            let json = "{}";
+            let value: IpInfoGeoIp = serde_json::from_str(json).unwrap();
+            assert_eq!(None, value.latitude);
+            assert_eq!(None, value.longitude);
+            assert_eq!(None, value.radius);
+            assert_eq!(None, value.city);
+            assert_eq!(None, value.region);
+            assert_eq!(None, value.postal_code);
+            assert_eq!(None, value.country.as_deref());
+            assert_eq!(None, value.country_name.as_deref());
+            assert_eq!(None, value.continent_name.as_deref());
+        }
+
+        #[test]
+        fn test_country_asn_db_format() {
+            let json = r#"
+                {
+                    "start_ip": "40.96.54.192",
+                    "end_ip": "40.96.54.255",
+                    "country": "JP",
+                    "country_name": "Japan",
+                    "continent": "AS",
+                    "continent_name": "Asia",
+                    "asn": "AS8075",
+                    "as_name": "Microsoft Corporation",
+                    "as_domain": "microsoft.com"
+                }
+                "#;
+            let value: IpInfoGeoIp = serde_json::from_str(json).unwrap();
+            assert_eq!(None, value.latitude);
+            assert_eq!(None, value.longitude);
+            assert_eq!(None, value.radius);
+            assert_eq!(None, value.city);
+            assert_eq!(None, value.region);
+            assert_eq!(None, value.postal_code);
+            assert_eq!(Some("JP"), value.country.as_deref());
+            assert_eq!(Some("Japan"), value.country_name.as_deref());
+            assert_eq!(Some("Asia"), value.continent_name.as_deref());
+        }
+
+        #[test]
+        fn test_extended_db_format() {
+            let json = r#"
+                {
+                    "start_ip": "60.127.10.249",
+                    "end_ip": "60.127.10.249",
+                    "join_key": "60.127.0.0",
+                    "city": "Yokohama",
+                    "region": "Kanagawa",
+                    "country": "JP",
+                    "latitude": "35.43333",
+                    "longitude": "139.65",
+                    "postal_code": "220-8588",
+                    "timezone": "Asia/Tokyo",
+                    "geoname_id": "1848354",
+                    "radius": "500"
+                }
+                "#;
+            let value: IpInfoGeoIp = serde_json::from_str(json).unwrap();
+            assert_eq!(Some("35.43333"), value.latitude.as_deref());
+            assert_eq!(Some("139.65"), value.longitude.as_deref());
+            assert_eq!(Some("500"), value.radius.as_deref());
+            assert_eq!(Some("Yokohama"), value.city.as_deref());
+            assert_eq!(Some("Kanagawa"), value.region.as_deref());
+            assert_eq!(Some("220-8588"), value.postal_code.as_deref());
+            assert_eq!(Some("JP"), value.country.as_deref());
+            assert_eq!(None, value.country_name.as_deref());
+            assert_eq!(None, value.continent_name.as_deref());
+        }
+    }
+}
+
+impl From<ipinfo::IpInfoGeoIp> for GeoIpCity {
+    fn from(value: ipinfo::IpInfoGeoIp) -> Self {
+        Self {
+            latitude: value.latitude.and_then(|val| f64::from_str(&val).ok()),
+            longitude: value.longitude.and_then(|val| f64::from_str(&val).ok()),
+            accuracy_radius: value.radius.and_then(|val| u16::from_str(&val).ok()),
+            city: value.city,
+            subdivision: value.region,
+            subdivision_code: value.postal_code,
+            country: value.country_name,
+            country_code: value.country,
+            continent: value.continent_name,
+        }
+    }
+}
+
+impl From<maxminddb::geoip2::City<'_>> for GeoIpCity {
+    fn from(value: maxminddb::geoip2::City<'_>) -> Self {
         let city = value
             .city
             .as_ref()
@@ -166,11 +314,12 @@ impl GeoIpLookup {
             if let Some(geo) = self.cache.borrow().get(&addr).map(Clone::clone) {
                 return Ok(Some(geo));
             }
-            let city_data = reader.lookup::<City<'_>>(addr)?;
-            let geo = self
-                .cache
-                .borrow_mut()
-                .insert(addr, Rc::new(GeoIpCity::from(city_data)));
+            let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
+                GeoIpCity::from(reader.lookup::<ipinfo::IpInfoGeoIp>(addr)?)
+            } else {
+                GeoIpCity::from(reader.lookup::<maxminddb::geoip2::City<'_>>(addr)?)
+            };
+            let geo = self.cache.borrow_mut().insert(addr, Rc::new(city_data));
             Ok(geo)
         } else {
             Ok(None)
