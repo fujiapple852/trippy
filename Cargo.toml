@@ -24,7 +24,7 @@ name = "trip"
 arrayvec = { version = "0.7.4", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = [ "mul", "add", "add_assign" ] }
 socket2 = { version = "0.5.5", default-features = false }
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 tracing = { version = "0.1.40", default-features = false }
 
 # TUI dependencies
