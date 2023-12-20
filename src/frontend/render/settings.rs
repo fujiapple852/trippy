@@ -79,7 +79,7 @@ fn render_settings_table(
         .unwrap_or_default()
         .max(30);
     let table_widths = [Constraint::Min(item_width), Constraint::Length(60)];
-    let table = Table::new(rows)
+    let table = Table::new(rows, table_widths)
         .header(header)
         .block(
             Block::default()
@@ -94,8 +94,7 @@ fn render_settings_table(
                 .bg(app.tui_config.theme.bg_color)
                 .fg(app.tui_config.theme.text_color),
         )
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
-        .widths(&table_widths);
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
     f.render_stateful_widget(table, rect, &mut app.setting_table_state);
 }
 
