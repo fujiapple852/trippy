@@ -45,7 +45,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
             &config.tui_columns,
         )
     });
-    let table = Table::new(rows)
+    let table = Table::new(rows, widths.as_slice())
         .header(header)
         .block(
             Block::default()
@@ -60,7 +60,6 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text_color),
         )
         .highlight_style(selected_style)
-        .widths(widths.as_slice())
         .column_spacing(1);
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }
