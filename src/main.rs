@@ -14,7 +14,10 @@
 #![deny(unsafe_code)]
 
 use crate::backend::Backend;
-use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
+use crate::config::{
+    LogFormat, LogSpanEvents, ReportType, TrippyConfig, TrippyConfigCommon, TrippyConfigMode,
+    TrippyConfigTui,
+};
 use crate::geoip::GeoIpLookup;
 use crate::platform::Platform;
 use anyhow::{anyhow, Error};
@@ -57,8 +60,8 @@ fn main() -> anyhow::Result<()> {
     if addrs.is_empty() {
         return Err(anyhow!(
             "failed to find any valid IP{} addresses for {}",
-            cfg.addr_family,
-            cfg.targets.join(", ")
+            cfg.common.addr_family,
+            cfg.common.targets.join(", ")
         ));
     }
     let traces = start_tracers(&cfg, &addrs, platform.pid)?;
@@ -69,18 +72,20 @@ fn main() -> anyhow::Result<()> {
 
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
-    Ok(match cfg.addr_family {
-        TracerAddrFamily::Ipv4 => {
-            DnsResolver::start(Config::new_ipv4(cfg.dns_resolve_method, cfg.dns_timeout))?
-        }
-        TracerAddrFamily::Ipv6 => {
-            DnsResolver::start(Config::new_ipv6(cfg.dns_resolve_method, cfg.dns_timeout))?
-        }
+    Ok(match cfg.common.addr_family {
+        TracerAddrFamily::Ipv4 => DnsResolver::start(Config::new_ipv4(
+            cfg.common.dns_resolve_method,
+            cfg.common.dns_timeout,
+        ))?,
+        TracerAddrFamily::Ipv6 => DnsResolver::start(Config::new_ipv6(
+            cfg.common.dns_resolve_method,
+            cfg.common.dns_timeout,
+        ))?,
     })
 }
 
 fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
-    if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
+    if let Some(path) = cfg.common.geoip_mmdb_file.as_ref() {
         GeoIpLookup::from_file(path)
     } else {
         Ok(GeoIpLookup::empty())
@@ -88,31 +93,31 @@ fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
 }
 
 fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
-    if cfg.verbose {
-        let fmt_span = match cfg.log_span_events {
+    if cfg.common.verbose {
+        let fmt_span = match cfg.common.log_span_events {
             LogSpanEvents::Off => FmtSpan::NONE,
             LogSpanEvents::Active => FmtSpan::ACTIVE,
             LogSpanEvents::Full => FmtSpan::FULL,
         };
-        match cfg.log_format {
+        match cfg.common.log_format {
             LogFormat::Compact => {
                 tracing_subscriber::fmt()
                     .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
+                    .with_env_filter(&cfg.common.log_filter)
                     .compact()
                     .init();
             }
             LogFormat::Pretty => {
                 tracing_subscriber::fmt()
                     .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
+                    .with_env_filter(&cfg.common.log_filter)
                     .pretty()
                     .init();
             }
             LogFormat::Json => {
                 tracing_subscriber::fmt()
                     .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
+                    .with_env_filter(&cfg.common.log_filter)
                     .json()
                     .init();
             }
@@ -131,15 +136,22 @@ fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
 
 /// Resolve targets.
 fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result<Vec<TargetInfo>> {
-    cfg.targets
+    cfg.common
+        .targets
         .iter()
         .flat_map(|target| match resolver.lookup(target) {
             Ok(addrs) => addrs
                 .into_iter()
                 .enumerate()
-                .take_while(|(i, _)| if cfg.dns_resolve_all { true } else { *i == 0 })
+                .take_while(|(i, _)| {
+                    if cfg.common.dns_resolve_all {
+                        true
+                    } else {
+                        *i == 0
+                    }
+                })
                 .map(|(i, addr)| {
-                    let hostname = if cfg.dns_resolve_all {
+                    let hostname = if cfg.common.dns_resolve_all {
                         format!("{} [{}]", target, i + 1)
                     } else {
                         target.to_string()
@@ -177,13 +189,17 @@ fn start_tracer(
     target_addr: IpAddr,
     trace_identifier: u16,
 ) -> Result<TraceInfo, Error> {
-    let source_addr = match cfg.source_addr {
-        None => SourceAddr::discover(target_addr, cfg.port_direction, cfg.interface.as_deref())?,
+    let source_addr = match cfg.common.source_addr {
+        None => SourceAddr::discover(
+            target_addr,
+            cfg.common.port_direction,
+            cfg.common.interface.as_deref(),
+        )?,
         Some(addr) => SourceAddr::validate(addr)?,
     };
     let channel_config = make_channel_config(cfg, source_addr, target_addr);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
-    let backend = Backend::new(tracer_config, channel_config, cfg.tui_max_samples);
+    let backend = Backend::new(tracer_config, channel_config, cfg.max_samples());
     let trace_data = backend.trace();
     thread::Builder::new()
         .name(format!("tracer-{}", tracer_config.trace_identifier.0))
@@ -204,16 +220,35 @@ fn run_frontend(
     geoip_lookup: GeoIpLookup,
     traces: Vec<TraceInfo>,
 ) -> anyhow::Result<()> {
-    match args.mode {
-        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
-        Mode::Stream => report::stream::report(&traces[0], &resolver)?,
-        Mode::Csv => report::csv::report(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Pretty => report::table::report_pretty(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Markdown => report::table::report_md(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Dot => report::dot::report(&traces[0], args.report_cycles)?,
-        Mode::Flows => report::flows::report(&traces[0], args.report_cycles)?,
-        Mode::Silent => report::silent::report(&traces[0], args.report_cycles)?,
+    match &args.mode {
+        TrippyConfigMode::Tui(cfg) => {
+            frontend::run_frontend(
+                traces,
+                make_tui_config(cfg, &args.common),
+                resolver,
+                geoip_lookup,
+            )?;
+        }
+        TrippyConfigMode::Stream => {
+            report::stream::report(&traces[0], &resolver)?;
+        }
+        TrippyConfigMode::Flows(cfg) => {
+            report::flows::report(&traces[0], cfg.report_cycles)?;
+        }
+        TrippyConfigMode::Dot(cfg) => {
+            report::dot::report(&traces[0], cfg.report_cycles)?;
+        }
+        TrippyConfigMode::Report(cfg) => match cfg.report_type {
+            ReportType::Csv => report::csv::report(&traces[0], cfg.report_cycles, &resolver)?,
+            ReportType::Json => report::json::report(&traces[0], cfg.report_cycles, &resolver)?,
+            ReportType::Pretty => {
+                report::table::report_pretty(&traces[0], cfg.report_cycles, &resolver)?;
+            }
+            ReportType::Markdown => {
+                report::table::report_md(&traces[0], cfg.report_cycles, &resolver)?;
+            }
+            ReportType::Silent => report::silent::report(&traces[0], cfg.report_cycles)?,
+        },
     }
     Ok(())
 }
@@ -226,21 +261,21 @@ fn make_tracer_config(
 ) -> anyhow::Result<TracerConfig> {
     Ok(TracerConfig::new(
         target_addr,
-        args.protocol,
-        args.max_rounds,
+        args.common.protocol,
+        args.max_rounds(),
         trace_identifier,
-        args.first_ttl,
-        args.max_ttl,
-        args.grace_duration,
-        args.max_inflight,
-        args.initial_sequence,
-        args.multipath_strategy,
-        args.port_direction,
-        args.read_timeout,
-        args.min_round_duration,
-        args.max_round_duration,
-        args.packet_size,
-        args.payload_pattern,
+        args.common.first_ttl,
+        args.common.max_ttl,
+        args.common.grace_duration,
+        args.common.max_inflight,
+        args.common.initial_sequence,
+        args.common.multipath_strategy,
+        args.common.port_direction,
+        args.common.read_timeout,
+        args.common.min_round_duration,
+        args.common.max_round_duration,
+        args.common.packet_size,
+        args.common.payload_pattern,
     )?)
 }
 
@@ -251,18 +286,18 @@ fn make_channel_config(
     target_addr: IpAddr,
 ) -> TracerChannelConfig {
     TracerChannelConfig::new(
-        args.privilege_mode,
-        args.protocol,
-        args.addr_family,
+        args.common.privilege_mode,
+        args.common.protocol,
+        args.common.addr_family,
         source_addr,
         target_addr,
-        args.packet_size,
-        args.payload_pattern,
-        args.multipath_strategy,
-        args.tos,
-        args.icmp_extensions,
-        args.read_timeout,
-        args.min_round_duration,
+        args.common.packet_size,
+        args.common.payload_pattern,
+        args.common.multipath_strategy,
+        args.common.tos,
+        args.common.icmp_extensions,
+        args.common.read_timeout,
+        args.common.min_round_duration,
     )
 }
 
@@ -279,36 +314,36 @@ fn make_trace_info(
         source_addr,
         target,
         target_addr,
-        args.privilege_mode,
-        args.multipath_strategy,
-        args.port_direction,
-        args.protocol,
-        args.addr_family,
-        args.first_ttl,
-        args.max_ttl,
-        args.grace_duration,
-        args.min_round_duration,
-        args.max_round_duration,
-        args.max_inflight,
-        args.initial_sequence,
-        args.icmp_extensions,
-        args.read_timeout,
-        args.packet_size,
-        args.payload_pattern,
-        args.interface.clone(),
-        args.geoip_mmdb_file.clone(),
-        args.dns_resolve_all,
+        args.common.privilege_mode,
+        args.common.multipath_strategy,
+        args.common.port_direction,
+        args.common.protocol,
+        args.common.addr_family,
+        args.common.first_ttl,
+        args.common.max_ttl,
+        args.common.grace_duration,
+        args.common.min_round_duration,
+        args.common.max_round_duration,
+        args.common.max_inflight,
+        args.common.initial_sequence,
+        args.common.icmp_extensions,
+        args.common.read_timeout,
+        args.common.packet_size,
+        args.common.payload_pattern,
+        args.common.interface.clone(),
+        args.common.geoip_mmdb_file.clone(),
+        args.common.dns_resolve_all,
     )
 }
 
 /// Make the TUI configuration.
-fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
+fn make_tui_config(args: &TrippyConfigTui, common: &TrippyConfigCommon) -> TuiConfig {
     TuiConfig::new(
         args.tui_refresh_rate,
         args.tui_privacy_max_ttl,
         args.tui_preserve_screen,
         args.tui_address_mode,
-        args.dns_lookup_as_info,
+        common.dns_lookup_as_info,
         args.tui_as_mode,
         args.tui_icmp_extension_mode,
         args.tui_geoip_mode,

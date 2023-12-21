@@ -1,6 +1,6 @@
 use crate::config::{
     AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
-    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
+    LogFormat, LogSpanEvents, MultipathStrategyConfig, Protocol, ReportType,
 };
 use std::time::Duration;
 
@@ -10,13 +10,10 @@ use std::time::Duration;
 /// hops.
 pub const MAX_HOPS: usize = u8::MAX as usize;
 
-/// The default value for `mode`.
-pub const DEFAULT_MODE: Mode = Mode::Tui;
-
 /// The default value for `unprivileged`.
 pub const DEFAULT_UNPRIVILEGED: bool = false;
 
-/// The default value for `all_resolved_ips`.
+/// The default value for `all-resolved-ips`.
 pub const DEFAULT_DNS_RESOLVE_ALL: bool = false;
 
 /// The default value for `log-format`.
@@ -114,6 +111,9 @@ pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;
 
 /// The default value for `dns-timeout`.
 pub const DEFAULT_DNS_TIMEOUT: &str = "5s";
+
+/// The default value for `report-type`.
+pub const DEFAULT_REPORT_TYPE: ReportType = ReportType::Pretty;
 
 /// The default value for `report-cycles`.
 pub const DEFAULT_REPORT_CYCLES: usize = 10;

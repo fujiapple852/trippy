@@ -25,6 +25,7 @@ mod constants;
 mod file;
 mod theme;
 
+use crate::config::cmd::{Commands, CommonArgs, DotArgs, FlowsArgs, ReportArgs, TuiArgs};
 pub use binding::{TuiBindings, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
@@ -34,11 +35,7 @@ pub use theme::{TuiColor, TuiTheme};
 /// The tool mode.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum Mode {
-    /// Display interactive TUI.
-    Tui,
-    /// Display a continuous stream of tracing data
-    Stream,
+pub enum ReportType {
     /// Generate an pretty text table report for N cycles.
     Pretty,
     /// Generate a markdown text table report for N cycles.
@@ -47,10 +44,6 @@ pub enum Mode {
     Csv,
     /// Generate a JSON report for N cycles.
     Json,
-    /// Generate a Graphviz DOT file for N cycles.
-    Dot,
-    /// Display all flows.
-    Flows,
     /// Do not generate any tracing output for N cycles.
     Silent,
 }
@@ -208,8 +201,47 @@ pub enum LogSpanEvents {
 }
 
 /// Fully parsed and validated configuration.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct TrippyConfig {
+    pub common: TrippyConfigCommon,
+    pub mode: TrippyConfigMode,
+}
+
+impl TrippyConfig {
+    pub fn max_rounds(&self) -> Option<usize> {
+        match &self.mode {
+            TrippyConfigMode::Tui(_) | TrippyConfigMode::Stream => None,
+            TrippyConfigMode::Dot(cfg) => Some(cfg.report_cycles),
+            TrippyConfigMode::Flows(cfg) => Some(cfg.report_cycles),
+            TrippyConfigMode::Report(cfg) => Some(cfg.report_cycles),
+        }
+    }
+
+    pub fn max_samples(&self) -> usize {
+        match &self.mode {
+            TrippyConfigMode::Tui(cfg) => cfg.tui_max_samples,
+            _ => TrippyConfigTui::default().tui_max_samples,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum TrippyConfigMode {
+    Tui(TrippyConfigTui),
+    Stream,
+    Dot(TrippyConfigDot),
+    Flows(TrippyConfigFlows),
+    Report(TrippyConfigReport),
+}
+
+impl Default for TrippyConfigMode {
+    fn default() -> Self {
+        Self::Tui(TrippyConfigTui::default())
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TrippyConfigCommon {
     pub targets: Vec<String>,
     pub protocol: TracerProtocol,
     pub addr_family: TracerAddrFamily,
@@ -232,6 +264,17 @@ pub struct TrippyConfig {
     pub dns_timeout: Duration,
     pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
+    pub privilege_mode: PrivilegeMode,
+    pub dns_resolve_all: bool,
+    pub geoip_mmdb_file: Option<String>,
+    pub verbose: bool,
+    pub log_format: LogFormat,
+    pub log_filter: String,
+    pub log_span_events: LogSpanEvents,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TrippyConfigTui {
     pub tui_max_samples: usize,
     pub tui_max_flows: usize,
     pub tui_preserve_screen: bool,
@@ -245,21 +288,27 @@ pub struct TrippyConfig {
     pub tui_max_addrs: Option<u8>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
-    pub mode: Mode,
-    pub privilege_mode: PrivilegeMode,
-    pub dns_resolve_all: bool,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TrippyConfigFlows {
     pub report_cycles: usize,
-    pub geoip_mmdb_file: Option<String>,
-    pub max_rounds: Option<usize>,
-    pub verbose: bool,
-    pub log_format: LogFormat,
-    pub log_filter: String,
-    pub log_span_events: LogSpanEvents,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TrippyConfigDot {
+    pub report_cycles: usize,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TrippyConfigReport {
+    pub report_type: ReportType,
+    pub report_cycles: usize,
 }
 
 impl TrippyConfig {
     pub fn from(args: Args, platform: &Platform) -> anyhow::Result<Self> {
-        let cfg_file = if let Some(cfg) = &args.config_file {
+        let cfg_file = if let Some(cfg) = &args.tui.common.config_file {
             file::read_config_file(cfg)?
         } else if let Some(cfg) = file::read_default_config_file()? {
             cfg
@@ -270,45 +319,22 @@ impl TrippyConfig {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn build_config(args: Args, cfg_file: ConfigFile, platform: &Platform) -> anyhow::Result<Self> {
+    fn build_config_common(
+        common: CommonArgs,
+        cfg_file: ConfigFile,
+        platform: &Platform,
+    ) -> anyhow::Result<TrippyConfigCommon> {
         let &Platform {
             pid,
             has_privileges,
             needs_privileges,
         } = platform;
-        if args.print_tui_theme_items {
-            println!(
-                "TUI theme color items: {}",
-                TuiThemeItem::VARIANTS.join(", ")
-            );
-            process::exit(0);
-        }
-        if args.print_tui_binding_commands {
-            println!(
-                "TUI binding commands: {}",
-                TuiCommandItem::VARIANTS.join(", ")
-            );
-            process::exit(0);
-        }
-        if args.print_config_template {
-            println!("{}", include_str!("../trippy-config-sample.toml"));
-            process::exit(0);
-        }
-        if let Some(generator) = args.generate {
-            let mut cmd = Args::command();
-            print_completions(generator, &mut cmd);
-            process::exit(0);
-        }
         let cfg_file_trace = cfg_file.trippy.unwrap_or_default();
         let cfg_file_strategy = cfg_file.strategy.unwrap_or_default();
-        let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
-        let cfg_file_tui_theme_colors = cfg_file.theme_colors.unwrap_or_default();
         let cfg_file_tui = cfg_file.tui.unwrap_or_default();
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
-        let cfg_file_report = cfg_file.report.unwrap_or_default();
-        let mode = cfg_layer(args.mode, cfg_file_trace.mode, constants::DEFAULT_MODE);
         let unprivileged = cfg_layer_bool_flag(
-            args.unprivileged,
+            common.unprivileged,
             cfg_file_trace.unprivileged,
             constants::DEFAULT_UNPRIVILEGED,
         );
@@ -318,178 +344,117 @@ impl TrippyConfig {
             PrivilegeMode::Privileged
         };
         let dns_resolve_all = cfg_layer_bool_flag(
-            args.dns_resolve_all,
+            common.dns_resolve_all,
             cfg_file_dns.dns_resolve_all,
             constants::DEFAULT_DNS_RESOLVE_ALL,
         );
-        let verbose = args.verbose;
+        let verbose = common.verbose;
         let log_format = cfg_layer(
-            args.log_format,
+            common.log_format,
             cfg_file_trace.log_format,
             constants::DEFAULT_LOG_FORMAT,
         );
         let log_filter = cfg_layer(
-            args.log_filter,
+            common.log_filter,
             cfg_file_trace.log_filter,
             String::from(constants::DEFAULT_LOG_FILTER),
         );
         let log_span_events = cfg_layer(
-            args.log_span_events,
+            common.log_span_events,
             cfg_file_trace.log_span_events,
             constants::DEFAULT_LOG_SPAN_EVENTS,
         );
         let protocol = cfg_layer(
-            args.protocol,
+            common.protocol,
             cfg_file_strategy.protocol,
             constants::DEFAULT_STRATEGY_PROTOCOL,
         );
-        let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
-        let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
-        let source_address = cfg_layer_opt(args.source_address, cfg_file_strategy.source_address);
-        let interface = cfg_layer_opt(args.interface, cfg_file_strategy.interface);
+        let target_port = cfg_layer_opt(common.target_port, cfg_file_strategy.target_port);
+        let source_port = cfg_layer_opt(common.source_port, cfg_file_strategy.source_port);
+        let source_address = cfg_layer_opt(common.source_address, cfg_file_strategy.source_address);
+        let interface = cfg_layer_opt(common.interface, cfg_file_strategy.interface);
         let min_round_duration = cfg_layer(
-            args.min_round_duration,
+            common.min_round_duration,
             cfg_file_strategy.min_round_duration,
             String::from(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
         );
         let max_round_duration = cfg_layer(
-            args.max_round_duration,
+            common.max_round_duration,
             cfg_file_strategy.max_round_duration,
             String::from(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
         );
         let initial_sequence = cfg_layer(
-            args.initial_sequence,
+            common.initial_sequence,
             cfg_file_strategy.initial_sequence,
             constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
         );
         let multipath_strategy_cfg = cfg_layer(
-            args.multipath_strategy,
+            common.multipath_strategy,
             cfg_file_strategy.multipath_strategy,
             constants::DEFAULT_STRATEGY_MULTIPATH,
         );
         let grace_duration = cfg_layer(
-            args.grace_duration,
+            common.grace_duration,
             cfg_file_strategy.grace_duration,
             String::from(constants::DEFAULT_STRATEGY_GRACE_DURATION),
         );
         let max_inflight = cfg_layer(
-            args.max_inflight,
+            common.max_inflight,
             cfg_file_strategy.max_inflight,
             constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
         );
         let first_ttl = cfg_layer(
-            args.first_ttl,
+            common.first_ttl,
             cfg_file_strategy.first_ttl,
             constants::DEFAULT_STRATEGY_FIRST_TTL,
         );
         let max_ttl = cfg_layer(
-            args.max_ttl,
+            common.max_ttl,
             cfg_file_strategy.max_ttl,
             constants::DEFAULT_STRATEGY_MAX_TTL,
         );
         let packet_size = cfg_layer(
-            args.packet_size,
+            common.packet_size,
             cfg_file_strategy.packet_size,
             constants::DEFAULT_STRATEGY_PACKET_SIZE,
         );
         let payload_pattern = cfg_layer(
-            args.payload_pattern,
+            common.payload_pattern,
             cfg_file_strategy.payload_pattern,
             constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
         );
         let tos = cfg_layer(
-            args.tos,
+            common.tos,
             cfg_file_strategy.tos,
             constants::DEFAULT_STRATEGY_TOS,
         );
         let icmp_extensions = cfg_layer_bool_flag(
-            args.icmp_extensions,
+            common.icmp_extensions,
             cfg_file_strategy.icmp_extensions,
             constants::DEFAULT_ICMP_EXTENSIONS,
         );
         let read_timeout = cfg_layer(
-            args.read_timeout,
+            common.read_timeout,
             cfg_file_strategy.read_timeout,
             String::from(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
         );
-        let tui_max_samples = cfg_layer(
-            args.tui_max_samples,
-            cfg_file_tui.tui_max_samples,
-            constants::DEFAULT_TUI_MAX_SAMPLES,
-        );
-        let tui_max_flows = cfg_layer(
-            args.tui_max_flows,
-            cfg_file_tui.tui_max_flows,
-            constants::DEFAULT_TUI_MAX_FLOWS,
-        );
-        let tui_preserve_screen = cfg_layer_bool_flag(
-            args.tui_preserve_screen,
-            cfg_file_tui.tui_preserve_screen,
-            constants::DEFAULT_TUI_PRESERVE_SCREEN,
-        );
-        let tui_refresh_rate = cfg_layer(
-            args.tui_refresh_rate,
-            cfg_file_tui.tui_refresh_rate,
-            String::from(constants::DEFAULT_TUI_REFRESH_RATE),
-        );
-        let tui_privacy_max_ttl = cfg_layer(
-            args.tui_privacy_max_ttl,
-            cfg_file_tui.tui_privacy_max_ttl,
-            constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
-        );
-        let tui_address_mode = cfg_layer(
-            args.tui_address_mode,
-            cfg_file_tui.tui_address_mode,
-            constants::DEFAULT_TUI_ADDRESS_MODE,
-        );
-        let tui_as_mode = cfg_layer(
-            args.tui_as_mode,
-            cfg_file_tui.tui_as_mode,
-            constants::DEFAULT_TUI_AS_MODE,
-        );
-
-        let columns = cfg_layer(
-            args.tui_custom_columns,
-            cfg_file_tui.tui_custom_columns,
-            String::from(constants::DEFAULT_CUSTOM_COLUMNS),
-        );
-
-        let tui_custom_columns = TuiColumns::try_from(columns.as_str())?;
-
-        let tui_icmp_extension_mode = cfg_layer(
-            args.tui_icmp_extension_mode,
-            cfg_file_tui.tui_icmp_extension_mode,
-            constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
-        );
-
-        let tui_geoip_mode = cfg_layer(
-            args.tui_geoip_mode,
-            cfg_file_tui.tui_geoip_mode,
-            constants::DEFAULT_TUI_GEOIP_MODE,
-        );
-        let tui_max_addrs = cfg_layer_opt(args.tui_max_addrs, cfg_file_tui.tui_max_addrs);
         let dns_resolve_method_config = cfg_layer(
-            args.dns_resolve_method,
+            common.dns_resolve_method,
             cfg_file_dns.dns_resolve_method,
             constants::DEFAULT_DNS_RESOLVE_METHOD,
         );
         let dns_lookup_as_info = cfg_layer_bool_flag(
-            args.dns_lookup_as_info,
+            common.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
             constants::DEFAULT_DNS_LOOKUP_AS_INFO,
         );
         let dns_timeout = cfg_layer(
-            args.dns_timeout,
+            common.dns_timeout,
             cfg_file_dns.dns_timeout,
             String::from(constants::DEFAULT_DNS_TIMEOUT),
         );
-        let report_cycles = cfg_layer(
-            args.report_cycles,
-            cfg_file_report.report_cycles,
-            constants::DEFAULT_REPORT_CYCLES,
-        );
-        let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
-        let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
+        let geoip_mmdb_file = cfg_layer_opt(common.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
+        let protocol = match (common.udp, common.tcp, common.icmp, protocol) {
             (false, false, false, Protocol::Udp) | (true, _, _, _) => TracerProtocol::Udp,
             (false, false, false, Protocol::Tcp) | (_, true, _, _) => TracerProtocol::Tcp,
             (false, false, false, Protocol::Icmp) | (_, _, true, _) => TracerProtocol::Icmp,
@@ -505,7 +470,7 @@ impl TrippyConfig {
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
+        let addr_family = match (common.ipv4, common.ipv6, cfg_file_strategy.addr_family) {
             (false, false, None) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
             (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
             (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
@@ -545,7 +510,6 @@ impl TrippyConfig {
                 ));
             }
         };
-        let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
         let dns_resolve_method = match dns_resolve_method_config {
             DnsResolveMethodConfig::System => ResolveMethod::System,
             DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
@@ -553,48 +517,17 @@ impl TrippyConfig {
             DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
         };
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
-        let max_rounds = match mode {
-            Mode::Stream | Mode::Tui => None,
-            Mode::Pretty
-            | Mode::Markdown
-            | Mode::Csv
-            | Mode::Json
-            | Mode::Dot
-            | Mode::Flows
-            | Mode::Silent => Some(report_cycles),
-        };
-        let tui_max_addrs = match tui_max_addrs {
-            Some(n) if n > 0 => Some(n),
-            _ => None,
-        };
         validate_privilege(privilege_mode, has_privileges, needs_privileges)?;
-        validate_logging(mode, verbose)?;
         validate_strategy(multipath_strategy, unprivileged)?;
-        validate_multi(mode, protocol, &args.targets, dns_resolve_all)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
         validate_read_timeout(read_timeout)?;
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
         validate_packet_size(packet_size)?;
-        validate_tui_refresh_rate(tui_refresh_rate)?;
-        validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
-        validate_geoip(tui_geoip_mode, &geoip_mmdb_file)?;
-        validate_tui_custom_columns(&tui_custom_columns)?;
-        let tui_theme_items = args
-            .tui_theme_colors
-            .into_iter()
-            .collect::<HashMap<TuiThemeItem, TuiColor>>();
-        let tui_theme = TuiTheme::from((tui_theme_items, cfg_file_tui_theme_colors));
-        let tui_binding_items = args
-            .tui_key_bindings
-            .into_iter()
-            .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>();
-        let tui_bindings = TuiBindings::from((tui_binding_items, cfg_file_tui_bindings));
-        validate_bindings(&tui_bindings)?;
-        Ok(Self {
-            targets: args.targets,
+        Ok(TrippyConfigCommon {
+            targets: common.targets,
             protocol,
             addr_family,
             first_ttl,
@@ -616,6 +549,91 @@ impl TrippyConfig {
             dns_timeout,
             dns_resolve_method,
             dns_lookup_as_info,
+            privilege_mode,
+            dns_resolve_all,
+            geoip_mmdb_file,
+            verbose,
+            log_format,
+            log_filter,
+            log_span_events,
+        })
+    }
+
+    fn build_config_tui(common: TuiArgs, cfg_file: ConfigFile) -> anyhow::Result<TrippyConfigTui> {
+        let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
+        let cfg_file_tui_theme_colors = cfg_file.theme_colors.unwrap_or_default();
+        let cfg_file_tui = cfg_file.tui.unwrap_or_default();
+        let tui_max_samples = cfg_layer(
+            common.tui_max_samples,
+            cfg_file_tui.tui_max_samples,
+            constants::DEFAULT_TUI_MAX_SAMPLES,
+        );
+        let tui_max_flows = cfg_layer(
+            common.tui_max_flows,
+            cfg_file_tui.tui_max_flows,
+            constants::DEFAULT_TUI_MAX_FLOWS,
+        );
+        let tui_preserve_screen = cfg_layer_bool_flag(
+            common.tui_preserve_screen,
+            cfg_file_tui.tui_preserve_screen,
+            constants::DEFAULT_TUI_PRESERVE_SCREEN,
+        );
+        let tui_refresh_rate = cfg_layer(
+            common.tui_refresh_rate,
+            cfg_file_tui.tui_refresh_rate,
+            String::from(constants::DEFAULT_TUI_REFRESH_RATE),
+        );
+        let tui_privacy_max_ttl = cfg_layer(
+            common.tui_privacy_max_ttl,
+            cfg_file_tui.tui_privacy_max_ttl,
+            constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
+        );
+        let tui_address_mode = cfg_layer(
+            common.tui_address_mode,
+            cfg_file_tui.tui_address_mode,
+            constants::DEFAULT_TUI_ADDRESS_MODE,
+        );
+        let tui_as_mode = cfg_layer(
+            common.tui_as_mode,
+            cfg_file_tui.tui_as_mode,
+            constants::DEFAULT_TUI_AS_MODE,
+        );
+        let columns = cfg_layer(
+            common.tui_custom_columns,
+            cfg_file_tui.tui_custom_columns,
+            String::from(constants::DEFAULT_CUSTOM_COLUMNS),
+        );
+        let tui_custom_columns = TuiColumns::try_from(columns.as_str())?;
+        let tui_icmp_extension_mode = cfg_layer(
+            common.tui_icmp_extension_mode,
+            cfg_file_tui.tui_icmp_extension_mode,
+            constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
+        );
+        let tui_geoip_mode = cfg_layer(
+            common.tui_geoip_mode,
+            cfg_file_tui.tui_geoip_mode,
+            constants::DEFAULT_TUI_GEOIP_MODE,
+        );
+        let tui_max_addrs = cfg_layer_opt(common.tui_max_addrs, cfg_file_tui.tui_max_addrs);
+        let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
+        let tui_max_addrs = match tui_max_addrs {
+            Some(n) if n > 0 => Some(n),
+            _ => None,
+        };
+        validate_tui_refresh_rate(tui_refresh_rate)?;
+        validate_tui_custom_columns(&tui_custom_columns)?;
+        let tui_theme_items = common
+            .tui_theme_colors
+            .into_iter()
+            .collect::<HashMap<TuiThemeItem, TuiColor>>();
+        let tui_theme = TuiTheme::from((tui_theme_items, cfg_file_tui_theme_colors));
+        let tui_binding_items = common
+            .tui_key_bindings
+            .into_iter()
+            .collect::<HashMap<TuiCommandItem, TuiKeyBinding>>();
+        let tui_bindings = TuiBindings::from((tui_binding_items, cfg_file_tui_bindings));
+        validate_bindings(&tui_bindings)?;
+        Ok(TrippyConfigTui {
             tui_max_samples,
             tui_max_flows,
             tui_preserve_screen,
@@ -629,21 +647,144 @@ impl TrippyConfig {
             tui_max_addrs,
             tui_theme,
             tui_bindings,
-            mode,
-            privilege_mode,
-            dns_resolve_all,
+        })
+    }
+
+    fn build_config_report(
+        args: &ReportArgs,
+        cfg_file: ConfigFile,
+    ) -> anyhow::Result<TrippyConfigReport> {
+        let cfg_file_report = cfg_file.report.unwrap_or_default();
+        let report_cycles = cfg_layer(
+            args.report_cycles,
+            cfg_file_report.report_cycles,
+            constants::DEFAULT_REPORT_CYCLES,
+        );
+        let report_type = cfg_layer(
+            args.report_type,
+            cfg_file_report.report_type,
+            constants::DEFAULT_REPORT_TYPE,
+        );
+        validate_report_cycles(report_cycles)?;
+        Ok(TrippyConfigReport {
+            report_type,
             report_cycles,
-            geoip_mmdb_file,
-            max_rounds,
-            verbose,
-            log_format,
-            log_filter,
-            log_span_events,
+        })
+    }
+
+    fn build_config_flows(
+        args: &FlowsArgs,
+        cfg_file: ConfigFile,
+    ) -> anyhow::Result<TrippyConfigFlows> {
+        let cfg_file_report = cfg_file.report.unwrap_or_default();
+        let report_cycles = cfg_layer(
+            args.report_cycles,
+            cfg_file_report.report_cycles,
+            constants::DEFAULT_REPORT_CYCLES,
+        );
+        validate_report_cycles(report_cycles)?;
+        Ok(TrippyConfigFlows { report_cycles })
+    }
+
+    fn build_config_dot(args: &DotArgs, cfg_file: ConfigFile) -> anyhow::Result<TrippyConfigDot> {
+        let cfg_file_report = cfg_file.report.unwrap_or_default();
+        let report_cycles = cfg_layer(
+            args.report_cycles,
+            cfg_file_report.report_cycles,
+            constants::DEFAULT_REPORT_CYCLES,
+        );
+        validate_report_cycles(report_cycles)?;
+        Ok(TrippyConfigDot { report_cycles })
+    }
+
+    fn build_config(args: Args, cfg_file: ConfigFile, platform: &Platform) -> anyhow::Result<Self> {
+        if args.mode.is_some() {
+            println!("The --mode (-m) argument has been deprecated, specify a command instead");
+            process::exit(0);
+        }
+        Ok(match args.command {
+            Some(Commands::Tui(tui)) => {
+                let common =
+                    Self::build_config_common(tui.common.clone(), cfg_file.clone(), platform)?;
+                let tui = Self::build_config_tui(tui, cfg_file)?;
+                validate_geoip(tui.tui_geoip_mode, &common.geoip_mmdb_file)?;
+                validate_multi(common.protocol, &common.targets, common.dns_resolve_all)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Tui(tui),
+                }
+            }
+            Some(Commands::Stream(stream)) => {
+                let common = Self::build_config_common(stream.common, cfg_file, platform)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Stream,
+                }
+            }
+            Some(Commands::Dot(dot)) => {
+                let common =
+                    Self::build_config_common(dot.common.clone(), cfg_file.clone(), platform)?;
+                let dot = Self::build_config_dot(&dot, cfg_file)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Dot(dot),
+                }
+            }
+            Some(Commands::Flows(flows)) => {
+                let common =
+                    Self::build_config_common(flows.common.clone(), cfg_file.clone(), platform)?;
+                let flows = Self::build_config_flows(&flows, cfg_file)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Flows(flows),
+                }
+            }
+            Some(Commands::Report(dot)) => {
+                let common =
+                    Self::build_config_common(dot.common.clone(), cfg_file.clone(), platform)?;
+                let report = Self::build_config_report(&dot, cfg_file)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Report(report),
+                }
+            }
+            Some(Commands::Generate(gen)) => {
+                let mut cmd = Args::command();
+                print_completions(gen.shell, &mut cmd);
+                process::exit(0);
+            }
+            Some(Commands::ConfigTemplate) => {
+                println!("{}", include_str!("../trippy-config-sample.toml"));
+                process::exit(0);
+            }
+            Some(Commands::ThemeItems) => {
+                println!(
+                    "TUI theme color items: {}",
+                    TuiThemeItem::VARIANTS.join(", ")
+                );
+                process::exit(0);
+            }
+            Some(Commands::Bindings) => {
+                println!(
+                    "TUI binding commands: {}",
+                    TuiCommandItem::VARIANTS.join(", ")
+                );
+                process::exit(0);
+            }
+            None => {
+                let common =
+                    Self::build_config_common(args.tui.common.clone(), cfg_file.clone(), platform)?;
+                let tui = Self::build_config_tui(args.tui, cfg_file)?;
+                Self {
+                    common,
+                    mode: TrippyConfigMode::Tui(tui),
+                }
+            }
         })
     }
 }
 
-impl Default for TrippyConfig {
+impl Default for TrippyConfigCommon {
     fn default() -> Self {
         Self {
             targets: vec![],
@@ -668,6 +809,20 @@ impl Default for TrippyConfig {
             dns_timeout: duration(constants::DEFAULT_DNS_TIMEOUT),
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
+            privilege_mode: privilege_mode(constants::DEFAULT_UNPRIVILEGED),
+            dns_resolve_all: constants::DEFAULT_DNS_RESOLVE_ALL,
+            geoip_mmdb_file: None,
+            verbose: false,
+            log_format: constants::DEFAULT_LOG_FORMAT,
+            log_filter: String::from(constants::DEFAULT_LOG_FILTER),
+            log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
+        }
+    }
+}
+
+impl Default for TrippyConfigTui {
+    fn default() -> Self {
+        Self {
             tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
             tui_max_flows: constants::DEFAULT_TUI_MAX_FLOWS,
             tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
@@ -680,17 +835,32 @@ impl Default for TrippyConfig {
             tui_max_addrs: None,
             tui_theme: TuiTheme::default(),
             tui_bindings: TuiBindings::default(),
-            mode: constants::DEFAULT_MODE,
-            privilege_mode: privilege_mode(constants::DEFAULT_UNPRIVILEGED),
-            dns_resolve_all: constants::DEFAULT_DNS_RESOLVE_ALL,
-            report_cycles: constants::DEFAULT_REPORT_CYCLES,
-            geoip_mmdb_file: None,
-            max_rounds: None,
-            verbose: false,
-            log_format: constants::DEFAULT_LOG_FORMAT,
-            log_filter: String::from(constants::DEFAULT_LOG_FILTER),
-            log_span_events: constants::DEFAULT_LOG_SPAN_EVENTS,
             tui_custom_columns: TuiColumns::default(),
+        }
+    }
+}
+
+impl Default for TrippyConfigFlows {
+    fn default() -> Self {
+        Self {
+            report_cycles: constants::DEFAULT_REPORT_CYCLES,
+        }
+    }
+}
+
+impl Default for TrippyConfigDot {
+    fn default() -> Self {
+        Self {
+            report_cycles: constants::DEFAULT_REPORT_CYCLES,
+        }
+    }
+}
+
+impl Default for TrippyConfigReport {
+    fn default() -> Self {
+        Self {
+            report_type: constants::DEFAULT_REPORT_TYPE,
+            report_cycles: constants::DEFAULT_REPORT_CYCLES,
         }
     }
 }
@@ -806,14 +976,6 @@ fn validate_tui_custom_columns(tui_custom_columns: &TuiColumns) -> anyhow::Resul
     }
 }
 
-fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
-    if matches!(mode, Mode::Tui) && verbose {
-        Err(anyhow!("cannot enable verbose logging in tui mode"))
-    } else {
-        Ok(())
-    }
-}
-
 /// Validate the tracing strategy against the privilege mode.
 fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow::Result<()> {
     match (strategy, unprivileged) {
@@ -829,24 +991,17 @@ fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow:
 
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
 fn validate_multi(
-    mode: Mode,
     protocol: TracerProtocol,
     targets: &[String],
     dns_resolve_all: bool,
 ) -> anyhow::Result<()> {
-    match (mode, protocol) {
-        (Mode::Stream | Mode::Pretty | Mode::Markdown | Mode::Csv | Mode::Json, _)
-            if targets.len() > 1 || dns_resolve_all =>
-        {
-            Err(anyhow!(
-                "only a single target may be specified for this mode"
-            ))
-        }
-        (_, TracerProtocol::Tcp | TracerProtocol::Udp) if targets.len() > 1 || dns_resolve_all => {
-            Err(anyhow!(
-                "only a single target may be specified for TCP and UDP tracing"
-            ))
-        }
+    match protocol {
+        _ if targets.len() > 1 || dns_resolve_all => Err(anyhow!(
+            "only a single target may be specified for this mode"
+        )),
+        TracerProtocol::Tcp | TracerProtocol::Udp if targets.len() > 1 || dns_resolve_all => Err(
+            anyhow!("only a single target may be specified for TCP and UDP tracing"),
+        ),
         _ => Ok(()),
     }
 }
@@ -1030,7 +1185,10 @@ mod tests {
         let platform = Platform::dummy_for_test();
         let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
         let expected = TrippyConfig {
-            targets: vec![String::from("example.com")],
+            common: TrippyConfigCommon {
+                targets: vec![String::from("example.com")],
+                ..TrippyConfigCommon::default()
+            },
             ..TrippyConfig::default()
         };
         pretty_assertions::assert_eq!(expected, config);
@@ -1044,7 +1202,10 @@ mod tests {
         let platform = Platform::dummy_for_test();
         let config = TrippyConfig::build_config(args, cfg_file, &platform).unwrap();
         let expected = TrippyConfig {
-            targets: vec![String::from("example.com")],
+            common: TrippyConfigCommon {
+                targets: vec![String::from("example.com")],
+                ..TrippyConfigCommon::default()
+            },
             ..TrippyConfig::default()
         };
         pretty_assertions::assert_eq!(expected, config);
