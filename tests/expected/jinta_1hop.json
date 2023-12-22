@@ -1,0 +1,13 @@
+{
+    "total_sent": 4,
+    "total_recv": 4,
+    "last": 1001,
+    "best": 300,
+    "worst": 700,
+    "mean": 0.0,
+    "m2": 0.0,
+    "jitter": 851,
+    "javg": 300.25,
+    "jmax": 851,
+    "jinta": 1148.74
+}

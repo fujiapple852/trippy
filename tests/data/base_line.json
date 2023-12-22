@@ -1,0 +1,27 @@
+[{
+    "sequence": 1,
+    "identifier": 1,
+    "src_port": 80,
+    "dest_port": 80,
+    "ttl": 1,
+    "round": 1,
+    "sent": "2023-01-01T12:01:55.100",
+    "status": "Complete",
+    "host": "10.1.0.2",
+    "received": "2023-01-01T12:01:55.400",
+    "icmp_packet_type": null,
+    "extensions": null
+  },{
+    "sequence": 2,
+    "identifier": 1,
+    "src_port": 80,
+    "dest_port": 80,
+    "ttl": 1,
+    "round": 1,
+    "sent": "2023-01-01T12:01:56.100",
+    "status": "Complete",
+    "host": "10.1.0.2",
+    "received": "2023-01-01T12:01:56.800",
+    "icmp_packet_type": null,
+    "extensions": null
+  }]

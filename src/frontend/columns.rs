@@ -8,13 +8,6 @@ pub struct Columns(pub Vec<Column>);
 
 impl Columns {
     /// Column width constraints.
-    ///
-    /// All columns are returned as `Constraint::Min(width)`.
-    ///
-    /// For `Fixed(n)` columns the width is as specified in `n`.
-    /// For `Variable` columns the width is calculated by subtracting the total
-    /// size of all `Fixed` columns from the width of the containing `Rect` and
-    /// dividing by the number of `Variable` columns.
     pub fn constraints(&self, rect: Rect) -> Vec<Constraint> {
         let total_fixed_width = self
             .0
@@ -24,18 +17,12 @@ impl Columns {
                 ColumnWidth::Variable => 0,
             })
             .sum();
-        let variable_width_count = self
-            .0
-            .iter()
-            .filter(|c| matches!(c.width(), ColumnWidth::Variable))
-            .count() as u16;
-        let variable_width =
-            rect.width.saturating_sub(total_fixed_width) / variable_width_count.max(1);
+        let total_variable_width = rect.width.saturating_sub(total_fixed_width);
         self.0
             .iter()
             .map(|c| match c.width() {
                 ColumnWidth::Fixed(width) => Constraint::Min(width),
-                ColumnWidth::Variable => Constraint::Min(variable_width),
+                ColumnWidth::Variable => Constraint::Min(total_variable_width),
             })
             .collect()
     }
@@ -79,6 +66,14 @@ pub enum Column {
     StdDev,
     /// The status of a hop.
     Status,
+    /// The jitter of a hop(RTTx-RTTx-1).
+    Jitter,
+    /// The Average Jitter
+    Javg,
+    /// The worst or max jitter hop RTT
+    Jmax,
+    /// The smoothed jitter reading for a hop
+    Jinta,
 }
 
 impl From<Column> for char {
@@ -95,6 +90,10 @@ impl From<Column> for char {
             Column::Worst => 'w',
             Column::StdDev => 'd',
             Column::Status => 't',
+            Column::Jitter => 'j',
+            Column::Javg => 'g',
+            Column::Jmax => 'x',
+            Column::Jinta => 'i',
         }
     }
 }
@@ -113,6 +112,10 @@ impl From<TuiColumn> for Column {
             TuiColumn::Worst => Self::Worst,
             TuiColumn::StdDev => Self::StdDev,
             TuiColumn::Status => Self::Status,
+            TuiColumn::Jitter => Self::Jitter,
+            TuiColumn::Javg => Self::Javg,
+            TuiColumn::Jmax => Self::Jmax,
+            TuiColumn::Jinta => Self::Jinta,
         }
     }
 }
@@ -131,8 +134,21 @@ impl Display for Column {
             Self::Worst => write!(f, "Wrst"),
             Self::StdDev => write!(f, "StDev"),
             Self::Status => write!(f, "Sts"),
+            Self::Jitter => write!(f, "Jttr"),
+            Self::Javg => write!(f, "Javg"),
+            Self::Jmax => write!(f, "Jmax"),
+            Self::Jinta => write!(f, "Jint"),
         }
     }
+}
+
+/// Table column layout constraints.
+#[derive(Debug, PartialEq)]
+enum ColumnWidth {
+    /// A fixed size column.
+    Fixed(u16),
+    /// A column that will use the remaining space.
+    Variable,
 }
 
 impl Column {
@@ -150,18 +166,13 @@ impl Column {
             Self::Best => ColumnWidth::Fixed(7),
             Self::Worst => ColumnWidth::Fixed(7),
             Self::StdDev => ColumnWidth::Fixed(8),
-            Self::Status => ColumnWidth::Fixed(7),
+            Self::Status => ColumnWidth::Fixed(4),
+            Self::Jitter => ColumnWidth::Fixed(7),
+            Self::Javg => ColumnWidth::Fixed(7),
+            Self::Jmax => ColumnWidth::Fixed(7),
+            Self::Jinta => ColumnWidth::Fixed(7),
         }
     }
-}
-
-/// Table column layout constraints.
-#[derive(Debug, PartialEq)]
-enum ColumnWidth {
-    /// A fixed size column.
-    Fixed(u16),
-    /// A column that will use the remaining space.
-    Variable,
 }
 
 #[cfg(test)]
@@ -169,6 +180,12 @@ mod tests {
     use super::*;
     use ratatui::layout::Constraint::Min;
     use test_case::test_case;
+
+    use crate::frontend::columns::ColumnWidth;
+    use crate::{
+        config::{TuiColumn, TuiColumns},
+        frontend::columns::{Column, Columns},
+    };
 
     #[test]
     fn test_columns_conversion_from_tui_columns() {
@@ -229,7 +246,7 @@ mod tests {
         assert_eq!(
             vec![
                 Min(4),
-                Min(11),
+                Min(14),
                 Min(8),
                 Min(7),
                 Min(7),
@@ -238,7 +255,7 @@ mod tests {
                 Min(7),
                 Min(7),
                 Min(8),
-                Min(7)
+                Min(4)
             ],
             constraints
         );
@@ -271,8 +288,12 @@ mod tests {
             Column::Worst,
             Column::StdDev,
             Column::Status,
+            Column::Jitter,
+            Column::Javg,
+            Column::Jmax,
+            Column::Jinta,
         ]);
-        assert_eq!("holsravbwdt", format!("{cols}"));
+        assert_eq!("holsravbwdtjgxi", format!("{cols}"));
     }
 
     /// Reverse subset test for subset of columns.

@@ -59,8 +59,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg_color)
                 .fg(app.tui_config.theme.text_color),
         )
-        .highlight_style(selected_style)
-        .column_spacing(1);
+        .highlight_style(selected_style);
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }
 
@@ -132,7 +131,7 @@ fn new_cell(
 ) -> Cell<'static> {
     let is_target = app.tracer_data().is_target(hop, app.selected_flow);
     match column {
-        Column::Ttl => render_ttl_cell(hop),
+        Column::Ttl => render_usize_cell(hop.ttl().into()),
         Column::Host => {
             let (host_cell, _) = if is_selected_hop && app.show_hop_details {
                 render_hostname_with_details(app, hop, dns, geoip_lookup, config)
@@ -142,30 +141,26 @@ fn new_cell(
             host_cell
         }
         Column::LossPct => render_loss_pct_cell(hop),
-        Column::Sent => render_total_sent_cell(hop),
-        Column::Received => render_total_recv_cell(hop),
-        Column::Last => render_last_cell(hop),
+        Column::Sent => render_usize_cell(hop.total_sent()),
+        Column::Received => render_usize_cell(hop.total_recv()),
+        Column::Last => render_float_cell(hop.last_ms(), 1),
         Column::Average => render_avg_cell(hop),
-        Column::Best => render_best_cell(hop),
-        Column::Worst => render_worst_cell(hop),
+        Column::Best => render_float_cell(hop.best_ms(), 1),
+        Column::Worst => render_float_cell(hop.worst_ms(), 1),
         Column::StdDev => render_stddev_cell(hop),
         Column::Status => render_status_cell(hop, is_target),
+        Column::Jitter => render_float_cell(hop.jitter_ms(), 1),
+        Column::Javg => render_float_cell(hop.javg_ms(), 1),
+        Column::Jmax => render_float_cell(hop.jmax_ms(), 1),
+        Column::Jinta => render_float_cell(hop.jinta(), 1),
     }
 }
-fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.ttl()))
-}
-
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(format!("{:.1}%", hop.loss_pct()))
 }
 
-fn render_total_sent_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_sent()))
-}
-
-fn render_total_recv_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(format!("{}", hop.total_recv()))
+fn render_usize_cell(value: usize) -> Cell<'static> {
+    Cell::from(format!("{value}"))
 }
 
 fn render_avg_cell(hop: &Hop) -> Cell<'static> {
@@ -176,36 +171,15 @@ fn render_avg_cell(hop: &Hop) -> Cell<'static> {
     })
 }
 
-fn render_last_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.last_ms()
-            .map(|last| format!("{last:.1}"))
-            .unwrap_or_default(),
-    )
-}
-
-fn render_best_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.best_ms()
-            .map(|best| format!("{best:.1}"))
-            .unwrap_or_default(),
-    )
-}
-
-fn render_worst_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(
-        hop.worst_ms()
-            .map(|worst| format!("{worst:.1}"))
-            .unwrap_or_default(),
-    )
-}
-
 fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(if hop.total_recv() > 1 {
         format!("{:.1}", hop.stddev_ms())
     } else {
         String::default()
     })
+}
+fn render_float_cell(value: Option<f64>, places: usize) -> Cell<'static> {
+    Cell::from(value.map_or(String::new(), |v| format!("{v:.places$}")))
 }
 
 fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
