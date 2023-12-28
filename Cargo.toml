@@ -39,10 +39,10 @@ humantime = "2.1.0"
 parking_lot = "0.12.1"
 ratatui = "0.26.1"
 crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
-chrono = { version = "0.4.37", default-features = false, features = [ "clock" ] }
-itertools = "0.12.1"
-serde = { version = "1.0.197", default-features = false }
-serde_json = { version = "1.0.115", default-features = false }
+chrono = { version = "0.4.37", default-features = false, features = [ "clock", "serde" ] }
+itertools = "0.12.0"
+serde = { version = "1.0.193", default-features = false }
+serde_json = { version = "1.0.108", default-features = false }
 comfy-table = { version = "7.1.0", default-features = false }
 strum = { version = "0.26.2", default-features = false, features = [ "std", "derive" ] }
 etcetera = "0.8.0"
@@ -57,6 +57,7 @@ serde_with = "3.7.0"
 encoding_rs_io = "0.1.7"
 bitflags = "2.5.0"
 clap_mangen = "0.2.19"
+uuid = { version = "1.6.1", features = ["v7", "serde"] }
 
 # Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]

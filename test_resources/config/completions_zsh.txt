@@ -19,6 +19,7 @@ _trip() {
 '--config-file=[Config file]:CONFIG_FILE:_files' \
 '-m+[Output mode \[default\: tui\]]:MODE:((tui\:"Display interactive TUI"
 stream\:"Display a continuous stream of tracing data"
+event\:"Display a continuous stream of tracing events"
 pretty\:"Generate a pretty text table report for N cycles"
 markdown\:"Generate a Markdown text table report for N cycles"
 csv\:"Generate a CSV report for N cycles"
@@ -28,6 +29,7 @@ flows\:"Display all flows for N cycles"
 silent\:"Do not generate any tracing output for N cycles"))' \
 '--mode=[Output mode \[default\: tui\]]:MODE:((tui\:"Display interactive TUI"
 stream\:"Display a continuous stream of tracing data"
+event\:"Display a continuous stream of tracing events"
 pretty\:"Generate a pretty text table report for N cycles"
 markdown\:"Generate a Markdown text table report for N cycles"
 csv\:"Generate a CSV report for N cycles"

@@ -254,6 +254,8 @@ fn run_frontend(
     match args.mode {
         Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
         Mode::Stream => report::stream::report(&traces[0], &resolver)?,
+        Mode::Event => report::event::report(&traces[0], &resolver)?,
+
         Mode::Csv => report::csv::report(&traces[0], args.report_cycles, &resolver)?,
         Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
         Mode::Pretty => report::table::report_pretty(&traces[0], args.report_cycles, &resolver)?,

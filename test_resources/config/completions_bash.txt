@@ -56,11 +56,11 @@ _trip() {
                     return 0
                     ;;
                 --mode)
-                    COMPREPLY=($(compgen -W "tui stream pretty markdown csv json dot flows silent" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "tui stream event pretty markdown csv json dot flows silent" -- "${cur}"))
                     return 0
                     ;;
                 -m)
-                    COMPREPLY=($(compgen -W "tui stream pretty markdown csv json dot flows silent" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "tui stream event pretty markdown csv json dot flows silent" -- "${cur}"))
                     return 0
                     ;;
                 --protocol)
