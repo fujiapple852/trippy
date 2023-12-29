@@ -82,6 +82,7 @@ hex-literal = "0.4.1"
 pretty_assertions = "1.4.0"
 rand = "0.8.5"
 test-case = "3.3.1"
+tun = { git = "https://github.com/fujiapple852/rust-tun", rev = "e944758112d23a2199b0c8d8adf8ffc6a8c1e9f5", features = [ "async" ] }
 
 # cargo-generate-rpm dependencies
 [package.metadata.generate-rpm]
