@@ -7,6 +7,12 @@
 use crate::tracing::packet::IpProtocol;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
+/// Calculate the checksum for an `Ipv4` header.
+#[must_use]
+pub fn ipv4_header_checksum(data: &[u8]) -> u16 {
+    checksum(data, 5)
+}
+
 /// Calculate the checksum for an `Ipv4` `ICMP` packet.
 #[must_use]
 pub fn icmp_ipv4_checksum(data: &[u8]) -> u16 {
@@ -113,6 +119,7 @@ fn finalize_checksum(mut sum: u32) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hex_literal::hex;
     use std::str::FromStr;
 
     #[test]
@@ -165,5 +172,11 @@ mod tests {
             0x00, 0x00,
         ];
         assert_eq!(61454, udp_ipv6_checksum(&bytes, src_addr, dest_addr));
+    }
+
+    #[test]
+    fn test_ipv4_header_checksum() {
+        let bytes = hex!("45 00 0f fc 38 c0 00 00 40 01 2e 3b 0a 00 00 02 0a 00 00 01");
+        assert_eq!(0x1e3f, ipv4_header_checksum(&bytes));
     }
 }
