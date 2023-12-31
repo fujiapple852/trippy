@@ -353,7 +353,7 @@ impl TuiApp {
     pub fn expand_hosts(&mut self) {
         self.tui_config.max_addrs = match self.tui_config.max_addrs {
             None => Some(1),
-            Some(i) if i < self.max_hosts() => Some(i + 1),
+            Some(i) if Some(i) < self.max_hosts() => Some(i + 1),
             Some(i) => Some(i),
         }
     }
@@ -378,7 +378,7 @@ impl TuiApp {
     }
 
     pub fn expand_hosts_max(&mut self) {
-        self.tui_config.max_addrs = Some(self.max_hosts());
+        self.tui_config.max_addrs = self.max_hosts();
     }
 
     pub fn contract_hosts_min(&mut self) {
@@ -386,14 +386,13 @@ impl TuiApp {
     }
 
     /// The maximum number of hosts per hop for the currently selected trace.
-    pub fn max_hosts(&self) -> u8 {
+    pub fn max_hosts(&self) -> Option<u8> {
         self.selected_tracer_data
             .hops(self.selected_flow)
             .iter()
             .map(|h| h.addrs().count())
             .max()
             .and_then(|i| u8::try_from(i).ok())
-            .unwrap_or_default()
     }
 }
 
