@@ -2,7 +2,7 @@ use crate::config::binding::TuiKeyBinding;
 use crate::config::theme::TuiColor;
 use crate::config::{
     AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
-    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
+    LogFormat, LogSpanEvents, MultipathStrategyConfig, Protocol, ReportType,
 };
 use anyhow::Context;
 use etcetera::BaseStrategy;
@@ -69,7 +69,7 @@ fn read_file<P: AsRef<Path>>(dir: P, file: &str) -> anyhow::Result<Option<Config
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigFile {
     pub trippy: Option<ConfigTrippy>,
@@ -95,10 +95,9 @@ impl Default for ConfigFile {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigTrippy {
-    pub mode: Option<Mode>,
     pub unprivileged: Option<bool>,
     pub log_format: Option<LogFormat>,
     pub log_filter: Option<String>,
@@ -108,7 +107,6 @@ pub struct ConfigTrippy {
 impl Default for ConfigTrippy {
     fn default() -> Self {
         Self {
-            mode: Some(super::constants::DEFAULT_MODE),
             unprivileged: Some(super::constants::DEFAULT_UNPRIVILEGED),
             log_format: Some(super::constants::DEFAULT_LOG_FORMAT),
             log_filter: Some(String::from(super::constants::DEFAULT_LOG_FILTER)),
@@ -117,7 +115,7 @@ impl Default for ConfigTrippy {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigStrategy {
     pub protocol: Option<Protocol>,
@@ -175,7 +173,7 @@ impl Default for ConfigStrategy {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigDns {
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
@@ -195,21 +193,23 @@ impl Default for ConfigDns {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigReport {
+    pub report_type: Option<ReportType>,
     pub report_cycles: Option<usize>,
 }
 
 impl Default for ConfigReport {
     fn default() -> Self {
         Self {
+            report_type: Some(super::constants::DEFAULT_REPORT_TYPE),
             report_cycles: Some(super::constants::DEFAULT_REPORT_CYCLES),
         }
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigTui {
     pub tui_max_samples: Option<usize>,
@@ -245,7 +245,7 @@ impl Default for ConfigTui {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigThemeColors {
     pub bg_color: Option<TuiColor>,
@@ -320,7 +320,7 @@ impl Default for ConfigThemeColors {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigBindings {
     pub toggle_help: Option<TuiKeyBinding>,

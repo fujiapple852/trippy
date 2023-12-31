@@ -20,20 +20,6 @@
 #
 [trippy]
 
-# The Trippy mode.
-#
-# Allowed values are:
-#   tui         - Display interactive Tui [default]
-#   stream      - Display a continuous stream of tracing data
-#   pretty      - Generate an pretty text table report for N cycles
-#   markdown    - Generate a markdown text table report for N cycles
-#   csv         - Generate a CSV report for N cycles
-#   json        - Generate a JSON report for N cycles
-#   dot         - Generate a Graphviz DOT report for N cycles
-#   flows       - Display all flows
-#   silent      - Do not generate any output for N cycles
-mode = "tui"
-
 # Trace without requiring elevated privileges [default: false]
 #
 # Enabling will cause IPPROTO_ICMP sockets to be used.
@@ -211,9 +197,16 @@ dns-timeout = "5s"
 #
 [report]
 
-# The number of report cycles to run [default: 10]
+# The Trippy report type.
 #
-# Only applicable for modes pretty, markdown, csv and json.
+# Allowed values are:
+#   pretty      - Generate an pretty text table report for N cycles
+#   markdown    - Generate a markdown text table report for N cycles
+#   csv         - Generate a CSV report for N cycles
+#   json        - Generate a JSON report for N cycles
+report-type = "pretty"
+
+# The number of report cycles to run [default: 10]
 report-cycles = 10
 
 #

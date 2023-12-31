@@ -2,28 +2,59 @@ use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
     AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
-    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+    LogSpanEvents, MultipathStrategyConfig, Protocol, ReportType, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
-use clap::Parser;
 use clap_complete::Shell;
 
 /// Trace a route to a host and record statistics
-#[derive(Parser, Debug)]
+#[derive(clap::Parser, Debug)]
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
+#[command(args_conflicts_with_subcommands = true)]
 pub struct Args {
+    #[clap(subcommand)]
+    pub command: Option<Commands>,
+
+    #[clap(flatten)]
+    pub tui: TuiArgs,
+
+    // Deprecated argument, returns an error if supplied
+    #[arg(short = 'm', long, hide = true)]
+    pub mode: Option<String>,
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(clap::Subcommand, Clone, Debug)]
+pub enum Commands {
+    /// Display interactive TUI [default]
+    Tui(TuiArgs),
+    /// Display a continuous stream of tracing data
+    Stream(StreamArgs),
+    /// Display all tracing flows
+    Flows(FlowsArgs),
+    /// Generate a Graphviz DOT file
+    Dot(DotArgs),
+    /// Generate a report
+    Report(ReportArgs),
+    /// Generate shell completion
+    Generate(GenerateArgs),
+    /// Print a template toml config file
+    ConfigTemplate,
+    /// Print all TUI theme items
+    ThemeItems,
+    /// Print all TUI commands that can be bound
+    Bindings,
+}
+
+#[derive(clap::Args, Clone, Debug)]
+pub struct CommonArgs {
     /// A space delimited list of hostnames and IPs to trace
-    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate"]))]
     pub targets: Vec<String>,
 
     /// Config file
     #[arg(value_enum, short = 'c', long, value_hint = clap::ValueHint::FilePath)]
     pub config_file: Option<String>,
-
-    /// Output mode [default: tui]
-    #[arg(value_enum, short = 'm', long)]
-    pub mode: Option<Mode>,
 
     /// Trace without requiring elevated privileges on supported platforms [default: false]
     #[arg(short = 'u', long)]
@@ -153,6 +184,32 @@ pub struct Args {
     #[arg(long, short = 'z')]
     pub dns_lookup_as_info: bool,
 
+    /// The MaxMind City GeoLite2 mmdb file
+    #[arg(short = 'G', long, value_hint = clap::ValueHint::FilePath)]
+    pub geoip_mmdb_file: Option<String>,
+
+    /// The debug log format [default: pretty]
+    #[arg(long)]
+    pub log_format: Option<LogFormat>,
+
+    /// The debug log filter [default: trippy=debug]
+    #[arg(long)]
+    pub log_filter: Option<String>,
+
+    /// The debug log format [default: off]
+    #[arg(long)]
+    pub log_span_events: Option<LogSpanEvents>,
+
+    /// Enable verbose debug logging
+    #[arg(short = 'v', long, default_value_t = false)]
+    pub verbose: bool,
+}
+
+#[derive(clap::Args, Clone, Debug)]
+pub struct TuiArgs {
+    #[clap(flatten)]
+    pub common: CommonArgs,
+
     /// How to render addresses [default: host]
     #[arg(value_enum, short = 'a', long)]
     pub tui_address_mode: Option<AddressMode>,
@@ -201,49 +258,59 @@ pub struct Args {
     #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
 
-    /// Print all TUI theme items and exit
-    #[arg(long)]
-    pub print_tui_theme_items: bool,
-
     /// The TUI key bindings [command=key,command=key,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_binding_value)]
     pub tui_key_bindings: Vec<(TuiCommandItem, TuiKeyBinding)>,
+}
 
-    /// Print all TUI commands that can be bound and exit
-    #[arg(long)]
-    pub print_tui_binding_commands: bool,
+#[derive(clap::Args, Clone, Debug)]
+pub struct DotArgs {
+    #[clap(flatten)]
+    pub common: CommonArgs,
 
     /// The number of report cycles to run [default: 10]
     #[arg(short = 'C', long)]
     pub report_cycles: Option<usize>,
+}
 
-    /// The MaxMind City GeoLite2 mmdb file
-    #[arg(short = 'G', long, value_hint = clap::ValueHint::FilePath)]
-    pub geoip_mmdb_file: Option<String>,
+#[derive(clap::Args, Clone, Debug)]
+pub struct FlowsArgs {
+    #[clap(flatten)]
+    pub common: CommonArgs,
 
-    /// Generate shell completion
-    #[arg(long)]
-    pub generate: Option<Shell>,
+    /// The number of report cycles to run [default: 10]
+    #[arg(short = 'C', long)]
+    pub report_cycles: Option<usize>,
+}
 
-    /// Print a template toml config file and exit.
-    #[arg(long)]
-    pub print_config_template: bool,
+#[derive(clap::Args, Clone, Debug)]
+pub struct StreamArgs {
+    #[clap(flatten)]
+    pub common: CommonArgs,
 
-    /// The debug log format [default: pretty]
-    #[arg(long)]
-    pub log_format: Option<LogFormat>,
+    /// The number of report cycles to run [default: 10]
+    #[arg(short = 'C', long)]
+    pub report_cycles: Option<usize>,
+}
 
-    /// The debug log filter [default: trippy=debug]
-    #[arg(long)]
-    pub log_filter: Option<String>,
+#[derive(clap::Args, Clone, Debug)]
+pub struct ReportArgs {
+    #[clap(flatten)]
+    pub common: CommonArgs,
 
-    /// The debug log format [default: off]
-    #[arg(long)]
-    pub log_span_events: Option<LogSpanEvents>,
+    /// Output mode [default: pretty]
+    #[arg(value_enum, long)]
+    pub report_type: Option<ReportType>,
 
-    /// Enable verbose debug logging
-    #[arg(short = 'v', long, default_value_t = false)]
-    pub verbose: bool,
+    /// The number of report cycles to run [default: 10]
+    #[arg(short = 'C', long)]
+    pub report_cycles: Option<usize>,
+}
+
+#[derive(clap::Args, Clone, Debug)]
+pub struct GenerateArgs {
+    /// Generate completion for a shell
+    pub shell: Shell,
 }
 
 fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, TuiColor)> {
