@@ -4,6 +4,7 @@ use binding::TuiCommandItem;
 use clap::{Command, CommandFactory, ValueEnum};
 use clap_complete::{generate, Generator};
 use file::ConfigFile;
+use humantime::format_duration;
 use itertools::Itertools;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -15,7 +16,7 @@ use strum::VariantNames;
 use theme::TuiThemeItem;
 use trippy::dns::ResolveMethod;
 use trippy::tracing::{
-    MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerProtocol,
+    defaults, MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerProtocol,
 };
 
 mod binding;
@@ -67,6 +68,16 @@ pub enum Protocol {
     Tcp,
 }
 
+impl From<TracerProtocol> for Protocol {
+    fn from(value: TracerProtocol) -> Self {
+        match value {
+            TracerProtocol::Icmp => Self::Icmp,
+            TracerProtocol::Udp => Self::Udp,
+            TracerProtocol::Tcp => Self::Tcp,
+        }
+    }
+}
+
 /// The address family.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -75,6 +86,15 @@ pub enum AddressFamily {
     Ipv4,
     /// Internet Protocol V6
     Ipv6,
+}
+
+impl From<TracerAddrFamily> for AddressFamily {
+    fn from(value: TracerAddrFamily) -> Self {
+        match value {
+            TracerAddrFamily::Ipv4 => Self::Ipv4,
+            TracerAddrFamily::Ipv6 => Self::Ipv6,
+        }
+    }
 }
 
 /// The strategy Equal-cost Multi-Path routing strategy.
@@ -87,6 +107,16 @@ pub enum MultipathStrategyConfig {
     Paris,
     /// The IP `identifier` field is used to store the sequence number.
     Dublin,
+}
+
+impl From<MultipathStrategy> for MultipathStrategyConfig {
+    fn from(value: MultipathStrategy) -> Self {
+        match value {
+            MultipathStrategy::Classic => Self::Classic,
+            MultipathStrategy::Paris => Self::Paris,
+            MultipathStrategy::Dublin => Self::Dublin,
+        }
+    }
 }
 
 /// How to render the addresses.
@@ -310,7 +340,7 @@ impl TrippyConfig {
         let unprivileged = cfg_layer_bool_flag(
             args.unprivileged,
             cfg_file_trace.unprivileged,
-            constants::DEFAULT_UNPRIVILEGED,
+            defaults::DEFAULT_PRIVILEGE_MODE.is_unprivileged(),
         );
         let privilege_mode = if unprivileged {
             PrivilegeMode::Unprivileged
@@ -341,7 +371,7 @@ impl TrippyConfig {
         let protocol = cfg_layer(
             args.protocol,
             cfg_file_strategy.protocol,
-            constants::DEFAULT_STRATEGY_PROTOCOL,
+            Protocol::from(defaults::DEFAULT_STRATEGY_PROTOCOL),
         );
         let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
         let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
@@ -350,67 +380,67 @@ impl TrippyConfig {
         let min_round_duration = cfg_layer(
             args.min_round_duration,
             cfg_file_strategy.min_round_duration,
-            String::from(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+            format_duration(defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION).to_string(),
         );
         let max_round_duration = cfg_layer(
             args.max_round_duration,
             cfg_file_strategy.max_round_duration,
-            String::from(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
+            format_duration(defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION).to_string(),
         );
         let initial_sequence = cfg_layer(
             args.initial_sequence,
             cfg_file_strategy.initial_sequence,
-            constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+            defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
         );
         let multipath_strategy_cfg = cfg_layer(
             args.multipath_strategy,
             cfg_file_strategy.multipath_strategy,
-            constants::DEFAULT_STRATEGY_MULTIPATH,
+            MultipathStrategyConfig::from(defaults::DEFAULT_STRATEGY_MULTIPATH),
         );
         let grace_duration = cfg_layer(
             args.grace_duration,
             cfg_file_strategy.grace_duration,
-            String::from(constants::DEFAULT_STRATEGY_GRACE_DURATION),
+            format_duration(defaults::DEFAULT_STRATEGY_GRACE_DURATION).to_string(),
         );
         let max_inflight = cfg_layer(
             args.max_inflight,
             cfg_file_strategy.max_inflight,
-            constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
+            defaults::DEFAULT_STRATEGY_MAX_INFLIGHT,
         );
         let first_ttl = cfg_layer(
             args.first_ttl,
             cfg_file_strategy.first_ttl,
-            constants::DEFAULT_STRATEGY_FIRST_TTL,
+            defaults::DEFAULT_STRATEGY_FIRST_TTL,
         );
         let max_ttl = cfg_layer(
             args.max_ttl,
             cfg_file_strategy.max_ttl,
-            constants::DEFAULT_STRATEGY_MAX_TTL,
+            defaults::DEFAULT_STRATEGY_MAX_TTL,
         );
         let packet_size = cfg_layer(
             args.packet_size,
             cfg_file_strategy.packet_size,
-            constants::DEFAULT_STRATEGY_PACKET_SIZE,
+            defaults::DEFAULT_STRATEGY_PACKET_SIZE,
         );
         let payload_pattern = cfg_layer(
             args.payload_pattern,
             cfg_file_strategy.payload_pattern,
-            constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+            defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
         );
         let tos = cfg_layer(
             args.tos,
             cfg_file_strategy.tos,
-            constants::DEFAULT_STRATEGY_TOS,
+            defaults::DEFAULT_STRATEGY_TOS,
         );
         let icmp_extensions = cfg_layer_bool_flag(
             args.icmp_extensions,
             cfg_file_strategy.icmp_extensions,
-            constants::DEFAULT_ICMP_EXTENSIONS,
+            defaults::DEFAULT_ICMP_EXTENSIONS,
         );
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
-            String::from(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
+            format_duration(defaults::DEFAULT_STRATEGY_READ_TIMEOUT).to_string(),
         );
         let tui_max_samples = cfg_layer(
             args.tui_max_samples,
@@ -506,7 +536,7 @@ impl TrippyConfig {
             })
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
-            (false, false, None) => addr_family(constants::DEFAULT_ADDRESS_FAMILY),
+            (false, false, None) => defaults::DEFAULT_ADDRESS_FAMILY,
             (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
             (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
         };
@@ -647,23 +677,23 @@ impl Default for TrippyConfig {
     fn default() -> Self {
         Self {
             targets: vec![],
-            protocol: protocol(constants::DEFAULT_STRATEGY_PROTOCOL),
-            addr_family: addr_family(constants::DEFAULT_ADDRESS_FAMILY),
-            first_ttl: constants::DEFAULT_STRATEGY_FIRST_TTL,
-            max_ttl: constants::DEFAULT_STRATEGY_MAX_TTL,
-            min_round_duration: duration(constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
-            max_round_duration: duration(constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
-            grace_duration: duration(constants::DEFAULT_STRATEGY_GRACE_DURATION),
-            max_inflight: constants::DEFAULT_STRATEGY_MAX_INFLIGHT,
-            initial_sequence: constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
-            tos: constants::DEFAULT_STRATEGY_TOS,
-            icmp_extensions: constants::DEFAULT_ICMP_EXTENSIONS,
-            read_timeout: duration(constants::DEFAULT_STRATEGY_READ_TIMEOUT),
-            packet_size: constants::DEFAULT_STRATEGY_PACKET_SIZE,
-            payload_pattern: constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
+            protocol: defaults::DEFAULT_STRATEGY_PROTOCOL,
+            addr_family: defaults::DEFAULT_ADDRESS_FAMILY,
+            first_ttl: defaults::DEFAULT_STRATEGY_FIRST_TTL,
+            max_ttl: defaults::DEFAULT_STRATEGY_MAX_TTL,
+            min_round_duration: defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
+            max_round_duration: defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION,
+            grace_duration: defaults::DEFAULT_STRATEGY_GRACE_DURATION,
+            max_inflight: defaults::DEFAULT_STRATEGY_MAX_INFLIGHT,
+            initial_sequence: defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
+            tos: defaults::DEFAULT_STRATEGY_TOS,
+            icmp_extensions: defaults::DEFAULT_ICMP_EXTENSIONS,
+            read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
+            packet_size: defaults::DEFAULT_STRATEGY_PACKET_SIZE,
+            payload_pattern: defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
             source_addr: None,
             interface: None,
-            multipath_strategy: multipath_strategy(constants::DEFAULT_STRATEGY_MULTIPATH),
+            multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
             port_direction: PortDirection::None,
             dns_timeout: duration(constants::DEFAULT_DNS_TIMEOUT),
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
@@ -681,7 +711,7 @@ impl Default for TrippyConfig {
             tui_theme: TuiTheme::default(),
             tui_bindings: TuiBindings::default(),
             mode: constants::DEFAULT_MODE,
-            privilege_mode: privilege_mode(constants::DEFAULT_UNPRIVILEGED),
+            privilege_mode: defaults::DEFAULT_PRIVILEGE_MODE,
             dns_resolve_all: constants::DEFAULT_DNS_RESOLVE_ALL,
             report_cycles: constants::DEFAULT_REPORT_CYCLES,
             geoip_mmdb_file: None,
@@ -699,43 +729,12 @@ fn duration(duration: &str) -> Duration {
     humantime::parse_duration(duration).expect("valid duration")
 }
 
-fn protocol(protocol: Protocol) -> TracerProtocol {
-    match protocol {
-        Protocol::Icmp => TracerProtocol::Icmp,
-        Protocol::Udp => TracerProtocol::Udp,
-        Protocol::Tcp => TracerProtocol::Tcp,
-    }
-}
-
-fn privilege_mode(unprivileged: bool) -> PrivilegeMode {
-    if unprivileged {
-        PrivilegeMode::Unprivileged
-    } else {
-        PrivilegeMode::Privileged
-    }
-}
-
 fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
     match dns_resolve_method {
         DnsResolveMethodConfig::System => ResolveMethod::System,
         DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
         DnsResolveMethodConfig::Google => ResolveMethod::Google,
         DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
-    }
-}
-
-fn multipath_strategy(multipath_strategy: MultipathStrategyConfig) -> MultipathStrategy {
-    match multipath_strategy {
-        MultipathStrategyConfig::Classic => MultipathStrategy::Classic,
-        MultipathStrategyConfig::Paris => MultipathStrategy::Paris,
-        MultipathStrategyConfig::Dublin => MultipathStrategy::Dublin,
-    }
-}
-
-fn addr_family(addr_family: AddressFamily) -> TracerAddrFamily {
-    match addr_family {
-        AddressFamily::Ipv4 => TracerAddrFamily::Ipv4,
-        AddressFamily::Ipv6 => TracerAddrFamily::Ipv6,
     }
 }
 

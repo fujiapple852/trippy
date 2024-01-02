@@ -6,10 +6,12 @@ use crate::config::{
 };
 use anyhow::Context;
 use etcetera::BaseStrategy;
+use humantime::format_duration;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::read_to_string;
 use std::path::Path;
+use trippy::tracing::defaults;
 
 const DEFAULT_CONFIG_FILE: &str = "trippy.toml";
 const DEFAULT_HIDDEN_CONFIG_FILE: &str = ".trippy.toml";
@@ -109,7 +111,7 @@ impl Default for ConfigTrippy {
     fn default() -> Self {
         Self {
             mode: Some(super::constants::DEFAULT_MODE),
-            unprivileged: Some(super::constants::DEFAULT_UNPRIVILEGED),
+            unprivileged: Some(defaults::DEFAULT_PRIVILEGE_MODE.is_unprivileged()),
             log_format: Some(super::constants::DEFAULT_LOG_FORMAT),
             log_filter: Some(String::from(super::constants::DEFAULT_LOG_FILTER)),
             log_span_events: Some(super::constants::DEFAULT_LOG_SPAN_EVENTS),
@@ -144,33 +146,35 @@ pub struct ConfigStrategy {
 impl Default for ConfigStrategy {
     fn default() -> Self {
         Self {
-            protocol: Some(super::constants::DEFAULT_STRATEGY_PROTOCOL),
-            addr_family: Some(super::constants::DEFAULT_ADDRESS_FAMILY),
+            protocol: Some(Protocol::from(defaults::DEFAULT_STRATEGY_PROTOCOL)),
+            addr_family: Some(AddressFamily::from(defaults::DEFAULT_ADDRESS_FAMILY)),
             target_port: None,
             source_port: None,
             source_address: None,
             interface: None,
-            min_round_duration: Some(String::from(
-                super::constants::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
+            min_round_duration: Some(
+                format_duration(defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION).to_string(),
+            ),
+            max_round_duration: Some(
+                format_duration(defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION).to_string(),
+            ),
+            initial_sequence: Some(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
+            multipath_strategy: Some(MultipathStrategyConfig::from(
+                defaults::DEFAULT_STRATEGY_MULTIPATH,
             )),
-            max_round_duration: Some(String::from(
-                super::constants::DEFAULT_STRATEGY_MAX_ROUND_DURATION,
-            )),
-            initial_sequence: Some(super::constants::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
-            multipath_strategy: Some(super::constants::DEFAULT_STRATEGY_MULTIPATH),
-            grace_duration: Some(String::from(
-                super::constants::DEFAULT_STRATEGY_GRACE_DURATION,
-            )),
-            max_inflight: Some(super::constants::DEFAULT_STRATEGY_MAX_INFLIGHT),
-            first_ttl: Some(super::constants::DEFAULT_STRATEGY_FIRST_TTL),
-            max_ttl: Some(super::constants::DEFAULT_STRATEGY_MAX_TTL),
-            packet_size: Some(super::constants::DEFAULT_STRATEGY_PACKET_SIZE),
-            payload_pattern: Some(super::constants::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
-            tos: Some(super::constants::DEFAULT_STRATEGY_TOS),
-            icmp_extensions: Some(super::constants::DEFAULT_ICMP_EXTENSIONS),
-            read_timeout: Some(String::from(
-                super::constants::DEFAULT_STRATEGY_READ_TIMEOUT,
-            )),
+            grace_duration: Some(
+                format_duration(defaults::DEFAULT_STRATEGY_GRACE_DURATION).to_string(),
+            ),
+            max_inflight: Some(defaults::DEFAULT_STRATEGY_MAX_INFLIGHT),
+            first_ttl: Some(defaults::DEFAULT_STRATEGY_FIRST_TTL),
+            max_ttl: Some(defaults::DEFAULT_STRATEGY_MAX_TTL),
+            packet_size: Some(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
+            payload_pattern: Some(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
+            tos: Some(defaults::DEFAULT_STRATEGY_TOS),
+            icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSIONS),
+            read_timeout: Some(
+                format_duration(defaults::DEFAULT_STRATEGY_READ_TIMEOUT).to_string(),
+            ),
         }
     }
 }
