@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 use std::time::Duration;
 use trippy::dns::{ResolveMethod, Resolver};
-use trippy::tracing::{PortDirection, TracerProtocol};
+use trippy::tracing::{PortDirection, Protocol};
 
 /// Render the title, config, target, clock and keyboard controls.
 #[allow(clippy::too_many_lines)]
@@ -40,18 +40,18 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .block(header_block.clone())
         .alignment(Alignment::Right);
     let protocol = match app.tracer_config().protocol {
-        TracerProtocol::Icmp => format!(
+        Protocol::Icmp => format!(
             "icmp({}, {})",
             app.tracer_config().addr_family,
             app.tracer_config().privilege_mode
         ),
-        TracerProtocol::Udp => format!(
+        Protocol::Udp => format!(
             "udp({}, {}, {})",
             app.tracer_config().addr_family,
             app.tracer_config().multipath_strategy,
             app.tracer_config().privilege_mode
         ),
-        TracerProtocol::Tcp => format!(
+        Protocol::Tcp => format!(
             "tcp({}, {})",
             app.tracer_config().addr_family,
             app.tracer_config().privilege_mode

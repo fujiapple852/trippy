@@ -3,7 +3,7 @@ use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
-use crate::tracing::{ChannelConfig, MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
+use crate::tracing::{ChannelConfig, MultipathStrategy, PrivilegeMode, Probe, Protocol};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -18,7 +18,7 @@ const MAX_TCP_PROBES: usize = 256;
 /// A channel for sending and receiving `Probe` packets.
 pub struct TracerChannel<S: Socket> {
     privilege_mode: PrivilegeMode,
-    protocol: TracerProtocol,
+    protocol: Protocol,
     src_addr: IpAddr,
     ipv4_length_order: platform::PlatformIpv4FieldByteOrder,
     dest_addr: IpAddr,
@@ -51,9 +51,9 @@ impl<S: Socket> TracerChannel<S> {
         let ipv4_length_order =
             platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
         let send_socket = match config.protocol {
-            TracerProtocol::Icmp => Some(make_icmp_send_socket(config.source_addr, raw)?),
-            TracerProtocol::Udp => Some(make_udp_send_socket(config.source_addr, raw)?),
-            TracerProtocol::Tcp => None,
+            Protocol::Icmp => Some(make_icmp_send_socket(config.source_addr, raw)?),
+            Protocol::Udp => Some(make_udp_send_socket(config.source_addr, raw)?),
+            Protocol::Tcp => None,
         };
         let recv_socket = make_recv_socket(config.source_addr, raw)?;
         Ok(Self {
@@ -80,16 +80,16 @@ impl<S: Socket> Network for TracerChannel<S> {
     #[instrument(skip(self))]
     fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
         match self.protocol {
-            TracerProtocol::Icmp => self.dispatch_icmp_probe(probe),
-            TracerProtocol::Udp => self.dispatch_udp_probe(probe),
-            TracerProtocol::Tcp => self.dispatch_tcp_probe(probe),
+            Protocol::Icmp => self.dispatch_icmp_probe(probe),
+            Protocol::Udp => self.dispatch_udp_probe(probe),
+            Protocol::Tcp => self.dispatch_tcp_probe(probe),
         }
     }
     #[instrument(skip_all)]
     fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
         let prob_response = match self.protocol {
-            TracerProtocol::Icmp | TracerProtocol::Udp => self.recv_icmp_probe(),
-            TracerProtocol::Tcp => match self.recv_tcp_sockets()? {
+            Protocol::Icmp | Protocol::Udp => self.recv_icmp_probe(),
+            Protocol::Tcp => match self.recv_tcp_sockets()? {
                 None => self.recv_icmp_probe(),
                 resp => Ok(resp),
             },

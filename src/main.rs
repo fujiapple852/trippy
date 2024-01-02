@@ -34,7 +34,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
-    ChannelConfig, Config, MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol,
+    AddrFamily, ChannelConfig, Config, MultipathStrategy, PortDirection, Protocol,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -70,11 +70,11 @@ fn main() -> anyhow::Result<()> {
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     Ok(match cfg.addr_family {
-        TracerAddrFamily::Ipv4 => DnsResolver::start(trippy::dns::Config::new_ipv4(
+        AddrFamily::Ipv4 => DnsResolver::start(trippy::dns::Config::new_ipv4(
             cfg.dns_resolve_method,
             cfg.dns_timeout,
         ))?,
-        TracerAddrFamily::Ipv6 => DnsResolver::start(trippy::dns::Config::new_ipv6(
+        AddrFamily::Ipv6 => DnsResolver::start(trippy::dns::Config::new_ipv6(
             cfg.dns_resolve_method,
             cfg.dns_timeout,
         ))?,
@@ -336,8 +336,8 @@ pub struct TraceInfo {
     pub privilege_mode: PrivilegeMode,
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
-    pub protocol: TracerProtocol,
-    pub addr_family: TracerAddrFamily,
+    pub protocol: Protocol,
+    pub addr_family: AddrFamily,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub grace_duration: Duration,
@@ -365,8 +365,8 @@ impl TraceInfo {
         privilege_mode: PrivilegeMode,
         multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
-        protocol: TracerProtocol,
-        addr_family: TracerAddrFamily,
+        protocol: Protocol,
+        addr_family: AddrFamily,
         first_ttl: u8,
         max_ttl: u8,
         grace_duration: Duration,

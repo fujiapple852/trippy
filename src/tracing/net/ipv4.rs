@@ -18,7 +18,7 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
-use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
+use crate::tracing::{MultipathStrategy, PrivilegeMode, Probe, Protocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
@@ -204,7 +204,7 @@ pub fn dispatch_tcp_probe<S: Socket>(
 #[instrument(skip(recv_socket))]
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
-    protocol: TracerProtocol,
+    protocol: Protocol,
     icmp_extensions: bool,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
@@ -344,7 +344,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 #[instrument]
 fn extract_probe_resp(
-    protocol: TracerProtocol,
+    protocol: Protocol,
     icmp_extensions: bool,
     ipv4: &Ipv4Packet<'_>,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -382,7 +382,7 @@ fn extract_probe_resp(
             })
         }
         IcmpType::EchoReply => match protocol {
-            TracerProtocol::Icmp => {
+            Protocol::Icmp => {
                 let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
@@ -391,7 +391,7 @@ fn extract_probe_resp(
                     recv, src, resp_seq,
                 )))
             }
-            TracerProtocol::Udp | TracerProtocol::Tcp => None,
+            Protocol::Udp | Protocol::Tcp => None,
         },
         _ => None,
     })
@@ -400,10 +400,10 @@ fn extract_probe_resp(
 #[instrument]
 fn extract_probe_resp_seq(
     ipv4: &Ipv4Packet<'_>,
-    protocol: TracerProtocol,
+    protocol: Protocol,
 ) -> TraceResult<Option<ProbeResponseSeq>> {
     Ok(match (protocol, ipv4.get_protocol()) {
-        (TracerProtocol::Icmp, IpProtocol::Icmp) => {
+        (Protocol::Icmp, IpProtocol::Icmp) => {
             let echo_request = extract_echo_request(ipv4)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
@@ -411,13 +411,13 @@ fn extract_probe_resp_seq(
                 identifier, sequence,
             )))
         }
-        (TracerProtocol::Udp, IpProtocol::Udp) => {
+        (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum, identifier) = extract_udp_packet(ipv4)?;
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier, src_port, dest_port, checksum,
             )))
         }
-        (TracerProtocol::Tcp, IpProtocol::Tcp) => {
+        (Protocol::Tcp, IpProtocol::Tcp) => {
             let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
             Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
                 src_port, dest_port,
