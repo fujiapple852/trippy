@@ -16,7 +16,8 @@ use strum::VariantNames;
 use theme::TuiThemeItem;
 use trippy::dns::ResolveMethod;
 use trippy::tracing::{
-    defaults, AddrFamily, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
+    defaults, AddrFamily, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode,
+    Protocol,
 };
 
 mod binding;
@@ -251,7 +252,7 @@ pub struct TrippyConfig {
     pub max_inflight: u8,
     pub initial_sequence: u16,
     pub tos: u8,
-    pub icmp_extensions: bool,
+    pub icmp_extension_parse_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
@@ -435,8 +436,13 @@ impl TrippyConfig {
         let icmp_extensions = cfg_layer_bool_flag(
             args.icmp_extensions,
             cfg_file_strategy.icmp_extensions,
-            defaults::DEFAULT_ICMP_EXTENSIONS,
+            defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE.is_enabled(),
         );
+        let icmp_extension_parse_mode = if icmp_extensions {
+            IcmpExtensionParseMode::Enabled
+        } else {
+            IcmpExtensionParseMode::Disabled
+        };
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
@@ -637,7 +643,7 @@ impl TrippyConfig {
             packet_size,
             payload_pattern,
             tos,
-            icmp_extensions,
+            icmp_extension_parse_mode,
             source_addr,
             interface,
             port_direction,
@@ -685,7 +691,7 @@ impl Default for TrippyConfig {
             max_inflight: defaults::DEFAULT_STRATEGY_MAX_INFLIGHT,
             initial_sequence: defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE,
             tos: defaults::DEFAULT_STRATEGY_TOS,
-            icmp_extensions: defaults::DEFAULT_ICMP_EXTENSIONS,
+            icmp_extension_parse_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
             packet_size: defaults::DEFAULT_STRATEGY_PACKET_SIZE,
             payload_pattern: defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN,

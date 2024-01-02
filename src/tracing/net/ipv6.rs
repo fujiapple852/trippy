@@ -1,3 +1,4 @@
+use crate::tracing::config::IcmpExtensionParseMode;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::common::process_result;
@@ -174,7 +175,7 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: Protocol,
-    icmp_extensions: bool,
+    icmp_extension_mode: IcmpExtensionParseMode,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
@@ -186,7 +187,7 @@ pub fn recv_icmp_probe<S: Socket>(
             };
             Ok(extract_probe_resp(
                 protocol,
-                icmp_extensions,
+                icmp_extension_mode,
                 &icmp_v6,
                 *src_addr,
             )?)
@@ -295,7 +296,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 
 fn extract_probe_resp(
     protocol: Protocol,
-    icmp_extensions: bool,
+    icmp_extension_mode: IcmpExtensionParseMode,
     icmp_v6: &IcmpPacket<'_>,
     src: Ipv6Addr,
 ) -> TraceResult<Option<ProbeResponse>> {
@@ -304,13 +305,16 @@ fn extract_probe_resp(
     Ok(match icmp_v6.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v6.packet())?;
-            let (nested_ipv6, extension) = if icmp_extensions {
-                let ipv6 = Ipv6Packet::new_view(packet.payload())?;
-                let ext = packet.extension().map(Extensions::try_from).transpose()?;
-                (ipv6, ext)
-            } else {
-                let ipv6 = Ipv6Packet::new_view(packet.payload_raw())?;
-                (ipv6, None)
+            let (nested_ipv6, extension) = match icmp_extension_mode {
+                IcmpExtensionParseMode::Enabled => {
+                    let ipv6 = Ipv6Packet::new_view(packet.payload())?;
+                    let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                    (ipv6, ext)
+                }
+                IcmpExtensionParseMode::Disabled => {
+                    let ipv6 = Ipv6Packet::new_view(packet.payload_raw())?;
+                    (ipv6, None)
+                }
             };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                 ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, ip, resp_seq), extension)
@@ -319,10 +323,11 @@ fn extract_probe_resp(
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v6.packet())?;
             let nested_ipv6 = Ipv6Packet::new_view(packet.payload())?;
-            let extension = if icmp_extensions {
-                packet.extension().map(Extensions::try_from).transpose()?
-            } else {
-                None
+            let extension = match icmp_extension_mode {
+                IcmpExtensionParseMode::Enabled => {
+                    packet.extension().map(Extensions::try_from).transpose()?
+                }
+                IcmpExtensionParseMode::Disabled => None,
             };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                 ProbeResponse::DestinationUnreachable(
