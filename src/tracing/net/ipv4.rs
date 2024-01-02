@@ -1,3 +1,4 @@
+use crate::tracing::config::IcmpExtensionParseMode;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::common::process_result;
@@ -205,13 +206,13 @@ pub fn dispatch_tcp_probe<S: Socket>(
 pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: Protocol,
-    icmp_extensions: bool,
+    icmp_extension_mode: IcmpExtensionParseMode,
 ) -> TraceResult<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
             let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
-            Ok(extract_probe_resp(protocol, icmp_extensions, &ipv4)?)
+            Ok(extract_probe_resp(protocol, icmp_extension_mode, &ipv4)?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -345,7 +346,7 @@ fn udp_payload_size(packet_size: usize) -> usize {
 #[instrument]
 fn extract_probe_resp(
     protocol: Protocol,
-    icmp_extensions: bool,
+    icmp_extension_mode: IcmpExtensionParseMode,
     ipv4: &Ipv4Packet<'_>,
 ) -> TraceResult<Option<ProbeResponse>> {
     let recv = SystemTime::now();
@@ -354,13 +355,16 @@ fn extract_probe_resp(
     Ok(match icmp_v4.get_icmp_type() {
         IcmpType::TimeExceeded => {
             let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
-            let (nested_ipv4, extension) = if icmp_extensions {
-                let ipv4 = Ipv4Packet::new_view(packet.payload())?;
-                let ext = packet.extension().map(Extensions::try_from).transpose()?;
-                (ipv4, ext)
-            } else {
-                let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
-                (ipv4, None)
+            let (nested_ipv4, extension) = match icmp_extension_mode {
+                IcmpExtensionParseMode::Enabled => {
+                    let ipv4 = Ipv4Packet::new_view(packet.payload())?;
+                    let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                    (ipv4, ext)
+                }
+                IcmpExtensionParseMode::Disabled => {
+                    let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
+                    (ipv4, None)
+                }
             };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
                 ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq), extension)
@@ -369,10 +373,11 @@ fn extract_probe_resp(
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
             let nested_ipv4 = Ipv4Packet::new_view(packet.payload())?;
-            let extension = if icmp_extensions {
-                packet.extension().map(Extensions::try_from).transpose()?
-            } else {
-                None
+            let extension = match icmp_extension_mode {
+                IcmpExtensionParseMode::Enabled => {
+                    packet.extension().map(Extensions::try_from).transpose()?
+                }
+                IcmpExtensionParseMode::Disabled => None,
             };
             extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
                 ProbeResponse::DestinationUnreachable(

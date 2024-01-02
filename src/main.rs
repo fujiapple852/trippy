@@ -34,7 +34,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
-    AddrFamily, ChannelConfig, Config, MultipathStrategy, PortDirection, Protocol,
+    AddrFamily, ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PortDirection,
+    Protocol,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -258,7 +259,7 @@ fn make_channel_config(
         args.payload_pattern,
         args.multipath_strategy,
         args.tos,
-        args.icmp_extensions,
+        args.icmp_extension_parse_mode,
         args.read_timeout,
         args.min_round_duration,
     )
@@ -289,7 +290,7 @@ fn make_trace_info(
         args.max_round_duration,
         args.max_inflight,
         args.initial_sequence,
-        args.icmp_extensions,
+        args.icmp_extension_parse_mode,
         args.read_timeout,
         args.packet_size,
         args.payload_pattern,
@@ -345,7 +346,7 @@ pub struct TraceInfo {
     pub max_round_duration: Duration,
     pub max_inflight: u8,
     pub initial_sequence: u16,
-    pub icmp_extensions: bool,
+    pub icmp_extensions: IcmpExtensionParseMode,
     pub read_timeout: Duration,
     pub packet_size: u16,
     pub payload_pattern: u8,
@@ -374,7 +375,7 @@ impl TraceInfo {
         max_round_duration: Duration,
         max_inflight: u8,
         initial_sequence: u16,
-        icmp_extensions: bool,
+        icmp_extensions: IcmpExtensionParseMode,
         read_timeout: Duration,
         packet_size: u16,
         payload_pattern: u8,

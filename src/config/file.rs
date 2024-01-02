@@ -171,7 +171,7 @@ impl Default for ConfigStrategy {
             packet_size: Some(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
             payload_pattern: Some(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
             tos: Some(defaults::DEFAULT_STRATEGY_TOS),
-            icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSIONS),
+            icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE.is_enabled()),
             read_timeout: Some(
                 format_duration(defaults::DEFAULT_STRATEGY_READ_TIMEOUT).to_string(),
             ),

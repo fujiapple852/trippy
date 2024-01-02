@@ -1,3 +1,4 @@
+use crate::tracing::config::IcmpExtensionParseMode;
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
@@ -26,7 +27,7 @@ pub struct TracerChannel<S: Socket> {
     payload_pattern: PayloadPattern,
     multipath_strategy: MultipathStrategy,
     tos: TypeOfService,
-    icmp_extensions: bool,
+    icmp_extension_mode: IcmpExtensionParseMode,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
     send_socket: Option<S>,
@@ -66,7 +67,7 @@ impl<S: Socket> TracerChannel<S> {
             payload_pattern: config.payload_pattern,
             multipath_strategy: config.multipath_strategy,
             tos: config.tos,
-            icmp_extensions: config.icmp_extensions,
+            icmp_extension_mode: config.icmp_extension_mode,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             send_socket,
@@ -189,12 +190,12 @@ impl<S: Socket> TracerChannel<S> {
                 IpAddr::V4(_) => ipv4::recv_icmp_probe(
                     &mut self.recv_socket,
                     self.protocol,
-                    self.icmp_extensions,
+                    self.icmp_extension_mode,
                 ),
                 IpAddr::V6(_) => ipv6::recv_icmp_probe(
                     &mut self.recv_socket,
                     self.protocol,
-                    self.icmp_extensions,
+                    self.icmp_extension_mode,
                 ),
             }
         } else {

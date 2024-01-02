@@ -9,6 +9,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 
 pub mod defaults {
+    use crate::tracing::config::IcmpExtensionParseMode;
     use crate::tracing::{AddrFamily, MultipathStrategy, PrivilegeMode, Protocol};
     use std::time::Duration;
 
@@ -25,7 +26,8 @@ pub mod defaults {
     pub const DEFAULT_STRATEGY_MULTIPATH: MultipathStrategy = MultipathStrategy::Classic;
 
     /// The default value for `icmp-extensions`.
-    pub const DEFAULT_ICMP_EXTENSIONS: bool = false;
+    pub const DEFAULT_ICMP_EXTENSION_PARSE_MODE: IcmpExtensionParseMode =
+        IcmpExtensionParseMode::Disabled;
 
     /// The default value for `max-inflight`.
     pub const DEFAULT_STRATEGY_MAX_INFLIGHT: u8 = 24;
@@ -88,6 +90,34 @@ impl Display for PrivilegeMode {
         match self {
             Self::Privileged => write!(f, "privileged"),
             Self::Unprivileged => write!(f, "unprivileged"),
+        }
+    }
+}
+
+/// The ICMP extension parsing mode.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum IcmpExtensionParseMode {
+    /// Do not parse ICMP extensions.
+    Disabled,
+    /// Parse ICMP extensions.
+    Enabled,
+}
+
+impl IcmpExtensionParseMode {
+    #[must_use]
+    pub fn is_enabled(self) -> bool {
+        match self {
+            Self::Disabled => false,
+            Self::Enabled => true,
+        }
+    }
+}
+
+impl Display for IcmpExtensionParseMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Disabled => write!(f, "disabled"),
+            Self::Enabled => write!(f, "enabled"),
         }
     }
 }
@@ -314,10 +344,10 @@ impl ChannelConfigBuilder {
 
     /// Set the channel ICMP extensions mode.
     #[must_use]
-    pub fn icmp_extensions(self, icmp_extensions: bool) -> Self {
+    pub fn icmp_extension_mode(self, icmp_extension_mode: IcmpExtensionParseMode) -> Self {
         Self {
             config: ChannelConfig {
-                icmp_extensions,
+                icmp_extension_mode,
                 ..self.config
             },
         }
@@ -363,7 +393,7 @@ pub struct ChannelConfig {
     pub payload_pattern: PayloadPattern,
     pub multipath_strategy: MultipathStrategy,
     pub tos: TypeOfService,
-    pub icmp_extensions: bool,
+    pub icmp_extension_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
     pub tcp_connect_timeout: Duration,
 }
@@ -380,7 +410,7 @@ impl ChannelConfig {
         payload_pattern: u8,
         multipath_strategy: MultipathStrategy,
         tos: u8,
-        icmp_extensions: bool,
+        icmp_extension_mode: IcmpExtensionParseMode,
         read_timeout: Duration,
         tcp_connect_timeout: Duration,
     ) -> Self {
@@ -393,7 +423,7 @@ impl ChannelConfig {
             payload_pattern: PayloadPattern(payload_pattern),
             multipath_strategy,
             tos: TypeOfService(tos),
-            icmp_extensions,
+            icmp_extension_mode,
             read_timeout,
             tcp_connect_timeout,
         }
@@ -411,7 +441,7 @@ impl Default for ChannelConfig {
             payload_pattern: PayloadPattern(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
             multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
             tos: TypeOfService(defaults::DEFAULT_STRATEGY_TOS),
-            icmp_extensions: defaults::DEFAULT_ICMP_EXTENSIONS,
+            icmp_extension_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
             tcp_connect_timeout: defaults::DEFAULT_STRATEGY_TCP_CONNECT_TIMEOUT,
         }
@@ -684,7 +714,7 @@ mod tests {
             .packet_size(PacketSize(128))
             .payload_pattern(PayloadPattern(0xff))
             .tos(TypeOfService(0x1a))
-            .icmp_extensions(true)
+            .icmp_extension_mode(IcmpExtensionParseMode::Enabled)
             .read_timeout(Duration::from_millis(50))
             .tcp_connect_timeout(Duration::from_millis(100))
             .build();
@@ -696,7 +726,7 @@ mod tests {
         assert_eq!(PacketSize(128), cfg.packet_size);
         assert_eq!(PayloadPattern(0xff), cfg.payload_pattern);
         assert_eq!(TypeOfService(0x1a), cfg.tos);
-        assert!(cfg.icmp_extensions);
+        assert_eq!(IcmpExtensionParseMode::Enabled, cfg.icmp_extension_mode);
         assert_eq!(Duration::from_millis(50), cfg.read_timeout);
         assert_eq!(Duration::from_millis(100), cfg.tcp_connect_timeout);
     }
