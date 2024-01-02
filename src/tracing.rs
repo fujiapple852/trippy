@@ -10,8 +10,8 @@ mod types;
 pub mod packet;
 
 pub use config::{
-    defaults, MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily,
-    TracerChannelConfig, TracerConfig, TracerProtocol,
+    defaults, ChannelConfig, MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily,
+    TracerConfig, TracerProtocol,
 };
 pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;

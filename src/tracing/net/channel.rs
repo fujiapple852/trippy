@@ -3,9 +3,7 @@ use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::ProbeResponse;
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
-use crate::tracing::{
-    MultipathStrategy, PrivilegeMode, Probe, TracerChannelConfig, TracerProtocol,
-};
+use crate::tracing::{ChannelConfig, MultipathStrategy, PrivilegeMode, Probe, TracerProtocol};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -41,7 +39,7 @@ impl<S: Socket> TracerChannel<S> {
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
     #[instrument(skip_all)]
-    pub fn connect(config: &TracerChannelConfig) -> TraceResult<Self> {
+    pub fn connect(config: &ChannelConfig) -> TraceResult<Self> {
         tracing::debug!(?config);
         if usize::from(config.packet_size.0) > MAX_PACKET_SIZE {
             return Err(TracerError::InvalidPacketSize(usize::from(
