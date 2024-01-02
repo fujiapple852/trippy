@@ -5,7 +5,7 @@ use crate::tracing::types::{
     TypeOfService,
 };
 use std::fmt::{Display, Formatter};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 
 pub mod defaults {
@@ -278,6 +278,24 @@ impl TracerChannelConfig {
     }
 }
 
+impl Default for TracerChannelConfig {
+    fn default() -> Self {
+        Self {
+            privilege_mode: defaults::DEFAULT_PRIVILEGE_MODE,
+            protocol: defaults::DEFAULT_STRATEGY_PROTOCOL,
+            source_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            packet_size: PacketSize(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
+            payload_pattern: PayloadPattern(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
+            multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
+            tos: TypeOfService(defaults::DEFAULT_STRATEGY_TOS),
+            icmp_extensions: defaults::DEFAULT_ICMP_EXTENSIONS,
+            read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
+            tcp_connect_timeout: defaults::DEFAULT_STRATEGY_TCP_CONNECT_TIMEOUT,
+        }
+    }
+}
+
 /// Tracing algorithm configuration.
 #[derive(Debug, Copy, Clone)]
 pub struct TracerConfig {
@@ -343,5 +361,25 @@ impl TracerConfig {
             min_round_duration,
             max_round_duration,
         })
+    }
+}
+
+impl Default for TracerConfig {
+    fn default() -> Self {
+        Self {
+            target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            protocol: defaults::DEFAULT_STRATEGY_PROTOCOL,
+            trace_identifier: TraceId::default(),
+            max_rounds: None,
+            first_ttl: TimeToLive(defaults::DEFAULT_STRATEGY_FIRST_TTL),
+            max_ttl: TimeToLive(defaults::DEFAULT_STRATEGY_MAX_TTL),
+            grace_duration: defaults::DEFAULT_STRATEGY_GRACE_DURATION,
+            max_inflight: MaxInflight(defaults::DEFAULT_STRATEGY_MAX_INFLIGHT),
+            initial_sequence: Sequence(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
+            multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
+            port_direction: PortDirection::None,
+            min_round_duration: defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
+            max_round_duration: defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION,
+        }
     }
 }
