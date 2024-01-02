@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use trace::Trace;
 use tracing::instrument;
-use trippy::tracing::{ChannelConfig, SocketImpl, Tracer, TracerChannel, TracerConfig};
+use trippy::tracing::{ChannelConfig, Config, SocketImpl, Tracer, TracerChannel};
 
 pub mod flows;
 pub mod trace;
@@ -12,18 +12,14 @@ pub mod trace;
 /// A tracing backend.
 #[derive(Debug)]
 pub struct Backend {
-    tracer_config: TracerConfig,
+    tracer_config: Config,
     channel_config: ChannelConfig,
     trace: Arc<RwLock<Trace>>,
 }
 
 impl Backend {
     /// Create a tracing `Backend`.
-    pub fn new(
-        tracer_config: TracerConfig,
-        channel_config: ChannelConfig,
-        max_samples: usize,
-    ) -> Self {
+    pub fn new(tracer_config: Config, channel_config: ChannelConfig, max_samples: usize) -> Self {
         Self {
             tracer_config,
             channel_config,

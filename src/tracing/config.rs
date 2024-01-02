@@ -298,7 +298,7 @@ impl Default for ChannelConfig {
 
 /// Tracing algorithm configuration.
 #[derive(Debug, Copy, Clone)]
-pub struct TracerConfig {
+pub struct Config {
     pub target_addr: IpAddr,
     pub protocol: TracerProtocol,
     pub trace_identifier: TraceId,
@@ -314,7 +314,7 @@ pub struct TracerConfig {
     pub max_round_duration: Duration,
 }
 
-impl TracerConfig {
+impl Config {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         target_addr: IpAddr,
@@ -364,7 +364,7 @@ impl TracerConfig {
     }
 }
 
-impl Default for TracerConfig {
+impl Default for Config {
     fn default() -> Self {
         Self {
             target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),

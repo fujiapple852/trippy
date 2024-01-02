@@ -32,9 +32,9 @@ use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use trippy::dns::{Config, DnsResolver, Resolver};
+use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
-    ChannelConfig, MultipathStrategy, PortDirection, TracerAddrFamily, TracerConfig, TracerProtocol,
+    ChannelConfig, Config, MultipathStrategy, PortDirection, TracerAddrFamily, TracerProtocol,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -70,12 +70,14 @@ fn main() -> anyhow::Result<()> {
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     Ok(match cfg.addr_family {
-        TracerAddrFamily::Ipv4 => {
-            DnsResolver::start(Config::new_ipv4(cfg.dns_resolve_method, cfg.dns_timeout))?
-        }
-        TracerAddrFamily::Ipv6 => {
-            DnsResolver::start(Config::new_ipv6(cfg.dns_resolve_method, cfg.dns_timeout))?
-        }
+        TracerAddrFamily::Ipv4 => DnsResolver::start(trippy::dns::Config::new_ipv4(
+            cfg.dns_resolve_method,
+            cfg.dns_timeout,
+        ))?,
+        TracerAddrFamily::Ipv6 => DnsResolver::start(trippy::dns::Config::new_ipv6(
+            cfg.dns_resolve_method,
+            cfg.dns_timeout,
+        ))?,
     })
 }
 
@@ -223,8 +225,8 @@ fn make_tracer_config(
     args: &TrippyConfig,
     target_addr: IpAddr,
     trace_identifier: u16,
-) -> anyhow::Result<TracerConfig> {
-    Ok(TracerConfig::new(
+) -> anyhow::Result<Config> {
+    Ok(Config::new(
         target_addr,
         args.protocol,
         args.max_rounds,

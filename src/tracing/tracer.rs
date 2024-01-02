@@ -6,8 +6,8 @@ use crate::tracing::probe::{
     ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{Sequence, TimeToLive, TraceId};
+use crate::tracing::{Config, Probe};
 use crate::tracing::{MultipathStrategy, PortDirection, TracerProtocol};
-use crate::tracing::{Probe, TracerConfig};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -46,13 +46,13 @@ pub enum CompletionReason {
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Tracer<F> {
-    config: TracerConfig,
+    config: Config,
     publish: F,
 }
 
 impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     #[instrument(skip_all)]
-    pub fn new(config: &TracerConfig, publish: F) -> Self {
+    pub fn new(config: &Config, publish: F) -> Self {
         tracing::debug!(?config);
         Self {
             config: *config,
@@ -284,7 +284,7 @@ mod state {
     use crate::tracing::probe::Extensions;
     use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
     use crate::tracing::{
-        IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus, TracerConfig,
+        Config, IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus,
         TracerProtocol,
     };
     use std::array::from_fn;
@@ -321,7 +321,7 @@ mod state {
     #[derive(Debug)]
     pub struct TracerState {
         /// Tracer configuration.
-        config: TracerConfig,
+        config: Config,
         /// The state of all `Probe` requests and responses.
         buffer: [Probe; BUFFER_SIZE as usize],
         /// An increasing sequence number for every `EchoRequest`.
@@ -348,7 +348,7 @@ mod state {
     }
 
     impl TracerState {
-        pub fn new(config: TracerConfig) -> Self {
+        pub fn new(config: Config) -> Self {
             Self {
                 config,
                 buffer: from_fn(|_| Probe::default()),
@@ -987,8 +987,8 @@ mod state {
             assert!(!state.in_round(Sequence(64491)));
         }
 
-        fn cfg(initial_sequence: Sequence) -> TracerConfig {
-            TracerConfig {
+        fn cfg(initial_sequence: Sequence) -> Config {
+            Config {
                 target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
                 protocol: TracerProtocol::Icmp,
                 trace_identifier: TraceId::default(),
