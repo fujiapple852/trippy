@@ -20,4 +20,8 @@ pub use probe::{
     Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
     ProbeStatus, UnknownExtension,
 };
-pub use tracer::{Tracer, TracerRound};
+pub use tracer::{CompletionReason, Tracer, TracerRound};
+pub use types::{
+    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
+    TypeOfService,
+};
