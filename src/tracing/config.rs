@@ -418,8 +418,155 @@ impl Default for ChannelConfig {
     }
 }
 
+/// Build a `Config`.
+#[derive(Debug)]
+pub struct ConfigBuilder {
+    config: Config,
+}
+
+impl ConfigBuilder {
+    /// Create a new `ConfigBuilder`.
+    #[must_use]
+    pub fn new(trace_identifier: TraceId, target_addr: IpAddr) -> Self {
+        Self {
+            config: Config {
+                target_addr,
+                trace_identifier,
+                ..Config::default()
+            },
+        }
+    }
+
+    /// Set the tracer protocol.
+    #[must_use]
+    pub fn protocol(self, protocol: TracerProtocol) -> Self {
+        Self {
+            config: Config {
+                protocol,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer maximum rounds.
+    #[must_use]
+    pub fn max_rounds(self, max_rounds: MaxRounds) -> Self {
+        Self {
+            config: Config {
+                max_rounds: Some(max_rounds),
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer first ttl.
+    #[must_use]
+    pub fn first_ttl(self, first_ttl: TimeToLive) -> Self {
+        Self {
+            config: Config {
+                first_ttl,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer max ttl.
+    #[must_use]
+    pub fn max_ttl(self, max_ttl: TimeToLive) -> Self {
+        Self {
+            config: Config {
+                max_ttl,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer grace duration.
+    #[must_use]
+    pub fn grace_duration(self, grace_duration: Duration) -> Self {
+        Self {
+            config: Config {
+                grace_duration,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer max inflight.
+    #[must_use]
+    pub fn max_inflight(self, max_inflight: MaxInflight) -> Self {
+        Self {
+            config: Config {
+                max_inflight,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer initial sequence.
+    #[must_use]
+    pub fn initial_sequence(self, initial_sequence: Sequence) -> Self {
+        Self {
+            config: Config {
+                initial_sequence,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer multipath strategy.
+    #[must_use]
+    pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
+        Self {
+            config: Config {
+                multipath_strategy,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer port direction.
+    #[must_use]
+    pub fn port_direction(self, port_direction: PortDirection) -> Self {
+        Self {
+            config: Config {
+                port_direction,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer minimum round duration.
+    #[must_use]
+    pub fn min_round_duration(self, min_round_duration: Duration) -> Self {
+        Self {
+            config: Config {
+                min_round_duration,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the tracer maximum round duration.
+    #[must_use]
+    pub fn max_round_duration(self, max_round_duration: Duration) -> Self {
+        Self {
+            config: Config {
+                max_round_duration,
+                ..self.config
+            },
+        }
+    }
+
+    /// Build the `Config` from this `ConfigBuilder`.
+    #[must_use]
+    pub fn build(self) -> Config {
+        self.config
+    }
+}
+
 /// Tracing algorithm configuration.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Config {
     pub target_addr: IpAddr,
     pub protocol: TracerProtocol,
@@ -552,5 +699,50 @@ mod tests {
         assert!(cfg.icmp_extensions);
         assert_eq!(Duration::from_millis(50), cfg.read_timeout);
         assert_eq!(Duration::from_millis(100), cfg.tcp_connect_timeout);
+    }
+
+    #[test]
+    fn test_config_builder_minimal() {
+        let cfg = ConfigBuilder::new(TraceId(0), TARGET_ADDR).build();
+        assert_eq!(TraceId(0), cfg.trace_identifier);
+        assert_eq!(TARGET_ADDR, cfg.target_addr);
+        assert_eq!(
+            Config {
+                trace_identifier: TraceId(0),
+                target_addr: TARGET_ADDR,
+                ..Default::default()
+            },
+            cfg
+        );
+    }
+
+    #[test]
+    fn test_config_builder_full() {
+        let cfg = ConfigBuilder::new(TraceId(0), TARGET_ADDR)
+            .protocol(TracerProtocol::Udp)
+            .max_rounds(MaxRounds(10))
+            .first_ttl(TimeToLive(2))
+            .max_ttl(TimeToLive(16))
+            .grace_duration(Duration::from_millis(100))
+            .max_inflight(MaxInflight(22))
+            .initial_sequence(Sequence(35000))
+            .multipath_strategy(MultipathStrategy::Paris)
+            .port_direction(PortDirection::FixedSrc(Port(33000)))
+            .min_round_duration(Duration::from_millis(500))
+            .max_round_duration(Duration::from_millis(1500))
+            .build();
+        assert_eq!(TraceId(0), cfg.trace_identifier);
+        assert_eq!(TARGET_ADDR, cfg.target_addr);
+        assert_eq!(TracerProtocol::Udp, cfg.protocol);
+        assert_eq!(Some(MaxRounds(10)), cfg.max_rounds);
+        assert_eq!(TimeToLive(2), cfg.first_ttl);
+        assert_eq!(TimeToLive(16), cfg.max_ttl);
+        assert_eq!(Duration::from_millis(100), cfg.grace_duration);
+        assert_eq!(MaxInflight(22), cfg.max_inflight);
+        assert_eq!(Sequence(35000), cfg.initial_sequence);
+        assert_eq!(MultipathStrategy::Paris, cfg.multipath_strategy);
+        assert_eq!(PortDirection::FixedSrc(Port(33000)), cfg.port_direction);
+        assert_eq!(Duration::from_millis(500), cfg.min_round_duration);
+        assert_eq!(Duration::from_millis(1500), cfg.max_round_duration);
     }
 }
