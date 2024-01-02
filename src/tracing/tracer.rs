@@ -7,7 +7,7 @@ use crate::tracing::probe::{
 };
 use crate::tracing::types::{Sequence, TimeToLive, TraceId};
 use crate::tracing::{Config, Probe};
-use crate::tracing::{MultipathStrategy, PortDirection, TracerProtocol};
+use crate::tracing::{MultipathStrategy, PortDirection, Protocol};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -93,11 +93,11 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         };
         if !st.target_found() && st.ttl() <= self.config.max_ttl && can_send_ttl {
             match self.config.protocol {
-                TracerProtocol::Icmp => {
+                Protocol::Icmp => {
                     network.send_probe(st.next_probe())?;
                 }
-                TracerProtocol::Udp => network.send_probe(st.next_probe())?,
-                TracerProtocol::Tcp => {
+                Protocol::Udp => network.send_probe(st.next_probe())?,
+                Protocol::Tcp => {
                     let mut probe = if st.round_has_capacity() {
                         st.next_probe()
                     } else {
@@ -284,8 +284,7 @@ mod state {
     use crate::tracing::probe::Extensions;
     use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
     use crate::tracing::{
-        Config, IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus,
-        TracerProtocol,
+        Config, IcmpPacketType, MultipathStrategy, PortDirection, Probe, ProbeStatus, Protocol,
     };
     use std::array::from_fn;
     use std::net::IpAddr;
@@ -476,9 +475,9 @@ mod state {
         /// `PortDirection`.
         fn probe_data(&self) -> (Port, Port, TraceId) {
             match self.config.protocol {
-                TracerProtocol::Icmp => self.probe_icmp_data(),
-                TracerProtocol::Udp => self.probe_udp_data(),
-                TracerProtocol::Tcp => self.probe_tcp_data(),
+                Protocol::Icmp => self.probe_icmp_data(),
+                Protocol::Udp => self.probe_udp_data(),
+                Protocol::Tcp => self.probe_tcp_data(),
             }
         }
 
@@ -990,7 +989,7 @@ mod state {
         fn cfg(initial_sequence: Sequence) -> Config {
             Config {
                 target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-                protocol: TracerProtocol::Icmp,
+                protocol: Protocol::Icmp,
                 trace_identifier: TraceId::default(),
                 max_rounds: None,
                 first_ttl: TimeToLive(1),

@@ -9,17 +9,17 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 
 pub mod defaults {
-    use crate::tracing::{MultipathStrategy, PrivilegeMode, TracerAddrFamily, TracerProtocol};
+    use crate::tracing::{AddrFamily, MultipathStrategy, PrivilegeMode, Protocol};
     use std::time::Duration;
 
     /// The default value for `unprivileged`.
     pub const DEFAULT_PRIVILEGE_MODE: PrivilegeMode = PrivilegeMode::Privileged;
 
     /// The default value for `protocol`.
-    pub const DEFAULT_STRATEGY_PROTOCOL: TracerProtocol = TracerProtocol::Icmp;
+    pub const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
 
     /// The default value for `addr-family`.
-    pub const DEFAULT_ADDRESS_FAMILY: TracerAddrFamily = TracerAddrFamily::Ipv4;
+    pub const DEFAULT_ADDRESS_FAMILY: AddrFamily = AddrFamily::Ipv4;
 
     /// The default value for `multipath-strategy`.
     pub const DEFAULT_STRATEGY_MULTIPATH: MultipathStrategy = MultipathStrategy::Classic;
@@ -94,14 +94,14 @@ impl Display for PrivilegeMode {
 
 /// The address family.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TracerAddrFamily {
+pub enum AddrFamily {
     /// Internet Protocol V4
     Ipv4,
     /// Internet Protocol V6
     Ipv6,
 }
 
-impl Display for TracerAddrFamily {
+impl Display for AddrFamily {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Ipv4 => write!(f, "v4"),
@@ -112,7 +112,7 @@ impl Display for TracerAddrFamily {
 
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TracerProtocol {
+pub enum Protocol {
     /// Internet Control Message Protocol
     Icmp,
     /// User Datagram Protocol
@@ -121,7 +121,7 @@ pub enum TracerProtocol {
     Tcp,
 }
 
-impl Display for TracerProtocol {
+impl Display for Protocol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Icmp => write!(f, "icmp"),
@@ -251,7 +251,7 @@ impl ChannelConfigBuilder {
 
     /// Set the channel protocol.
     #[must_use]
-    pub fn protocol(self, protocol: TracerProtocol) -> Self {
+    pub fn protocol(self, protocol: Protocol) -> Self {
         Self {
             config: ChannelConfig {
                 protocol,
@@ -356,7 +356,7 @@ impl ChannelConfigBuilder {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ChannelConfig {
     pub privilege_mode: PrivilegeMode,
-    pub protocol: TracerProtocol,
+    pub protocol: Protocol,
     pub source_addr: IpAddr,
     pub target_addr: IpAddr,
     pub packet_size: PacketSize,
@@ -373,7 +373,7 @@ impl ChannelConfig {
     #[must_use]
     pub fn new(
         privilege_mode: PrivilegeMode,
-        protocol: TracerProtocol,
+        protocol: Protocol,
         source_addr: IpAddr,
         target_addr: IpAddr,
         packet_size: u16,
@@ -439,7 +439,7 @@ impl ConfigBuilder {
 
     /// Set the tracer protocol.
     #[must_use]
-    pub fn protocol(self, protocol: TracerProtocol) -> Self {
+    pub fn protocol(self, protocol: Protocol) -> Self {
         Self {
             config: Config {
                 protocol,
@@ -569,7 +569,7 @@ impl ConfigBuilder {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Config {
     pub target_addr: IpAddr,
-    pub protocol: TracerProtocol,
+    pub protocol: Protocol,
     pub trace_identifier: TraceId,
     pub max_rounds: Option<MaxRounds>,
     pub first_ttl: TimeToLive,
@@ -587,7 +587,7 @@ impl Config {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         target_addr: IpAddr,
-        protocol: TracerProtocol,
+        protocol: Protocol,
         max_rounds: Option<usize>,
         trace_identifier: u16,
         first_ttl: u8,
@@ -678,7 +678,7 @@ mod tests {
     #[test]
     fn test_channel_config_builder_full() {
         let cfg = ChannelConfigBuilder::new(SOURCE_ADDR, TARGET_ADDR)
-            .protocol(TracerProtocol::Tcp)
+            .protocol(Protocol::Tcp)
             .privilege_mode(PrivilegeMode::Unprivileged)
             .multipath_strategy(MultipathStrategy::Dublin)
             .packet_size(PacketSize(128))
@@ -690,7 +690,7 @@ mod tests {
             .build();
         assert_eq!(SOURCE_ADDR, cfg.source_addr);
         assert_eq!(TARGET_ADDR, cfg.target_addr);
-        assert_eq!(TracerProtocol::Tcp, cfg.protocol);
+        assert_eq!(Protocol::Tcp, cfg.protocol);
         assert_eq!(PrivilegeMode::Unprivileged, cfg.privilege_mode);
         assert_eq!(MultipathStrategy::Dublin, cfg.multipath_strategy);
         assert_eq!(PacketSize(128), cfg.packet_size);
@@ -719,7 +719,7 @@ mod tests {
     #[test]
     fn test_config_builder_full() {
         let cfg = ConfigBuilder::new(TraceId(0), TARGET_ADDR)
-            .protocol(TracerProtocol::Udp)
+            .protocol(Protocol::Udp)
             .max_rounds(MaxRounds(10))
             .first_ttl(TimeToLive(2))
             .max_ttl(TimeToLive(16))
@@ -733,7 +733,7 @@ mod tests {
             .build();
         assert_eq!(TraceId(0), cfg.trace_identifier);
         assert_eq!(TARGET_ADDR, cfg.target_addr);
-        assert_eq!(TracerProtocol::Udp, cfg.protocol);
+        assert_eq!(Protocol::Udp, cfg.protocol);
         assert_eq!(Some(MaxRounds(10)), cfg.max_rounds);
         assert_eq!(TimeToLive(2), cfg.first_ttl);
         assert_eq!(TimeToLive(16), cfg.max_ttl);

@@ -16,7 +16,7 @@ use strum::VariantNames;
 use theme::TuiThemeItem;
 use trippy::dns::ResolveMethod;
 use trippy::tracing::{
-    defaults, MultipathStrategy, PortDirection, PrivilegeMode, TracerAddrFamily, TracerProtocol,
+    defaults, AddrFamily, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
 };
 
 mod binding;
@@ -68,12 +68,12 @@ pub enum ProtocolConfig {
     Tcp,
 }
 
-impl From<TracerProtocol> for ProtocolConfig {
-    fn from(value: TracerProtocol) -> Self {
+impl From<Protocol> for ProtocolConfig {
+    fn from(value: Protocol) -> Self {
         match value {
-            TracerProtocol::Icmp => Self::Icmp,
-            TracerProtocol::Udp => Self::Udp,
-            TracerProtocol::Tcp => Self::Tcp,
+            Protocol::Icmp => Self::Icmp,
+            Protocol::Udp => Self::Udp,
+            Protocol::Tcp => Self::Tcp,
         }
     }
 }
@@ -88,11 +88,11 @@ pub enum AddressFamilyConfig {
     Ipv6,
 }
 
-impl From<TracerAddrFamily> for AddressFamilyConfig {
-    fn from(value: TracerAddrFamily) -> Self {
+impl From<AddrFamily> for AddressFamilyConfig {
+    fn from(value: AddrFamily) -> Self {
         match value {
-            TracerAddrFamily::Ipv4 => Self::Ipv4,
-            TracerAddrFamily::Ipv6 => Self::Ipv6,
+            AddrFamily::Ipv4 => Self::Ipv4,
+            AddrFamily::Ipv6 => Self::Ipv6,
         }
     }
 }
@@ -241,8 +241,8 @@ pub enum LogSpanEvents {
 #[derive(Debug, Eq, PartialEq)]
 pub struct TrippyConfig {
     pub targets: Vec<String>,
-    pub protocol: TracerProtocol,
-    pub addr_family: TracerAddrFamily,
+    pub protocol: Protocol,
+    pub addr_family: AddrFamily,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub min_round_duration: Duration,
@@ -520,9 +520,9 @@ impl TrippyConfig {
         );
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
-            (false, false, false, ProtocolConfig::Udp) | (true, _, _, _) => TracerProtocol::Udp,
-            (false, false, false, ProtocolConfig::Tcp) | (_, true, _, _) => TracerProtocol::Tcp,
-            (false, false, false, ProtocolConfig::Icmp) | (_, _, true, _) => TracerProtocol::Icmp,
+            (false, false, false, ProtocolConfig::Udp) | (true, _, _, _) => Protocol::Udp,
+            (false, false, false, ProtocolConfig::Tcp) | (_, true, _, _) => Protocol::Tcp,
+            (false, false, false, ProtocolConfig::Icmp) | (_, _, true, _) => Protocol::Icmp,
         };
         let read_timeout = humantime::parse_duration(&read_timeout)?;
         let min_round_duration = humantime::parse_duration(&min_round_duration)?;
@@ -537,35 +537,29 @@ impl TrippyConfig {
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
             (false, false, None) => defaults::DEFAULT_ADDRESS_FAMILY,
-            (false, false, Some(AddressFamilyConfig::Ipv4)) | (true, _, _) => {
-                TracerAddrFamily::Ipv4
-            }
-            (false, false, Some(AddressFamilyConfig::Ipv6)) | (_, true, _) => {
-                TracerAddrFamily::Ipv6
-            }
+            (false, false, Some(AddressFamilyConfig::Ipv4)) | (true, _, _) => AddrFamily::Ipv4,
+            (false, false, Some(AddressFamilyConfig::Ipv6)) | (_, true, _) => AddrFamily::Ipv6,
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
             (MultipathStrategyConfig::Paris, _) => Ok(MultipathStrategy::Paris),
-            (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv4) => {
-                Ok(MultipathStrategy::Dublin)
-            }
-            (MultipathStrategyConfig::Dublin, TracerAddrFamily::Ipv6) => Err(anyhow!(
+            (MultipathStrategyConfig::Dublin, AddrFamily::Ipv4) => Ok(MultipathStrategy::Dublin),
+            (MultipathStrategyConfig::Dublin, AddrFamily::Ipv6) => Err(anyhow!(
                 "Dublin multipath strategy not implemented for IPv6 yet!"
             )),
         }?;
         let port_direction = match (protocol, source_port, target_port, multipath_strategy_cfg) {
-            (TracerProtocol::Icmp, _, _, _) => PortDirection::None,
-            (TracerProtocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),
-            (TracerProtocol::Udp, Some(src), None, _) => {
+            (Protocol::Icmp, _, _, _) => PortDirection::None,
+            (Protocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),
+            (Protocol::Udp, Some(src), None, _) => {
                 validate_source_port(src)?;
                 PortDirection::new_fixed_src(src)
             }
-            (TracerProtocol::Tcp, None, None, _) => PortDirection::new_fixed_dest(80),
-            (TracerProtocol::Tcp, Some(src), None, _) => PortDirection::new_fixed_src(src),
+            (Protocol::Tcp, None, None, _) => PortDirection::new_fixed_dest(80),
+            (Protocol::Tcp, Some(src), None, _) => PortDirection::new_fixed_src(src),
             (_, None, Some(dest), _) => PortDirection::new_fixed_dest(dest),
             (
-                TracerProtocol::Udp,
+                Protocol::Udp,
                 Some(src),
                 Some(dest),
                 MultipathStrategyConfig::Dublin | MultipathStrategyConfig::Paris,
@@ -833,7 +827,7 @@ fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow:
 /// We only allow multiple targets to be specified for the Tui and for `Icmp` tracing.
 fn validate_multi(
     mode: Mode,
-    protocol: TracerProtocol,
+    protocol: Protocol,
     targets: &[String],
     dns_resolve_all: bool,
 ) -> anyhow::Result<()> {
@@ -845,11 +839,9 @@ fn validate_multi(
                 "only a single target may be specified for this mode"
             ))
         }
-        (_, TracerProtocol::Tcp | TracerProtocol::Udp) if targets.len() > 1 || dns_resolve_all => {
-            Err(anyhow!(
-                "only a single target may be specified for TCP and UDP tracing"
-            ))
-        }
+        (_, Protocol::Tcp | Protocol::Udp) if targets.len() > 1 || dns_resolve_all => Err(anyhow!(
+            "only a single target may be specified for TCP and UDP tracing"
+        )),
         _ => Ok(()),
     }
 }
