@@ -35,7 +35,7 @@ impl<'a> TracerRound<'a> {
 }
 
 /// Indicates what triggered the completion of the tracing round.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CompletionReason {
     /// The round ended because the target was found.
     TargetFound,
