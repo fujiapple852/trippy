@@ -232,7 +232,7 @@ impl PortDirection {
 
 /// Tracer network channel configuration.
 #[derive(Debug, Clone)]
-pub struct TracerChannelConfig {
+pub struct ChannelConfig {
     pub privilege_mode: PrivilegeMode,
     pub protocol: TracerProtocol,
     pub source_addr: IpAddr,
@@ -246,7 +246,7 @@ pub struct TracerChannelConfig {
     pub tcp_connect_timeout: Duration,
 }
 
-impl TracerChannelConfig {
+impl ChannelConfig {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn new(
@@ -278,7 +278,7 @@ impl TracerChannelConfig {
     }
 }
 
-impl Default for TracerChannelConfig {
+impl Default for ChannelConfig {
     fn default() -> Self {
         Self {
             privilege_mode: defaults::DEFAULT_PRIVILEGE_MODE,

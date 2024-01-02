@@ -34,8 +34,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{Config, DnsResolver, Resolver};
 use trippy::tracing::{
-    MultipathStrategy, PortDirection, TracerAddrFamily, TracerChannelConfig, TracerConfig,
-    TracerProtocol,
+    ChannelConfig, MultipathStrategy, PortDirection, TracerAddrFamily, TracerConfig, TracerProtocol,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -247,8 +246,8 @@ fn make_channel_config(
     args: &TrippyConfig,
     source_addr: IpAddr,
     target_addr: IpAddr,
-) -> TracerChannelConfig {
-    TracerChannelConfig::new(
+) -> ChannelConfig {
+    ChannelConfig::new(
         args.privilege_mode,
         args.protocol,
         source_addr,
