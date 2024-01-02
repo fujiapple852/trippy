@@ -1,8 +1,8 @@
 use crate::config::binding::TuiKeyBinding;
 use crate::config::theme::TuiColor;
 use crate::config::{
-    AddressFamily, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
-    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, Protocol,
+    AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig,
 };
 use anyhow::Context;
 use etcetera::BaseStrategy;
@@ -122,8 +122,8 @@ impl Default for ConfigTrippy {
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigStrategy {
-    pub protocol: Option<Protocol>,
-    pub addr_family: Option<AddressFamily>,
+    pub protocol: Option<ProtocolConfig>,
+    pub addr_family: Option<AddressFamilyConfig>,
     pub target_port: Option<u16>,
     pub source_port: Option<u16>,
     pub source_address: Option<String>,
@@ -146,8 +146,8 @@ pub struct ConfigStrategy {
 impl Default for ConfigStrategy {
     fn default() -> Self {
         Self {
-            protocol: Some(Protocol::from(defaults::DEFAULT_STRATEGY_PROTOCOL)),
-            addr_family: Some(AddressFamily::from(defaults::DEFAULT_ADDRESS_FAMILY)),
+            protocol: Some(ProtocolConfig::from(defaults::DEFAULT_STRATEGY_PROTOCOL)),
+            addr_family: Some(AddressFamilyConfig::from(defaults::DEFAULT_ADDRESS_FAMILY)),
             target_port: None,
             source_port: None,
             source_address: None,

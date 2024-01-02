@@ -2,7 +2,7 @@ use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
     AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
-    LogSpanEvents, Mode, MultipathStrategyConfig, Protocol, TuiColor, TuiKeyBinding,
+    LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
@@ -31,7 +31,7 @@ pub struct Args {
 
     /// Tracing protocol [default: icmp]
     #[arg(value_enum, short = 'p', long)]
-    pub protocol: Option<Protocol>,
+    pub protocol: Option<ProtocolConfig>,
 
     /// Trace using the UDP protocol
     #[arg(
