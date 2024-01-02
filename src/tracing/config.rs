@@ -169,7 +169,6 @@ impl PortDirection {
 pub struct TracerChannelConfig {
     pub privilege_mode: PrivilegeMode,
     pub protocol: TracerProtocol,
-    pub addr_family: TracerAddrFamily,
     pub source_addr: IpAddr,
     pub target_addr: IpAddr,
     pub packet_size: PacketSize,
@@ -187,7 +186,6 @@ impl TracerChannelConfig {
     pub fn new(
         privilege_mode: PrivilegeMode,
         protocol: TracerProtocol,
-        addr_family: TracerAddrFamily,
         source_addr: IpAddr,
         target_addr: IpAddr,
         packet_size: u16,
@@ -201,7 +199,6 @@ impl TracerChannelConfig {
         Self {
             privilege_mode,
             protocol,
-            addr_family,
             source_addr,
             target_addr,
             packet_size: PacketSize(packet_size),
@@ -229,11 +226,8 @@ pub struct TracerConfig {
     pub initial_sequence: Sequence,
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
-    pub read_timeout: Duration,
     pub min_round_duration: Duration,
     pub max_round_duration: Duration,
-    pub packet_size: PacketSize,
-    pub payload_pattern: PayloadPattern,
 }
 
 impl TracerConfig {
@@ -250,11 +244,8 @@ impl TracerConfig {
         initial_sequence: u16,
         multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
-        read_timeout: Duration,
         min_round_duration: Duration,
         max_round_duration: Duration,
-        packet_size: u16,
-        payload_pattern: u8,
     ) -> TraceResult<Self> {
         if first_ttl > MAX_TTL {
             return Err(TracerError::BadConfig(format!(
@@ -283,11 +274,8 @@ impl TracerConfig {
             initial_sequence: Sequence(initial_sequence),
             multipath_strategy,
             port_direction,
-            read_timeout,
             min_round_duration,
             max_round_duration,
-            packet_size: PacketSize(packet_size),
-            payload_pattern: PayloadPattern(payload_pattern),
         })
     }
 }
