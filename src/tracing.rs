@@ -1,3 +1,4 @@
+mod builder;
 mod config;
 mod constants;
 mod error;
@@ -9,6 +10,7 @@ mod types;
 /// Packet wire formats.
 pub mod packet;
 
+pub use builder::Builder;
 pub use config::{
     defaults, AddrFamily, ChannelConfig, ChannelConfigBuilder, Config, ConfigBuilder,
     IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
