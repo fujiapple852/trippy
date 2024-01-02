@@ -711,7 +711,7 @@ mod state {
     mod tests {
         use super::*;
         use crate::tracing::probe::IcmpPacketType;
-        use crate::tracing::types::{MaxInflight, PacketSize, PayloadPattern};
+        use crate::tracing::types::MaxInflight;
         use crate::tracing::ProbeStatus;
         use rand::Rng;
         use std::net::{IpAddr, Ipv4Addr};
@@ -1000,11 +1000,8 @@ mod state {
                 initial_sequence,
                 multipath_strategy: MultipathStrategy::Classic,
                 port_direction: PortDirection::None,
-                read_timeout: Duration::default(),
                 min_round_duration: Duration::default(),
                 max_round_duration: Duration::default(),
-                packet_size: PacketSize::default(),
-                payload_pattern: PayloadPattern::default(),
             }
         }
     }

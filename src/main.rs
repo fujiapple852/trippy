@@ -237,11 +237,8 @@ fn make_tracer_config(
         args.initial_sequence,
         args.multipath_strategy,
         args.port_direction,
-        args.read_timeout,
         args.min_round_duration,
         args.max_round_duration,
-        args.packet_size,
-        args.payload_pattern,
     )?)
 }
 
@@ -254,7 +251,6 @@ fn make_channel_config(
     TracerChannelConfig::new(
         args.privilege_mode,
         args.protocol,
-        args.addr_family,
         source_addr,
         target_addr,
         args.packet_size,
