@@ -59,7 +59,7 @@ pub enum Mode {
 /// The tracing protocol.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum Protocol {
+pub enum ProtocolConfig {
     /// Internet Control Message Protocol
     Icmp,
     /// User Datagram Protocol
@@ -68,7 +68,7 @@ pub enum Protocol {
     Tcp,
 }
 
-impl From<TracerProtocol> for Protocol {
+impl From<TracerProtocol> for ProtocolConfig {
     fn from(value: TracerProtocol) -> Self {
         match value {
             TracerProtocol::Icmp => Self::Icmp,
@@ -81,14 +81,14 @@ impl From<TracerProtocol> for Protocol {
 /// The address family.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum AddressFamily {
+pub enum AddressFamilyConfig {
     /// Internet Protocol V4
     Ipv4,
     /// Internet Protocol V6
     Ipv6,
 }
 
-impl From<TracerAddrFamily> for AddressFamily {
+impl From<TracerAddrFamily> for AddressFamilyConfig {
     fn from(value: TracerAddrFamily) -> Self {
         match value {
             TracerAddrFamily::Ipv4 => Self::Ipv4,
@@ -371,7 +371,7 @@ impl TrippyConfig {
         let protocol = cfg_layer(
             args.protocol,
             cfg_file_strategy.protocol,
-            Protocol::from(defaults::DEFAULT_STRATEGY_PROTOCOL),
+            ProtocolConfig::from(defaults::DEFAULT_STRATEGY_PROTOCOL),
         );
         let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
         let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
@@ -520,9 +520,9 @@ impl TrippyConfig {
         );
         let geoip_mmdb_file = cfg_layer_opt(args.geoip_mmdb_file, cfg_file_tui.geoip_mmdb_file);
         let protocol = match (args.udp, args.tcp, args.icmp, protocol) {
-            (false, false, false, Protocol::Udp) | (true, _, _, _) => TracerProtocol::Udp,
-            (false, false, false, Protocol::Tcp) | (_, true, _, _) => TracerProtocol::Tcp,
-            (false, false, false, Protocol::Icmp) | (_, _, true, _) => TracerProtocol::Icmp,
+            (false, false, false, ProtocolConfig::Udp) | (true, _, _, _) => TracerProtocol::Udp,
+            (false, false, false, ProtocolConfig::Tcp) | (_, true, _, _) => TracerProtocol::Tcp,
+            (false, false, false, ProtocolConfig::Icmp) | (_, _, true, _) => TracerProtocol::Icmp,
         };
         let read_timeout = humantime::parse_duration(&read_timeout)?;
         let min_round_duration = humantime::parse_duration(&min_round_duration)?;
@@ -537,8 +537,12 @@ impl TrippyConfig {
             .transpose()?;
         let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
             (false, false, None) => defaults::DEFAULT_ADDRESS_FAMILY,
-            (false, false, Some(AddressFamily::Ipv4)) | (true, _, _) => TracerAddrFamily::Ipv4,
-            (false, false, Some(AddressFamily::Ipv6)) | (_, true, _) => TracerAddrFamily::Ipv6,
+            (false, false, Some(AddressFamilyConfig::Ipv4)) | (true, _, _) => {
+                TracerAddrFamily::Ipv4
+            }
+            (false, false, Some(AddressFamilyConfig::Ipv6)) | (_, true, _) => {
+                TracerAddrFamily::Ipv6
+            }
         };
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
