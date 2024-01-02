@@ -45,6 +45,7 @@ jobs:
             rust: stable
     steps:
       - uses: actions/checkout@v2
+      - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
