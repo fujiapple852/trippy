@@ -230,8 +230,130 @@ impl PortDirection {
     }
 }
 
+/// Build a `ChannelConfig`.
+#[derive(Debug)]
+pub struct ChannelConfigBuilder {
+    config: ChannelConfig,
+}
+
+impl ChannelConfigBuilder {
+    /// Create a new `ChannelConfigBuilder` between a source and target.
+    #[must_use]
+    pub fn new(source_addr: IpAddr, target_addr: IpAddr) -> Self {
+        Self {
+            config: ChannelConfig {
+                source_addr,
+                target_addr,
+                ..ChannelConfig::default()
+            },
+        }
+    }
+
+    /// Set the channel protocol.
+    #[must_use]
+    pub fn protocol(self, protocol: TracerProtocol) -> Self {
+        Self {
+            config: ChannelConfig {
+                protocol,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel privilege mode.
+    #[must_use]
+    pub fn privilege_mode(self, privilege_mode: PrivilegeMode) -> Self {
+        Self {
+            config: ChannelConfig {
+                privilege_mode,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel multipath strategy.
+    #[must_use]
+    pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
+        Self {
+            config: ChannelConfig {
+                multipath_strategy,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel packet size.
+    #[must_use]
+    pub fn packet_size(self, packet_size: PacketSize) -> Self {
+        Self {
+            config: ChannelConfig {
+                packet_size,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel payload pattern.
+    #[must_use]
+    pub fn payload_pattern(self, payload_pattern: PayloadPattern) -> Self {
+        Self {
+            config: ChannelConfig {
+                payload_pattern,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel type of service.
+    #[must_use]
+    pub fn tos(self, tos: TypeOfService) -> Self {
+        Self {
+            config: ChannelConfig { tos, ..self.config },
+        }
+    }
+
+    /// Set the channel ICMP extensions mode.
+    #[must_use]
+    pub fn icmp_extensions(self, icmp_extensions: bool) -> Self {
+        Self {
+            config: ChannelConfig {
+                icmp_extensions,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel read timeout.
+    #[must_use]
+    pub fn read_timeout(self, read_timeout: Duration) -> Self {
+        Self {
+            config: ChannelConfig {
+                read_timeout,
+                ..self.config
+            },
+        }
+    }
+
+    /// Set the channel TCP connect timeout.
+    #[must_use]
+    pub fn tcp_connect_timeout(self, tcp_connect_timeout: Duration) -> Self {
+        Self {
+            config: ChannelConfig {
+                tcp_connect_timeout,
+                ..self.config
+            },
+        }
+    }
+
+    /// Build the `ChannelConfig` from this `ChannelConfigBuilder`.
+    #[must_use]
+    pub fn build(self) -> ChannelConfig {
+        self.config
+    }
+}
+
 /// Tracer network channel configuration.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ChannelConfig {
     pub privilege_mode: PrivilegeMode,
     pub protocol: TracerProtocol,
@@ -381,5 +503,54 @@ impl Default for Config {
             min_round_duration: defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
             max_round_duration: defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SOURCE_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1));
+    const TARGET_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(2, 2, 2, 2));
+
+    #[test]
+    fn test_channel_config_builder_minimal() {
+        let cfg = ChannelConfigBuilder::new(SOURCE_ADDR, TARGET_ADDR).build();
+        assert_eq!(SOURCE_ADDR, cfg.source_addr);
+        assert_eq!(TARGET_ADDR, cfg.target_addr);
+        assert_eq!(
+            ChannelConfig {
+                source_addr: SOURCE_ADDR,
+                target_addr: TARGET_ADDR,
+                ..Default::default()
+            },
+            cfg
+        );
+    }
+
+    #[test]
+    fn test_channel_config_builder_full() {
+        let cfg = ChannelConfigBuilder::new(SOURCE_ADDR, TARGET_ADDR)
+            .protocol(TracerProtocol::Tcp)
+            .privilege_mode(PrivilegeMode::Unprivileged)
+            .multipath_strategy(MultipathStrategy::Dublin)
+            .packet_size(PacketSize(128))
+            .payload_pattern(PayloadPattern(0xff))
+            .tos(TypeOfService(0x1a))
+            .icmp_extensions(true)
+            .read_timeout(Duration::from_millis(50))
+            .tcp_connect_timeout(Duration::from_millis(100))
+            .build();
+        assert_eq!(SOURCE_ADDR, cfg.source_addr);
+        assert_eq!(TARGET_ADDR, cfg.target_addr);
+        assert_eq!(TracerProtocol::Tcp, cfg.protocol);
+        assert_eq!(PrivilegeMode::Unprivileged, cfg.privilege_mode);
+        assert_eq!(MultipathStrategy::Dublin, cfg.multipath_strategy);
+        assert_eq!(PacketSize(128), cfg.packet_size);
+        assert_eq!(PayloadPattern(0xff), cfg.payload_pattern);
+        assert_eq!(TypeOfService(0x1a), cfg.tos);
+        assert!(cfg.icmp_extensions);
+        assert_eq!(Duration::from_millis(50), cfg.read_timeout);
+        assert_eq!(Duration::from_millis(100), cfg.tcp_connect_timeout);
     }
 }
