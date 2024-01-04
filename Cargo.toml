@@ -40,7 +40,7 @@ ratatui = "0.25.0"
 crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
 chrono = { version = "0.4.31", default-features = false, features = [ "clock" ] }
 itertools = "0.12.0"
-serde = { version = "1.0.193", default-features = false }
+serde = { version = "1.0.194", default-features = false }
 serde_json = { version = "1.0.109", default-features = false }
 comfy-table = { version = "7.1.0", default-features = false }
 strum = { version = "0.25.0", default-features = false, features = [ "std", "derive" ] }
