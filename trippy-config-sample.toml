@@ -25,6 +25,7 @@
 # Allowed values are:
 #   tui         - Display interactive Tui [default]
 #   stream      - Display a continuous stream of tracing data
+#   event       - Display a continuous stream of tracing events
 #   pretty      - Generate an pretty text table report for N cycles
 #   markdown    - Generate a markdown text table report for N cycles
 #   csv         - Generate a CSV report for N cycles

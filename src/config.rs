@@ -39,8 +39,10 @@ pub use theme::{TuiColor, TuiTheme};
 pub enum Mode {
     /// Display interactive TUI.
     Tui,
-    /// Display a continuous stream of tracing data
+    /// Display a continuous stream of tracing data.
     Stream,
+    /// Display a continuous stream of tracing events.
+    Event,
     /// Generate an pretty text table report for N cycles.
     Pretty,
     /// Generate a markdown text table report for N cycles.
@@ -588,7 +590,7 @@ impl TrippyConfig {
         };
         let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
-            Mode::Stream | Mode::Tui => None,
+            Mode::Stream | Mode::Event | Mode::Tui => None,
             Mode::Pretty
             | Mode::Markdown
             | Mode::Csv

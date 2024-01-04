@@ -38,7 +38,7 @@ humantime = "2.1.0"
 parking_lot = "0.12.1"
 ratatui = "0.25.0"
 crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
-chrono = { version = "0.4.31", default-features = false, features = [ "clock" ] }
+chrono = { version = "0.4.31", default-features = false, features = [ "clock", "serde" ] }
 itertools = "0.12.0"
 serde = { version = "1.0.194", default-features = false }
 serde_json = { version = "1.0.109", default-features = false }
@@ -52,6 +52,7 @@ tracing-subscriber = { version = "0.3.18", default-features = false, features = 
 tracing-chrome = "0.7.1"
 petgraph = "0.6.4"
 csv = "1.3.0"
+uuid = { version = "1.6.1", features = ["v7", "serde"] }
 
 # Library dependencies (Linux)
 [target.'cfg(target_os = "linux")'.dependencies]

@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 pub mod csv;
 pub mod dot;
+pub mod event;
 pub mod flows;
 pub mod json;
 pub mod silent;
