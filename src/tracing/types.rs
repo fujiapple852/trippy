@@ -1,12 +1,13 @@
 use derive_more::{Add, AddAssign, Rem, Sub};
+use std::num::NonZeroUsize;
 
 /// `Round` newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, AddAssign)]
 pub struct Round(pub usize);
 
 /// `MaxRound` newtype.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd)]
-pub struct MaxRounds(pub usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
+pub struct MaxRounds(pub NonZeroUsize);
 
 /// `TimeToLive` (ttl) newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, Add, Sub, AddAssign)]

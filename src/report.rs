@@ -2,8 +2,6 @@ use crate::backend::trace::Trace;
 use anyhow::anyhow;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use std::thread::sleep;
-use std::time::Duration;
 
 pub mod csv;
 pub mod dot;
@@ -24,7 +22,6 @@ fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyh
         if let Some(err) = trace.error() {
             return Err(anyhow!("error: {}", err));
         }
-        sleep(Duration::from_millis(100));
     }
     Ok(trace)
 }

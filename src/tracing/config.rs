@@ -6,6 +6,7 @@ use crate::tracing::types::{
 };
 use std::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
+use std::num::NonZeroUsize;
 use std::time::Duration;
 
 pub mod defaults {
@@ -645,11 +646,20 @@ impl Config {
                 "initial_sequence ({initial_sequence}) > {MAX_SEQUENCE}"
             )));
         }
+        let max_rounds = match max_rounds {
+            Some(max_rounds) if max_rounds > 0 => NonZeroUsize::new(max_rounds).map(MaxRounds),
+            Some(_) => {
+                return Err(TracerError::BadConfig(String::from(
+                    "max_rounds must be greater than zero",
+                )));
+            }
+            None => None,
+        };
         Ok(Self {
             target_addr,
             protocol,
             trace_identifier: TraceId(trace_identifier),
-            max_rounds: max_rounds.map(MaxRounds),
+            max_rounds,
             first_ttl: TimeToLive(first_ttl),
             max_ttl: TimeToLive(max_ttl),
             grace_duration,
@@ -686,6 +696,7 @@ impl Default for Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::num::NonZeroUsize;
 
     const SOURCE_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1));
     const TARGET_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(2, 2, 2, 2));
@@ -750,7 +761,7 @@ mod tests {
     fn test_config_builder_full() {
         let cfg = ConfigBuilder::new(TraceId(0), TARGET_ADDR)
             .protocol(Protocol::Udp)
-            .max_rounds(MaxRounds(10))
+            .max_rounds(MaxRounds(NonZeroUsize::new(10).unwrap()))
             .first_ttl(TimeToLive(2))
             .max_ttl(TimeToLive(16))
             .grace_duration(Duration::from_millis(100))
@@ -764,7 +775,10 @@ mod tests {
         assert_eq!(TraceId(0), cfg.trace_identifier);
         assert_eq!(TARGET_ADDR, cfg.target_addr);
         assert_eq!(Protocol::Udp, cfg.protocol);
-        assert_eq!(Some(MaxRounds(10)), cfg.max_rounds);
+        assert_eq!(
+            Some(MaxRounds(NonZeroUsize::new(10).unwrap())),
+            cfg.max_rounds
+        );
         assert_eq!(TimeToLive(2), cfg.first_ttl);
         assert_eq!(TimeToLive(16), cfg.max_ttl);
         assert_eq!(Duration::from_millis(100), cfg.grace_duration);
