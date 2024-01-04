@@ -113,7 +113,7 @@ pub struct SocketImpl {
     bytes_read: u32,
 }
 
-#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_wrap, clippy::redundant_closure_call)]
 impl SocketImpl {
     fn startup() -> IoResult<()> {
         let mut wsa_data = Self::new_wsa_data();
@@ -293,6 +293,7 @@ impl SocketImpl {
     }
 }
 
+#[allow(clippy::redundant_closure_call)]
 impl Drop for SocketImpl {
     fn drop(&mut self) {
         self.close().unwrap_or_default();
@@ -302,7 +303,7 @@ impl Drop for SocketImpl {
     }
 }
 
-#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_wrap, clippy::redundant_closure_call)]
 impl Socket for SocketImpl {
     #[instrument]
     fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
@@ -599,7 +600,7 @@ impl Socket for SocketImpl {
 /// NOTE under Windows, we cannot use a bind connect/getsockname as "If the socket
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
 #[instrument]
 fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
@@ -840,7 +841,7 @@ mod adapter {
             Self {
                 next,
                 // tie the lifetime of this iterator to the lifetime of the `Adapters`
-                _data: PhantomData::default(),
+                _data: PhantomData,
             }
         }
     }
