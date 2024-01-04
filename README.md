@@ -132,7 +132,7 @@ winget install trippy
 
 ### Scoop (Windows)
 
-[![Scoop package](https://repology.org/badge/version-for-repo/scoop/trippy.svg)](https://github.com/ScoopInstaller/Main/blob/master/bucket/trippy.json)
+[![Scoop package](https://img.shields.io/scoop/v/trippy?style=flat&labelColor=5c5c5c&color=%234dc71f)](https://github.com/ScoopInstaller/Main/blob/master/bucket/trippy.json)
 
 ```shell
 scoop install trippy
