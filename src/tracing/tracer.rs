@@ -413,7 +413,7 @@ mod state {
         pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
             match max_rounds {
                 None => false,
-                Some(max_rounds) => self.round.0 > max_rounds.0,
+                Some(max_rounds) => self.round.0 > max_rounds.0.get() - 1,
             }
         }
 
