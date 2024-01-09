@@ -31,6 +31,12 @@ pub fn udp_ipv4_checksum(data: &[u8], src_addr: Ipv4Addr, dest_addr: Ipv4Addr) -
     ipv4_checksum(data, 3, src_addr, dest_addr, IpProtocol::Udp)
 }
 
+/// Calculate the checksum for an `IPv4` `TCP` packet.
+#[must_use]
+pub fn tcp_ipv4_checksum(data: &[u8], src_addr: Ipv4Addr, dest_addr: Ipv4Addr) -> u16 {
+    ipv4_checksum(data, 8, src_addr, dest_addr, IpProtocol::Tcp)
+}
+
 /// Calculate the checksum for an `IPv6` `UDP` packet.
 #[must_use]
 pub fn udp_ipv6_checksum(data: &[u8], src_addr: Ipv6Addr, dest_addr: Ipv6Addr) -> u16 {
@@ -178,5 +184,18 @@ mod tests {
     fn test_ipv4_header_checksum() {
         let bytes = hex!("45 00 0f fc 38 c0 00 00 40 01 2e 3b 0a 00 00 02 0a 00 00 01");
         assert_eq!(0x1e3f, ipv4_header_checksum(&bytes));
+    }
+
+    #[test]
+    fn test_tcp_ipv4_checksum() {
+        let bytes = hex!("00 50 80 ea 00 00 00 00 95 9d 2e c7 50 12 ff ff 55 cc 00 00");
+        assert_eq!(
+            0x55cc,
+            tcp_ipv4_checksum(
+                &bytes,
+                Ipv4Addr::new(10, 0, 0, 103),
+                Ipv4Addr::new(10, 0, 0, 1)
+            )
+        );
     }
 }
