@@ -16,6 +16,9 @@ pub struct Simulation {
     pub icmp_identifier: u16,
     pub packet_size: Option<u16>,
     pub payload_pattern: Option<u8>,
+    pub min_round_duration: Option<u64>,
+    pub max_round_duration: Option<u64>,
+    pub grace_duration: Option<u64>,
     pub hops: Vec<Hop>,
 }
 
