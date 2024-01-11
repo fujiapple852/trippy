@@ -6,10 +6,7 @@ use std::thread;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
-use trippy::tracing::{
-    Builder, CompletionReason, MaxRounds, MultipathStrategy, PortDirection, ProbeStatus, Protocol,
-    TimeToLive, TraceId, TracerRound,
-};
+use trippy::tracing::{Builder, CompletionReason, defaults, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern, PortDirection, ProbeStatus, Protocol, TimeToLive, TraceId, TracerRound};
 
 // The length of time to wait after the completion of the tracing before
 // cancelling the network simulator.  This is needed to ensure that all
@@ -48,6 +45,8 @@ impl Tracer {
             .protocol(Protocol::from(self.sim.protocol))
             .port_direction(PortDirection::from(self.sim.port_direction))
             .multipath_strategy(MultipathStrategy::from(self.sim.multipath_strategy))
+            .packet_size(PacketSize(self.sim.packet_size.unwrap_or(defaults::DEFAULT_STRATEGY_PACKET_SIZE)))
+            .payload_pattern(PayloadPattern(self.sim.payload_pattern.unwrap_or(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN)))
             .max_rounds(MaxRounds(NonZeroUsize::MIN))
             .start()
             .map_err(anyhow::Error::from);
