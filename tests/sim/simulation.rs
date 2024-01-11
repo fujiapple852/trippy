@@ -14,6 +14,8 @@ pub struct Simulation {
     pub multipath_strategy: MultipathStrategy,
     #[serde(default)]
     pub icmp_identifier: u16,
+    pub packet_size: Option<u16>,
+    pub payload_pattern: Option<u8>,
     pub hops: Vec<Hop>,
 }
 
