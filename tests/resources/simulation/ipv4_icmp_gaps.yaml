@@ -1,6 +1,7 @@
-name: Simple example
+name: IPv4/ICMP with 9 hops, 2 of which do not respond
 target: 10.0.0.109
-icmp_identifier: 314
+protocol: Icmp
+icmp_identifier: 3
 hops:
   - ttl: 1
     resp: !SingleHost
@@ -29,7 +30,7 @@ hops:
       addr: 10.0.0.107
       rtt_ms: 20
   - ttl: 8
-    resp: !NoResponse
+    resp: NoResponse
   - ttl: 9
     resp: !SingleHost
       addr: 10.0.0.109
