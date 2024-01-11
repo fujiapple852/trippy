@@ -45,12 +45,58 @@ jobs:
             rust: stable
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+      - run: cargo test --target ${{ matrix.target }}
+
+  sim-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build:
+          - linux-stable
+          - macos-stable
+          - windows-stable
+        include:
+          - build: linux-stable
+            os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            rust: stable
+          - build: macos-stable
+            os: macos-latest
+            target: x86_64-apple-darwin
+            rust: stable
+          - build: windows-stable
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust: stable
+    steps:
+      - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
-      - run: cargo test --workspace --all-features --target ${{ matrix.target }}
+      - name: Copy wintun.dll to current dir
+        if: startsWith(matrix.build, 'windows')
+        shell: bash
+        run: |
+          cp "tests/resources/wintun.dll" "."
+      - name: Allow ICMPv4 and ICMPv6 in Windows defender firewall
+        if: startsWith(matrix.build, 'windows')
+        shell: pwsh
+        run: |
+          New-NetFirewallRule -DisplayName "ICMPv4 Trippy Allow" -Name ICMPv4_TRIPPY_ALLOW -Protocol ICMPv4 -Action Allow
+          New-NetFirewallRule -DisplayName "ICMPv6 Trippy Allow" -Name ICMPv6_TRIPPY_ALLOW -Protocol ICMPv6 -Action Allow
+      - name: Run simulation test on ${{ matrix.build }}
+        if: ${{ ! startsWith(matrix.build, 'windows') }}
+        run: sudo -E env "PATH=$PATH" cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+
   fmt:
     runs-on: ubuntu-22.04
     steps:
