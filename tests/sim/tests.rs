@@ -17,7 +17,7 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
     RUNTIME.get_or_init(|| {
         tracing_subscriber::fmt()
             .with_span_events(FmtSpan::NONE)
-            .with_env_filter("trippy=info,sim=debug")
+            .with_env_filter("trippy=debug,sim=debug")
             .init();
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -40,6 +40,7 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_icmp_ooo.yaml"))]
 #[test_case(sim!("ipv4_icmp_min.yaml"))]
 #[test_case(sim!("ipv4_icmp_pattern.yaml"))]
+#[test_case(sim!("ipv4_icmp_quick.yaml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_src.yaml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_dest.yaml"))]
 #[test_case(sim!("ipv4_udp_paris_fixed_both.yaml"))]
