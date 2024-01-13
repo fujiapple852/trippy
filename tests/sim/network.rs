@@ -4,6 +4,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, info};
 use trippy::tracing::packet::checksum::{
@@ -24,6 +25,7 @@ pub async fn run(
     sim: Arc<Simulation>,
     token: CancellationToken,
 ) -> anyhow::Result<()> {
+    let mut handles: Vec<JoinHandle<()>> = vec![];
     loop {
         let mut buf = [0_u8; 4096];
         let bytes_read = {
@@ -31,6 +33,7 @@ pub async fn run(
             let mut tun = tun.lock().await;
             tokio::select!(
                 _ = token.cancelled() => {
+                    handles.into_iter().for_each(|h| h.abort());
                     return Ok(())
                 },
                 bytes_read = tun.read(&mut buf) => {
@@ -185,7 +188,7 @@ pub async fn run(
             &payload,
         )?;
 
-        {
+        let handle = {
             let tun = tun.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(u64::from(reply_delay_ms))).await;
@@ -193,8 +196,9 @@ pub async fn run(
                 let ipv4 = Ipv4Packet::new_view(&ipv4_buf).unwrap();
                 debug!("write: {:?}", ipv4);
                 tun.write(ipv4.packet()).await.expect("send");
-            });
-        }
+            })
+        };
+        handles.push(handle);
     }
 }
 

@@ -1,12 +1,35 @@
 use crate::simulation::{Response, Simulation, SingleHost};
+use std::cell::RefCell;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy::tracing::{
     Builder, CompletionReason, MaxRounds, MultipathStrategy, PortDirection, ProbeStatus, Protocol,
     TimeToLive, TraceId, TracerRound,
 };
+
+// The length of time to wait after the completion of the tracing before
+// cancelling the network simulator.  This is needed to ensure that all
+// in-flight packets for the current test are send ot received prior to
+// ending the round so that they are not incorrectly used in a subsequent
+// test.
+const CLEANUP_DELAY: Duration = Duration::from_millis(1000);
+
+macro_rules! assert_eq_result {
+    ($res:ident, $exp1:expr, $exp2:expr) => {{
+        fn ensure_match<T: PartialEq>(fst: T, snd: T) -> anyhow::Result<()> {
+            anyhow::ensure!(fst == snd);
+            Ok(())
+        }
+        if let err @ Err(_) = ensure_match($exp1, $exp2) {
+            *$res.borrow_mut() = err;
+            return;
+        }
+    }};
+}
 
 pub struct Tracer {
     sim: Arc<Simulation>,
@@ -19,20 +42,24 @@ impl Tracer {
     }
 
     pub fn trace(&self) -> anyhow::Result<()> {
-        Builder::new(self.sim.target, |round| self.validate_round(round))
+        let result = RefCell::new(Ok(()));
+        let tracer_res = Builder::new(self.sim.target, |round| self.validate_round(round, &result))
             .trace_identifier(TraceId(self.sim.icmp_identifier))
             .protocol(Protocol::from(self.sim.protocol))
             .port_direction(PortDirection::from(self.sim.port_direction))
             .multipath_strategy(MultipathStrategy::from(self.sim.multipath_strategy))
             .max_rounds(MaxRounds(NonZeroUsize::MIN))
-            .start()?;
+            .start()
+            .map_err(anyhow::Error::from);
+        thread::sleep(CLEANUP_DELAY);
         self.token.cancel();
-        Ok(())
+        // ensure both the tracer and the validator were successful.
+        tracer_res.and(result.replace(Ok(())))
     }
 
-    fn validate_round(&self, round: &TracerRound<'_>) {
-        assert_eq!(CompletionReason::TargetFound, round.reason);
-        assert_eq!(TimeToLive(self.sim.latest_ttl()), round.largest_ttl);
+    fn validate_round(&self, round: &TracerRound<'_>, result: &RefCell<anyhow::Result<()>>) {
+        assert_eq_result!(result, round.reason, CompletionReason::TargetFound);
+        assert_eq_result!(result, TimeToLive(self.sim.latest_ttl()), round.largest_ttl);
         for hop in round
             .probes
             .iter()
@@ -61,9 +88,9 @@ impl Tracer {
                 }
             };
             let expected_ttl = TimeToLive(self.sim.hops[hop_index].ttl);
-            assert_eq!(expected_status, hop.status);
-            assert_eq!(expected_host, hop.host);
-            assert_eq!(expected_ttl, hop.ttl);
+            assert_eq_result!(result, expected_status, hop.status);
+            assert_eq_result!(result, expected_host, hop.host);
+            assert_eq_result!(result, expected_ttl, hop.ttl);
         }
     }
 }

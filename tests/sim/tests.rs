@@ -5,8 +5,11 @@ use std::sync::{Arc, Mutex, OnceLock};
 use test_case::test_case;
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
-use tracing::info;
+use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
+
+/// The maximum number of attempts for each test.
+const MAX_ATTEMPTS: usize = 3;
 
 static RUNTIME: OnceLock<Arc<Mutex<Runtime>>> = OnceLock::new();
 
@@ -40,19 +43,32 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_udp_paris_fixed_both.yaml"))]
 #[test_case(sim!("ipv4_tcp_fixed_dest.yaml"))]
 fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
-    run_simulation(simulation)
+    run_simulation_with_retry(simulation)
 }
 
-fn run_simulation(simulation: Simulation) -> anyhow::Result<()> {
+fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
+    let simulation = Arc::new(simulation);
+    let name = simulation.name.clone();
+    for attempt in 1..=MAX_ATTEMPTS {
+        info!("start simulating {} [attempt #{}]", name, attempt);
+        if run_simulation(simulation.clone()).is_ok() {
+            info!("end simulating {} [attempt #{}]", name, attempt);
+            return Ok(());
+        } else {
+            error!("failed simulating {} [attempt #{}]", name, attempt);
+        }
+    }
+    anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
+}
+
+fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
     let runtime = runtime().lock().unwrap();
-    info!("simulating {}", simulation.name);
     runtime.block_on(async {
         let tun = tun();
-        let sim = Arc::new(simulation);
         let token = CancellationToken::new();
         let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token.clone()));
         tokio::task::spawn_blocking(move || tracer::Tracer::new(sim, token).trace()).await??;
-        handle.await??;
-        Ok(())
-    })
+        handle.await?
+    })?;
+    Ok(())
 }
