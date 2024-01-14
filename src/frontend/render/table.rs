@@ -6,7 +6,7 @@ use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::geoip::{GeoIpCity, GeoIpLookup};
 use itertools::Itertools;
-use ratatui::layout::{Constraint, Rect};
+use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
@@ -32,7 +32,7 @@ use trippy::tracing::{Extension, Extensions, MplsLabelStackMember, UnknownExtens
 /// - The status of this hop (`Sts`)
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
-    let widths = get_column_widths(&config.tui_columns);
+    let widths = config.tui_columns.constraints(rect);
     let header = render_table_header(app.tui_config.theme, &config.tui_columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
@@ -603,15 +603,4 @@ fn fmt_details_line(
         "Ext: <none>".to_string()
     };
     format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
-}
-
-/// Transforms current columns list into percentages
-///
-/// Returns the percentage constraints of columns
-fn get_column_widths(columns: &Columns) -> Vec<Constraint> {
-    columns
-        .0
-        .iter()
-        .map(|c| Constraint::Percentage(c.width_pct()))
-        .collect()
 }

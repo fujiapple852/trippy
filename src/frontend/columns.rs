@@ -1,9 +1,45 @@
 use crate::config::{TuiColumn, TuiColumns};
+use ratatui::layout::{Constraint, Rect};
 use std::fmt::{Display, Formatter};
 
 /// The columns to display in the hops table of the TUI.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Columns(pub Vec<Column>);
+
+impl Columns {
+    /// Column width constraints.
+    ///
+    /// All columns are returned as `Constraint::Min(width)`.
+    ///
+    /// For `Fixed(n)` columns the width is as specified in `n`.
+    /// For `Variable` columns the width is calculated by subtracting the total
+    /// size of all `Fixed` columns from the width of the containing `Rect` and
+    /// dividing by the number of `Variable` columns.
+    pub fn constraints(&self, rect: Rect) -> Vec<Constraint> {
+        let total_fixed_width = self
+            .0
+            .iter()
+            .map(|c| match c.width() {
+                ColumnWidth::Fixed(width) => width,
+                ColumnWidth::Variable => 0,
+            })
+            .sum();
+        let variable_width_count = self
+            .0
+            .iter()
+            .filter(|c| matches!(c.width(), ColumnWidth::Variable))
+            .count() as u16;
+        let variable_width =
+            rect.width.saturating_sub(total_fixed_width) / variable_width_count.max(1);
+        self.0
+            .iter()
+            .map(|c| match c.width() {
+                ColumnWidth::Fixed(width) => Constraint::Min(width),
+                ColumnWidth::Variable => Constraint::Min(variable_width),
+            })
+            .collect()
+    }
+}
 
 impl From<TuiColumns> for Columns {
     fn from(value: TuiColumns) -> Self {
@@ -11,7 +47,6 @@ impl From<TuiColumns> for Columns {
     }
 }
 
-///Settings pop-up depends on format macro
 impl Display for Columns {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let output: Vec<char> = self.0.clone().into_iter().map(Column::into).collect();
@@ -46,7 +81,6 @@ pub enum Column {
     Status,
 }
 
-//Output a char for each column type
 impl From<Column> for char {
     fn from(col_type: Column) -> Self {
         match col_type {
@@ -102,32 +136,39 @@ impl Display for Column {
 }
 
 impl Column {
-    pub fn width_pct(self) -> u16 {
+    /// The width of the column.
+    pub(self) fn width(self) -> ColumnWidth {
         #[allow(clippy::match_same_arms)]
         match self {
-            Self::Ttl => 3,
-            Self::Host => 42,
-            Self::LossPct => 5,
-            Self::Sent => 5,
-            Self::Received => 5,
-            Self::Last => 5,
-            Self::Average => 5,
-            Self::Best => 5,
-            Self::Worst => 5,
-            Self::StdDev => 5,
-            Self::Status => 5,
+            Self::Ttl => ColumnWidth::Fixed(4),
+            Self::Host => ColumnWidth::Variable,
+            Self::LossPct => ColumnWidth::Fixed(8),
+            Self::Sent => ColumnWidth::Fixed(7),
+            Self::Received => ColumnWidth::Fixed(7),
+            Self::Last => ColumnWidth::Fixed(7),
+            Self::Average => ColumnWidth::Fixed(7),
+            Self::Best => ColumnWidth::Fixed(7),
+            Self::Worst => ColumnWidth::Fixed(7),
+            Self::StdDev => ColumnWidth::Fixed(8),
+            Self::Status => ColumnWidth::Fixed(7),
         }
     }
 }
 
+/// Table column layout constraints.
+#[derive(Debug, PartialEq)]
+enum ColumnWidth {
+    /// A fixed size column.
+    Fixed(u16),
+    /// A column that will use the remaining space.
+    Variable,
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use ratatui::layout::Constraint::Min;
     use test_case::test_case;
-
-    use crate::{
-        config::{TuiColumn, TuiColumns},
-        frontend::columns::{Column, Columns},
-    };
 
     #[test]
     fn test_columns_conversion_from_tui_columns() {
@@ -174,14 +215,36 @@ mod tests {
         assert_eq!(format!("{c}"), heading);
     }
 
-    #[test_case(Column::Ttl, 3)]
-    #[test_case(Column::Host, 42)]
-    #[test_case(Column::LossPct, 5)]
-    fn test_column_width_percentage(column_type: Column, pct: u16) {
-        assert_eq!(column_type.width_pct(), pct);
+    #[test_case(Column::Ttl, & ColumnWidth::Fixed(4))]
+    #[test_case(Column::Host, & ColumnWidth::Variable)]
+    #[test_case(Column::LossPct, & ColumnWidth::Fixed(8))]
+    fn test_column_width(column_type: Column, width: &ColumnWidth) {
+        assert_eq!(column_type.width(), *width);
     }
 
-    ///Expect to test the Column Into <char> flow
+    #[test]
+    fn test_column_constraints() {
+        let columns = Columns::from(TuiColumns::default());
+        let constraints = columns.constraints(Rect::new(0, 0, 80, 0));
+        assert_eq!(
+            vec![
+                Min(4),
+                Min(11),
+                Min(8),
+                Min(7),
+                Min(7),
+                Min(7),
+                Min(7),
+                Min(7),
+                Min(7),
+                Min(8),
+                Min(7)
+            ],
+            constraints
+        );
+    }
+
+    /// Expect to test the Column Into <char> flow.
     #[test]
     fn test_columns_into_string_short() {
         let cols = Columns(vec![
@@ -193,7 +256,7 @@ mod tests {
         assert_eq!("hols", format!("{cols}"));
     }
 
-    ///Happy path test for full set of colummns
+    /// Happy path test for full set of columns.
     #[test]
     fn test_columns_into_string_happy_path() {
         let cols = Columns(vec![
@@ -212,7 +275,7 @@ mod tests {
         assert_eq!("holsravbwdt", format!("{cols}"));
     }
 
-    ///Reverse subset test for subset of colummns
+    /// Reverse subset test for subset of columns.
     #[test]
     fn test_columns_into_string_reverse_str() {
         let cols = Columns(vec![
