@@ -32,16 +32,16 @@ const PACKET_INFO: [u8; 4] = [0x0, 0x0, 0x0, 0x2];
 
 /// A `tun` device.
 pub struct TunDevice {
-    dev: tun::AsyncDevice,
+    dev: tun2::AsyncDevice,
 }
 
 impl TunDevice {
     pub fn start() -> anyhow::Result<Self> {
         let net: Ipv4Network = TUN_NETWORK_CIDR.parse()?;
         let addr = net.nth(1).expect("addr");
-        let mut config = tun::Configuration::default();
+        let mut config = tun2::Configuration::default();
         config.address(addr).netmask(net.mask()).up();
-        let dev = tun::create_as_async(&config)?;
+        let dev = tun2::create_as_async(&config)?;
         Self::create_route()?;
         Ok(Self { dev })
     }
