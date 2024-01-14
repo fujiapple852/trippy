@@ -50,11 +50,12 @@ fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
 }
 
 fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
+    let runtime = runtime().lock().unwrap();
     let simulation = Arc::new(simulation);
     let name = simulation.name.clone();
     for attempt in 1..=MAX_ATTEMPTS {
         info!("start simulating {} [attempt #{}]", name, attempt);
-        if run_simulation(simulation.clone()).is_ok() {
+        if runtime.block_on(run_simulation(simulation.clone())).is_ok() {
             info!("end simulating {} [attempt #{}]", name, attempt);
             return Ok(());
         } else {
@@ -64,14 +65,10 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
 }
 
-fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
-    let runtime = runtime().lock().unwrap();
-    runtime.block_on(async {
-        let tun = tun();
-        let token = CancellationToken::new();
-        let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token.clone()));
-        tokio::task::spawn_blocking(move || tracer::Tracer::new(sim, token).trace()).await??;
-        handle.await?
-    })?;
-    Ok(())
+async fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
+    let tun = tun();
+    let token = CancellationToken::new();
+    let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token.clone()));
+    tokio::task::spawn_blocking(move || tracer::Tracer::new(sim, token).trace()).await??;
+    handle.await?
 }
