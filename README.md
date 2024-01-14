@@ -75,7 +75,7 @@ issues.
     - Tracing `flows` report
     - Graphviz `dot` charts
     - configurable reporting cycles
-- Runs on multiple platform (macOS, Linux, NetBSD, FreeBSD, Windows)
+- Runs on multiple platform (macOS, Linux, Windows, NetBSD, FreeBSD, OpenBSD)
 - Capabilities aware application (Linux only)
 
 ## Versions
@@ -152,6 +152,14 @@ pkgin install trippy
 
 ```shell
 pkg install trippy
+```
+
+### OpenBSD
+
+[![OpenBSD port](https://repology.org/badge/version-for-repo/openbsd/trippy.svg)](https://openports.pl/path/net/trippy)
+
+```shell
+pkg_add trippy
 ```
 
 ### Pacman (Arch Linux)
