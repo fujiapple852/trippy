@@ -89,7 +89,7 @@ ipnetwork = "0.20.0"
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun = { git = "https://github.com/fujiapple852/rust-tun", rev = "e944758112d23a2199b0c8d8adf8ffc6a8c1e9f5", features = [ "async" ] }
+tun2 = { version = "0.6.2", features = [ "async" ] }
 
 [features]
 # Enable simulation integration tests
