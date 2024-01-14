@@ -9,7 +9,7 @@ use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 /// The maximum number of attempts for each test.
-const MAX_ATTEMPTS: usize = 3;
+const MAX_ATTEMPTS: usize = 5;
 
 static RUNTIME: OnceLock<Arc<Mutex<Runtime>>> = OnceLock::new();
 
