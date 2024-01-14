@@ -123,12 +123,14 @@ jobs:
         run: |
           New-NetFirewallRule -DisplayName "ICMPv4 Trippy Allow" -Name ICMPv4_TRIPPY_ALLOW -Protocol ICMPv4 -Action Allow
           New-NetFirewallRule -DisplayName "ICMPv6 Trippy Allow" -Name ICMPv6_TRIPPY_ALLOW -Protocol ICMPv6 -Action Allow
+      - name: Build (without root)
+        run: cargo build --target ${{ matrix.target }} --features sim-tests --test sim
       - name: Run simulation test on ${{ matrix.build }}
         if: ${{ ! startsWith(matrix.build, 'windows') }}
         run: sudo -E env "PATH=$PATH" cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
       - name: Run simulation test on ${{ matrix.build }}
         if: startsWith(matrix.build, 'windows')
-        run: cargo test --target --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
 
   fmt:
     runs-on: ubuntu-22.04
