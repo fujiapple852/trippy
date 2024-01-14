@@ -55,11 +55,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [ netbsd ]
+        build: [ netbsd, freebsd ]
         include:
           - build: netbsd
             os: ubuntu-22.04
             target: x86_64-unknown-netbsd
+            rust: stable
+          - build: freebsd
+            os: ubuntu-22.04
+            target: x86_64-unknown-freebsd
             rust: stable
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +79,7 @@ jobs:
         run: |
           echo "cargo command is: ${{ env.CARGO }}"
           echo "target flag is: ${{ env.TARGET_FLAGS }}"
-      - name: cargo build
+      - name: cross build
         run: cross build --target ${{ matrix.target }} --verbose
 
   sim-test:
