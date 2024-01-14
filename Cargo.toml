@@ -79,15 +79,17 @@ windows-sys = { version = "0.52.0", features = [
 
 [dev-dependencies]
 hex-literal = "0.4.1"
-ipnetwork = "0.20.0"
 pretty_assertions = "1.4.0"
 rand = "0.8.5"
 test-case = "3.3.1"
-# see https://github.com/meh/rust-tun/pull/74
-tun = { git = "https://github.com/fujiapple852/rust-tun", rev = "e944758112d23a2199b0c8d8adf8ffc6a8c1e9f5", features = [ "async" ] }
 serde_yaml = "0.9.30"
 tokio = { version = "1.35.1", features = [ "full" ] }
-tokio-util = { version = "0.7.10" }
+tokio-util = "0.7.10"
+ipnetwork = "0.20.0"
+
+# see https://github.com/meh/rust-tun/pull/74
+[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
+tun = { git = "https://github.com/fujiapple852/rust-tun", rev = "e944758112d23a2199b0c8d8adf8ffc6a8c1e9f5", features = [ "async" ] }
 
 [features]
 # Enable simulation integration tests
