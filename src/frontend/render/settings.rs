@@ -69,8 +69,11 @@ fn render_settings_table(
         .height(1)
         .bottom_margin(0);
     let rows = items.iter().map(|item| {
-        Row::new(vec![Cell::from(item.item), Cell::from(item.value.as_str())])
-            .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
+        Row::new(vec![
+            Cell::from(item.item.as_str()),
+            Cell::from(item.value.as_str()),
+        ])
+        .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
     });
     let item_width = items
         .iter()
@@ -122,6 +125,7 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<Set
     let geoip_settings = format_geoip_settings(app);
     let bindings_settings = format_binding_settings(app);
     let theme_settings = format_theme_settings(app);
+    let columns_settings = format_columns_settings(app);
     vec![
         (
             "Tui",
@@ -141,6 +145,11 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<Set
         ("GeoIp", "Settings relating to GeoIp", geoip_settings),
         ("Bindings", "Tui key bindings", bindings_settings),
         ("Theme", "Tui theme colors", theme_settings),
+        (
+            "Columns",
+            "Tui table columns (press the c key to toggle a column on or off and use the , and . keys to change the column order)", // TODO doesn't wrap
+            columns_settings,
+        ),
     ]
 }
 
@@ -421,14 +430,24 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     ]
 }
 
+/// Format columns settings.
+fn format_columns_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    app.tui_config
+        .tui_columns
+        .all_columns()
+        .map(|c| SettingsItem::new(c.typ.to_string(), c.status.to_string()))
+        .collect()
+}
+
 /// The name and number of items for each tabs in the setting dialog.
-pub const SETTINGS_TABS: [(&str, usize); 6] = [
+pub const SETTINGS_TABS: [(&str, usize); 7] = [
     ("Tui", 10),
     ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
     ("Bindings", 29),
     ("Theme", 31),
+    ("Columns", 11), // TODO can't be fixed
 ];
 
 /// The settings table header.
@@ -441,13 +460,16 @@ const SETTINGS_TABLE_WIDTH: [Constraint; 3] = [
 ];
 
 struct SettingsItem {
-    item: &'static str,
+    item: String,
     value: String,
 }
 
 impl SettingsItem {
-    pub fn new(item: &'static str, value: String) -> Self {
-        Self { item, value }
+    pub fn new(item: impl Into<String>, value: String) -> Self {
+        Self {
+            item: item.into(),
+            value,
+        }
     }
 }
 

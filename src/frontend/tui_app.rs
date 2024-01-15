@@ -283,6 +283,40 @@ impl TuiApp {
         self.setting_table_state.select(Some(i));
     }
 
+    pub fn toggle_column_visibility(&mut self) {
+        // TODO hack
+        if self.settings_tab_selected == 6 {
+            if let Some(selected) = self.setting_table_state.selected() {
+                self.tui_config.tui_columns.toggle(selected);
+            }
+        }
+    }
+
+    pub fn move_column_down(&mut self) {
+        // TODO hack
+        if self.settings_tab_selected == 6 {
+            let count = SETTINGS_TABS[6].1;
+            if let Some(selected) = self.setting_table_state.selected() {
+                if selected < count - 1 {
+                    self.tui_config.tui_columns.move_down(selected);
+                    self.setting_table_state.select(Some(selected + 1));
+                }
+            }
+        }
+    }
+
+    pub fn move_column_up(&mut self) {
+        // TODO hack
+        if self.settings_tab_selected == 6 {
+            if let Some(selected) = self.setting_table_state.selected() {
+                if selected > 0 {
+                    self.tui_config.tui_columns.move_up(selected);
+                    self.setting_table_state.select(Some(selected - 1));
+                }
+            }
+        }
+    }
+
     pub fn clear(&mut self) {
         self.table_state.select(None);
         self.selected_hop_address = 0;

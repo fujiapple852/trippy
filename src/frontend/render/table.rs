@@ -1,6 +1,6 @@
 use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
-use crate::frontend::columns::{Column, Columns};
+use crate::frontend::columns::{ColumnType, Columns};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -66,8 +66,8 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 
 /// Render the table header.
 fn render_table_header(theme: Theme, table_columns: &Columns) -> Row<'static> {
-    let header_cells = table_columns.0.iter().map(|c| {
-        Cell::from(c.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
+    let header_cells = table_columns.columns().map(|c| {
+        Cell::from(c.typ.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
     });
     Row::new(header_cells)
         .style(Style::default().bg(theme.hops_table_header_bg_color))
@@ -95,11 +95,10 @@ fn render_table_row(
         render_hostname(app, hop, dns, geoip_lookup)
     };
     let cells: Vec<Cell<'_>> = custom_columns
-        .0
-        .iter()
+        .columns()
         .map(|column| {
             new_cell(
-                *column,
+                column.typ,
                 is_selected_hop,
                 app,
                 hop,
@@ -122,7 +121,7 @@ fn render_table_row(
 
 ///Returns a Cell matched on short char of the Column
 fn new_cell(
-    column: Column,
+    column: ColumnType,
     is_selected_hop: bool,
     app: &TuiApp,
     hop: &Hop,
@@ -132,8 +131,8 @@ fn new_cell(
 ) -> Cell<'static> {
     let is_target = app.tracer_data().is_target(hop, app.selected_flow);
     match column {
-        Column::Ttl => render_ttl_cell(hop),
-        Column::Host => {
+        ColumnType::Ttl => render_ttl_cell(hop),
+        ColumnType::Host => {
             let (host_cell, _) = if is_selected_hop && app.show_hop_details {
                 render_hostname_with_details(app, hop, dns, geoip_lookup, config)
             } else {
@@ -141,15 +140,15 @@ fn new_cell(
             };
             host_cell
         }
-        Column::LossPct => render_loss_pct_cell(hop),
-        Column::Sent => render_total_sent_cell(hop),
-        Column::Received => render_total_recv_cell(hop),
-        Column::Last => render_last_cell(hop),
-        Column::Average => render_avg_cell(hop),
-        Column::Best => render_best_cell(hop),
-        Column::Worst => render_worst_cell(hop),
-        Column::StdDev => render_stddev_cell(hop),
-        Column::Status => render_status_cell(hop, is_target),
+        ColumnType::LossPct => render_loss_pct_cell(hop),
+        ColumnType::Sent => render_total_sent_cell(hop),
+        ColumnType::Received => render_total_recv_cell(hop),
+        ColumnType::Last => render_last_cell(hop),
+        ColumnType::Average => render_avg_cell(hop),
+        ColumnType::Best => render_best_cell(hop),
+        ColumnType::Worst => render_worst_cell(hop),
+        ColumnType::StdDev => render_stddev_cell(hop),
+        ColumnType::Status => render_status_cell(hop, is_target),
     }
 }
 fn render_ttl_cell(hop: &Hop) -> Cell<'static> {
