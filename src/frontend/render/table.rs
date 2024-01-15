@@ -1,6 +1,6 @@
 use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
-use crate::frontend::columns::{Column, Columns};
+use crate::frontend::columns::{ColumnType, Columns};
 use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
@@ -73,8 +73,8 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 
 /// Render the table header.
 fn render_table_header(theme: Theme, table_columns: &Columns) -> Row<'static> {
-    let header_cells = table_columns.0.iter().map(|c| {
-        Cell::from(c.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
+    let header_cells = table_columns.columns().map(|c| {
+        Cell::from(c.typ.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
     });
     Row::new(header_cells)
         .style(Style::default().bg(theme.hops_table_header_bg_color))
@@ -102,11 +102,10 @@ fn render_table_row(
         render_hostname(app, hop, dns, geoip_lookup)
     };
     let cells: Vec<Cell<'_>> = custom_columns
-        .0
-        .iter()
+        .columns()
         .map(|column| {
             new_cell(
-                *column,
+                column.typ,
                 is_selected_hop,
                 app,
                 hop,
@@ -129,7 +128,7 @@ fn render_table_row(
 
 ///Returns a Cell matched on short char of the Column
 fn new_cell(
-    column: Column,
+    column: ColumnType,
     is_selected_hop: bool,
     app: &TuiApp,
     hop: &Hop,
@@ -139,8 +138,8 @@ fn new_cell(
 ) -> Cell<'static> {
     let is_target = app.tracer_data().is_target(hop, app.selected_flow);
     match column {
-        Column::Ttl => render_usize_cell(hop.ttl().into()),
-        Column::Host => {
+        ColumnType::Ttl => render_usize_cell(hop.ttl().into()),
+        ColumnType::Host => {
             let (host_cell, _) = if is_selected_hop && app.show_hop_details {
                 render_hostname_with_details(app, hop, dns, geoip_lookup, config)
             } else {
@@ -148,22 +147,22 @@ fn new_cell(
             };
             host_cell
         }
-        Column::LossPct => render_loss_pct_cell(hop),
-        Column::Sent => render_usize_cell(hop.total_sent()),
-        Column::Received => render_usize_cell(hop.total_recv()),
-        Column::Last => render_float_cell(hop.last_ms(), 1),
-        Column::Average => render_avg_cell(hop),
-        Column::Best => render_float_cell(hop.best_ms(), 1),
-        Column::Worst => render_float_cell(hop.worst_ms(), 1),
-        Column::StdDev => render_stddev_cell(hop),
-        Column::Status => render_status_cell(hop, is_target),
-        Column::Jitter => render_float_cell(hop.jitter_ms(), 1),
-        Column::Javg => render_float_cell(Some(hop.javg_ms()), 1),
-        Column::Jmax => render_float_cell(hop.jmax_ms(), 1),
-        Column::Jinta => render_float_cell(Some(hop.jinta()), 1),
-        Column::LastSrcPort => render_port_cell(hop.last_src_port()),
-        Column::LastDestPort => render_port_cell(hop.last_dest_port()),
-        Column::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
+        ColumnType::LossPct => render_loss_pct_cell(hop),
+        ColumnType::Sent => render_usize_cell(hop.total_sent()),
+        ColumnType::Received => render_usize_cell(hop.total_recv()),
+        ColumnType::Last => render_float_cell(hop.last_ms(), 1),
+        ColumnType::Average => render_avg_cell(hop),
+        ColumnType::Best => render_float_cell(hop.best_ms(), 1),
+        ColumnType::Worst => render_float_cell(hop.worst_ms(), 1),
+        ColumnType::StdDev => render_stddev_cell(hop),
+        ColumnType::Status => render_status_cell(hop, is_target),
+        ColumnType::Jitter => render_float_cell(hop.jitter_ms(), 1),
+        ColumnType::Javg => render_float_cell(Some(hop.javg_ms()), 1),
+        ColumnType::Jmax => render_float_cell(hop.jmax_ms(), 1),
+        ColumnType::Jinta => render_float_cell(Some(hop.jinta()), 1),
+        ColumnType::LastSrcPort => render_port_cell(hop.last_src_port()),
+        ColumnType::LastDestPort => render_port_cell(hop.last_dest_port()),
+        ColumnType::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
     }
 }
 
