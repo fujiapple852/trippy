@@ -97,6 +97,12 @@ fn run_app<B: Backend>(
                             app.next_settings_item();
                         } else if bindings.previous_hop.check(key) {
                             app.previous_settings_item();
+                        } else if bindings.toggle_chart.check(key) {
+                            app.toggle_column_visibility();
+                        } else if bindings.next_hop_address.check(key) {
+                            app.move_column_down();
+                        } else if bindings.previous_hop_address.check(key) {
+                            app.move_column_up();
                         }
                     } else if bindings.toggle_help.check(key) || bindings.toggle_help_alt.check(key)
                     {

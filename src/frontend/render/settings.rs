@@ -6,7 +6,9 @@ use humantime::format_duration;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs};
+use ratatui::widgets::{
+    Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs, Wrap,
+};
 use ratatui::Frame;
 use trippy::dns::ResolveMethod;
 use trippy::tracing::PortDirection;
@@ -69,8 +71,11 @@ fn render_settings_table(
         .height(1)
         .bottom_margin(0);
     let rows = items.iter().map(|item| {
-        Row::new(vec![Cell::from(item.item), Cell::from(item.value.as_str())])
-            .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
+        Row::new(vec![
+            Cell::from(item.item.as_str()),
+            Cell::from(item.value.as_str()),
+        ])
+        .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
     });
     let item_width = items
         .iter()
@@ -102,6 +107,7 @@ fn render_settings_table(
 fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str) {
     let info = Paragraph::new(info)
         .style(Style::default())
+        .wrap(Wrap::default())
         .block(
             Block::default()
                 .title(" Info ")
@@ -115,32 +121,41 @@ fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str)
 }
 
 /// Format all settings.
-fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, &'static str, Vec<SettingsItem>)> {
+fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, String, Vec<SettingsItem>)> {
     let tui_settings = format_tui_settings(app);
     let trace_settings = format_trace_settings(app);
     let dns_settings = format_dns_settings(app);
     let geoip_settings = format_geoip_settings(app);
     let bindings_settings = format_binding_settings(app);
     let theme_settings = format_theme_settings(app);
+    let columns_settings = format_columns_settings(app);
+    let toggle_column = app.tui_config.bindings.toggle_chart.to_string();
+    let move_down = app.tui_config.bindings.next_hop_address.to_string();
+    let move_up = app.tui_config.bindings.previous_hop_address.to_string();
     vec![
         (
             "Tui",
-            "Settings which control how data is displayed in this Tui",
+            String::from("Settings which control how data is displayed in this Tui"),
             tui_settings,
         ),
         (
             "Trace",
-            "Settings which control the tracing strategy",
+            String::from("Settings which control the tracing strategy"),
             trace_settings,
         ),
         (
             "Dns",
-            "Settings which control how DNS lookups are performed",
+            String::from("Settings which control how DNS lookups are performed"),
             dns_settings,
         ),
-        ("GeoIp", "Settings relating to GeoIp", geoip_settings),
-        ("Bindings", "Tui key bindings", bindings_settings),
-        ("Theme", "Tui theme colors", theme_settings),
+        ("GeoIp", String::from("Settings relating to GeoIp"), geoip_settings),
+        ("Bindings", String::from("Tui key bindings"), bindings_settings),
+        ("Theme", String::from("Tui theme colors"), theme_settings),
+        (
+            "Columns",
+            format!("Tui table columns (press {toggle_column} to toggle a column on or off and use the {move_down} and {move_up} keys to change the column order)"),
+            columns_settings,
+        ),
     ]
 }
 
@@ -421,14 +436,26 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     ]
 }
 
+/// Format columns settings.
+fn format_columns_settings(app: &TuiApp) -> Vec<SettingsItem> {
+    app.tui_config
+        .tui_columns
+        .all_columns()
+        .map(|c| SettingsItem::new(c.typ.to_string(), c.status.to_string()))
+        .collect()
+}
+
+pub const SETTINGS_TAB_COLUMNS: usize = 6;
+
 /// The name and number of items for each tabs in the setting dialog.
-pub const SETTINGS_TABS: [(&str, usize); 6] = [
+pub const SETTINGS_TABS: [(&str, usize); 7] = [
     ("Tui", 10),
     ("Trace", 15),
     ("Dns", 4),
     ("GeoIp", 1),
     ("Bindings", 29),
     ("Theme", 31),
+    ("Columns", 0),
 ];
 
 /// The settings table header.
@@ -441,13 +468,16 @@ const SETTINGS_TABLE_WIDTH: [Constraint; 3] = [
 ];
 
 struct SettingsItem {
-    item: &'static str,
+    item: String,
     value: String,
 }
 
 impl SettingsItem {
-    pub fn new(item: &'static str, value: String) -> Self {
-        Self { item, value }
+    pub fn new(item: impl Into<String>, value: String) -> Self {
+        Self {
+            item: item.into(),
+            value,
+        }
     }
 }
 

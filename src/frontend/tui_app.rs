@@ -2,7 +2,7 @@ use crate::backend::flows::FlowId;
 use crate::backend::trace::Hop;
 use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
-use crate::frontend::render::settings::SETTINGS_TABS;
+use crate::frontend::render::settings::{SETTINGS_TABS, SETTINGS_TAB_COLUMNS};
 use crate::geoip::GeoIpLookup;
 use crate::TraceInfo;
 use itertools::Itertools;
@@ -253,7 +253,7 @@ impl TuiApp {
     }
 
     pub fn next_settings_item(&mut self) {
-        let count = SETTINGS_TABS[self.settings_tab_selected].1;
+        let count = self.get_settings_items_count();
         let max_index = 0.max(count.saturating_sub(1));
         let i = match self.setting_table_state.selected() {
             Some(i) => {
@@ -269,7 +269,7 @@ impl TuiApp {
     }
 
     pub fn previous_settings_item(&mut self) {
-        let count = SETTINGS_TABS[self.settings_tab_selected].1;
+        let count = self.get_settings_items_count();
         let i = match self.setting_table_state.selected() {
             Some(i) => {
                 if i > 0 {
@@ -281,6 +281,45 @@ impl TuiApp {
             None => 0.max(count.saturating_sub(1)),
         };
         self.setting_table_state.select(Some(i));
+    }
+
+    fn get_settings_items_count(&self) -> usize {
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
+            self.tui_config.tui_columns.all_columns_count()
+        } else {
+            SETTINGS_TABS[self.settings_tab_selected].1
+        }
+    }
+
+    pub fn toggle_column_visibility(&mut self) {
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
+            if let Some(selected) = self.setting_table_state.selected() {
+                self.tui_config.tui_columns.toggle(selected);
+            }
+        }
+    }
+
+    pub fn move_column_down(&mut self) {
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
+            let count = self.tui_config.tui_columns.all_columns_count();
+            if let Some(selected) = self.setting_table_state.selected() {
+                if selected < count - 1 {
+                    self.tui_config.tui_columns.move_down(selected);
+                    self.setting_table_state.select(Some(selected + 1));
+                }
+            }
+        }
+    }
+
+    pub fn move_column_up(&mut self) {
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
+            if let Some(selected) = self.setting_table_state.selected() {
+                if selected > 0 {
+                    self.tui_config.tui_columns.move_up(selected);
+                    self.setting_table_state.select(Some(selected - 1));
+                }
+            }
+        }
     }
 
     pub fn clear(&mut self) {
