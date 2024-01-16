@@ -41,6 +41,14 @@ tcp\:"Transmission Control Protocol"))' \
 '--protocol=[Tracing protocol \[default\: icmp\]]:PROTOCOL:((icmp\:"Internet Control Message Protocol"
 udp\:"User Datagram Protocol"
 tcp\:"Transmission Control Protocol"))' \
+'-F+[The address family \[default\: Ipv4thenIpv6\]]:ADDR_FAMILY:((ipv4\:"Ipv4 only"
+ipv6\:"Ipv6 only"
+ipv6-then-ipv4\:"Ipv6 with a fallback to Ipv4"
+ipv4-then-ipv6\:"Ipv4 with a fallback to Ipv6"))' \
+'--addr-family=[The address family \[default\: Ipv4thenIpv6\]]:ADDR_FAMILY:((ipv4\:"Ipv4 only"
+ipv6\:"Ipv6 only"
+ipv6-then-ipv4\:"Ipv6 with a fallback to Ipv4"
+ipv4-then-ipv6\:"Ipv4 with a fallback to Ipv6"))' \
 '-P+[The target port (TCP & UDP only) \[default\: 80\]]:TARGET_PORT: ' \
 '--target-port=[The target port (TCP & UDP only) \[default\: 80\]]:TARGET_PORT: ' \
 '-S+[The source port (TCP & UDP only) \[default\: auto\]]:SOURCE_PORT: ' \
@@ -130,10 +138,10 @@ full\:"Display all event spans"))' \
 '(-p --protocol --tcp --icmp)--udp[Trace using the UDP protocol]' \
 '(-p --protocol --udp --icmp)--tcp[Trace using the TCP protocol]' \
 '(-p --protocol --udp --tcp)--icmp[Trace using the ICMP protocol]' \
-'(-6 --ipv6)-4[Use IPv4 only]' \
-'(-6 --ipv6)--ipv4[Use IPv4 only]' \
-'(-4 --ipv4)-6[Use IPv6 only]' \
-'(-4 --ipv4)--ipv6[Use IPv6 only]' \
+'(-6 --ipv6 -F --addr-family)-4[Use IPv4 only]' \
+'(-6 --ipv6 -F --addr-family)--ipv4[Use IPv4 only]' \
+'(-4 --ipv4 -F --addr-family)-6[Use IPv6 only]' \
+'(-4 --ipv4 -F --addr-family)--ipv6[Use IPv6 only]' \
 '-e[Parse ICMP extensions]' \
 '--icmp-extensions[Parse ICMP extensions]' \
 '-y[Trace to all IPs resolved from DNS lookup \[default\: false\]]' \
@@ -165,3 +173,4 @@ if [ "$funcstack[1]" = "_trip" ]; then
 else
     compdef _trip trip
 fi
+

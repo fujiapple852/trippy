@@ -19,7 +19,7 @@ _trip() {
 
     case "${cmd}" in
         trip)
-            opts="-c -m -u -p -4 -6 -P -S -A -I -i -T -g -R -U -f -t -Q -e -r -y -z -a -M -s -C -G -v -h -V --config-file --mode --unprivileged --protocol --udp --tcp --icmp --ipv4 --ipv6 --target-port --source-port --source-address --interface --min-round-duration --max-round-duration --grace-duration --initial-sequence --multipath-strategy --max-inflight --first-ttl --max-ttl --packet-size --payload-pattern --tos --icmp-extensions --read-timeout --dns-resolve-method --dns-resolve-all --dns-timeout --dns-lookup-as-info --tui-address-mode --tui-as-mode --tui-custom-columns --tui-icmp-extension-mode --tui-geoip-mode --tui-max-addrs --tui-max-samples --tui-max-flows --tui-preserve-screen --tui-refresh-rate --tui-privacy-max-ttl --tui-theme-colors --print-tui-theme-items --tui-key-bindings --print-tui-binding-commands --report-cycles --geoip-mmdb-file --generate --print-config-template --log-format --log-filter --log-span-events --verbose --help --version [TARGETS]..."
+            opts="-c -m -u -p -F -4 -6 -P -S -A -I -i -T -g -R -U -f -t -Q -e -r -y -z -a -M -s -C -G -v -h -V --config-file --mode --unprivileged --protocol --udp --tcp --icmp --addr-family --ipv4 --ipv6 --target-port --source-port --source-address --interface --min-round-duration --max-round-duration --grace-duration --initial-sequence --multipath-strategy --max-inflight --first-ttl --max-ttl --packet-size --payload-pattern --tos --icmp-extensions --read-timeout --dns-resolve-method --dns-resolve-all --dns-timeout --dns-lookup-as-info --tui-address-mode --tui-as-mode --tui-custom-columns --tui-icmp-extension-mode --tui-geoip-mode --tui-max-addrs --tui-max-samples --tui-max-flows --tui-preserve-screen --tui-refresh-rate --tui-privacy-max-ttl --tui-theme-colors --print-tui-theme-items --tui-key-bindings --print-tui-binding-commands --report-cycles --geoip-mmdb-file --generate --print-config-template --log-format --log-filter --log-span-events --verbose --help --version [TARGETS]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -47,6 +47,14 @@ _trip() {
                     ;;
                 -p)
                     COMPREPLY=($(compgen -W "icmp udp tcp" -- "${cur}"))
+                    return 0
+                    ;;
+                --addr-family)
+                    COMPREPLY=($(compgen -W "ipv4 ipv6 ipv6-then-ipv4 ipv4-then-ipv6" -- "${cur}"))
+                    return 0
+                    ;;
+                -F)
+                    COMPREPLY=($(compgen -W "ipv4 ipv6 ipv6-then-ipv4 ipv4-then-ipv6" -- "${cur}"))
                     return 0
                     ;;
                 --target-port)
@@ -280,3 +288,4 @@ if [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 4 || "${BASH_VERS
 else
     complete -F _trip -o bashdefault -o default trip
 fi
+

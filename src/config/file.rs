@@ -147,7 +147,7 @@ impl Default for ConfigStrategy {
     fn default() -> Self {
         Self {
             protocol: Some(ProtocolConfig::from(defaults::DEFAULT_STRATEGY_PROTOCOL)),
-            addr_family: Some(AddressFamilyConfig::from(defaults::DEFAULT_ADDRESS_FAMILY)),
+            addr_family: Some(super::constants::DEFAULT_ADDR_FAMILY),
             target_port: None,
             source_port: None,
             source_address: None,

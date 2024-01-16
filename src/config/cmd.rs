@@ -1,8 +1,9 @@
 use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
-    LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig, TuiColor, TuiKeyBinding,
+    AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig, TuiColor,
+    TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::builder::Styles;
@@ -60,12 +61,26 @@ pub struct Args {
     )]
     pub icmp: bool,
 
+    /// The address family [default: Ipv4thenIpv6]
+    #[arg(value_enum, short = 'F', long)]
+    pub addr_family: Option<AddressFamilyConfig>,
+
     /// Use IPv4 only
-    #[arg(short = '4', long, conflicts_with = "ipv6")]
+    #[arg(
+        short = '4',
+        long,
+        conflicts_with = "ipv6",
+        conflicts_with = "addr_family"
+    )]
     pub ipv4: bool,
 
     /// Use IPv6 only
-    #[arg(short = '6', long, conflicts_with = "ipv4")]
+    #[arg(
+        short = '6',
+        long,
+        conflicts_with = "ipv4",
+        conflicts_with = "addr_family"
+    )]
     pub ipv6: bool,
 
     /// The target port (TCP & UDP only) [default: 80]

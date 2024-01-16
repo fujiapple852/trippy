@@ -24,6 +24,8 @@ set edit:completion:arg-completer[trip] = {|@words|
             cand --mode 'Output mode [default: tui]'
             cand -p 'Tracing protocol [default: icmp]'
             cand --protocol 'Tracing protocol [default: icmp]'
+            cand -F 'The address family [default: Ipv4thenIpv6]'
+            cand --addr-family 'The address family [default: Ipv4thenIpv6]'
             cand -P 'The target port (TCP & UDP only) [default: 80]'
             cand --target-port 'The target port (TCP & UDP only) [default: 80]'
             cand -S 'The source port (TCP & UDP only) [default: auto]'
@@ -107,3 +109,4 @@ set edit:completion:arg-completer[trip] = {|@words|
     ]
     $completions[$command]
 }
+

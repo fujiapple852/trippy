@@ -39,8 +39,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
-    AddrFamily, ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PortDirection,
-    Protocol,
+    ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PortDirection, Protocol,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -72,9 +71,9 @@ fn run_trippy(cfg: &TrippyConfig, platform: &Platform) -> anyhow::Result<()> {
     let addrs = resolve_targets(cfg, &resolver)?;
     if addrs.is_empty() {
         return Err(anyhow!(
-            "failed to find any valid IP{} addresses for {}",
+            "failed to find any valid IP addresses for {} for address family {}",
+            cfg.targets.join(", "),
             cfg.addr_family,
-            cfg.targets.join(", ")
         ));
     }
     let traces = start_tracers(cfg, &addrs, platform.pid)?;
@@ -104,16 +103,11 @@ fn print_shell_completions(shell: Shell) -> anyhow::Result<()> {
 
 /// Start the DNS resolver.
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
-    Ok(match cfg.addr_family {
-        AddrFamily::Ipv4 => DnsResolver::start(trippy::dns::Config::new_ipv4(
-            cfg.dns_resolve_method,
-            cfg.dns_timeout,
-        ))?,
-        AddrFamily::Ipv6 => DnsResolver::start(trippy::dns::Config::new_ipv6(
-            cfg.dns_resolve_method,
-            cfg.dns_timeout,
-        ))?,
-    })
+    Ok(DnsResolver::start(trippy::dns::Config::new(
+        cfg.dns_resolve_method,
+        cfg.addr_family,
+        cfg.dns_timeout,
+    ))?)
 }
 
 fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
@@ -316,7 +310,6 @@ fn make_trace_info(
         args.multipath_strategy,
         args.port_direction,
         args.protocol,
-        args.addr_family,
         args.first_ttl,
         args.max_ttl,
         args.grace_duration,
@@ -372,7 +365,6 @@ pub struct TraceInfo {
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub protocol: Protocol,
-    pub addr_family: AddrFamily,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub grace_duration: Duration,
@@ -401,7 +393,6 @@ impl TraceInfo {
         multipath_strategy: MultipathStrategy,
         port_direction: PortDirection,
         protocol: Protocol,
-        addr_family: AddrFamily,
         first_ttl: u8,
         max_ttl: u8,
         grace_duration: Duration,
@@ -426,7 +417,6 @@ impl TraceInfo {
             multipath_strategy,
             port_direction,
             protocol,
-            addr_family,
             first_ttl,
             max_ttl,
             grace_duration,
