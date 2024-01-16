@@ -6,6 +6,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
+use std::net::IpAddr;
 use std::time::Duration;
 use trippy::dns::{ResolveMethod, Resolver};
 use trippy::tracing::{PortDirection, Protocol};
@@ -42,18 +43,18 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let protocol = match app.tracer_config().protocol {
         Protocol::Icmp => format!(
             "icmp({}, {})",
-            app.tracer_config().addr_family,
+            render_target_family(app.tracer_config().target_addr),
             app.tracer_config().privilege_mode
         ),
         Protocol::Udp => format!(
             "udp({}, {}, {})",
-            app.tracer_config().addr_family,
+            render_target_family(app.tracer_config().target_addr),
             app.tracer_config().multipath_strategy,
             app.tracer_config().privilege_mode
         ),
         Protocol::Tcp => format!(
             "tcp({}, {})",
-            app.tracer_config().addr_family,
+            render_target_family(app.tracer_config().target_addr),
             app.tracer_config().privilege_mode
         ),
     };
@@ -118,6 +119,13 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .alignment(Alignment::Left);
     f.render_widget(right, rect);
     f.render_widget(left, rect);
+}
+
+fn render_target_family(target: IpAddr) -> &'static str {
+    match target {
+        IpAddr::V4(_) => "v4",
+        IpAddr::V6(_) => "v6",
+    }
 }
 
 /// Render the source address of the trace.

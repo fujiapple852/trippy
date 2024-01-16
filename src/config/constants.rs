@@ -1,6 +1,6 @@
 use crate::config::{
-    AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode, LogFormat,
-    LogSpanEvents, Mode,
+    AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
+    LogFormat, LogSpanEvents, Mode,
 };
 use std::time::Duration;
 
@@ -60,6 +60,9 @@ pub const DEFAULT_TUI_PRIVACY_MAX_TTL: u8 = 0;
 
 /// The default value for `dns-resolve-method`.
 pub const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethodConfig = DnsResolveMethodConfig::System;
+
+/// The default value for `addr-family`.
+pub const DEFAULT_ADDR_FAMILY: AddressFamilyConfig = AddressFamilyConfig::Ipv4ThenIpv6;
 
 /// The default value for `dns-lookup-as-info`.
 pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;

@@ -11,7 +11,7 @@ use std::time::Duration;
 
 pub mod defaults {
     use crate::tracing::config::IcmpExtensionParseMode;
-    use crate::tracing::{AddrFamily, MultipathStrategy, PrivilegeMode, Protocol};
+    use crate::tracing::{MultipathStrategy, PrivilegeMode, Protocol};
     use std::time::Duration;
 
     /// The default value for `unprivileged`.
@@ -19,9 +19,6 @@ pub mod defaults {
 
     /// The default value for `protocol`.
     pub const DEFAULT_STRATEGY_PROTOCOL: Protocol = Protocol::Icmp;
-
-    /// The default value for `addr-family`.
-    pub const DEFAULT_ADDRESS_FAMILY: AddrFamily = AddrFamily::Ipv4;
 
     /// The default value for `multipath-strategy`.
     pub const DEFAULT_STRATEGY_MULTIPATH: MultipathStrategy = MultipathStrategy::Classic;
@@ -119,24 +116,6 @@ impl Display for IcmpExtensionParseMode {
         match self {
             Self::Disabled => write!(f, "disabled"),
             Self::Enabled => write!(f, "enabled"),
-        }
-    }
-}
-
-/// The address family.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum AddrFamily {
-    /// Internet Protocol V4
-    Ipv4,
-    /// Internet Protocol V6
-    Ipv6,
-}
-
-impl Display for AddrFamily {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Ipv4 => write!(f, "v4"),
-            Self::Ipv6 => write!(f, "v6"),
         }
     }
 }

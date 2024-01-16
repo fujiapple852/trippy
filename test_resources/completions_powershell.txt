@@ -27,6 +27,8 @@ Register-ArgumentCompleter -Native -CommandName 'trip' -ScriptBlock {
             [CompletionResult]::new('--mode', 'mode', [CompletionResultType]::ParameterName, 'Output mode [default: tui]')
             [CompletionResult]::new('-p', 'p', [CompletionResultType]::ParameterName, 'Tracing protocol [default: icmp]')
             [CompletionResult]::new('--protocol', 'protocol', [CompletionResultType]::ParameterName, 'Tracing protocol [default: icmp]')
+            [CompletionResult]::new('-F', 'F ', [CompletionResultType]::ParameterName, 'The address family [default: Ipv4thenIpv6]')
+            [CompletionResult]::new('--addr-family', 'addr-family', [CompletionResultType]::ParameterName, 'The address family [default: Ipv4thenIpv6]')
             [CompletionResult]::new('-P', 'P ', [CompletionResultType]::ParameterName, 'The target port (TCP & UDP only) [default: 80]')
             [CompletionResult]::new('--target-port', 'target-port', [CompletionResultType]::ParameterName, 'The target port (TCP & UDP only) [default: 80]')
             [CompletionResult]::new('-S', 'S ', [CompletionResultType]::ParameterName, 'The source port (TCP & UDP only) [default: auto]')
@@ -113,3 +115,4 @@ Register-ArgumentCompleter -Native -CommandName 'trip' -ScriptBlock {
     $completions.Where{ $_.CompletionText -like "$wordToComplete*" } |
         Sort-Object -Property ListItemText
 }
+

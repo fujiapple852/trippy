@@ -10,10 +10,9 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::dns::ResolveMethod;
+use trippy::dns::{IpAddrFamily, ResolveMethod};
 use trippy::tracing::{
-    defaults, AddrFamily, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode,
-    Protocol,
+    defaults, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
 };
 
 mod binding;
@@ -76,20 +75,28 @@ impl From<Protocol> for ProtocolConfig {
 }
 
 /// The address family.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressFamilyConfig {
-    /// Internet Protocol V4
+    /// Ipv4 only.
     Ipv4,
-    /// Internet Protocol V6
+    /// Ipv6 only.
     Ipv6,
+    /// Ipv6 with a fallback to Ipv4
+    #[serde(rename = "ipv6-then-ipv4")]
+    Ipv6ThenIpv4,
+    /// Ipv4 with a fallback to Ipv6
+    #[serde(rename = "ipv4-then-ipv6")]
+    Ipv4ThenIpv6,
 }
 
-impl From<AddrFamily> for AddressFamilyConfig {
-    fn from(value: AddrFamily) -> Self {
+impl From<IpAddrFamily> for AddressFamilyConfig {
+    fn from(value: IpAddrFamily) -> Self {
         match value {
-            AddrFamily::Ipv4 => Self::Ipv4,
-            AddrFamily::Ipv6 => Self::Ipv6,
+            IpAddrFamily::Ipv4Only => Self::Ipv4,
+            IpAddrFamily::Ipv6Only => Self::Ipv6,
+            IpAddrFamily::Ipv6thenIpv4 => Self::Ipv6ThenIpv4,
+            IpAddrFamily::Ipv4thenIpv6 => Self::Ipv4ThenIpv6,
         }
     }
 }
@@ -270,7 +277,7 @@ impl TrippyAction {
 pub struct TrippyConfig {
     pub targets: Vec<String>,
     pub protocol: Protocol,
-    pub addr_family: AddrFamily,
+    pub addr_family: IpAddrFamily,
     pub first_ttl: u8,
     pub max_ttl: u8,
     pub min_round_duration: Duration,
@@ -377,6 +384,11 @@ impl TrippyConfig {
             args.protocol,
             cfg_file_strategy.protocol,
             ProtocolConfig::from(defaults::DEFAULT_STRATEGY_PROTOCOL),
+        );
+        let addr_family_cfg = cfg_layer(
+            args.addr_family,
+            cfg_file_strategy.addr_family,
+            constants::DEFAULT_ADDR_FAMILY,
         );
         let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
         let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
@@ -541,19 +553,42 @@ impl TrippyConfig {
                     .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
             })
             .transpose()?;
-        let addr_family = match (args.ipv4, args.ipv6, cfg_file_strategy.addr_family) {
-            (false, false, None) => defaults::DEFAULT_ADDRESS_FAMILY,
-            (false, false, Some(AddressFamilyConfig::Ipv4)) | (true, _, _) => AddrFamily::Ipv4,
-            (false, false, Some(AddressFamilyConfig::Ipv6)) | (_, true, _) => AddrFamily::Ipv6,
+
+        #[allow(clippy::match_same_arms)]
+        let addr_family = match (
+            args.ipv4,
+            args.ipv6,
+            addr_family_cfg,
+            multipath_strategy_cfg,
+        ) {
+            (false, false, AddressFamilyConfig::Ipv4, _) => IpAddrFamily::Ipv4Only,
+            (false, false, AddressFamilyConfig::Ipv6, _) => IpAddrFamily::Ipv6Only,
+            // we "downgrade" to `Ipv4Only` for `Dublin` rather than fail.
+            (false, false, AddressFamilyConfig::Ipv4ThenIpv6, MultipathStrategyConfig::Dublin) => {
+                IpAddrFamily::Ipv4Only
+            }
+            (false, false, AddressFamilyConfig::Ipv6ThenIpv4, MultipathStrategyConfig::Dublin) => {
+                IpAddrFamily::Ipv4Only
+            }
+            (false, false, AddressFamilyConfig::Ipv4ThenIpv6, _) => IpAddrFamily::Ipv4thenIpv6,
+            (false, false, AddressFamilyConfig::Ipv6ThenIpv4, _) => IpAddrFamily::Ipv6thenIpv4,
+            (true, _, _, _) => IpAddrFamily::Ipv4Only,
+            (_, true, _, _) => IpAddrFamily::Ipv6Only,
         };
+
+        #[allow(clippy::match_same_arms)]
         let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
             (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
             (MultipathStrategyConfig::Paris, _) => Ok(MultipathStrategy::Paris),
-            (MultipathStrategyConfig::Dublin, AddrFamily::Ipv4) => Ok(MultipathStrategy::Dublin),
-            (MultipathStrategyConfig::Dublin, AddrFamily::Ipv6) => Err(anyhow!(
+            (
+                MultipathStrategyConfig::Dublin,
+                IpAddrFamily::Ipv4Only | IpAddrFamily::Ipv4thenIpv6 | IpAddrFamily::Ipv6thenIpv4,
+            ) => Ok(MultipathStrategy::Dublin),
+            (MultipathStrategyConfig::Dublin, IpAddrFamily::Ipv6Only) => Err(anyhow!(
                 "Dublin multipath strategy not implemented for IPv6 yet!"
             )),
         }?;
+
         let port_direction = match (protocol, source_port, target_port, multipath_strategy_cfg) {
             (Protocol::Icmp, _, _, _) => PortDirection::None,
             (Protocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),
@@ -683,7 +718,7 @@ impl Default for TrippyConfig {
         Self {
             targets: vec![],
             protocol: defaults::DEFAULT_STRATEGY_PROTOCOL,
-            addr_family: defaults::DEFAULT_ADDRESS_FAMILY,
+            addr_family: dns_resolve_family(constants::DEFAULT_ADDR_FAMILY),
             first_ttl: defaults::DEFAULT_STRATEGY_FIRST_TTL,
             max_ttl: defaults::DEFAULT_STRATEGY_MAX_TTL,
             min_round_duration: defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
@@ -740,6 +775,15 @@ fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMeth
         DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
         DnsResolveMethodConfig::Google => ResolveMethod::Google,
         DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
+    }
+}
+
+fn dns_resolve_family(dns_resolve_family: AddressFamilyConfig) -> IpAddrFamily {
+    match dns_resolve_family {
+        AddressFamilyConfig::Ipv4 => IpAddrFamily::Ipv4Only,
+        AddressFamilyConfig::Ipv6 => IpAddrFamily::Ipv6Only,
+        AddressFamilyConfig::Ipv6ThenIpv4 => IpAddrFamily::Ipv6thenIpv4,
+        AddressFamilyConfig::Ipv4ThenIpv6 => IpAddrFamily::Ipv4thenIpv6,
     }
 }
 
@@ -1093,7 +1137,7 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "default strategy")]
     #[test_case("trip example.com --multipath-strategy classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy")]
     #[test_case("trip example.com --multipath-strategy paris --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "paris strategy")]
-    #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
+    #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
     #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid strategy")]
     #[test_case("trip example.com", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "default protocol")]
     #[test_case("trip example.com --protocol icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol")]
@@ -1116,18 +1160,24 @@ mod tests {
     #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol paris strategy custom src port")]
     #[test_case("trip example.com --udp --multipath-strategy paris --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol paris strategy custom target port")]
     #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol paris strategy custom both ports")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol dublin strategy default ports")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol dublin strategy custom src port")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol dublin strategy default ports")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol dublin strategy custom src port")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
     #[test_case("trip example.com --icmp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not support for icmp")); "paris with invalid protocol icmp")]
     #[test_case("trip example.com --icmp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not support for icmp")); "dublin with invalid protocol icmp")]
     #[test_case("trip example.com --tcp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not yet supported for tcp")); "paris with invalid protocol tcp")]
     #[test_case("trip example.com --tcp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not yet supported for tcp")); "dublin with invalid protocol tcp")]
     #[test_case("trip example.com --udp --source-port 33000 --target-port 5000", Err(anyhow!("only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)")); "udp protocol custom both ports with invalid strategy")]
-    #[test_case("trip example.com", Ok(cfg().addr_family(AddrFamily::Ipv4).build()); "default address family shortcut")]
-    #[test_case("trip example.com -4", Ok(cfg().addr_family(AddrFamily::Ipv4).build()); "ipv4 address family shortcut")]
-    #[test_case("trip example.com -6", Ok(cfg().addr_family(AddrFamily::Ipv6).build()); "ipv6 address family shortcut")]
+    #[test_case("trip example.com", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "default address family")]
+    #[test_case("trip example.com --addr-family ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family")]
+    #[test_case("trip example.com --addr-family ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family")]
+    #[test_case("trip example.com --addr-family ipv4-then-ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "ipv4 then ipv6 address family")]
+    #[test_case("trip example.com --addr-family ipv6-then-ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv6thenIpv4).build()); "ipv6 then ipv4 address family")]
+    #[test_case("trip example.com -F ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "custom address family short")]
+    #[test_case("trip example.com --addr-family foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid address family")]
+    #[test_case("trip example.com -4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family shortcut")]
+    #[test_case("trip example.com -6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family shortcut")]
     #[test_case("trip example.com -5", Err(anyhow!("error: unexpected argument found")); "invalid address family shortcut")]
     #[test_case("trip example.com", Ok(cfg().first_ttl(1).build()); "default first ttl")]
     #[test_case("trip example.com --first-ttl 5", Ok(cfg().first_ttl(5).build()); "custom first ttl")]
@@ -1316,7 +1366,7 @@ mod tests {
             }
         }
 
-        pub fn addr_family(self, addr_family: AddrFamily) -> Self {
+        pub fn addr_family(self, addr_family: IpAddrFamily) -> Self {
             Self {
                 config: TrippyConfig {
                     addr_family,

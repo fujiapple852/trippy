@@ -7,5 +7,5 @@
 mod lazy_resolver;
 mod resolver;
 
-pub use lazy_resolver::{Config, DnsResolver, ResolveMethod};
+pub use lazy_resolver::{Config, DnsResolver, IpAddrFamily, ResolveMethod};
 pub use resolver::{AsInfo, DnsEntry, Error, Resolved, Resolver, Result, Unresolved};

@@ -12,8 +12,8 @@ pub mod packet;
 
 pub use builder::Builder;
 pub use config::{
-    defaults, AddrFamily, ChannelConfig, ChannelConfigBuilder, Config, ConfigBuilder,
-    IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
+    defaults, ChannelConfig, ChannelConfigBuilder, Config, ConfigBuilder, IcmpExtensionParseMode,
+    MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
 };
 pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;

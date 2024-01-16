@@ -1,4 +1,5 @@
 use crate::dns::resolver::{DnsEntry, ResolvedIpAddrs, Resolver, Result};
+use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::time::Duration;
@@ -8,7 +9,7 @@ use std::time::Duration;
 pub struct Config {
     /// The method to use for DNS resolution.
     pub resolve_method: ResolveMethod,
-    /// The address family to lookup.
+    /// The IP address resolution family.
     pub addr_family: IpAddrFamily,
     /// The timeout for DNS resolution.
     pub timeout: Duration,
@@ -27,32 +28,41 @@ pub enum ResolveMethod {
     Cloudflare,
 }
 
-/// The address family.
-#[derive(Debug, Copy, Clone)]
+/// How to resolve IP addresses.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum IpAddrFamily {
-    /// Internet Protocol v4.
-    Ipv4,
-    /// Internet Protocol v6.
-    Ipv6,
+    /// Lookup Ipv4 only.
+    Ipv4Only,
+    /// Lookup Ipv6 only.
+    Ipv6Only,
+    /// Lookup Ipv6 with a fallback to Ipv4
+    Ipv6thenIpv4,
+    /// Lookup Ipv4 with a fallback to Ipv6
+    Ipv4thenIpv6,
+}
+
+impl Display for IpAddrFamily {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ipv4Only => write!(f, "Ipv4Only"),
+            Self::Ipv6Only => write!(f, "Ipv6Only"),
+            Self::Ipv6thenIpv4 => write!(f, "Ipv6thenIpv4"),
+            Self::Ipv4thenIpv6 => write!(f, "Ipv4thenIpv6"),
+        }
+    }
 }
 
 impl Config {
-    /// Create an IPv4 `Config`.
+    /// Create a `Config`.
     #[must_use]
-    pub fn new_ipv4(resolve_method: ResolveMethod, timeout: Duration) -> Self {
+    pub fn new(
+        resolve_method: ResolveMethod,
+        addr_family: IpAddrFamily,
+        timeout: Duration,
+    ) -> Self {
         Self {
             resolve_method,
-            addr_family: IpAddrFamily::Ipv4,
-            timeout,
-        }
-    }
-
-    /// Create an IPv6 `Config`.
-    #[must_use]
-    pub fn new_ipv6(resolve_method: ResolveMethod, timeout: Duration) -> Self {
-        Self {
-            resolve_method,
-            addr_family: IpAddrFamily::Ipv6,
+            addr_family,
             timeout,
         }
     }
@@ -118,7 +128,7 @@ mod inner {
     use hickory_resolver::error::ResolveErrorKind;
     use hickory_resolver::proto::rr::RecordType;
     use hickory_resolver::{Name, Resolver};
-    use itertools::Itertools;
+    use itertools::{Either, Itertools};
     use parking_lot::RwLock;
     use std::collections::HashMap;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
@@ -168,8 +178,10 @@ mod inner {
                 let mut options = ResolverOpts::default();
                 options.timeout = config.timeout;
                 options.ip_strategy = match config.addr_family {
-                    IpAddrFamily::Ipv4 => LookupIpStrategy::Ipv4Only,
-                    IpAddrFamily::Ipv6 => LookupIpStrategy::Ipv6Only,
+                    IpAddrFamily::Ipv4Only => LookupIpStrategy::Ipv4Only,
+                    IpAddrFamily::Ipv6Only => LookupIpStrategy::Ipv6Only,
+                    IpAddrFamily::Ipv6thenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
+                    IpAddrFamily::Ipv4thenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
                 };
                 let res = match config.resolve_method {
                     ResolveMethod::Resolv => Resolver::from_system_conf(),
@@ -208,17 +220,45 @@ mod inner {
                     .map_err(|err| Error::LookupFailed(Box::new(err)))?
                     .iter()
                     .collect::<Vec<_>>()),
-                DnsProvider::DnsLookup => Ok(dns_lookup::lookup_host(hostname)
-                    .map_err(|err| Error::LookupFailed(Box::new(err)))?
-                    .into_iter()
-                    .filter(|addr| {
-                        matches!(
-                            (self.config.addr_family, addr),
-                            (IpAddrFamily::Ipv4, IpAddr::V4(_))
-                                | (IpAddrFamily::Ipv6, IpAddr::V6(_))
-                        )
+                DnsProvider::DnsLookup => {
+                    let (ipv4, ipv6): (Vec<_>, Vec<_>) = dns_lookup::lookup_host(hostname)
+                        .map_err(|err| Error::LookupFailed(Box::new(err)))?
+                        .into_iter()
+                        .partition_map(|ip| match ip {
+                            IpAddr::V4(_) => Either::Left(ip),
+                            IpAddr::V6(_) => Either::Right(ip),
+                        });
+                    Ok(match self.config.addr_family {
+                        IpAddrFamily::Ipv4Only => {
+                            if ipv4.is_empty() {
+                                vec![]
+                            } else {
+                                ipv4
+                            }
+                        }
+                        IpAddrFamily::Ipv6Only => {
+                            if ipv6.is_empty() {
+                                vec![]
+                            } else {
+                                ipv6
+                            }
+                        }
+                        IpAddrFamily::Ipv6thenIpv4 => {
+                            if ipv6.is_empty() {
+                                ipv4
+                            } else {
+                                ipv6
+                            }
+                        }
+                        IpAddrFamily::Ipv4thenIpv6 => {
+                            if ipv4.is_empty() {
+                                ipv6
+                            } else {
+                                ipv4
+                            }
+                        }
                     })
-                    .collect::<Vec<_>>()),
+                }
             }
             .map(ResolvedIpAddrs)
         }
