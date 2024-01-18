@@ -1870,9 +1870,9 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "0.6.2"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6d7074ce3af38efb3ab9770bb8534211cdf63620a6ca0fd0d59758910fdd7a6"
+checksum = "a74aeb90c93bb598aed2b2a44b88e919baee6e5309919bde8d77427ef87fca41"
 dependencies = [
  "byteorder",
  "bytes",
