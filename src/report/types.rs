@@ -35,6 +35,14 @@ pub struct Hop {
     pub worst: f64,
     #[serde(serialize_with = "fixed_width")]
     pub stddev: f64,
+    #[serde(serialize_with = "fixed_width")]
+    pub jitter: f64,
+    #[serde(serialize_with = "fixed_width")]
+    pub javg: f64,
+    #[serde(serialize_with = "fixed_width")]
+    pub jmax: f64,
+    #[serde(serialize_with = "fixed_width")]
+    pub jinta: f64,
 }
 
 impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
@@ -53,6 +61,10 @@ impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
             best: value.best_ms().unwrap_or_default(),
             worst: value.worst_ms().unwrap_or_default(),
             stddev: value.stddev_ms(),
+            jitter: value.jitter_ms().unwrap_or_default(),
+            javg: value.javg_ms(),
+            jmax: value.jmax_ms().unwrap_or_default(),
+            jinta: value.jinta(),
         }
     }
 }
