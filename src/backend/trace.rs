@@ -144,6 +144,14 @@ pub struct Hop {
     extensions: Option<Extensions>,
     mean: f64,
     m2: f64,
+    /// The ABS(RTTx - RTTx-n)
+    jitter: Option<Duration>,
+    /// The Sequential jitter average calculated for each
+    javg: Option<f64>,
+    /// The worst jitter reading recorded
+    jmax: Option<Duration>,
+    /// The interval calculation i.e smooth
+    jinta: f64,
 }
 
 impl Hop {
@@ -219,6 +227,31 @@ impl Hop {
         }
     }
 
+    /// The duration of the jitter probe observed.
+    pub fn jitter_ms(&self) -> Option<f64> {
+        self.jitter.map(|j| j.as_secs_f64() * 1000_f64)
+    }
+    /// The duration of the jworst probe observed.
+    pub fn jmax_ms(&self) -> Option<f64> {
+        self.jmax.map(|x| x.as_secs_f64() * 1000_f64)
+    }
+    /// The jitter average duration of all probes.
+    pub fn javg_ms(&self) -> Option<f64> {
+        if self.total_recv() > 0 {
+            self.javg
+        } else {
+            None
+        }
+    }
+    /// The jitter interval of all probes.
+    pub fn jinta(&self) -> Option<f64> {
+        if self.total_recv() > 0 {
+            Some(self.jinta)
+        } else {
+            None
+        }
+    }
+
     /// The last N samples.
     pub fn samples(&self) -> &[Duration] {
         &self.samples
@@ -244,6 +277,10 @@ impl Default for Hop {
             m2: 0f64,
             samples: Vec::default(),
             extensions: None,
+            jitter: None,
+            javg: None,
+            jmax: None,
+            jinta: 0f64,
         }
     }
 }
@@ -336,6 +373,20 @@ impl TraceData {
                 let dur = probe.duration();
                 let dur_ms = dur.as_secs_f64() * 1000_f64;
                 hop.total_time += dur;
+                //Before last is set use it to calc jitter
+                let last_ms = hop.last_ms().unwrap_or_default();
+                let jitter_ms = (last_ms - dur_ms).abs();
+                let jitter_dur = Duration::from_secs_f64(jitter_ms / 1000_f64);
+                hop.jitter = hop.last.and(Some(jitter_dur));
+                let mut javg_ms = hop.javg_ms().unwrap_or_default();
+                //Welfords online algorithm avg without dataset values.
+                javg_ms += (jitter_ms - javg_ms) / hop.total_recv as f64;
+                hop.javg = Some(javg_ms);
+                // algorithm is from rfc1889, A.8 or rfc3550
+                hop.jinta += jitter_ms - ((hop.jinta + 8.0) / 16.0);
+                hop.jmax = hop
+                    .jmax
+                    .map_or(Some(jitter_dur), |d| Some(d.max(jitter_dur)));
                 hop.last = Some(dur);
                 hop.samples.insert(0, dur);
                 hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
