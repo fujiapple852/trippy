@@ -79,6 +79,14 @@ pub enum Column {
     StdDev,
     /// The status of a hop.
     Status,
+    /// The current jitter i.e. round-trip difference with the last round-trip.
+    Jitter,
+    /// The average jitter time for all probes at this hop.
+    Javg,
+    /// The worst round-trip jitter time for all probes at this hop.
+    Jmax,
+    /// The smoothed jitter value for all probes at this hop.
+    Jinta,
 }
 
 impl From<Column> for char {
@@ -95,6 +103,10 @@ impl From<Column> for char {
             Column::Worst => 'w',
             Column::StdDev => 'd',
             Column::Status => 't',
+            Column::Jitter => 'j',
+            Column::Javg => 'g',
+            Column::Jmax => 'x',
+            Column::Jinta => 'i',
         }
     }
 }
@@ -113,6 +125,10 @@ impl From<TuiColumn> for Column {
             TuiColumn::Worst => Self::Worst,
             TuiColumn::StdDev => Self::StdDev,
             TuiColumn::Status => Self::Status,
+            TuiColumn::Jitter => Self::Jitter,
+            TuiColumn::Javg => Self::Javg,
+            TuiColumn::Jmax => Self::Jmax,
+            TuiColumn::Jinta => Self::Jinta,
         }
     }
 }
@@ -131,6 +147,10 @@ impl Display for Column {
             Self::Worst => write!(f, "Wrst"),
             Self::StdDev => write!(f, "StDev"),
             Self::Status => write!(f, "Sts"),
+            Self::Jitter => write!(f, "Jttr"),
+            Self::Javg => write!(f, "Javg"),
+            Self::Jmax => write!(f, "Jmax"),
+            Self::Jinta => write!(f, "Jint"),
         }
     }
 }
@@ -151,6 +171,10 @@ impl Column {
             Self::Worst => ColumnWidth::Fixed(7),
             Self::StdDev => ColumnWidth::Fixed(8),
             Self::Status => ColumnWidth::Fixed(7),
+            Self::Jitter => ColumnWidth::Fixed(7),
+            Self::Javg => ColumnWidth::Fixed(7),
+            Self::Jmax => ColumnWidth::Fixed(7),
+            Self::Jinta => ColumnWidth::Fixed(8),
         }
     }
 }

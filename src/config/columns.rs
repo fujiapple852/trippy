@@ -71,6 +71,14 @@ pub enum TuiColumn {
     StdDev,
     /// The status of a hop.
     Status,
+    /// The current jitter i.e. round-trip difference with the last round-trip.
+    Jitter,
+    /// The average jitter time for all probes at this hop.
+    Javg,
+    /// The worst round-trip jitter time for all probes at this hop.
+    Jmax,
+    /// The smoothed jitter value for all probes at this hop.
+    Jinta,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -89,6 +97,10 @@ impl TryFrom<char> for TuiColumn {
             'w' => Ok(Self::Worst),
             'd' => Ok(Self::StdDev),
             't' => Ok(Self::Status),
+            'j' => Ok(Self::Jitter),
+            'g' => Ok(Self::Javg),
+            'x' => Ok(Self::Jmax),
+            'i' => Ok(Self::Jinta),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -108,6 +120,10 @@ impl Display for TuiColumn {
             Self::Worst => write!(f, "w"),
             Self::StdDev => write!(f, "d"),
             Self::Status => write!(f, "t"),
+            Self::Jitter => write!(f, "j"),
+            Self::Javg => write!(f, "g"),
+            Self::Jmax => write!(f, "x"),
+            Self::Jinta => write!(f, "i"),
         }
     }
 }
@@ -134,7 +150,7 @@ mod tests {
     }
 
     ///Negative test for invalid characters
-    #[test_case('x' ; "invalid x")]
+    #[test_case('k' ; "invalid k")]
     #[test_case('z' ; "invalid z")]
     fn test_try_invalid_char_for_tui_column(c: char) {
         // Negative test for an unknown character

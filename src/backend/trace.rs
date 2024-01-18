@@ -138,6 +138,14 @@ pub struct Hop {
     best: Option<Duration>,
     /// The worst round trip time for this hop across all rounds.
     worst: Option<Duration>,
+    /// The current jitter i.e. round-trip difference with the last round-trip.
+    jitter: Option<Duration>,
+    /// The average jitter time for all probes at this hop.
+    javg: f64,
+    /// The worst round-trip jitter time for all probes at this hop.
+    jmax: Option<Duration>,
+    /// The smoothed jitter value for all probes at this hop.
+    jinta: f64,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
     /// The ICMP extensions for this hop.
@@ -219,6 +227,25 @@ impl Hop {
         }
     }
 
+    /// The duration of the jitter probe observed.
+    pub fn jitter_ms(&self) -> Option<f64> {
+        self.jitter.map(|j| j.as_secs_f64() * 1000_f64)
+    }
+
+    /// The duration of the jworst probe observed.
+    pub fn jmax_ms(&self) -> Option<f64> {
+        self.jmax.map(|x| x.as_secs_f64() * 1000_f64)
+    }
+
+    /// The jitter average duration of all probes.
+    pub fn javg_ms(&self) -> f64 {
+        self.javg
+    }
+    /// The jitter interval of all probes.
+    pub fn jinta(&self) -> f64 {
+        self.jinta
+    }
+
     /// The last N samples.
     pub fn samples(&self) -> &[Duration] {
         &self.samples
@@ -240,6 +267,10 @@ impl Default for Hop {
             last: None,
             best: None,
             worst: None,
+            jitter: None,
+            javg: 0f64,
+            jmax: None,
+            jinta: 0f64,
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
@@ -336,6 +367,17 @@ impl TraceData {
                 let dur = probe.duration();
                 let dur_ms = dur.as_secs_f64() * 1000_f64;
                 hop.total_time += dur;
+                // Before last is set use it to calc jitter
+                let last_ms = hop.last_ms().unwrap_or_default();
+                let jitter_ms = (last_ms - dur_ms).abs();
+                let jitter_dur = Duration::from_secs_f64(jitter_ms / 1000_f64);
+                hop.jitter = hop.last.and(Some(jitter_dur));
+                hop.javg += (jitter_ms - hop.javg) / hop.total_recv as f64;
+                // algorithm is from rfc1889, A.8 or rfc3550
+                hop.jinta += jitter_ms - ((hop.jinta + 8.0) / 16.0);
+                hop.jmax = hop
+                    .jmax
+                    .map_or(Some(jitter_dur), |d| Some(d.max(jitter_dur)));
                 hop.last = Some(dur);
                 hop.samples.insert(0, dur);
                 hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
