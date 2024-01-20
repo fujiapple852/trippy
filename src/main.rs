@@ -15,19 +15,23 @@
 #![deny(unsafe_code)]
 
 use crate::backend::Backend;
-use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
+use crate::config::{
+    LogFormat, LogSpanEvents, Mode, TrippyAction, TrippyConfig, TuiCommandItem, TuiThemeItem,
+};
 use crate::geoip::GeoIpLookup;
 use crate::platform::Platform;
 use anyhow::{anyhow, Error};
 use backend::trace::Trace;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::Shell;
 use config::Args;
 use frontend::TuiConfig;
 use parking_lot::RwLock;
 use std::net::IpAddr;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
+use std::{process, thread};
+use strum::VariantNames;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -50,11 +54,21 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     Platform::acquire_privileges()?;
     let platform = Platform::discover()?;
-    let cfg = TrippyConfig::from(args, &platform)?;
-    let _guard = configure_logging(&cfg);
-    let resolver = start_dns_resolver(&cfg)?;
-    let geoip_lookup = create_geoip_lookup(&cfg)?;
-    let addrs = resolve_targets(&cfg, &resolver)?;
+    match TrippyAction::from(args, &platform)? {
+        TrippyAction::Trippy(cfg) => run_trippy(&cfg, &platform)?,
+        TrippyAction::PrintTuiThemeItems => print_tui_theme_items(),
+        TrippyAction::PrintTuiBindingCommands => print_tui_binding_commands(),
+        TrippyAction::PrintConfigTemplate => print_config_template(),
+        TrippyAction::PrintShellCompletions(shell) => print_shell_completions(shell),
+    }
+    Ok(())
+}
+
+fn run_trippy(cfg: &TrippyConfig, platform: &Platform) -> anyhow::Result<()> {
+    let _guard = configure_logging(cfg);
+    let resolver = start_dns_resolver(cfg)?;
+    let geoip_lookup = create_geoip_lookup(cfg)?;
+    let addrs = resolve_targets(cfg, &resolver)?;
     if addrs.is_empty() {
         return Err(anyhow!(
             "failed to find any valid IP{} addresses for {}",
@@ -62,10 +76,37 @@ fn main() -> anyhow::Result<()> {
             cfg.targets.join(", ")
         ));
     }
-    let traces = start_tracers(&cfg, &addrs, platform.pid)?;
+    let traces = start_tracers(cfg, &addrs, platform.pid)?;
     Platform::drop_privileges()?;
-    run_frontend(&cfg, resolver, geoip_lookup, traces)?;
-    Ok(())
+    run_frontend(cfg, resolver, geoip_lookup, traces)
+}
+
+fn print_tui_theme_items() {
+    println!(
+        "TUI theme color items: {}",
+        TuiThemeItem::VARIANTS.join(", ")
+    );
+    process::exit(0);
+}
+
+fn print_tui_binding_commands() {
+    println!(
+        "TUI binding commands: {}",
+        TuiCommandItem::VARIANTS.join(", ")
+    );
+    process::exit(0);
+}
+
+fn print_config_template() {
+    println!("{}", include_str!("../trippy-config-sample.toml"));
+    process::exit(0);
+}
+
+fn print_shell_completions(shell: Shell) {
+    let mut cmd = Args::command();
+    let name = cmd.get_name().to_string();
+    clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+    process::exit(0);
 }
 
 /// Start the DNS resolver.
