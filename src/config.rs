@@ -1,19 +1,15 @@
 use crate::platform::Platform;
 use anyhow::anyhow;
-use binding::TuiCommandItem;
-use clap::{Command, CommandFactory, ValueEnum};
-use clap_complete::{generate, Generator};
+use clap::ValueEnum;
+use clap_complete::Shell;
 use file::ConfigFile;
 use humantime::format_duration;
 use itertools::Itertools;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::process;
 use std::str::FromStr;
 use std::time::Duration;
-use strum::VariantNames;
-use theme::TuiThemeItem;
 use trippy::dns::ResolveMethod;
 use trippy::tracing::{
     defaults, AddrFamily, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode,
@@ -27,11 +23,11 @@ mod constants;
 mod file;
 mod theme;
 
-pub use binding::{TuiBindings, TuiKeyBinding};
+pub use binding::{TuiBindings, TuiCommandItem, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
 pub use constants::MAX_HOPS;
-pub use theme::{TuiColor, TuiTheme};
+pub use theme::{TuiColor, TuiTheme, TuiThemeItem};
 
 /// The tool mode.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
@@ -238,6 +234,37 @@ pub enum LogSpanEvents {
     Full,
 }
 
+/// The action to perform.
+#[derive(Debug, Eq, PartialEq)]
+pub enum TrippyAction {
+    /// Run Trippy.
+    Trippy(TrippyConfig),
+    /// Print all TUI theme items and exit.
+    PrintTuiThemeItems,
+    /// Print all TUI commands that can be bound and exit.
+    PrintTuiBindingCommands,
+    /// Print a template toml config file and exit.
+    PrintConfigTemplate,
+    /// Generate shell completion and exit.
+    PrintShellCompletions(Shell),
+}
+
+impl TrippyAction {
+    pub fn from(args: Args, platform: &Platform) -> anyhow::Result<Self> {
+        Ok(if args.print_tui_theme_items {
+            Self::PrintTuiThemeItems
+        } else if args.print_tui_binding_commands {
+            Self::PrintTuiBindingCommands
+        } else if args.print_config_template {
+            Self::PrintConfigTemplate
+        } else if let Some(shell) = args.generate {
+            Self::PrintShellCompletions(shell)
+        } else {
+            Self::Trippy(TrippyConfig::from(args, platform)?)
+        })
+    }
+}
+
 /// Fully parsed and validated configuration.
 #[derive(Debug, Eq, PartialEq)]
 pub struct TrippyConfig {
@@ -307,29 +334,6 @@ impl TrippyConfig {
             has_privileges,
             needs_privileges,
         } = platform;
-        if args.print_tui_theme_items {
-            println!(
-                "TUI theme color items: {}",
-                TuiThemeItem::VARIANTS.join(", ")
-            );
-            process::exit(0);
-        }
-        if args.print_tui_binding_commands {
-            println!(
-                "TUI binding commands: {}",
-                TuiCommandItem::VARIANTS.join(", ")
-            );
-            process::exit(0);
-        }
-        if args.print_config_template {
-            println!("{}", include_str!("../trippy-config-sample.toml"));
-            process::exit(0);
-        }
-        if let Some(generator) = args.generate {
-            let mut cmd = Args::command();
-            print_completions(generator, &mut cmd);
-            process::exit(0);
-        }
         let cfg_file_trace = cfg_file.trippy.unwrap_or_default();
         let cfg_file_strategy = cfg_file.strategy.unwrap_or_default();
         let cfg_file_tui_bindings = cfg_file.bindings.unwrap_or_default();
@@ -737,10 +741,6 @@ fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMeth
         DnsResolveMethodConfig::Google => ResolveMethod::Google,
         DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
     }
-}
-
-fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
-    generate(gen, cmd, cmd.get_name().to_string(), &mut std::io::stdout());
 }
 
 fn cfg_layer<T>(fst: Option<T>, snd: Option<T>, def: T) -> T {
