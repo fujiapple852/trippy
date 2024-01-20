@@ -600,6 +600,7 @@ impl TrippyConfig {
         validate_privilege(privilege_mode, has_privileges, needs_privileges)?;
         validate_logging(mode, verbose)?;
         validate_strategy(multipath_strategy, unprivileged)?;
+        validate_protocol_strategy(protocol, multipath_strategy)?;
         validate_multi(mode, protocol, &args.targets, dns_resolve_all)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
@@ -826,6 +827,28 @@ fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow:
             "Paris tracing strategy cannot be used in unprivileged mode"
         )),
         _ => Ok(()),
+    }
+}
+
+/// Validate the protocol against the multipath strategy.
+fn validate_protocol_strategy(
+    protocol: Protocol,
+    strategy: MultipathStrategy,
+) -> anyhow::Result<()> {
+    match (protocol, strategy) {
+        (Protocol::Tcp | Protocol::Icmp, MultipathStrategy::Classic) | (Protocol::Udp, _) => Ok(()),
+        (Protocol::Icmp, MultipathStrategy::Paris) => {
+            Err(anyhow!("Paris multipath strategy not support for icmp"))
+        }
+        (Protocol::Icmp, MultipathStrategy::Dublin) => {
+            Err(anyhow!("Dublin multipath strategy not support for icmp"))
+        }
+        (Protocol::Tcp, MultipathStrategy::Paris) => Err(anyhow!(
+            "Paris multipath strategy not yet supported for tcp"
+        )),
+        (Protocol::Tcp, MultipathStrategy::Dublin) => Err(anyhow!(
+            "Dublin multipath strategy not yet supported for tcp"
+        )),
     }
 }
 
