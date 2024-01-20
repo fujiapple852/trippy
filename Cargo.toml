@@ -33,7 +33,7 @@ dns-lookup = "2.0.4"
 hickory-resolver = "0.24.0"
 crossbeam = "0.8.4"
 clap = { version = "4.4.0",  default-features = false, features = [ "cargo", "derive", "wrap_help", "usage", "unstable-styles" ] }
-clap_complete = "4.4.6"
+clap_complete = "4.4.8"
 humantime = "2.1.0"
 parking_lot = "0.12.1"
 ratatui = "0.25.0"
