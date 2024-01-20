@@ -483,21 +483,17 @@ impl TrippyConfig {
             cfg_file_tui.tui_as_mode,
             constants::DEFAULT_TUI_AS_MODE,
         );
-
         let columns = cfg_layer(
             args.tui_custom_columns,
             cfg_file_tui.tui_custom_columns,
             String::from(constants::DEFAULT_CUSTOM_COLUMNS),
         );
-
         let tui_custom_columns = TuiColumns::try_from(columns.as_str())?;
-
         let tui_icmp_extension_mode = cfg_layer(
             args.tui_icmp_extension_mode,
             cfg_file_tui.tui_icmp_extension_mode,
             constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
         );
-
         let tui_geoip_mode = cfg_layer(
             args.tui_geoip_mode,
             cfg_file_tui.tui_geoip_mode,
@@ -768,6 +764,7 @@ fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
     }
 }
 
+/// Validate privileges.
 fn validate_privilege(
     privilege_mode: PrivilegeMode,
     has_privileges: bool,
@@ -795,6 +792,7 @@ fn validate_privilege(
     }
 }
 
+/// Validate the TUI custom columns.
 fn validate_tui_custom_columns(tui_custom_columns: &TuiColumns) -> anyhow::Result<()> {
     let duplicates = tui_custom_columns.find_duplicates();
     if tui_custom_columns.0.is_empty() {
@@ -809,6 +807,7 @@ fn validate_tui_custom_columns(tui_custom_columns: &TuiColumns) -> anyhow::Resul
     }
 }
 
+/// Validate the logging mode.
 fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
     if matches!(mode, Mode::Tui) && verbose {
         Err(anyhow!("cannot enable verbose logging in tui mode"))
@@ -817,7 +816,7 @@ fn validate_logging(mode: Mode, verbose: bool) -> anyhow::Result<()> {
     }
 }
 
-/// Validate the tracing strategy against the privilege mode.
+/// Validate the multipath strategy against the privilege mode.
 fn validate_strategy(strategy: MultipathStrategy, unprivileged: bool) -> anyhow::Result<()> {
     match (strategy, unprivileged) {
         (MultipathStrategy::Dublin, true) => Err(anyhow!(
