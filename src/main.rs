@@ -59,7 +59,7 @@ fn main() -> anyhow::Result<()> {
         TrippyAction::PrintTuiThemeItems => print_tui_theme_items(),
         TrippyAction::PrintTuiBindingCommands => print_tui_binding_commands(),
         TrippyAction::PrintConfigTemplate => print_config_template(),
-        TrippyAction::PrintShellCompletions(shell) => print_shell_completions(shell),
+        TrippyAction::PrintShellCompletions(shell) => print_shell_completions(shell)?,
     }
     Ok(())
 }
@@ -82,18 +82,12 @@ fn run_trippy(cfg: &TrippyConfig, platform: &Platform) -> anyhow::Result<()> {
 }
 
 fn print_tui_theme_items() {
-    println!(
-        "TUI theme color items: {}",
-        TuiThemeItem::VARIANTS.join(", ")
-    );
+    println!("{}", tui_theme_items());
     process::exit(0);
 }
 
 fn print_tui_binding_commands() {
-    println!(
-        "TUI binding commands: {}",
-        TuiCommandItem::VARIANTS.join(", ")
-    );
+    println!("{}", tui_binding_commands());
     process::exit(0);
 }
 
@@ -102,10 +96,8 @@ fn print_config_template() {
     process::exit(0);
 }
 
-fn print_shell_completions(shell: Shell) {
-    let mut cmd = Args::command();
-    let name = cmd.get_name().to_string();
-    clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+fn print_shell_completions(shell: Shell) -> anyhow::Result<()> {
+    println!("{}", shell_completions(shell)?);
     process::exit(0);
 }
 
@@ -449,5 +441,51 @@ impl TraceInfo {
             geoip_mmdb_file,
             dns_resolve_all,
         }
+    }
+}
+
+fn tui_theme_items() -> String {
+    format!(
+        "TUI theme color items: {}",
+        TuiThemeItem::VARIANTS.join(", ")
+    )
+}
+
+fn tui_binding_commands() -> String {
+    format!(
+        "TUI binding commands: {}",
+        TuiCommandItem::VARIANTS.join(", ")
+    )
+}
+
+fn shell_completions(shell: Shell) -> anyhow::Result<String> {
+    let mut cmd = Args::command();
+    let name = cmd.get_name().to_string();
+    let mut buffer: Vec<u8> = vec![];
+    clap_complete::generate(shell, &mut cmd, name, &mut buffer);
+    Ok(String::from_utf8(buffer)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(include_str!("../test_resources/tui_theme_items.txt"), &tui_theme_items(); "tui theme items match")]
+    #[test_case(include_str!("../test_resources/tui_binding_commands.txt"), &tui_binding_commands(); "tui binding commands match")]
+    #[test_case(include_str!("../test_resources/completions_bash.txt"), &shell_completions(Shell::Bash).unwrap(); "generate bash shell completions")]
+    #[test_case(include_str!("../test_resources/completions_elvish.txt"), &shell_completions(Shell::Elvish).unwrap(); "generate elvish shell completions")]
+    #[test_case(include_str!("../test_resources/completions_fish.txt"), &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
+    #[test_case(include_str!("../test_resources/completions_powershell.txt"), &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
+    #[test_case(include_str!("../test_resources/completions_zsh.txt"), &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
+    fn test_output(expected: &str, actual: &str) {
+        if remove_whitespace(actual.to_string()) != remove_whitespace(expected.to_string()) {
+            pretty_assertions::assert_eq!(actual, expected);
+        }
+    }
+
+    fn remove_whitespace(mut s: String) -> String {
+        s.retain(|c| !c.is_whitespace());
+        s
     }
 }

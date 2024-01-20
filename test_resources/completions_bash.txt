@@ -1,0 +1,282 @@
+_trip() {
+    local i cur prev opts cmd
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    cmd=""
+    opts=""
+
+    for i in ${COMP_WORDS[@]}
+    do
+        case "${cmd},${i}" in
+            ",$1")
+                cmd="trip"
+                ;;
+            *)
+                ;;
+        esac
+    done
+
+    case "${cmd}" in
+        trip)
+            opts="-c -m -u -p -4 -6 -P -S -A -I -i -T -g -R -U -f -t -Q -e -r -y -z -a -M -s -C -G -v -h -V --config-file --mode --unprivileged --protocol --udp --tcp --icmp --ipv4 --ipv6 --target-port --source-port --source-address --interface --min-round-duration --max-round-duration --grace-duration --initial-sequence --multipath-strategy --max-inflight --first-ttl --max-ttl --packet-size --payload-pattern --tos --icmp-extensions --read-timeout --dns-resolve-method --dns-resolve-all --dns-timeout --dns-lookup-as-info --tui-address-mode --tui-as-mode --tui-custom-columns --tui-icmp-extension-mode --tui-geoip-mode --tui-max-addrs --tui-max-samples --tui-max-flows --tui-preserve-screen --tui-refresh-rate --tui-privacy-max-ttl --tui-theme-colors --print-tui-theme-items --tui-key-bindings --print-tui-binding-commands --report-cycles --geoip-mmdb-file --generate --print-config-template --log-format --log-filter --log-span-events --verbose --help --version [TARGETS]..."
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config-file)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -c)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --mode)
+                    COMPREPLY=($(compgen -W "tui stream pretty markdown csv json dot flows silent" -- "${cur}"))
+                    return 0
+                    ;;
+                -m)
+                    COMPREPLY=($(compgen -W "tui stream pretty markdown csv json dot flows silent" -- "${cur}"))
+                    return 0
+                    ;;
+                --protocol)
+                    COMPREPLY=($(compgen -W "icmp udp tcp" -- "${cur}"))
+                    return 0
+                    ;;
+                -p)
+                    COMPREPLY=($(compgen -W "icmp udp tcp" -- "${cur}"))
+                    return 0
+                    ;;
+                --target-port)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -P)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --source-port)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -S)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --source-address)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -A)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --interface)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -I)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --min-round-duration)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -i)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --max-round-duration)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -T)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --grace-duration)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -g)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --initial-sequence)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --multipath-strategy)
+                    COMPREPLY=($(compgen -W "classic paris dublin" -- "${cur}"))
+                    return 0
+                    ;;
+                -R)
+                    COMPREPLY=($(compgen -W "classic paris dublin" -- "${cur}"))
+                    return 0
+                    ;;
+                --max-inflight)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -U)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --first-ttl)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -f)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --max-ttl)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -t)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --packet-size)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --payload-pattern)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tos)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -Q)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --read-timeout)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --dns-resolve-method)
+                    COMPREPLY=($(compgen -W "system resolv google cloudflare" -- "${cur}"))
+                    return 0
+                    ;;
+                -r)
+                    COMPREPLY=($(compgen -W "system resolv google cloudflare" -- "${cur}"))
+                    return 0
+                    ;;
+                --dns-timeout)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-address-mode)
+                    COMPREPLY=($(compgen -W "ip host both" -- "${cur}"))
+                    return 0
+                    ;;
+                -a)
+                    COMPREPLY=($(compgen -W "ip host both" -- "${cur}"))
+                    return 0
+                    ;;
+                --tui-as-mode)
+                    COMPREPLY=($(compgen -W "asn prefix country-code registry allocated name" -- "${cur}"))
+                    return 0
+                    ;;
+                --tui-custom-columns)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-icmp-extension-mode)
+                    COMPREPLY=($(compgen -W "off mpls full all" -- "${cur}"))
+                    return 0
+                    ;;
+                --tui-geoip-mode)
+                    COMPREPLY=($(compgen -W "off short long location" -- "${cur}"))
+                    return 0
+                    ;;
+                --tui-max-addrs)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -M)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-max-samples)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -s)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-max-flows)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-refresh-rate)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-privacy-max-ttl)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-theme-colors)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --tui-key-bindings)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --report-cycles)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -C)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --geoip-mmdb-file)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -G)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --generate)
+                    COMPREPLY=($(compgen -W "bash elvish fish powershell zsh" -- "${cur}"))
+                    return 0
+                    ;;
+                --log-format)
+                    COMPREPLY=($(compgen -W "compact pretty json chrome" -- "${cur}"))
+                    return 0
+                    ;;
+                --log-filter)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --log-span-events)
+                    COMPREPLY=($(compgen -W "off active full" -- "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+    esac
+}
+
+if [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 4 || "${BASH_VERSINFO[0]}" -gt 4 ]]; then
+    complete -F _trip -o nosort -o bashdefault -o default trip
+else
+    complete -F _trip -o bashdefault -o default trip
+fi
