@@ -1,0 +1,63 @@
+A network diagnostic tool
+
+Usage: trip [OPTIONS] [TARGETS]...
+
+Arguments:
+  [TARGETS]...  A space delimited list of hostnames and IPs to trace
+
+Options:
+  -c, --config-file <CONFIG_FILE>                          Config file
+  -m, --mode <MODE>                                        Output mode [default: tui] [possible values: tui, stream, pretty, markdown, csv, json, dot, flows, silent]
+  -u, --unprivileged                                       Trace without requiring elevated privileges on supported platforms [default: false]
+  -p, --protocol <PROTOCOL>                                Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
+      --udp                                                Trace using the UDP protocol
+      --tcp                                                Trace using the TCP protocol
+      --icmp                                               Trace using the ICMP protocol
+  -4, --ipv4                                               Use IPv4 only
+  -6, --ipv6                                               Use IPv6 only
+  -P, --target-port <TARGET_PORT>                          The target port (TCP & UDP only) [default: 80]
+  -S, --source-port <SOURCE_PORT>                          The source port (TCP & UDP only) [default: auto]
+  -A, --source-address <SOURCE_ADDRESS>                    The source IP address [default: auto]
+  -I, --interface <INTERFACE>                              The network interface [default: auto]
+  -i, --min-round-duration <MIN_ROUND_DURATION>            The minimum duration of every round [default: 1s]
+  -T, --max-round-duration <MAX_ROUND_DURATION>            The maximum duration of every round [default: 1s]
+  -g, --grace-duration <GRACE_DURATION>                    The period of time to wait for additional ICMP responses after the target has responded [default: 100ms]
+      --initial-sequence <INITIAL_SEQUENCE>                The initial sequence number [default: 33000]
+  -R, --multipath-strategy <MULTIPATH_STRATEGY>            The Equal-cost Multi-Path routing strategy (UDP only) [default: classic] [possible values: classic, paris, dublin]
+  -U, --max-inflight <MAX_INFLIGHT>                        The maximum number of in-flight ICMP echo requests [default: 24]
+  -f, --first-ttl <FIRST_TTL>                              The TTL to start from [default: 1]
+  -t, --max-ttl <MAX_TTL>                                  The maximum number of TTL hops [default: 64]
+      --packet-size <PACKET_SIZE>                          The size of IP packet to send (IP header + ICMP header + payload) [default: 84]
+      --payload-pattern <PAYLOAD_PATTERN>                  The repeating pattern in the payload of the ICMP packet [default: 0]
+  -Q, --tos <TOS>                                          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+  -e, --icmp-extensions                                    Parse ICMP extensions
+      --read-timeout <READ_TIMEOUT>                        The socket read timeout [default: 10ms]
+  -r, --dns-resolve-method <DNS_RESOLVE_METHOD>            How to perform DNS queries [default: system] [possible values: system, resolv, google, cloudflare]
+  -y, --dns-resolve-all                                    Trace to all IPs resolved from DNS lookup [default: false]
+      --dns-timeout <DNS_TIMEOUT>                          The maximum time to wait to perform DNS queries [default: 5s]
+  -z, --dns-lookup-as-info                                 Lookup autonomous system (AS) information during DNS queries [default: false]
+  -a, --tui-address-mode <TUI_ADDRESS_MODE>                How to render addresses [default: host] [possible values: ip, host, both]
+      --tui-as-mode <TUI_AS_MODE>                          How to render AS information [default: asn] [possible values: asn, prefix, country-code, registry, allocated, name]
+      --tui-custom-columns <TUI_CUSTOM_COLUMNS>            Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]
+      --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>  How to render ICMP extensions [default: off] [possible values: off, mpls, full, all]
+      --tui-geoip-mode <TUI_GEOIP_MODE>                    How to render GeoIp information [default: short] [possible values: off, short, long, location]
+  -M, --tui-max-addrs <TUI_MAX_ADDRS>                      The maximum number of addresses to show per hop [default: auto]
+  -s, --tui-max-samples <TUI_MAX_SAMPLES>                  The maximum number of samples to record per hop [default: 256]
+      --tui-max-flows <TUI_MAX_FLOWS>                      The maximum number of flows to show [default: 64]
+      --tui-preserve-screen                                Preserve the screen on exit [default: false]
+      --tui-refresh-rate <TUI_REFRESH_RATE>                The Tui refresh rate [default: 100ms]
+      --tui-privacy-max-ttl <TUI_PRIVACY_MAX_TTL>          The maximum ttl of hops which will be masked for privacy [default: 0]
+      --tui-theme-colors <TUI_THEME_COLORS>                The TUI theme colors [item=color,item=color,..]
+      --print-tui-theme-items                              Print all TUI theme items and exit
+      --tui-key-bindings <TUI_KEY_BINDINGS>                The TUI key bindings [command=key,command=key,..]
+      --print-tui-binding-commands                         Print all TUI commands that can be bound and exit
+  -C, --report-cycles <REPORT_CYCLES>                      The number of report cycles to run [default: 10]
+  -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>                  The MaxMind City GeoLite2 mmdb file
+      --generate <GENERATE>                                Generate shell completion [possible values: bash, elvish, fish, powershell, zsh]
+      --print-config-template                              Print a template toml config file and exit
+      --log-format <LOG_FORMAT>                            The debug log format [default: pretty] [possible values: compact, pretty, json, chrome]
+      --log-filter <LOG_FILTER>                            The debug log filter [default: trippy=debug]
+      --log-span-events <LOG_SPAN_EVENTS>                  The debug log format [default: off] [possible values: off, active, full]
+  -v, --verbose                                            Enable verbose debug logging
+  -h, --help                                               Print help (see more with '--help')
+  -V, --version                                            Print version
