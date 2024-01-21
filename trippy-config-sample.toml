@@ -259,7 +259,7 @@ tui-as-mode = "asn"
 #   T - Status
 #
 # The columns will be shown in the order specified.
-tui-custom-columns = "HOLSRAVBWDT"
+tui-custom-columns = "holsravbwdt"
 
 # How to render ICMP extensions.
 #
