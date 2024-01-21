@@ -1124,8 +1124,16 @@ mod tests {
     #[test_case("trip -h", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show short help")]
     #[test_case("trip --help", Err(anyhow!(include_str!("../test_resources/usage_long.txt"))); "show long help")]
     #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
+    fn test_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com --config-file trippy.toml", Ok(cfg().build()); "custom config file")]
     #[test_case("trip example.com -c trippy.toml", Ok(cfg().build()); "custom config file short")]
+    fn test_config(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().build()); "single target")]
     #[test_case("trip example.com foo.com bar.com", Ok(cfg_multi().build()); "multiple targets")]
     #[test_case("trip example.com -U 20", Ok(cfg().max_inflight(20).build()); "single target before args")]
@@ -1133,12 +1141,28 @@ mod tests {
     #[test_case("trip example.com foo.com bar.com -U 20", Ok(cfg_multi().max_inflight(20).build()); "multiple targets before args")]
     #[test_case("trip -U 20 example.com foo.com bar.com", Ok(cfg_multi().max_inflight(20).build()); "multiple targets after args")]
     #[test_case("trip example.com -U 20 foo.com -Q 255 bar.com", Ok(cfg_multi().max_inflight(20).tos(255).build()); "multiple targets between args")]
+    fn test_target(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com --dummy", Err(anyhow!("error: unexpected argument found")); "invalid argument")]
+    fn test_unexpected(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "default strategy")]
     #[test_case("trip example.com --multipath-strategy classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy")]
     #[test_case("trip example.com --multipath-strategy paris --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "paris strategy")]
     #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
     #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid strategy")]
+    #[test_case("trip example.com --icmp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not support for icmp")); "paris with invalid protocol icmp")]
+    #[test_case("trip example.com --icmp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not support for icmp")); "dublin with invalid protocol icmp")]
+    #[test_case("trip example.com --tcp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not yet supported for tcp")); "paris with invalid protocol tcp")]
+    #[test_case("trip example.com --tcp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not yet supported for tcp")); "dublin with invalid protocol tcp")]
+    fn test_multipath(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "default protocol")]
     #[test_case("trip example.com --protocol icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol")]
     #[test_case("trip example.com --protocol udp", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol")]
@@ -1151,6 +1175,10 @@ mod tests {
     #[test_case("trip example.com --icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol shortcut")]
     #[test_case("trip example.com --udp", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol shortcut")]
     #[test_case("trip example.com --tcp", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(80))).build()); "tcp protocol shortcut")]
+    fn test_protocol(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com --udp --source-port 2222", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(2222))).build()); "udp protocol custom src port")]
     #[test_case("trip example.com --udp --target-port 8888", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedDest(Port(8888))).build()); "udp protocol custom target port")]
     #[test_case("trip example.com --udp --source-port 123", Err(anyhow!("source-port (123) must be >= 1024")); "udp protocol invalid src port")]
@@ -1164,11 +1192,11 @@ mod tests {
     #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol dublin strategy custom src port")]
     #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
     #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
-    #[test_case("trip example.com --icmp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not support for icmp")); "paris with invalid protocol icmp")]
-    #[test_case("trip example.com --icmp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not support for icmp")); "dublin with invalid protocol icmp")]
-    #[test_case("trip example.com --tcp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not yet supported for tcp")); "paris with invalid protocol tcp")]
-    #[test_case("trip example.com --tcp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not yet supported for tcp")); "dublin with invalid protocol tcp")]
     #[test_case("trip example.com --udp --source-port 33000 --target-port 5000", Err(anyhow!("only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)")); "udp protocol custom both ports with invalid strategy")]
+    fn test_ports(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "default address family")]
     #[test_case("trip example.com --addr-family ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family")]
     #[test_case("trip example.com --addr-family ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family")]
@@ -1179,6 +1207,10 @@ mod tests {
     #[test_case("trip example.com -4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family shortcut")]
     #[test_case("trip example.com -6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family shortcut")]
     #[test_case("trip example.com -5", Err(anyhow!("error: unexpected argument found")); "invalid address family shortcut")]
+    fn test_addr_family(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().first_ttl(1).build()); "default first ttl")]
     #[test_case("trip example.com --first-ttl 5", Ok(cfg().first_ttl(5).build()); "custom first ttl")]
     #[test_case("trip example.com -f 5", Ok(cfg().first_ttl(5).build()); "custom first ttl short")]
@@ -1191,6 +1223,10 @@ mod tests {
     #[test_case("trip example.com --max-ttl 500", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high max ttl")]
     #[test_case("trip example.com --first-ttl 3 --max-ttl 2", Err(anyhow!("first-ttl (3) must be less than or equal to max-ttl (2)")); "first ttl higher than max ttl")]
     #[test_case("trip example.com --first-ttl 5 --max-ttl 5", Ok(cfg().first_ttl(5).max_ttl(5).build()); "custom first and max ttl")]
+    fn test_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default min round duration")]
     #[test_case("trip example.com --min-round-duration 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration")]
     #[test_case("trip example.com -i 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration short")]
@@ -1201,56 +1237,104 @@ mod tests {
     #[test_case("trip example.com --min-round-duration 0", Err(anyhow!("time unit needed, for example 0sec or 0ms")); "invalid format max round duration")]
     #[test_case("trip example.com -i 250ms -T 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).max_round_duration(Duration::from_millis(250)).build()); "custom min and max round duration")]
     #[test_case("trip example.com -i 300ms -T 250ms", Err(anyhow!("max-round-duration (250ms) must not be less than min-round-duration (300ms)")); "min round duration greater than max")]
+    fn test_round_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().grace_duration(Duration::from_millis(100)).build()); "default grace duration")]
     #[test_case("trip example.com --grace-duration 10ms", Ok(cfg().grace_duration(Duration::from_millis(10)).build()); "custom grace duration")]
     #[test_case("trip example.com -g 50ms", Ok(cfg().grace_duration(Duration::from_millis(50)).build()); "custom grace duration short")]
     #[test_case("trip example.com --grace-duration 0", Err(anyhow!("time unit needed, for example 0sec or 0ms")); "invalid format grace duration")]
     #[test_case("trip example.com --grace-duration 9ms", Err(anyhow!("grace-duration (9ms) must be between 10ms and 1s inclusive")); "invalid low grace duration")]
     #[test_case("trip example.com --grace-duration 1001ms", Err(anyhow!("grace-duration (1.001s) must be between 10ms and 1s inclusive")); "invalid high grace duration")]
+    fn test_grace_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().max_inflight(24).build()); "default max inflight")]
     #[test_case("trip example.com --max-inflight 12", Ok(cfg().max_inflight(12).build()); "custom max inflight")]
     #[test_case("trip example.com -U 20", Ok(cfg().max_inflight(20).build()); "custom max inflight short")]
     #[test_case("trip example.com --max-inflight foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format max inflight")]
     #[test_case("trip example.com --max-inflight 0", Err(anyhow!("max-inflight (0) must be greater than zero")); "invalid low max inflight")]
     #[test_case("trip example.com --max-inflight 300", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high max inflight")]
+    fn test_max_inflight(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().initial_sequence(33000).build()); "default initial sequence")]
     #[test_case("trip example.com --initial-sequence 5000", Ok(cfg().initial_sequence(5000).build()); "custom initial sequence")]
     #[test_case("trip example.com --initial-sequence foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format initial sequence")]
     #[test_case("trip example.com --initial-sequence 100000", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high initial sequence")]
+    fn test_init_seq(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().tos(0).build()); "default tos")]
     #[test_case("trip example.com --tos 255", Ok(cfg().tos(0xFF).build()); "custom tos")]
     #[test_case("trip example.com -Q 255", Ok(cfg().tos(0xFF).build()); "custom tos short")]
     #[test_case("trip example.com --tos foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format tos")]
     #[test_case("trip example.com --tos 300", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high tos")]
+    fn test_tos(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().icmp_extension_parse_mode(IcmpExtensionParseMode::Disabled).build()); "default icmp extensions")]
     #[test_case("trip example.com --icmp-extensions", Ok(cfg().icmp_extension_parse_mode(IcmpExtensionParseMode::Enabled).build()); "enabled icmp extensions")]
     #[test_case("trip example.com -e", Ok(cfg().icmp_extension_parse_mode(IcmpExtensionParseMode::Enabled).build()); "enabled icmp extensions short")]
+    fn test_icmp_extensions(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().read_timeout(Duration::from_millis(10)).build()); "default read timeout")]
     #[test_case("trip example.com --read-timeout 20ms", Ok(cfg().read_timeout(Duration::from_millis(20)).build()); "custom read timeout")]
     #[test_case("trip example.com --read-timeout 20", Err(anyhow!("time unit needed, for example 20sec or 20ms")); "invalid custom read timeout")]
     #[test_case("trip example.com --read-timeout 9ms", Err(anyhow!("read-timeout (9ms) must be between 10ms and 100ms inclusive")); "invalid low custom read timeout")]
     #[test_case("trip example.com --read-timeout 101ms", Err(anyhow!("read-timeout (101ms) must be between 10ms and 100ms inclusive")); "invalid high custom read timeout")]
+    fn test_read_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().packet_size(84).build()); "default packet size")]
     #[test_case("trip example.com --packet-size 120", Ok(cfg().packet_size(120).build()); "custom packet size")]
     #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format packet size")]
     #[test_case("trip example.com --packet-size 27", Err(anyhow!("packet-size (27) must be between 28 and 1024 inclusive")); "invalid low packet size")]
     #[test_case("trip example.com --packet-size 1025", Err(anyhow!("packet-size (1025) must be between 28 and 1024 inclusive")); "invalid high packet size")]
     #[test_case("trip example.com --packet-size 100000", Err(anyhow!("error: invalid value for one of the arguments")); "invalid out of range packet size")]
+    fn test_packet_size(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().payload_pattern(0).build()); "default payload pattern size")]
     #[test_case("trip example.com --payload-pattern 255", Ok(cfg().payload_pattern(0xFF).build()); "custom payload pattern")]
     #[test_case("trip example.com --payload-pattern foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format payload pattern")]
     #[test_case("trip example.com --payload-pattern 256", Err(anyhow!("error: invalid value for one of the arguments")); "invalid out of range payload pattern")]
+    fn test_payload_pattern(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().source_addr(None).build()); "default source address")]
     #[test_case("trip example.com --source-address 10.0.0.1", Ok(cfg().source_addr(Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)))).build()); "custom ipv4 source address")]
     #[test_case("trip example.com --source-address 2404:6800:4005:81a::200e", Ok(cfg().source_addr(Some(IpAddr::V6(Ipv6Addr::from_str("2404:6800:4005:81a::200e").unwrap()))).build()); "custom ipv6 source address")]
     #[test_case("trip example.com -A 10.0.0.1", Ok(cfg().source_addr(Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)))).build()); "custom ipv4 source address short")]
     #[test_case("trip example.com --source-address foobar", Err(anyhow!("invalid source IP address format: foobar")); "invalid source address")]
+    fn test_source_address(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().interface(None).build()); "default interface")]
     #[test_case("trip example.com --interface en0", Ok(cfg().interface(Some(String::from("en0"))).build()); "custom interface")]
     #[test_case("trip example.com -I tun0", Ok(cfg().interface(Some(String::from("tun0"))).build()); "custom interface short")]
+    fn test_interface(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().dns_timeout(Duration::from_millis(5000)).build()); "default dns timeout")]
     #[test_case("trip example.com --dns-timeout 20ms", Ok(cfg().dns_timeout(Duration::from_millis(20)).build()); "custom dns timeout")]
     #[test_case("trip example.com --dns-timeout 20", Err(anyhow!("time unit needed, for example 20sec or 20ms")); "invalid custom dns timeout")]
+    fn test_dns_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "default resolve method")]
     #[test_case("trip example.com --dns-resolve-method system", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "custom resolve method system")]
     #[test_case("trip example.com -r system", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "custom resolve method system short")]
@@ -1258,11 +1342,15 @@ mod tests {
     #[test_case("trip example.com --dns-resolve-method cloudflare", Ok(cfg().dns_resolve_method(ResolveMethod::Cloudflare).build()); "custom resolve method cloudflare")]
     #[test_case("trip example.com --dns-resolve-method resolv", Ok(cfg().dns_resolve_method(ResolveMethod::Resolv).build()); "custom resolve method resolv")]
     #[test_case("trip example.com --dns-resolve-method foobar", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid resolve method")]
+    fn test_dns_resolve(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().dns_lookup_as_info(false).build()); "default dns lookup as info")]
     #[test_case("trip example.com --dns-lookup-as-info -r resolv", Ok(cfg().dns_lookup_as_info(true).dns_resolve_method(ResolveMethod::Resolv).build()); "custom dns lookup as info")]
     #[test_case("trip example.com -z -r resolv", Ok(cfg().dns_lookup_as_info(true).dns_resolve_method(ResolveMethod::Resolv).build()); "custom dns lookup as info short")]
     #[test_case("trip example.com --dns-lookup-as-info", Err(anyhow!("AS lookup not supported by resolver `system` (use '-r' to choose another resolver)")); "invalid resolve method for as info")]
-    fn test_commands(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+    fn test_lookup_as_info(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
