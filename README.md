@@ -22,6 +22,7 @@ issues.
     * [Usage Examples](#usage-examples)
     * [Command Reference](#command-reference)
     * [Theme Reference](#theme-reference)
+    * [Column Reference](#column-reference)
     * [Key Bindings Reference](#key-bindings-reference)
     * [Configuration Reference](#configuration-reference)
     * [Frequently Asked Questions](#frequently-asked-questions)
@@ -771,6 +772,35 @@ command line option.
 
 The supported modifiers are: `shift`, `ctrl`, `alt`, `super`, `hyper` & `meta`. Multiple modifiers may be specified, for
 example `ctrl+shift+b`.
+
+## Column Reference
+
+The below table lists the columns that are available for display in the Tui. These can be overridden with the
+`--tui-custom-columns` command line option or in the `tui-custom-columns` attribute in the `tui` section of the
+configuration file.
+
+| Column  | Code | Description                                                                                                                                                                                                                                                                                                                                           |
+|---------|------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `#`     | `h`  | The time-to-live (TTL) for the hop                                                                                                                                                                                                                                                                                                                    |
+| `Host`  | `o`  | The hostname(s) and IP address(s) for the host(s) for the hop<br/>May include AS info, GeoIp and ICMP extensions<br/>Shows full hop details in hop detail navigation mode                                                                                                                                                                             |
+| `Loss%` | `l`  | The packet loss % for the hop                                                                                                                                                                                                                                                                                                                         |
+| `Snd`   | `s`  | The number of probes sent for the hop                                                                                                                                                                                                                                                                                                                 |
+| `Recv`  | `r`  | The number of probe responses received for the hop                                                                                                                                                                                                                                                                                                    |
+| `Last`  | `a`  | The round-trip-time (RTT) of the last probe for the hop                                                                                                                                                                                                                                                                                               |
+| `Avg`   | `v`  | The average RTT of all probes for the hop                                                                                                                                                                                                                                                                                                             |
+| `Best`  | `b`  | The best RTT of all probes for the hop                                                                                                                                                                                                                                                                                                                |
+| `Wrst`  | `w`  | The worst RTT of all probes for the hop                                                                                                                                                                                                                                                                                                               |
+| `StDev` | `d`  | The standard deviation of all probes for the hop                                                                                                                                                                                                                                                                                                      |
+| `Sts`   | `t`  | The status for the hop:<br/>- 🟢 Healthy hop<br/>- 🔵 Non-target hop with packet loss (does not necessarily indicate a problem)<br/>- 🟤 Non-target hop is unresponsive (does not necessarily indicate a problem) <br/>- 🟡 Target hop with packet loss (likely indicates a problem)<br/>- 🔴 Target hop is unresponsive (likely indicates a problem) |
+| `Jttr`  | `j`  | The round-trip-time (RTT) difference between consecutive rounds for the hop                                                                                                                                                                                                                                                                           |
+| `Javg`  | `g`  | The average jitter of all probes for the hop                                                                                                                                                                                                                                                                                                          |
+| `Jmax`  | `x`  | The maximum jitter of all probes for the hop                                                                                                                                                                                                                                                                                                          |
+| `Jint`  | `u`  | The smoothed jitter value of all probes for the hop                                                                                                                                                                                                                                                                                                   |
+
+The default columns are `holsravbwdt`.
+
+> [!NOTE]
+> The columns will be shown in the order specified in the configuration.
 
 ## Configuration Reference
 
