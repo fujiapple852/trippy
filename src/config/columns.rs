@@ -85,7 +85,7 @@ impl TryFrom<char> for TuiColumn {
     type Error = anyhow::Error;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
-        match value.to_ascii_lowercase() {
+        match value {
             'h' => Ok(Self::Ttl),
             'o' => Ok(Self::Host),
             'l' => Ok(Self::LossPct),
