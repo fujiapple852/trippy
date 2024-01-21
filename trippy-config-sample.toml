@@ -244,19 +244,26 @@ tui-as-mode = "asn"
 
 # Custom columns to be displayed in the TUI hops table.
 #
-# Allowed values are:
+# Default values:
 #
-#   H - Ttl
-#   O - Hostname
-#   L - Loss %
-#   S - Probes sent
-#   R - Responses received
-#   A - Last RTT
-#   V - Average RTT
-#   B - Best RTT
-#   W - Worst RTT
-#   D - Stddev
-#   T - Status
+#   h - Ttl
+#   o - Hostname
+#   l - Loss %
+#   s - Probes sent
+#   r - Responses received
+#   a - Last RTT
+#   v - Average RTT
+#   b - Best RTT
+#   w - Worst RTT
+#   d - Stddev
+#   t - Status
+#
+# Also avilable:
+#
+#   j - Jitter
+#   g - Jitter average
+#   x - Jitter max
+#   i - Jitter intra
 #
 # The columns will be shown in the order specified.
 tui-custom-columns = "holsravbwdt"
