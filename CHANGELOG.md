@@ -9,9 +9,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for calculating and displaying jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
+- Added support for customizing columns ([#757](https://github.com/fujiapple852/trippy/issues/757))
+- Added support for [IPinfo](https://ipinfo.io) flavoured `mmdb` files ([#862](https://github.com/fujiapple852/trippy/issues/862))
+- Added support for `IPv4->IPv6` and `IPv6->IPv4` DNS fallback modes ([#864](https://github.com/fujiapple852/trippy/issues/864))
+- Added [TUN](https://en.wikipedia.org/wiki/TUN/TAP) based simulation tests ([#908](https://github.com/fujiapple852/trippy/issues/908))
+
 ### Changed
 
+- Ensure `paris` and `dublin` ECMP strategy are only used with supported protocols ([#848](https://github.com/fujiapple852/trippy/issues/848))
+- Improved Tui table column layout logic ([#925](https://github.com/fujiapple852/trippy/issues/925))
+- Use exclusive reference `&mut` for all Socket operations ([#843](https://github.com/fujiapple852/trippy/issues/843))
+
 ### Fixed
+
+- Fixed off-by-one bug in max-rounds calculation ([#906](https://github.com/fujiapple852/trippy/issues/906))
+- Fixed panic with `expand-hosts-max` Tui command ([#892](https://github.com/fujiapple852/trippy/issues/892))
 
 ## [0.9.0] - 2023-11-30
 
