@@ -1089,6 +1089,7 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossterm::event::KeyCode;
     use std::net::{Ipv4Addr, Ipv6Addr};
     use test_case::test_case;
     use trippy::tracing::Port;
@@ -1123,7 +1124,8 @@ mod tests {
     #[test_case("trip", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show default help")]
     #[test_case("trip -h", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show short help")]
     #[test_case("trip --help", Err(anyhow!(include_str!("../test_resources/usage_long.txt"))); "show long help")]
-    #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
+    #[test_case("trip --version", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
+    #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version short")]
     fn test_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1131,6 +1133,22 @@ mod tests {
     #[test_case("trip example.com --config-file trippy.toml", Ok(cfg().build()); "custom config file")]
     #[test_case("trip example.com -c trippy.toml", Ok(cfg().build()); "custom config file short")]
     fn test_config(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().mode(Mode::Tui).build()); "default mode")]
+    #[test_case("trip example.com --mode tui", Ok(cfg().mode(Mode::Tui).build()); "tui mode")]
+    #[test_case("trip example.com --mode stream", Ok(cfg().mode(Mode::Stream).build()); "stream mode")]
+    #[test_case("trip example.com --mode pretty", Ok(cfg().mode(Mode::Pretty).max_rounds(Some(10)).build()); "pretty mode")]
+    #[test_case("trip example.com --mode markdown", Ok(cfg().mode(Mode::Markdown).max_rounds(Some(10)).build()); "markdown mode")]
+    #[test_case("trip example.com --mode csv", Ok(cfg().mode(Mode::Csv).max_rounds(Some(10)).build()); "csv mode")]
+    #[test_case("trip example.com --mode json", Ok(cfg().mode(Mode::Json).max_rounds(Some(10)).build()); "json mode")]
+    #[test_case("trip example.com --mode dot", Ok(cfg().mode(Mode::Dot).max_rounds(Some(10)).build()); "dot mode")]
+    #[test_case("trip example.com --mode flows", Ok(cfg().mode(Mode::Flows).max_rounds(Some(10)).build()); "flows mode")]
+    #[test_case("trip example.com --mode silent", Ok(cfg().mode(Mode::Silent).max_rounds(Some(10)).build()); "silent mode")]
+    #[test_case("trip example.com -m tui", Ok(cfg().mode(Mode::Tui).build()); "tui mode short")]
+    #[test_case("trip example.com --mode foo", Err(anyhow!(format!("error: one of the values isn't valid for an argument"))); "invalid mode")]
+    fn test_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
@@ -1152,6 +1170,7 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "default strategy")]
     #[test_case("trip example.com --multipath-strategy classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy")]
+    #[test_case("trip example.com -R classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy short")]
     #[test_case("trip example.com --multipath-strategy paris --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "paris strategy")]
     #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
     #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid strategy")]
@@ -1181,6 +1200,8 @@ mod tests {
 
     #[test_case("trip example.com --udp --source-port 2222", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(2222))).build()); "udp protocol custom src port")]
     #[test_case("trip example.com --udp --target-port 8888", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedDest(Port(8888))).build()); "udp protocol custom target port")]
+    #[test_case("trip example.com --udp -S 2222", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(2222))).build()); "udp protocol custom src port short")]
+    #[test_case("trip example.com --udp -P 8888", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedDest(Port(8888))).build()); "udp protocol custom target port short")]
     #[test_case("trip example.com --udp --source-port 123", Err(anyhow!("source-port (123) must be >= 1024")); "udp protocol invalid src port")]
     #[test_case("trip example.com --tcp --source-port 3333", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedSrc(Port(3333))).build()); "tcp protocol custom src port")]
     #[test_case("trip example.com --tcp --target-port 7777", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(7777))).build()); "tcp protocol custom target port")]
@@ -1346,12 +1367,211 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
+    #[test_case("trip example.com", Ok(cfg().dns_resolve_all(false).build()); "default dns resolve all")]
+    #[test_case("trip example.com --dns-resolve-all", Ok(cfg().dns_resolve_all(true).build()); "custom dns resolve all")]
+    #[test_case("trip example.com -y", Ok(cfg().dns_resolve_all(true).build()); "custom dns resolve all short")]
+    fn test_dns_resolve_all(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().dns_lookup_as_info(false).build()); "default dns lookup as info")]
     #[test_case("trip example.com --dns-lookup-as-info -r resolv", Ok(cfg().dns_lookup_as_info(true).dns_resolve_method(ResolveMethod::Resolv).build()); "custom dns lookup as info")]
     #[test_case("trip example.com -z -r resolv", Ok(cfg().dns_lookup_as_info(true).dns_resolve_method(ResolveMethod::Resolv).build()); "custom dns lookup as info short")]
     #[test_case("trip example.com --dns-lookup-as-info", Err(anyhow!("AS lookup not supported by resolver `system` (use '-r' to choose another resolver)")); "invalid resolve method for as info")]
     fn test_lookup_as_info(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_max_samples(256).build()); "default max samples")]
+    #[test_case("trip example.com --tui-max-samples 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples")]
+    #[test_case("trip example.com -s 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples short")]
+    #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid max samples")]
+    fn test_tui_max_samples(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_max_flows(64).build()); "default max flows")]
+    #[test_case("trip example.com --tui-max-flows 100", Ok(cfg().tui_max_flows(100).build()); "custom max flows")]
+    #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid max flows")]
+    fn test_tui_max_flows(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_preserve_screen(false).build()); "default tui preserve screen")]
+    #[test_case("trip example.com --tui-preserve-screen", Ok(cfg().tui_preserve_screen(true).build()); "enable tui preserve screen")]
+    fn test_tui_preserve_screen(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_refresh_rate(Duration::from_millis(100)).build()); "default tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 200ms", Ok(cfg().tui_refresh_rate(Duration::from_millis(200)).build()); "custom tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 49ms", Err(anyhow!("tui-refresh-rate (49ms) must be between 50ms and 1s inclusive")); "invalid low tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 1001ms", Err(anyhow!("tui-refresh-rate (1.001s) must be between 50ms and 1s inclusive")); "invalid high tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("expected number at 0")); "invalid format tui refresh rate")]
+    fn test_tui_refresh_rate(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_privacy_max_ttl(0).build()); "default tui privacy max ttl")]
+    #[test_case("trip example.com --tui-privacy-max-ttl 4", Ok(cfg().tui_privacy_max_ttl(4).build()); "custom tui privacy max ttl")]
+    #[test_case("trip example.com --tui-privacy-max-ttl foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui privacy max ttl")]
+    fn test_tui_privacy_max_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "default tui address mode")]
+    #[test_case("trip example.com --tui-address-mode ip", Ok(cfg().tui_address_mode(AddressMode::IP).build()); "ip tui address mode")]
+    #[test_case("trip example.com --tui-address-mode host", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "host tui address mode")]
+    #[test_case("trip example.com --tui-address-mode both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "both tui address mode")]
+    #[test_case("trip example.com -a both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "custom tui address mode short")]
+    #[test_case("trip example.com --tui-address-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui address mode")]
+    fn test_tui_address_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_as_mode(AsMode::Asn).build()); "default tui as mode")]
+    #[test_case("trip example.com --tui-as-mode asn", Ok(cfg().tui_as_mode(AsMode::Asn).build()); "asn tui as mode")]
+    #[test_case("trip example.com --tui-as-mode prefix", Ok(cfg().tui_as_mode(AsMode::Prefix).build()); "prefix tui as mode")]
+    #[test_case("trip example.com --tui-as-mode country-code", Ok(cfg().tui_as_mode(AsMode::CountryCode).build()); "country code tui as mode")]
+    #[test_case("trip example.com --tui-as-mode registry", Ok(cfg().tui_as_mode(AsMode::Registry).build()); "registry tui as mode")]
+    #[test_case("trip example.com --tui-as-mode allocated", Ok(cfg().tui_as_mode(AsMode::Allocated).build()); "allocated tui as mode")]
+    #[test_case("trip example.com --tui-as-mode name", Ok(cfg().tui_as_mode(AsMode::Name).build()); "name tui as mode")]
+    #[test_case("trip example.com --tui-as-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui as mode")]
+    fn test_tui_as_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_custom_columns(TuiColumns::default()).build()); "default tui custom columns")]
+    #[test_case("trip example.com --tui-custom-columns hol", Ok(cfg().tui_custom_columns(TuiColumns(vec![TuiColumn::Ttl, TuiColumn::Host, TuiColumn::LossPct])).build()); "custom tui custom columns")]
+    #[test_case("trip example.com --tui-custom-columns hh", Err(anyhow!("Duplicate custom columns: h")); "invalid duplicate tui custom columns")]
+    #[test_case("trip example.com --tui-custom-columns u", Err(anyhow!("unknown column code: u")); "invalid unknown tui custom columns")]
+    fn test_tui_custom_columns(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Off).build()); "default tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode off", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Off).build()); "off tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode mpls", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Mpls).build()); "mpls tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode full", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Full).build()); "full tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode all", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::All).build()); "all tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui icmp extension mode")]
+    fn test_tui_icmp_extension_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_geoip_mode(GeoIpMode::Off).build()); "default tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode off", Ok(cfg().tui_geoip_mode(GeoIpMode::Off).build()); "off tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode short --geoip-mmdb-file foo.mmdb", Ok(cfg().tui_geoip_mode(GeoIpMode::Short).geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "short tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode long --geoip-mmdb-file foo.mmdb", Ok(cfg().tui_geoip_mode(GeoIpMode::Long).geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "long tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode location --geoip-mmdb-file foo.mmdb", Ok(cfg().tui_geoip_mode(GeoIpMode::Location).geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "location tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode short", Err(anyhow!("geoip-mmdb-file must be given for tui-geoip-mode of `Short`")); "custom tui geoip mode without geoip")]
+    #[test_case("trip example.com --tui-geoip-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui geoip mode")]
+    fn test_tui_geoip_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_max_addrs(None).build()); "default tui max addrs")]
+    #[test_case("trip example.com --tui-max-addrs 5", Ok(cfg().tui_max_addrs(Some(5)).build()); "custom tui max addrs")]
+    #[test_case("trip example.com -M 7", Ok(cfg().tui_max_addrs(Some(7)).build()); "custom tui max addrs short")]
+    #[test_case("trip example.com --tui-max-addrs foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui max addrs")]
+    fn test_tui_max_addrs(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_theme(TuiTheme::default()).build()); "default tui theme")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, ..Default::default() }).build()); "custom tui theme named color")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=010203", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red,text-color=blue", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, text_color: TuiColor::Blue, ..Default::default() }).build()); "custom tui theme multiple")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=0", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme truncated hex value")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid named color")]
+    #[test_case("trip example.com --tui-theme-colors foo-color=red", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid item")]
+    #[test_case("trip example.com --tui-theme-colors foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid syntax")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red, text-color=blue", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid multiple with space")]
+    fn test_tui_theme(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().tui_bindings(TuiBindings::default()).build()); "default tui bindings")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=h", Ok(cfg().tui_bindings(TuiBindings { toggle_help: TuiKeyBinding::new(KeyCode::Char('h')), ..Default::default() }).build()); "custom tui bindings")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=h,toggle-map=m", Ok(cfg().tui_bindings(TuiBindings { toggle_help: TuiKeyBinding::new(KeyCode::Char('h')), toggle_map: TuiKeyBinding::new(KeyCode::Char('m')), ..Default::default() }).build()); "custom tui bindings multiple")]
+    #[test_case("trip example.com --tui-key-bindings foo=h", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding command")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=123", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding key")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=h,toggle-map=h", Err(anyhow!("Duplicate key bindings: h: [toggle-map and toggle-help]")); "invalid tui binding duplicate binding")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=h, toggle-map=m", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding multiple with space")]
+    fn test_tui_bindings(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().report_cycles(10).max_rounds(None).build()); "default report cycles")]
+    #[test_case("trip example.com --mode csv --report-cycles 5", Ok(cfg().report_cycles(5).mode(Mode::Csv).max_rounds(Some(5)).build()); "custom report cycles")]
+    #[test_case("trip example.com --mode pretty -C 5", Ok(cfg().report_cycles(5).mode(Mode::Pretty).max_rounds(Some(5)).build()); "custom report cycles short")]
+    #[test_case("trip example.com --report-cycles 0", Err(anyhow!("report-cycles (0) must be greater than zero")); "invalid low report cycles")]
+    #[test_case("trip example.com --report-cycles foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid report cycles")]
+    fn test_report_cycles(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().geoip_mmdb_file(None).build()); "default geoip mmdb file")]
+    #[test_case("trip example.com --geoip-mmdb-file foo.mmdb", Ok(cfg().geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "custom geoip mmdb file")]
+    #[test_case("trip example.com -G foo.mmdb", Ok(cfg().geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "custom geoip mmdb file short")]
+    fn test_geoip_mmdb_file(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().verbose(false).build()); "default verbose")]
+    #[test_case("trip example.com --mode silent --verbose", Ok(cfg().verbose(true).mode(Mode::Silent).max_rounds(Some(10)).build()); "enable verbose")]
+    #[test_case("trip example.com --mode silent -v", Ok(cfg().verbose(true).mode(Mode::Silent).max_rounds(Some(10)).build()); "enable verbose short")]
+    #[test_case("trip example.com --mode tui --verbose", Err(anyhow!("cannot enable verbose logging in tui mode")); "invalid verbose mode")]
+    fn test_verbose(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().log_filter(String::from("trippy=debug")).build()); "default log filter")]
+    #[test_case("trip example.com --log-filter info,trippy=trace", Ok(cfg().log_filter(String::from("info,trippy=trace")).build()); "custom log filter")]
+    fn test_log_filter(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().log_format(LogFormat::Pretty).build()); "default log format")]
+    #[test_case("trip example.com --log-format compact", Ok(cfg().log_format(LogFormat::Compact).build()); "compact log format")]
+    #[test_case("trip example.com --log-format pretty", Ok(cfg().log_format(LogFormat::Pretty).build()); "pretty log format")]
+    #[test_case("trip example.com --log-format json", Ok(cfg().log_format(LogFormat::Json).build()); "json log format")]
+    #[test_case("trip example.com --log-format chrome", Ok(cfg().log_format(LogFormat::Chrome).build()); "chrome log format")]
+    #[test_case("trip example.com --log-format foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid log format")]
+    fn test_log_format(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", Ok(cfg().log_span_events(LogSpanEvents::Off).build()); "default log span")]
+    #[test_case("trip example.com --log-span-events off", Ok(cfg().log_span_events(LogSpanEvents::Off).build()); "off log span")]
+    #[test_case("trip example.com --log-span-events active", Ok(cfg().log_span_events(LogSpanEvents::Active).build()); "active log span")]
+    #[test_case("trip example.com --log-span-events full", Ok(cfg().log_span_events(LogSpanEvents::Full).build()); "full log span")]
+    #[test_case("trip example.com --log-span-events foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid log span")]
+    fn test_log_span(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
+    #[test_case("trip example.com", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "default privilege mode")]
+    #[test_case("trip example.com --unprivileged", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "unprivileged mode")]
+    #[test_case("trip example.com -u", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "unprivileged mode short")]
+    #[test_case("trip example.com --unprivileged --udp --multipath-strategy paris", true, false, Err(anyhow!(format!("Paris tracing strategy cannot be used in unprivileged mode"))); "invalid unprivileged mode for paris")]
+    #[test_case("trip example.com --unprivileged --udp --multipath-strategy dublin", true, false, Err(anyhow!(format!("Dublin tracing strategy cannot be used in unprivileged mode"))); "invalid unprivileged mode for dublin")]
+    #[test_case("trip example.com", true, true, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "has privilege and needs")]
+    #[test_case("trip example.com", false, false, Err(anyhow!("privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and not needs")]
+    #[test_case("trip example.com", false, true, Err(anyhow!("privileges are required\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs")]
+    #[test_case("trip example.com --unprivileged", false, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "no privilege and not needs in unprivileged mode")]
+    #[test_case("trip example.com --unprivileged", false, true, Err(anyhow!("unprivileged mode not supported on this platform\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs in unprivileged mode")]
+    #[test_case("trip example.com --unprivileged", true, true, Err(anyhow!("unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "has privilege and needs in unprivileged mode")]
+    fn test_privilege(
+        cmd: &str,
+        has_privileges: bool,
+        needs_privileges: bool,
+        expected: anyhow::Result<TrippyConfig>,
+    ) {
+        compare(
+            parse_config_with_privileges(cmd, has_privileges, needs_privileges),
+            expected,
+        );
     }
 
     #[test_case("trip --print-config-template", Ok(TrippyAction::PrintConfigTemplate); "print config template")]
@@ -1375,6 +1595,21 @@ mod tests {
         let args = parse(cmd)?;
         let cfg_file = ConfigFile::default();
         let platform = Platform::dummy_for_test();
+        TrippyConfig::build_config(args, cfg_file, &platform)
+    }
+
+    fn parse_config_with_privileges(
+        cmd: &str,
+        has_privileges: bool,
+        needs_privileges: bool,
+    ) -> anyhow::Result<TrippyConfig> {
+        let args = parse(cmd)?;
+        let cfg_file = ConfigFile::default();
+        let platform = Platform {
+            pid: 0,
+            has_privileges,
+            needs_privileges,
+        };
         TrippyConfig::build_config(args, cfg_file, &platform)
     }
 
@@ -1441,6 +1676,24 @@ mod tests {
                 config: TrippyConfig {
                     targets,
                     ..TrippyConfig::default()
+                },
+            }
+        }
+
+        pub fn mode(self, mode: Mode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    mode,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn privilege_mode(self, privilege_mode: PrivilegeMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    privilege_mode,
+                    ..self.config
                 },
             }
         }
@@ -1629,6 +1882,196 @@ mod tests {
             Self {
                 config: TrippyConfig {
                     dns_lookup_as_info,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn dns_resolve_all(self, dns_resolve_all: bool) -> Self {
+            Self {
+                config: TrippyConfig {
+                    dns_resolve_all,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_max_samples(self, tui_max_samples: usize) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_max_samples,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_max_flows(self, tui_max_flows: usize) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_max_flows,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_preserve_screen(self, tui_preserve_screen: bool) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_preserve_screen,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_refresh_rate(self, tui_refresh_rate: Duration) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_refresh_rate,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_privacy_max_ttl(self, tui_privacy_max_ttl: u8) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_privacy_max_ttl,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_address_mode(self, tui_address_mode: AddressMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_address_mode,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_as_mode(self, tui_as_mode: AsMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_as_mode,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_custom_columns(self, tui_custom_columns: TuiColumns) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_custom_columns,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_icmp_extension_mode(self, tui_icmp_extension_mode: IcmpExtensionMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_icmp_extension_mode,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_geoip_mode(self, tui_geoip_mode: GeoIpMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_geoip_mode,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_max_addrs(self, tui_max_addrs: Option<u8>) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_max_addrs,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_theme(self, tui_theme: TuiTheme) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_theme,
+                    ..self.config
+                },
+            }
+        }
+
+        #[allow(clippy::large_types_passed_by_value)]
+        pub fn tui_bindings(self, tui_bindings: TuiBindings) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_bindings,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn report_cycles(self, report_cycles: usize) -> Self {
+            Self {
+                config: TrippyConfig {
+                    report_cycles,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn geoip_mmdb_file(self, geoip_mmdb_file: Option<String>) -> Self {
+            Self {
+                config: TrippyConfig {
+                    geoip_mmdb_file,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn max_rounds(self, max_rounds: Option<usize>) -> Self {
+            Self {
+                config: TrippyConfig {
+                    max_rounds,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn verbose(self, verbose: bool) -> Self {
+            Self {
+                config: TrippyConfig {
+                    verbose,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn log_format(self, log_format: LogFormat) -> Self {
+            Self {
+                config: TrippyConfig {
+                    log_format,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn log_filter(self, log_filter: String) -> Self {
+            Self {
+                config: TrippyConfig {
+                    log_filter,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn log_span_events(self, log_span_events: LogSpanEvents) -> Self {
+            Self {
+                config: TrippyConfig {
+                    log_span_events,
                     ..self.config
                 },
             }
