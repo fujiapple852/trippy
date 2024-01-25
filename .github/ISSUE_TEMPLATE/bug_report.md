@@ -23,6 +23,7 @@ assignees: ''
 - OS: <!-- [e.g. Linux, Windows 11] -->
 - Trippy version: <!-- [e.g. the output of `trip -V`] -->
 - Installation method: <!-- [e.g. `brew`, `winget`, `cargo`] -->
+- Terminal / Console: <!-- e.g. `iterm2`, `cmd.exe`, `PowerShell` -->
 
 **Additional context**
 <!-- Add any other context about the problem here. -->
