@@ -11,6 +11,7 @@ categories = ["command-line-utilities", "network-programming"]
 readme = "README.md"
 license = "Apache-2.0"
 edition = "2021"
+rust-version = "1.70"
 exclude = ["assets/legacy", "assets/*/*.png"]
 
 [[bin]]
