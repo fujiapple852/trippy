@@ -55,15 +55,8 @@ impl TunDevice {
         // macOS requires that we explicitly add the route.
         let net: Ipv4Network = TUN_NETWORK_CIDR.parse()?;
         let addr = net.nth(1).expect("addr");
-        std::process::Command::new("sudo")
-            .args([
-                "route",
-                "-n",
-                "add",
-                "-net",
-                &net.to_string(),
-                &addr.to_string(),
-            ])
+        std::process::Command::new("route")
+            .args(["-n", "add", "-net", &net.to_string(), &addr.to_string()])
             .status()?;
         Ok(())
     }
