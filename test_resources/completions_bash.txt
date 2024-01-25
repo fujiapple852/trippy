@@ -27,10 +27,16 @@ _trip() {
             case "${prev}" in
                 --config-file)
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o filenames
+                    fi
                     return 0
                     ;;
                 -c)
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o filenames
+                    fi
                     return 0
                     ;;
                 --mode)
@@ -251,10 +257,16 @@ _trip() {
                     ;;
                 --geoip-mmdb-file)
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o filenames
+                    fi
                     return 0
                     ;;
                 -G)
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o filenames
+                    fi
                     return 0
                     ;;
                 --generate)
