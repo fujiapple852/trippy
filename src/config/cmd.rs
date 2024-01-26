@@ -232,7 +232,7 @@ pub struct Args {
     #[arg(short = 'C', long)]
     pub report_cycles: Option<usize>,
 
-    /// The MaxMind City GeoLite2 mmdb file
+    /// The supported MaxMind or IPinfo GeoIp mmdb file
     #[arg(short = 'G', long, value_hint = clap::ValueHint::FilePath)]
     pub geoip_mmdb_file: Option<String>,
 

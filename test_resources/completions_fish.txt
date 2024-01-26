@@ -33,7 +33,7 @@ complete -c trip -l tui-privacy-max-ttl -d 'The maximum ttl of hops which will b
 complete -c trip -l tui-theme-colors -d 'The TUI theme colors [item=color,item=color,..]' -r
 complete -c trip -l tui-key-bindings -d 'The TUI key bindings [command=key,command=key,..]' -r
 complete -c trip -s C -l report-cycles -d 'The number of report cycles to run [default: 10]' -r
-complete -c trip -s G -l geoip-mmdb-file -d 'The MaxMind City GeoLite2 mmdb file' -r -F
+complete -c trip -s G -l geoip-mmdb-file -d 'The supported MaxMind or IPinfo GeoIp mmdb file' -r -F
 complete -c trip -l generate -d 'Generate shell completion' -r -f -a "{bash	'',elvish	'',fish	'',powershell	'',zsh	''}"
 complete -c trip -l log-format -d 'The debug log format [default: pretty]' -r -f -a "{compact	'Display log data in a compact format',pretty	'Display log data in a pretty format',json	'Display log data in a json format',chrome	'Display log data in Chrome trace format'}"
 complete -c trip -l log-filter -d 'The debug log filter [default: trippy=debug]' -r

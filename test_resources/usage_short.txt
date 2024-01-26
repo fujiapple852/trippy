@@ -59,7 +59,7 @@ Options:
       --tui-key-bindings <TUI_KEY_BINDINGS>                The TUI key bindings [command=key,command=key,..]
       --print-tui-binding-commands                         Print all TUI commands that can be bound and exit
   -C, --report-cycles <REPORT_CYCLES>                      The number of report cycles to run [default: 10]
-  -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>                  The MaxMind City GeoLite2 mmdb file
+  -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>                  The supported MaxMind or IPinfo GeoIp mmdb file
       --generate <GENERATE>                                Generate shell completion [possible values: bash, elvish, fish, powershell, zsh]
       --print-config-template                              Print a template toml config file and exit
       --log-format <LOG_FORMAT>                            The debug log format [default: pretty] [possible values: compact, pretty, json, chrome]

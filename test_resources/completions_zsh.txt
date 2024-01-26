@@ -122,8 +122,8 @@ location\:"Show latitude and Longitude format"))' \
 '*--tui-key-bindings=[The TUI key bindings \[command=key,command=key,..\]]:TUI_KEY_BINDINGS: ' \
 '-C+[The number of report cycles to run \[default\: 10\]]:REPORT_CYCLES: ' \
 '--report-cycles=[The number of report cycles to run \[default\: 10\]]:REPORT_CYCLES: ' \
-'-G+[The MaxMind City GeoLite2 mmdb file]:GEOIP_MMDB_FILE:_files' \
-'--geoip-mmdb-file=[The MaxMind City GeoLite2 mmdb file]:GEOIP_MMDB_FILE:_files' \
+'-G+[The supported MaxMind or IPinfo GeoIp mmdb file]:GEOIP_MMDB_FILE:_files' \
+'--geoip-mmdb-file=[The supported MaxMind or IPinfo GeoIp mmdb file]:GEOIP_MMDB_FILE:_files' \
 '--generate=[Generate shell completion]:GENERATE:(bash elvish fish powershell zsh)' \
 '--log-format=[The debug log format \[default\: pretty\]]:LOG_FORMAT:((compact\:"Display log data in a compact format"
 pretty\:"Display log data in a pretty format"
