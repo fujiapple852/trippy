@@ -207,7 +207,7 @@ Options:
           The number of report cycles to run [default: 10]
 
   -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>
-          The MaxMind City GeoLite2 mmdb file
+          The supported MaxMind or IPinfo GeoIp mmdb file
 
       --generate <GENERATE>
           Generate shell completion
