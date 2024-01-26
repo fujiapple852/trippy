@@ -276,6 +276,14 @@ tui-custom-columns = "holsravbwdt"
 #   all             - Show full icmp extension data for all classes
 tui-icmp-extension-mode = "off"
 
+# The mmdb file to use GeoIp lookup [default: none]
+#
+# Supported mmdb formats:
+#   MaxMind "GeoLite2 City"
+#   IPinfo "IP to Country + ASN Database"
+#   IPinfo "IP to Geolocation Extended Database"
+#geoip-mmdb-file = "/path/to/geoip_file.mmdb"
+
 # How to render GeoIp information.
 #
 # Allowed values are:
@@ -283,6 +291,8 @@ tui-icmp-extension-mode = "off"
 #   short - Show short format GeoIp information
 #   long - Show long format GeoIp information
 #   location - Show latitude and Longitude format GeoIp information
+#
+# Note this value is ignored unless a valid geoip-mmdb-file value is also provided.
 tui-geoip-mode = "off"
 
 # The maximum number of addresses to show per hop [default: auto]
@@ -304,6 +314,7 @@ tui-refresh-rate = "100ms"
 
 # The maximum ttl of hops which will be masked for privacy [default: 1]
 tui-privacy-max-ttl = 0
+
 
 # Tui color theme configure.
 #
@@ -347,6 +358,7 @@ map-selected-color = "green"
 map-info-panel-border-color = "gray"
 map-info-panel-bg-color = "black"
 map-info-panel-text-color = "gray"
+
 
 # Tui key bindings Configuration.
 #
