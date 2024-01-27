@@ -1,0 +1,21 @@
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+  schedule:
+    - cron: '00 18 * * *'
+
+name: Audit
+
+jobs:
+  cargo-deny:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          log-level: warn
+          command: check
+          arguments: --all-features

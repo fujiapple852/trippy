@@ -1,8 +1,6 @@
 on:
   pull_request:
     branches: [ master ]
-  schedule:
-    - cron: '00 18 * * *'
 
 name: CI
 
@@ -172,16 +170,6 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
-
-  cargo-deny:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
-        with:
-          log-level: warn
-          command: check
-          arguments: --all-features
 
   cargo-msrv:
     runs-on: ubuntu-22.04
