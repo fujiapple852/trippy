@@ -5,11 +5,12 @@ use crate::config::{
     LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig,
 };
 use anyhow::Context;
+use encoding_rs_io::DecodeReaderBytes;
 use etcetera::BaseStrategy;
 use humantime::format_duration;
 use serde::Deserialize;
 use std::fs::File;
-use std::io::read_to_string;
+use std::io::{BufReader, Read};
 use std::path::Path;
 use trippy::tracing::defaults;
 
@@ -49,7 +50,10 @@ pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
 pub fn read_config_file<P: AsRef<Path>>(path: P) -> anyhow::Result<ConfigFile> {
     let file = File::open(path.as_ref())
         .with_context(|| format!("config file not found: {:?}", path.as_ref()))?;
-    Ok(toml::from_str(&read_to_string(file)?)?)
+    let mut decoder = DecodeReaderBytes::new(BufReader::new(file));
+    let mut dest = String::new();
+    decoder.read_to_string(&mut dest)?;
+    Ok(toml::from_str(&dest)?)
 }
 
 fn read_files<P: AsRef<Path>>(dir: P) -> anyhow::Result<Option<ConfigFile>> {
