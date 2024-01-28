@@ -1,6 +1,6 @@
 [licenses]
 unlicensed = "deny"
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "ISC", "BSD-2-Clause" ]
+allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "ISC", "BSD-2-Clause", "BSD-3-Clause", "WTFPL" ]
 copyleft = "deny"
 allow-osi-fsf-free = "neither"
 default = "deny"
