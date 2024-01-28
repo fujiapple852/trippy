@@ -1150,9 +1150,9 @@ mod tests {
         pretty_assertions::assert_eq!(expected, config);
     }
 
-    #[test_case("trip", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show default help")]
-    #[test_case("trip -h", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show short help")]
-    #[test_case("trip --help", Err(anyhow!(include_str!("../test_resources/usage_long.txt"))); "show long help")]
+    #[test_case("trip", Err(anyhow!(include_str!("../test_resources/config/usage_short.txt"))); "show default help")]
+    #[test_case("trip -h", Err(anyhow!(include_str!("../test_resources/config/usage_short.txt"))); "show short help")]
+    #[test_case("trip --help", Err(anyhow!(include_str!("../test_resources/config/usage_long.txt"))); "show long help")]
     #[test_case("trip --version", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
     #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version short")]
     fn test_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
