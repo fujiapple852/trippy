@@ -20,19 +20,19 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: linux-musl-stable
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-musl
             rust: stable
           - build: linux-beta
-            os: ubuntu-22.04
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: beta
           - build: linux-nightly
-            os: ubuntu-22.04
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: nightly
           - build: macos-stable
@@ -59,11 +59,11 @@ jobs:
         build: [ netbsd, freebsd ]
         include:
           - build: netbsd
-            os: ubuntu-22.04
+            os: ubuntu-latest
             target: x86_64-unknown-netbsd
             rust: stable
           - build: freebsd
-            os: ubuntu-22.04
+            os: ubuntu-latest
             target: x86_64-unknown-freebsd
             rust: stable
     steps:
@@ -94,7 +94,7 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-20.04
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
@@ -153,7 +153,7 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-20.04
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
@@ -174,7 +174,7 @@ jobs:
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
   cargo-deny:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v1
@@ -184,7 +184,7 @@ jobs:
           arguments: --all-features
 
   cargo-msrv:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
