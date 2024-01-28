@@ -468,3 +468,224 @@ impl TraceData {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::anyhow;
+    use serde::Deserialize;
+    use std::collections::HashSet;
+    use std::ops::Add;
+    use std::str::FromStr;
+    use std::time::SystemTime;
+    use test_case::test_case;
+    use trippy::tracing::{
+        CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeState, Sequence,
+        TimeToLive, TraceId,
+    };
+
+    /// A test scenario.
+    #[derive(Deserialize, Debug)]
+    #[serde(deny_unknown_fields)]
+    struct Scenario {
+        /// the biggest ttl expected in this scenario
+        largest_ttl: u8,
+        /// The rounds of probe tracing data in this scenario.
+        rounds: Vec<RoundData>,
+        /// The expected outcome from running this scenario.
+        expected: Expected,
+    }
+
+    /// A single round of tracing probe data.
+    #[derive(Deserialize, Debug)]
+    #[serde(deny_unknown_fields)]
+    struct RoundData {
+        /// The probes in this round.
+        probes: Vec<ProbeData>,
+    }
+
+    /// A single probe from a single round.
+    #[derive(Deserialize, Debug)]
+    #[serde(deny_unknown_fields)]
+    #[serde(try_from = "String")]
+    struct ProbeData(ProbeState);
+
+    impl TryFrom<String> for ProbeData {
+        type Error = anyhow::Error;
+
+        fn try_from(value: String) -> Result<Self, Self::Error> {
+            // format: {ttl} {status} {duration} {host} {sequence} {src_port} {dest_port}
+            let values = value.split_ascii_whitespace().collect::<Vec<_>>();
+            if values.len() == 7 {
+                let ttl = TimeToLive(u8::from_str(values[0])?);
+                let state = values[1].to_ascii_lowercase();
+                let sequence = Sequence(u16::from_str(values[4])?);
+                let src_port = Port(u16::from_str(values[5])?);
+                let dest_port = Port(u16::from_str(values[6])?);
+                let round = Round(0); // note we inject this later, see ProbeRound
+                let sent = SystemTime::now();
+                let flags = Flags::empty();
+                let state = match state.as_str() {
+                    "n" => Ok(ProbeState::NotSent),
+                    "s" => Ok(ProbeState::Skipped),
+                    "a" => Ok(ProbeState::Awaited(Probe::new(
+                        sequence,
+                        TraceId(0),
+                        src_port,
+                        dest_port,
+                        ttl,
+                        round,
+                        sent,
+                        flags,
+                    ))),
+                    "c" => {
+                        let host = IpAddr::from_str(values[3])?;
+                        let duration = Duration::from_millis(u64::from_str(values[2])?);
+                        let received = sent.add(duration);
+                        let icmp_packet_type = IcmpPacketType::NotApplicable;
+                        Ok(ProbeState::Complete(
+                            Probe::new(
+                                sequence,
+                                TraceId(0),
+                                src_port,
+                                dest_port,
+                                ttl,
+                                round,
+                                sent,
+                                flags,
+                            )
+                            .complete(
+                                host,
+                                received,
+                                icmp_packet_type,
+                                None,
+                            ),
+                        ))
+                    }
+                    _ => Err(anyhow!("unknown probe state")),
+                }?;
+                Ok(Self(state))
+            } else {
+                Err(anyhow!("failed to parse {}", value))
+            }
+        }
+    }
+
+    /// A helper struct so wwe may inject the round into the probes.
+    struct ProbeRound(ProbeData, Round);
+
+    impl From<ProbeRound> for ProbeState {
+        fn from(value: ProbeRound) -> Self {
+            let probe_data = value.0;
+            let round = value.1;
+            match probe_data.0 {
+                Self::NotSent => Self::NotSent,
+                Self::Skipped => Self::Skipped,
+                Self::Awaited(awaited) => Self::Awaited(Probe { round, ..awaited }),
+                Self::Complete(completed) => Self::Complete(ProbeComplete { round, ..completed }),
+            }
+        }
+    }
+
+    /// The expected outcome.
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(deny_unknown_fields)]
+    struct Expected {
+        /// The expected outcome per hop.
+        hops: Vec<HopData>,
+    }
+
+    /// The expected outcome for a single hop.
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(deny_unknown_fields)]
+    struct HopData {
+        ttl: u8,
+        total_sent: usize,
+        total_recv: usize,
+        loss_pct: f64,
+        last_ms: Option<f64>,
+        best_ms: Option<f64>,
+        worst_ms: Option<f64>,
+        avg_ms: f64,
+        jitter: Option<f64>,
+        javg: f64,
+        jmax: Option<f64>,
+        jinta: f64,
+        addrs: HashMap<IpAddr, usize>,
+        samples: Option<Vec<f64>>,
+        last_src: u16,
+        last_dest: u16,
+        last_sequence: u16,
+    }
+
+    macro_rules! file {
+        ($path:expr) => {{
+            let yaml = include_str!(concat!("../../test_resources/backend/", $path));
+            serde_yaml::from_str(yaml).unwrap()
+        }};
+    }
+
+    #[test_case(file!("ipv4_3probes_3hops_mixed_multi.yaml"))]
+    #[test_case(file!("ipv4_3probes_3hops_completed.yaml"))]
+    #[test_case(file!("ipv4_4probes_all_status.yaml"))]
+    #[test_case(file!("ipv4_4probes_0latency.yaml"))]
+    fn test_scenario(scenario: Scenario) {
+        let mut trace = Trace::new(100, 1);
+        for (i, round) in scenario.rounds.into_iter().enumerate() {
+            let probes = round
+                .probes
+                .into_iter()
+                .map(|p| ProbeRound(p, Round(i)))
+                .map(Into::into)
+                .collect::<Vec<_>>();
+            let largest_ttl = TimeToLive(scenario.largest_ttl);
+            let tracer_round =
+                TracerRound::new(&probes, largest_ttl, CompletionReason::TargetFound);
+            trace.update_from_round(&tracer_round);
+        }
+        let actual_hops = trace.hops(Trace::default_flow_id());
+        let expected_hops = scenario.expected.hops;
+        for (actual, expected) in actual_hops.iter().zip(expected_hops) {
+            assert_eq!(actual.ttl(), expected.ttl);
+            assert_eq!(
+                actual.addrs().collect::<HashSet<_>>(),
+                expected.addrs.keys().collect::<HashSet<_>>()
+            );
+            assert_eq!(actual.addr_count(), expected.addrs.len());
+            assert_eq!(actual.total_sent(), expected.total_sent);
+            assert_eq!(actual.total_recv(), expected.total_recv);
+            assert_eq_optional(Some(actual.loss_pct()), Some(expected.loss_pct));
+            assert_eq_optional(actual.last_ms(), expected.last_ms);
+            assert_eq_optional(actual.best_ms(), expected.best_ms);
+            assert_eq_optional(actual.worst_ms(), expected.worst_ms);
+            assert_eq_optional(Some(actual.avg_ms()), Some(expected.avg_ms));
+            assert_eq_optional(actual.jitter_ms(), expected.jitter);
+            assert_eq_optional(Some(actual.javg_ms()), Some(expected.javg));
+            assert_eq_optional(actual.jmax_ms(), expected.jmax);
+            assert_eq_optional(Some(actual.jinta()), Some(expected.jinta));
+            assert_eq!(actual.last_src_port(), expected.last_src);
+            assert_eq!(actual.last_dest_port(), expected.last_dest);
+            assert_eq!(actual.last_sequence(), expected.last_sequence);
+            assert_eq!(
+                Some(
+                    actual
+                        .samples()
+                        .iter()
+                        .map(|s| s.as_secs_f64() * 1000_f64)
+                        .collect()
+                ),
+                expected.samples
+            );
+        }
+    }
+
+    #[allow(clippy::float_cmp)]
+    fn assert_eq_optional(actual: Option<f64>, expected: Option<f64>) {
+        match (actual, expected) {
+            (Some(actual), Some(expected)) => assert_eq!(actual, expected),
+            (Some(_), None) => panic!("actual {actual:?} but not expected"),
+            (None, Some(_)) => panic!("expected {expected:?} but no actual"),
+            (None, None) => {}
+        }
+    }
+}
