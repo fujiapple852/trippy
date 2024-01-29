@@ -176,12 +176,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f30e7476521f6f8af1a1c4c0b8cc94f0bee37d91763d0ca2665f299b6cd8aec"
 
 [[package]]
-name = "byteorder"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
-
-[[package]]
 name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1889,11 +1883,10 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "0.7.22"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2978702e839f54717e2b12e1cc496051eaa4a622d222547e34c7610b93a1f6a4"
+checksum = "f4cc12261a0b1529e761f809db5c2aaebcab1f17fa707b49f1546b1da7f0582f"
 dependencies = [
- "byteorder",
  "bytes",
  "futures-core",
  "ioctl-sys",
