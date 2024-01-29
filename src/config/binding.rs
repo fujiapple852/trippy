@@ -5,7 +5,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use strum::{AsRefStr, EnumString, EnumVariantNames};
+use strum::{AsRefStr, EnumString, VariantNames};
 
 /// Tui keyboard bindings.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -485,7 +485,7 @@ impl Display for TuiKeyBinding {
 }
 
 /// A Tui command that can be bound to a key.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, EnumVariantNames)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 #[derive(AsRefStr)]
 #[allow(clippy::enum_variant_names)]
