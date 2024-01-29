@@ -2,7 +2,7 @@ use crate::config::file::ConfigThemeColors;
 use anyhow::anyhow;
 use serde::Deserialize;
 use std::collections::HashMap;
-use strum::{EnumString, EnumVariantNames};
+use strum::{EnumString, VariantNames};
 
 /// Tui color theme.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -249,7 +249,7 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
 }
 
 /// A TUI theme item.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, EnumVariantNames)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 #[allow(clippy::enum_variant_names)]
 pub enum TuiThemeItem {
