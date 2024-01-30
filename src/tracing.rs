@@ -19,11 +19,11 @@ pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;
 pub use net::SocketImpl;
 pub use probe::{
-    Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
-    ProbeStatus, UnknownExtension,
+    Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, ProbeState,
+    UnknownExtension,
 };
 pub use tracer::{CompletionReason, Tracer, TracerRound};
 pub use types::{
-    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
+    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Round, Sequence, TimeToLive, TraceId,
     TypeOfService,
 };

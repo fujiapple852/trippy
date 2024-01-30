@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy::tracing::{
     defaults, Builder, CompletionReason, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, ProbeStatus, Protocol, TimeToLive, TraceId, TracerRound,
+    PortDirection, ProbeState, Protocol, TimeToLive, TraceId, TracerRound,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -28,6 +28,13 @@ macro_rules! assert_eq_result {
             *$res.borrow_mut() = err;
             return;
         }
+    }};
+}
+
+macro_rules! error_result {
+    ($res:ident, $err:expr) => {{
+        *$res.borrow_mut() = Err($err);
+        return;
     }};
 }
 
@@ -85,34 +92,49 @@ impl Tracer {
         for hop in round
             .probes
             .iter()
-            .filter(|p| matches!(p.status, ProbeStatus::Awaited | ProbeStatus::Complete))
+            .filter(|p| matches!(p, ProbeState::Awaited(_) | ProbeState::Complete(_)))
             .take(round.largest_ttl.0 as usize)
         {
-            match hop.status {
-                ProbeStatus::Complete => {
+            match hop {
+                ProbeState::Complete(complete) => {
                     info!(
                         "{} {} {}",
-                        hop.round.0,
-                        hop.ttl.0,
-                        hop.host.as_ref().map(ToString::to_string).unwrap(),
+                        complete.round.0,
+                        complete.ttl.0,
+                        complete.host.to_string(),
                     );
+
+                    let hop_index = usize::from(complete.ttl.0 - 1);
+                    let sim_hop = &self.sim.hops[hop_index];
+                    if let Response::NoResponse = sim_hop.resp {
+                        error_result!(result, anyhow::anyhow!("expected Response::SingleHost"));
+                    }
+                    let expected_host = match sim_hop.resp {
+                        Response::NoResponse => None,
+                        Response::SingleHost(SingleHost { addr, .. }) => Some(addr),
+                    };
+                    assert_eq_result!(result, expected_host, Some(complete.host));
+                    let expected_ttl = TimeToLive(self.sim.hops[hop_index].ttl);
+                    assert_eq_result!(result, expected_ttl, complete.ttl);
                 }
-                ProbeStatus::Awaited => {
-                    info!("{} {} * * *", hop.round.0, hop.ttl.0);
+                ProbeState::Awaited(awaited) => {
+                    info!("{} {} * * *", awaited.round.0, awaited.ttl.0);
+
+                    let hop_index = usize::from(awaited.ttl.0 - 1);
+                    let sim_hop = &self.sim.hops[hop_index];
+                    if let Response::SingleHost(_) = sim_hop.resp {
+                        error_result!(result, anyhow::anyhow!("expected Response::NoResponse"));
+                    }
+                    let expected_host = match sim_hop.resp {
+                        Response::NoResponse => None,
+                        Response::SingleHost(SingleHost { addr, .. }) => Some(addr),
+                    };
+                    assert_eq_result!(result, expected_host, None);
+                    let expected_ttl = TimeToLive(self.sim.hops[hop_index].ttl);
+                    assert_eq_result!(result, expected_ttl, awaited.ttl);
                 }
                 _ => {}
             }
-            let hop_index = usize::from(hop.ttl.0 - 1);
-            let (expected_status, expected_host) = match self.sim.hops[hop_index].resp {
-                Response::NoResponse => (ProbeStatus::Awaited, None),
-                Response::SingleHost(SingleHost { addr, .. }) => {
-                    (ProbeStatus::Complete, Some(addr))
-                }
-            };
-            let expected_ttl = TimeToLive(self.sim.hops[hop_index].ttl);
-            assert_eq_result!(result, expected_status, hop.status);
-            assert_eq_result!(result, expected_host, hop.host);
-            assert_eq_result!(result, expected_ttl, hop.ttl);
         }
     }
 }

@@ -1,9 +1,23 @@
 use crate::tracing::types::{Port, Round, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
-/// The state of an ICMP echo request/response
+/// A tracing probe.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum ProbeState {
+    /// The probe has not been sent.
+    #[default]
+    NotSent,
+    /// The probe was skipped.
+    Skipped,
+    /// The probe has been sent and is awaiting a response.
+    Awaited(Probe),
+    /// The probe has been sent and a response has been received.
+    Complete(ProbeComplete),
+}
+
+/// A probe that was sent and is awaiting a response.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
@@ -18,21 +32,10 @@ pub struct Probe {
     /// Which round the probe belongs to.
     pub round: Round,
     /// Timestamp when the probe was sent.
-    pub sent: Option<SystemTime>,
-    /// The status of the probe.
-    pub status: ProbeStatus,
-    /// The host which responded to the probe.
-    pub host: Option<IpAddr>,
-    /// Timestamp when the response to the probe was received.
-    pub received: Option<SystemTime>,
-    /// The type of ICMP response packet received for the probe.
-    pub icmp_packet_type: Option<IcmpPacketType>,
-    /// The ICMP response extensions.
-    pub extensions: Option<Extensions>,
+    pub sent: SystemTime,
 }
 
 impl Probe {
-    #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub const fn new(
         sequence: Sequence,
@@ -50,78 +53,61 @@ impl Probe {
             dest_port,
             ttl,
             round,
-            sent: Some(sent),
-            status: ProbeStatus::Awaited,
-            host: None,
-            received: None,
-            icmp_packet_type: None,
-            extensions: None,
+            sent,
         }
     }
 
-    /// The duration of this probe.
-    #[must_use]
-    pub fn duration(&self) -> Duration {
-        match (self.sent, self.received) {
-            (Some(sent), Some(recv)) => recv.duration_since(sent).unwrap_or_default(),
-            (Some(sent), None) => sent.elapsed().unwrap_or_default(),
-            _ => Duration::default(),
+    /// A response has been received and the probe is now complete.
+    pub fn complete(
+        self,
+        host: IpAddr,
+        received: SystemTime,
+        icmp_packet_type: IcmpPacketType,
+        extensions: Option<Extensions>,
+    ) -> ProbeComplete {
+        ProbeComplete {
+            sequence: self.sequence,
+            identifier: self.identifier,
+            src_port: self.src_port,
+            dest_port: self.dest_port,
+            ttl: self.ttl,
+            round: self.round,
+            sent: self.sent,
+            host,
+            received,
+            icmp_packet_type,
+            extensions,
         }
-    }
-
-    #[must_use]
-    pub fn with_status(self, status: ProbeStatus) -> Self {
-        Self { status, ..self }
-    }
-
-    #[must_use]
-    pub fn with_icmp_packet_type(self, icmp_packet_type: IcmpPacketType) -> Self {
-        Self {
-            icmp_packet_type: Some(icmp_packet_type),
-            ..self
-        }
-    }
-
-    #[must_use]
-    pub fn with_host(self, host: IpAddr) -> Self {
-        Self {
-            host: Some(host),
-            ..self
-        }
-    }
-
-    #[must_use]
-    pub fn with_received(self, received: SystemTime) -> Self {
-        Self {
-            received: Some(received),
-            ..self
-        }
-    }
-
-    #[must_use]
-    pub fn with_extensions(self, extensions: Option<Extensions>) -> Self {
-        Self { extensions, ..self }
     }
 }
 
-/// The status of a `Echo` for a single TTL.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProbeStatus {
-    /// The probe has not been sent.
-    NotSent,
-    /// The probe was skipped.
-    Skipped,
-    /// The probe has been sent and we are awaiting the response.
-    Awaited,
-    /// The probe has been sent and a response (`EchoReply`, `DestinationUnreachable` or
-    /// `TimeExceeded`) has been received.
-    Complete,
-}
-
-impl Default for ProbeStatus {
-    fn default() -> Self {
-        Self::NotSent
-    }
+/// A probe that has been sent and a response has been received.
+///
+/// Either an `EchoReply`, `DestinationUnreachable` or `TimeExceeded` has been received.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProbeComplete {
+    /// The sequence of the probe.
+    pub sequence: Sequence,
+    /// The trace identifier.
+    pub identifier: TraceId,
+    /// The source port (UDP/TCP only)
+    pub src_port: Port,
+    /// The destination port (UDP/TCP only)
+    pub dest_port: Port,
+    /// The TTL of the probe.
+    pub ttl: TimeToLive,
+    /// Which round the probe belongs to.
+    pub round: Round,
+    /// Timestamp when the probe was sent.
+    pub sent: SystemTime,
+    /// The host which responded to the probe.
+    pub host: IpAddr,
+    /// Timestamp when the response to the probe was received.
+    pub received: SystemTime,
+    /// The type of ICMP response packet received for the probe.
+    pub icmp_packet_type: IcmpPacketType,
+    /// The ICMP response extensions.
+    pub extensions: Option<Extensions>,
 }
 
 /// The type of ICMP packet received.
@@ -262,6 +248,27 @@ impl ProbeResponseSeqTcp {
         Self {
             src_port,
             dest_port,
+        }
+    }
+}
+
+#[cfg(test)]
+impl ProbeState {
+    #[must_use]
+    pub fn try_into_awaited(self) -> Option<Probe> {
+        if let Self::Awaited(awaited) = self {
+            Some(awaited)
+        } else {
+            None
+        }
+    }
+
+    #[must_use]
+    pub fn try_into_complete(self) -> Option<ProbeComplete> {
+        if let Self::Complete(complete) = self {
+            Some(complete)
+        } else {
+            None
         }
     }
 }
