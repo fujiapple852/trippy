@@ -3,9 +3,9 @@ use crate::config::MAX_HOPS;
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
 use std::time::Duration;
-use trippy::tracing::{Extensions, Probe, ProbeStatus, TracerRound};
+use trippy::tracing::{Extensions, ProbeState, Round, TimeToLive, TracerRound};
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
@@ -98,11 +98,12 @@ impl Trace {
             round
                 .probes
                 .iter()
-                .filter(|probe| {
-                    matches!(probe.status, ProbeStatus::Complete | ProbeStatus::Awaited)
+                .filter_map(|probe| match probe {
+                    ProbeState::Awaited(_) => Some(None),
+                    ProbeState::Complete(completed) => Some(Some(completed.host)),
+                    _ => None,
                 })
-                .take(usize::from(round.largest_ttl.0))
-                .map(|p| p.host),
+                .take(usize::from(round.largest_ttl.0)),
         );
         let flow_id = self.registry.register(flow);
         self.round_flow_id = flow_id;
@@ -354,17 +355,20 @@ impl TraceData {
         }
     }
 
-    fn update_from_probe(&mut self, probe: &Probe) {
-        self.update_lowest_ttl(probe);
-        self.update_round(probe);
-        match probe.status {
-            ProbeStatus::Complete => {
-                let index = usize::from(probe.ttl.0) - 1;
+    fn update_from_probe(&mut self, probe: &ProbeState) {
+        match probe {
+            ProbeState::Complete(complete) => {
+                self.update_lowest_ttl(complete.ttl);
+                self.update_round(complete.round);
+                let index = usize::from(complete.ttl.0) - 1;
                 let hop = &mut self.hops[index];
-                hop.ttl = probe.ttl.0;
+                hop.ttl = complete.ttl.0;
                 hop.total_sent += 1;
                 hop.total_recv += 1;
-                let dur = probe.duration();
+                let dur = complete
+                    .received
+                    .duration_since(complete.sent)
+                    .unwrap_or_default();
                 let dur_ms = dur.as_secs_f64() * 1000_f64;
                 hop.total_time += dur;
                 // Before last is set use it to calc jitter
@@ -387,39 +391,37 @@ impl TraceData {
                 if hop.samples.len() > self.max_samples {
                     hop.samples.pop();
                 }
-                let host = probe.host.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+                let host = complete.host;
                 *hop.addrs.entry(host).or_default() += 1;
-                hop.extensions = probe.extensions.clone();
+                hop.extensions = complete.extensions.clone();
             }
-            ProbeStatus::Awaited => {
-                let index = usize::from(probe.ttl.0) - 1;
+            ProbeState::Awaited(awaited) => {
+                self.update_lowest_ttl(awaited.ttl);
+                self.update_round(awaited.round);
+                let index = usize::from(awaited.ttl.0) - 1;
                 self.hops[index].total_sent += 1;
-                self.hops[index].ttl = probe.ttl.0;
+                self.hops[index].ttl = awaited.ttl.0;
                 self.hops[index].samples.insert(0, Duration::default());
                 if self.hops[index].samples.len() > self.max_samples {
                     self.hops[index].samples.pop();
                 }
             }
-            ProbeStatus::NotSent | ProbeStatus::Skipped => {}
+            ProbeState::NotSent | ProbeState::Skipped => {}
         }
     }
 
-    fn update_round(&mut self, probe: &Probe) {
-        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            self.round = match self.round {
-                None => Some(probe.round.0),
-                Some(r) => Some(r.max(probe.round.0)),
-            }
+    fn update_round(&mut self, round: Round) {
+        self.round = match self.round {
+            None => Some(round.0),
+            Some(r) => Some(r.max(round.0)),
         }
     }
 
-    fn update_lowest_ttl(&mut self, probe: &Probe) {
-        if matches!(probe.status, ProbeStatus::Awaited | ProbeStatus::Complete) {
-            if self.lowest_ttl == 0 {
-                self.lowest_ttl = probe.ttl.0;
-            } else {
-                self.lowest_ttl = self.lowest_ttl.min(probe.ttl.0);
-            }
+    fn update_lowest_ttl(&mut self, ttl: TimeToLive) {
+        if self.lowest_ttl == 0 {
+            self.lowest_ttl = ttl.0;
+        } else {
+            self.lowest_ttl = self.lowest_ttl.min(ttl.0);
         }
     }
 }

@@ -1,6 +1,5 @@
 use crate::tracing::error::TraceResult;
-use crate::tracing::probe::ProbeResponse;
-use crate::tracing::Probe;
+use crate::tracing::probe::{Probe, ProbeResponse};
 
 /// Common types and helper functions.
 mod common;
