@@ -1905,9 +1905,9 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4cc12261a0b1529e761f809db5c2aaebcab1f17fa707b49f1546b1da7f0582f"
+checksum = "b0bc4dcfe2bca93d2acc036d09242ece6a778f807428980586677a8c6c556171"
 dependencies = [
  "bytes",
  "futures-core",
