@@ -151,6 +151,8 @@ pub struct Hop {
     last_src_port: u16,
     /// The destination port for last probe for this hop.
     last_dest_port: u16,
+    /// The sequence number for the last probe for this hop.
+    last_sequence: u16,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
     /// The ICMP extensions for this hop.
@@ -252,12 +254,19 @@ impl Hop {
         self.jinta
     }
 
+    /// The source port for last probe for this hop.
     pub fn last_src_port(&self) -> u16 {
         self.last_src_port
     }
 
+    /// The destination port for last probe for this hop.
     pub fn last_dest_port(&self) -> u16 {
         self.last_dest_port
+    }
+
+    /// The sequence number for the last probe for this hop.
+    pub fn last_sequence(&self) -> u16 {
+        self.last_sequence
     }
 
     /// The last N samples.
@@ -287,6 +296,7 @@ impl Default for Hop {
             jinta: 0f64,
             last_src_port: 0_u16,
             last_dest_port: 0_u16,
+            last_sequence: 0_u16,
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
@@ -411,6 +421,7 @@ impl TraceData {
                 hop.extensions = complete.extensions.clone();
                 hop.last_src_port = complete.src_port.0;
                 hop.last_dest_port = complete.dest_port.0;
+                hop.last_sequence = complete.sequence.0;
             }
             ProbeState::Awaited(awaited) => {
                 self.update_lowest_ttl(awaited.ttl);
@@ -424,6 +435,7 @@ impl TraceData {
                 }
                 self.hops[index].last_src_port = awaited.src_port.0;
                 self.hops[index].last_dest_port = awaited.dest_port.0;
+                self.hops[index].last_sequence = awaited.sequence.0;
             }
             ProbeState::NotSent | ProbeState::Skipped => {}
         }
