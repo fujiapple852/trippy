@@ -87,6 +87,10 @@ pub enum Column {
     Jmax,
     /// The smoothed jitter value for all probes at this hop.
     Jinta,
+    /// The source port for last probe for this hop.
+    LastSrcPort,
+    /// The destination port for last probe for this hop.
+    LastDestPort,
 }
 
 impl From<Column> for char {
@@ -107,6 +111,8 @@ impl From<Column> for char {
             Column::Javg => 'g',
             Column::Jmax => 'x',
             Column::Jinta => 'i',
+            Column::LastSrcPort => 'S',
+            Column::LastDestPort => 'P',
         }
     }
 }
@@ -129,6 +135,8 @@ impl From<TuiColumn> for Column {
             TuiColumn::Javg => Self::Javg,
             TuiColumn::Jmax => Self::Jmax,
             TuiColumn::Jinta => Self::Jinta,
+            TuiColumn::LastSrcPort => Self::LastSrcPort,
+            TuiColumn::LastDestPort => Self::LastDestPort,
         }
     }
 }
@@ -151,6 +159,8 @@ impl Display for Column {
             Self::Javg => write!(f, "Javg"),
             Self::Jmax => write!(f, "Jmax"),
             Self::Jinta => write!(f, "Jint"),
+            Self::LastSrcPort => write!(f, "Sprt"),
+            Self::LastDestPort => write!(f, "Dprt"),
         }
     }
 }
@@ -175,6 +185,8 @@ impl Column {
             Self::Javg => ColumnWidth::Fixed(7),
             Self::Jmax => ColumnWidth::Fixed(7),
             Self::Jinta => ColumnWidth::Fixed(8),
+            Self::LastSrcPort => ColumnWidth::Fixed(7),
+            Self::LastDestPort => ColumnWidth::Fixed(7),
         }
     }
 }
