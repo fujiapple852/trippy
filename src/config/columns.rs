@@ -79,6 +79,10 @@ pub enum TuiColumn {
     Jmax,
     /// The smoothed jitter value for all probes at this hop.
     Jinta,
+    /// The source port for last probe for this hop.
+    LastSrcPort,
+    /// The destination port for last probe for this hop.
+    LastDestPort,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -101,6 +105,8 @@ impl TryFrom<char> for TuiColumn {
             'g' => Ok(Self::Javg),
             'x' => Ok(Self::Jmax),
             'i' => Ok(Self::Jinta),
+            'S' => Ok(Self::LastSrcPort),
+            'P' => Ok(Self::LastDestPort),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -124,6 +130,8 @@ impl Display for TuiColumn {
             Self::Javg => write!(f, "g"),
             Self::Jmax => write!(f, "x"),
             Self::Jinta => write!(f, "i"),
+            Self::LastSrcPort => write!(f, "S"),
+            Self::LastDestPort => write!(f, "P"),
         }
     }
 }

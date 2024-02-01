@@ -147,6 +147,10 @@ pub struct Hop {
     jmax: Option<Duration>,
     /// The smoothed jitter value for all probes at this hop.
     jinta: f64,
+    /// The source port for last probe for this hop.
+    last_src_port: u16,
+    /// The destination port for last probe for this hop.
+    last_dest_port: u16,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
     /// The ICMP extensions for this hop.
@@ -242,9 +246,18 @@ impl Hop {
     pub fn javg_ms(&self) -> f64 {
         self.javg
     }
+
     /// The jitter interval of all probes.
     pub fn jinta(&self) -> f64 {
         self.jinta
+    }
+
+    pub fn last_src_port(&self) -> u16 {
+        self.last_src_port
+    }
+
+    pub fn last_dest_port(&self) -> u16 {
+        self.last_dest_port
     }
 
     /// The last N samples.
@@ -272,6 +285,8 @@ impl Default for Hop {
             javg: 0f64,
             jmax: None,
             jinta: 0f64,
+            last_src_port: 0_u16,
+            last_dest_port: 0_u16,
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
@@ -394,6 +409,8 @@ impl TraceData {
                 let host = complete.host;
                 *hop.addrs.entry(host).or_default() += 1;
                 hop.extensions = complete.extensions.clone();
+                hop.last_src_port = complete.src_port.0;
+                hop.last_dest_port = complete.dest_port.0;
             }
             ProbeState::Awaited(awaited) => {
                 self.update_lowest_ttl(awaited.ttl);
@@ -405,6 +422,8 @@ impl TraceData {
                 if self.hops[index].samples.len() > self.max_samples {
                     self.hops[index].samples.pop();
                 }
+                self.hops[index].last_src_port = awaited.src_port.0;
+                self.hops[index].last_dest_port = awaited.dest_port.0;
             }
             ProbeState::NotSent | ProbeState::Skipped => {}
         }

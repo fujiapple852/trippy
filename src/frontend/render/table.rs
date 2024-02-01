@@ -161,6 +161,8 @@ fn new_cell(
         Column::Javg => render_float_cell(Some(hop.javg_ms()), 1),
         Column::Jmax => render_float_cell(hop.jmax_ms(), 1),
         Column::Jinta => render_float_cell(Some(hop.jinta()), 1),
+        Column::LastSrcPort => render_port_cell(hop.last_src_port()),
+        Column::LastDestPort => render_port_cell(hop.last_dest_port()),
     }
 }
 
@@ -201,6 +203,14 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
         (lost, target) if !target && lost > 0 => "🔵",
         _ => "🟢",
     })
+}
+
+fn render_port_cell(port: u16) -> Cell<'static> {
+    if port > 0 {
+        Cell::from(format!("{port}"))
+    } else {
+        Cell::from("n/a")
+    }
 }
 
 /// Render hostname table cell (normal mode).
