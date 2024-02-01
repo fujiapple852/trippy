@@ -83,6 +83,8 @@ pub enum TuiColumn {
     LastSrcPort,
     /// The destination port for last probe for this hop.
     LastDestPort,
+    /// The sequence number for the last probe for this hop.
+    LastSeq,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -107,6 +109,7 @@ impl TryFrom<char> for TuiColumn {
             'i' => Ok(Self::Jinta),
             'S' => Ok(Self::LastSrcPort),
             'P' => Ok(Self::LastDestPort),
+            'Q' => Ok(Self::LastSeq),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -132,6 +135,7 @@ impl Display for TuiColumn {
             Self::Jinta => write!(f, "i"),
             Self::LastSrcPort => write!(f, "S"),
             Self::LastDestPort => write!(f, "P"),
+            Self::LastSeq => write!(f, "Q"),
         }
     }
 }

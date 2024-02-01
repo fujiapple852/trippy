@@ -163,6 +163,7 @@ fn new_cell(
         Column::Jinta => render_float_cell(Some(hop.jinta()), 1),
         Column::LastSrcPort => render_port_cell(hop.last_src_port()),
         Column::LastDestPort => render_port_cell(hop.last_dest_port()),
+        Column::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
     }
 }
 

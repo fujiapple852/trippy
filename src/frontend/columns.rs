@@ -91,6 +91,8 @@ pub enum Column {
     LastSrcPort,
     /// The destination port for last probe for this hop.
     LastDestPort,
+    /// The sequence number for the last probe for this hop.
+    LastSeq,
 }
 
 impl From<Column> for char {
@@ -113,6 +115,7 @@ impl From<Column> for char {
             Column::Jinta => 'i',
             Column::LastSrcPort => 'S',
             Column::LastDestPort => 'P',
+            Column::LastSeq => 'Q',
         }
     }
 }
@@ -137,6 +140,7 @@ impl From<TuiColumn> for Column {
             TuiColumn::Jinta => Self::Jinta,
             TuiColumn::LastSrcPort => Self::LastSrcPort,
             TuiColumn::LastDestPort => Self::LastDestPort,
+            TuiColumn::LastSeq => Self::LastSeq,
         }
     }
 }
@@ -161,6 +165,7 @@ impl Display for Column {
             Self::Jinta => write!(f, "Jint"),
             Self::LastSrcPort => write!(f, "Sprt"),
             Self::LastDestPort => write!(f, "Dprt"),
+            Self::LastSeq => write!(f, "Seq"),
         }
     }
 }
@@ -187,6 +192,7 @@ impl Column {
             Self::Jinta => ColumnWidth::Fixed(8),
             Self::LastSrcPort => ColumnWidth::Fixed(7),
             Self::LastDestPort => ColumnWidth::Fixed(7),
+            Self::LastSeq => ColumnWidth::Fixed(7),
         }
     }
 }
