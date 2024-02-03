@@ -221,15 +221,23 @@ impl ProbeResponseSeqIcmp {
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqUdp {
     pub identifier: u16,
+    pub dest_addr: IpAddr,
     pub src_port: u16,
     pub dest_port: u16,
     pub checksum: u16,
 }
 
 impl ProbeResponseSeqUdp {
-    pub fn new(identifier: u16, src_port: u16, dest_port: u16, checksum: u16) -> Self {
+    pub fn new(
+        identifier: u16,
+        dest_addr: IpAddr,
+        src_port: u16,
+        dest_port: u16,
+        checksum: u16,
+    ) -> Self {
         Self {
             identifier,
+            dest_addr,
             src_port,
             dest_port,
             checksum,
@@ -239,13 +247,15 @@ impl ProbeResponseSeqUdp {
 
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqTcp {
+    pub dest_addr: IpAddr,
     pub src_port: u16,
     pub dest_port: u16,
 }
 
 impl ProbeResponseSeqTcp {
-    pub fn new(src_port: u16, dest_port: u16) -> Self {
+    pub fn new(dest_addr: IpAddr, src_port: u16, dest_port: u16) -> Self {
         Self {
+            dest_addr,
             src_port,
             dest_port,
         }

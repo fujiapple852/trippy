@@ -375,13 +375,19 @@ fn extract_probe_resp_seq(
         (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum) = extract_udp_packet(ipv6)?;
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
-                0, src_port, dest_port, checksum,
+                0,
+                IpAddr::V6(ipv6.get_destination_address()),
+                src_port,
+                dest_port,
+                checksum,
             )))
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
             let (src_port, dest_port) = extract_tcp_packet(ipv6)?;
             Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
-                src_port, dest_port,
+                IpAddr::V6(ipv6.get_destination_address()),
+                src_port,
+                dest_port,
             )))
         }
         _ => None,
