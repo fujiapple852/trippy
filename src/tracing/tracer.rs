@@ -152,7 +152,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             Some(ProbeResponse::TimeExceeded(data, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 let is_target = host == self.config.target_addr;
-                if self.check_trace_id(trace_id) && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_time_exceeded(
                         sequence, host, received, is_target, extensions,
                     );
@@ -160,19 +160,19 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             }
             Some(ProbeResponse::DestinationUnreachable(data, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
-                if self.check_trace_id(trace_id) && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_unreachable(sequence, host, received, extensions);
                 }
             }
             Some(ProbeResponse::EchoReply(data)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
-                if self.check_trace_id(trace_id) && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_echo_reply(sequence, host, received);
                 }
             }
             Some(ProbeResponse::TcpReply(data) | ProbeResponse::TcpRefused(data)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
-                if self.check_trace_id(trace_id) && st.in_round(sequence) {
+                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_other(sequence, host, received);
                 }
             }
@@ -238,6 +238,49 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
         self.config.trace_identifier == trace_id || trace_id == TraceId(0)
     }
 
+    /// Validate the probe response data.
+    ///
+    /// Carries out specific check for UDP/TCP probe responses.  This is
+    /// required as the network layer may receive incoming ICMP
+    /// `DestinationUnreachable` (and other types) packets with a UDP/TCP
+    /// original datagram which does not correspond to a probe sent by the
+    /// tracer and must therefore be ignored.
+    ///
+    /// For UDP and TCP probe responses, check that the src/dest ports and
+    /// dest address match the expected values.
+    ///
+    /// For ICMP probe responses no additional checks are required.
+    fn validate(&self, resp: &ProbeResponseData) -> bool {
+        fn validate_ports(port_direction: PortDirection, src_port: u16, dest_port: u16) -> bool {
+            match port_direction {
+                PortDirection::FixedSrc(src) if src.0 == src_port => true,
+                PortDirection::FixedDest(dest) if dest.0 == dest_port => true,
+                PortDirection::FixedBoth(src, dest) if src.0 == src_port && dest.0 == dest_port => {
+                    true
+                }
+                _ => false,
+            }
+        }
+        match resp.resp_seq {
+            ProbeResponseSeq::Icmp(_) => true,
+            ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                dest_addr,
+                src_port,
+                dest_port,
+                ..
+            })
+            | ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                dest_addr,
+                src_port,
+                dest_port,
+            }) => {
+                let check_ports = validate_ports(self.config.port_direction, src_port, dest_port);
+                let check_dest_addr = self.config.target_addr == dest_addr;
+                check_dest_addr && check_ports
+            }
+        }
+    }
+
     /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in
     /// a protocol specific way.
     #[instrument(skip(self))]
@@ -257,6 +300,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 src_port,
                 dest_port,
                 checksum,
+                ..
             }) => {
                 let sequence = match (self.config.multipath_strategy, self.config.port_direction) {
                     (MultipathStrategy::Classic, PortDirection::FixedDest(_)) => src_port,
@@ -269,6 +313,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
             ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
                 src_port,
                 dest_port,
+                ..
             }) => {
                 let sequence = match self.config.port_direction {
                     PortDirection::FixedSrc(_) => dest_port,

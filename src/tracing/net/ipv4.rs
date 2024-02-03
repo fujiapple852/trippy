@@ -427,14 +427,21 @@ fn extract_probe_resp_seq(
         }
         (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum, identifier) = extract_udp_packet(ipv4)?;
+
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
-                identifier, src_port, dest_port, checksum,
+                identifier,
+                IpAddr::V4(ipv4.get_destination()),
+                src_port,
+                dest_port,
+                checksum,
             )))
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
             let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
             Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
-                src_port, dest_port,
+                IpAddr::V4(ipv4.get_destination()),
+                src_port,
+                dest_port,
             )))
         }
         _ => None,
