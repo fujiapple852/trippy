@@ -47,6 +47,27 @@ impl From<u8> for IcmpCode {
     }
 }
 
+/// The code for `TimeExceeded` ICMP packet type.
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum IcmpTimeExceededCode {
+    /// TTL expired in transit.
+    TtlExpired,
+    /// Fragment reassembly time exceeded.
+    FragmentReassembly,
+    /// An unknown code.
+    Unknown(u8),
+}
+
+impl From<IcmpCode> for IcmpTimeExceededCode {
+    fn from(val: IcmpCode) -> Self {
+        match val {
+            IcmpCode(0) => Self::TtlExpired,
+            IcmpCode(1) => Self::FragmentReassembly,
+            IcmpCode(id) => Self::Unknown(id),
+        }
+    }
+}
+
 const TYPE_OFFSET: usize = 0;
 const CODE_OFFSET: usize = 1;
 const CHECKSUM_OFFSET: usize = 2;

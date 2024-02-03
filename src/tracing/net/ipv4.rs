@@ -9,7 +9,7 @@ use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreacha
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
 use crate::tracing::packet::icmpv4::echo_request::EchoRequestPacket;
 use crate::tracing::packet::icmpv4::time_exceeded::TimeExceededPacket;
-use crate::tracing::packet::icmpv4::{IcmpCode, IcmpPacket, IcmpType};
+use crate::tracing::packet::icmpv4::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType};
 use crate::tracing::packet::ipv4::Ipv4Packet;
 use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
@@ -352,23 +352,32 @@ fn extract_probe_resp(
     let recv = SystemTime::now();
     let src = IpAddr::V4(ipv4.get_source());
     let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
-    Ok(match icmp_v4.get_icmp_type() {
+    let icmp_type = icmp_v4.get_icmp_type();
+    let icmp_code = icmp_v4.get_icmp_code();
+    Ok(match icmp_type {
         IcmpType::TimeExceeded => {
-            let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
-            let (nested_ipv4, extension) = match icmp_extension_mode {
-                IcmpExtensionParseMode::Enabled => {
-                    let ipv4 = Ipv4Packet::new_view(packet.payload())?;
-                    let ext = packet.extension().map(Extensions::try_from).transpose()?;
-                    (ipv4, ext)
-                }
-                IcmpExtensionParseMode::Disabled => {
-                    let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
-                    (ipv4, None)
-                }
-            };
-            extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
-                ProbeResponse::TimeExceeded(ProbeResponseData::new(recv, src, resp_seq), extension)
-            })
+            if IcmpTimeExceededCode::from(icmp_code) == IcmpTimeExceededCode::TtlExpired {
+                let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
+                let (nested_ipv4, extension) = match icmp_extension_mode {
+                    IcmpExtensionParseMode::Enabled => {
+                        let ipv4 = Ipv4Packet::new_view(packet.payload())?;
+                        let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                        (ipv4, ext)
+                    }
+                    IcmpExtensionParseMode::Disabled => {
+                        let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
+                        (ipv4, None)
+                    }
+                };
+                extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
+                    ProbeResponse::TimeExceeded(
+                        ProbeResponseData::new(recv, src, resp_seq),
+                        extension,
+                    )
+                })
+            } else {
+                None
+            }
         }
         IcmpType::DestinationUnreachable => {
             let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
@@ -471,5 +480,37 @@ fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
     } else {
         let tcp_packet = TcpPacket::new_view(nested_tcp)?;
         Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tracing::error::IoResult;
+    use crate::tracing::net::socket::MockSocket;
+    use crate::mocket_read;
+
+    // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
+    // time exceeded") and must be ignored.
+    //
+    // Note this is not real packet and so the length and checksum are not
+    // accurate.
+    #[test]
+    fn test_icmp_time_exceeded_fragment_reassembly_ignored() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+           45 20 2c 02 e4 5c 00 00 72 01 2e 04 67 4b 0b 34
+           c0 a8 01 15 0b 01 1c 38 00 00 00 00 45 00 8c 05
+           85 4e 20 00 30 11 ab d6 c0 a8 01 15 67 4b 0b 34
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
     }
 }
