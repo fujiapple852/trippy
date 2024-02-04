@@ -486,9 +486,59 @@ fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mocket_read;
     use crate::tracing::error::IoResult;
     use crate::tracing::net::socket::MockSocket;
-    use crate::mocket_read;
+    use crate::tracing::{Port, Round, TimeToLive};
+    use mockall::predicate;
+    use std::str::FromStr;
+
+    // Test dispatching a IPv4/ICMP probe.
+    #[test]
+    fn test_dispatch_icmp_probe_no_payload() -> anyhow::Result<()> {
+        let probe = Probe::new(
+            Sequence(33000),
+            TraceId(1234),
+            Port(0),
+            Port(0),
+            TimeToLive(10),
+            Round(0),
+            SystemTime::now(),
+        );
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let packet_size = PacketSize(28);
+        let payload_pattern = PayloadPattern(0x00);
+        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            45 00 00 1c 00 00 40 00 0a 01 00 00 01 02 03 04
+            05 06 07 08 08 00 72 45 04 d2 80 e8
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        dispatch_icmp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            packet_size,
+            payload_pattern,
+            ipv4_byte_order,
+        )?;
+        Ok(())
+    }
 
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
