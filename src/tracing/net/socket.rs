@@ -2,6 +2,7 @@ use crate::tracing::error::IoResult as Result;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
+#[cfg_attr(test, mockall::automock)]
 pub trait Socket
 where
     Self: Sized,
@@ -45,4 +46,27 @@ where
     fn take_error(&mut self) -> Result<Option<std::io::Error>>;
     fn icmp_error_info(&mut self) -> Result<IpAddr>;
     fn close(&mut self) -> Result<()>;
+}
+
+#[cfg(test)]
+pub mod tests {
+    #[macro_export]
+    macro_rules! mocket_read {
+        ($packet: expr) => {
+            move |buf: &mut [u8]| -> IoResult<usize> {
+                buf[..$packet.len()].copy_from_slice(&$packet);
+                Ok(buf.len())
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! mocket_recv_from {
+        ($packet: expr, $addr: expr) => {
+            move |buf: &mut [u8]| -> IoResult<(usize, Option<SocketAddr>)> {
+                buf[..$packet.len()].copy_from_slice(&$packet);
+                Ok((buf.len(), Some($addr)))
+            }
+        };
+    }
 }
