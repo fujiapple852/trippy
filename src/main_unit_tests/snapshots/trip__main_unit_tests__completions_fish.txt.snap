@@ -1,5 +1,5 @@
 ---
-source: src/main.rs
+source: src/main_unit_tests/mod.rs
 expression: actual
 ---
 complete -c trip -s c -l config-file -d 'Config file' -r -F
