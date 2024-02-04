@@ -1,3 +1,7 @@
+---
+source: src/main.rs
+expression: actual
+---
 
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language

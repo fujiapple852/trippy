@@ -1,3 +1,7 @@
+---
+source: src/main.rs
+expression: actual
+---
 complete -c trip -s c -l config-file -d 'Config file' -r -F
 complete -c trip -s m -l mode -d 'Output mode [default: tui]' -r -f -a "{tui	'Display interactive TUI',stream	'Display a continuous stream of tracing data',pretty	'Generate an pretty text table report for N cycles',markdown	'Generate a markdown text table report for N cycles',csv	'Generate a CSV report for N cycles',json	'Generate a JSON report for N cycles',dot	'Generate a Graphviz DOT file for N cycles',flows	'Display all flows',silent	'Do not generate any tracing output for N cycles'}"
 complete -c trip -s p -l protocol -d 'Tracing protocol [default: icmp]' -r -f -a "{icmp	'Internet Control Message Protocol',udp	'User Datagram Protocol',tcp	'Transmission Control Protocol'}"
