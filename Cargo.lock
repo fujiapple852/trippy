@@ -246,6 +246,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cidr_util"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5264ac37a57476c8c433490596802c4ff683687b271c9ccfd26c142d41f0da68"
+
+[[package]]
 name = "clap"
 version = "4.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1977,11 +1983,12 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.0.1"
+version = "1.0.201"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0bc4dcfe2bca93d2acc036d09242ece6a778f807428980586677a8c6c556171"
+checksum = "213819a3a706da84ce60d7b69d199fae530933d92377e2ccad15ff7f24eed07a"
 dependencies = [
  "bytes",
+ "cidr_util",
  "futures-core",
  "ioctl-sys",
  "libc",
