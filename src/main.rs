@@ -462,21 +462,63 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case(include_str!("../test_resources/tui_theme_items.txt"), &tui_theme_items(); "tui theme items match")]
-    #[test_case(include_str!("../test_resources/tui_binding_commands.txt"), &tui_binding_commands(); "tui binding commands match")]
-    #[test_case(include_str!("../test_resources/completions_bash.txt"), &shell_completions(Shell::Bash).unwrap(); "generate bash shell completions")]
-    #[test_case(include_str!("../test_resources/completions_elvish.txt"), &shell_completions(Shell::Elvish).unwrap(); "generate elvish shell completions")]
-    #[test_case(include_str!("../test_resources/completions_fish.txt"), &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
-    #[test_case(include_str!("../test_resources/completions_powershell.txt"), &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
-    #[test_case(include_str!("../test_resources/completions_zsh.txt"), &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
-    fn test_output(expected: &str, actual: &str) {
-        if remove_whitespace(actual.to_string()) != remove_whitespace(expected.to_string()) {
-            pretty_assertions::assert_eq!(actual, expected);
+    const CI_TERMINAL_WIDTH: u16 = 100;
+    const MAX_WAIT_TIME_FOR_TERMINAL_WIDTH_IN_SEC: u64 = 2;
+
+    pub(crate) fn insta_settings() -> insta::Settings {
+        let mut result = insta::Settings::clone_current();
+        result.set_snapshot_path("../tests/snapshots");
+        result
+    }
+    /// Designed for use in testing and will panic if unable to set size in under 2 seconds
+    pub(crate) fn set_terminal_width() {
+        if Ok("true".into()) == std::env::var("CI") {
+            println!("Running in CI should already match and we cannot set it");
+            return;
         }
+        let (mut curr_width, mut curr_height) = crossterm::terminal::size().unwrap();
+        println!("Current terminal size is {curr_width} x {curr_height}");
+        if curr_width == CI_TERMINAL_WIDTH {
+            // Nothing required to be done
+            println!("Already at desired width of {CI_TERMINAL_WIDTH}");
+            return;
+        }
+
+        let start_instant = std::time::Instant::now();
+        crossterm::execute!(
+            std::io::stdout(),
+            crossterm::terminal::SetSize(CI_TERMINAL_WIDTH, curr_height)
+        )
+        .unwrap();
+        while curr_width != CI_TERMINAL_WIDTH {
+            if std::time::Instant::now()
+                .duration_since(start_instant)
+                .as_secs()
+                > MAX_WAIT_TIME_FOR_TERMINAL_WIDTH_IN_SEC
+            {
+                panic!("failed to change terminal size to width of {CI_TERMINAL_WIDTH} in under {MAX_WAIT_TIME_FOR_TERMINAL_WIDTH_IN_SEC} seconds");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            (curr_width, curr_height) = crossterm::terminal::size().unwrap();
+        }
+
+        println!(
+            "Successfully changed terminal size to {curr_width} x {curr_height} in {} mills",
+            std::time::Instant::now()
+                .duration_since(start_instant)
+                .as_millis()
+        );
     }
 
-    fn remove_whitespace(mut s: String) -> String {
-        s.retain(|c| !c.is_whitespace());
-        s
+    #[test_case("tui_theme_items", &tui_theme_items(); "tui theme items match")]
+    #[test_case("tui_binding_commands", &tui_binding_commands(); "tui binding commands match")]
+    #[test_case("completions_bash", &shell_completions(Shell::Bash).unwrap(); "generate bash shell completions")]
+    #[test_case("completions_elvish", &shell_completions(Shell::Elvish).unwrap(); "generate elvish shell completions")]
+    #[test_case("completions_fish", &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
+    #[test_case("completions_powershell", &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
+    #[test_case("completions_zsh", &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
+    fn test_output(snapshot_name: &str, actual: &str) {
+        set_terminal_width(); // TODO Onè: Consider putting actual into a closure to run it after this line instead of before
+        insta_settings().bind(|| insta::assert_snapshot!(snapshot_name, actual));
     }
 }

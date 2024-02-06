@@ -1121,12 +1121,17 @@ mod tests {
         pretty_assertions::assert_eq!(expected, config);
     }
 
-    #[test_case("trip", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show default help")]
-    #[test_case("trip -h", Err(anyhow!(include_str!("../test_resources/usage_short.txt"))); "show short help")]
-    #[test_case("trip --help", Err(anyhow!(include_str!("../test_resources/usage_long.txt"))); "show long help")]
+    #[test_case("trip", "usage_short"; "show default help")]
+    #[test_case("trip -h", "usage_short"; "show short help")]
+    #[test_case("trip --help", "usage_long"; "show long help")]
+    fn test_help(cmd: &str, snapshot_name: &str) {
+        crate::tests::set_terminal_width(); // Ensure terminal width is always the same for this test (output changes with width)
+        compare_with_snapshot(snapshot_name, parse_config(cmd));
+    }
+
     #[test_case("trip --version", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
     #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version short")]
-    fn test_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+    fn test_version(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
@@ -1640,6 +1645,17 @@ mod tests {
                 panic!("unexpected err {}", err.to_string().trim());
             }
         }
+    }
+
+    fn compare_with_snapshot<T: PartialEq + Eq + std::fmt::Debug>(
+        snapshot_name: &str,
+        actual: anyhow::Result<T>,
+    ) {
+        let s = match actual {
+            Ok(cfg) => format!("{cfg:?}"),
+            Err(err) => err.to_string(),
+        };
+        crate::tests::insta_settings().bind(|| insta::assert_snapshot!(snapshot_name, s));
     }
 
     fn cfg() -> TrippyConfigBuilder {

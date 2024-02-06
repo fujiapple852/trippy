@@ -1,3 +1,7 @@
+---
+source: src/main.rs
+expression: actual
+---
 #compdef trip
 
 autoload -U is-at-least

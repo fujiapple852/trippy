@@ -1,3 +1,7 @@
+---
+source: src/main.rs
+expression: actual
+---
 _trip() {
     local i cur prev opts cmd
     COMPREPLY=()
