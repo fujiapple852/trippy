@@ -63,7 +63,7 @@ Register-ArgumentCompleter -Native -CommandName 'trip' -ScriptBlock {
             [CompletionResult]::new('-a', 'a', [CompletionResultType]::ParameterName, 'How to render addresses [default: host]')
             [CompletionResult]::new('--tui-address-mode', 'tui-address-mode', [CompletionResultType]::ParameterName, 'How to render addresses [default: host]')
             [CompletionResult]::new('--tui-as-mode', 'tui-as-mode', [CompletionResultType]::ParameterName, 'How to render AS information [default: asn]')
-            [CompletionResult]::new('--tui-custom-columns', 'tui-custom-columns', [CompletionResultType]::ParameterName, 'Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]')
+            [CompletionResult]::new('--tui-custom-columns', 'tui-custom-columns', [CompletionResultType]::ParameterName, 'Custom columns to be displayed in the TUI hops table [default: holsravbwdt]')
             [CompletionResult]::new('--tui-icmp-extension-mode', 'tui-icmp-extension-mode', [CompletionResultType]::ParameterName, 'How to render ICMP extensions [default: off]')
             [CompletionResult]::new('--tui-geoip-mode', 'tui-geoip-mode', [CompletionResultType]::ParameterName, 'How to render GeoIp information [default: short]')
             [CompletionResult]::new('-M', 'M ', [CompletionResultType]::ParameterName, 'The maximum number of addresses to show per hop [default: auto]')

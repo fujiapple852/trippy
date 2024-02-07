@@ -153,7 +153,7 @@ Options:
           - name:         Display the AS name
 
       --tui-custom-columns <TUI_CUSTOM_COLUMNS>
-          Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]
+          Custom columns to be displayed in the TUI hops table [default: holsravbwdt]
 
       --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>
           How to render ICMP extensions [default: off]

@@ -102,7 +102,7 @@ country-code\:"Display the country code"
 registry\:"Display the registry name"
 allocated\:"Display the allocated date"
 name\:"Display the AS name"))' \
-'--tui-custom-columns=[Custom columns to be displayed in the TUI hops table \[default\: HOLSRAVBWDT\]]:TUI_CUSTOM_COLUMNS: ' \
+'--tui-custom-columns=[Custom columns to be displayed in the TUI hops table \[default\: holsravbwdt\]]:TUI_CUSTOM_COLUMNS: ' \
 '--tui-icmp-extension-mode=[How to render ICMP extensions \[default\: off\]]:TUI_ICMP_EXTENSION_MODE:((off\:"Do not show \`icmp\` extensions"
 mpls\:"Show MPLS label(s) only"
 full\:"Show full \`icmp\` extension data for all known extensions"
