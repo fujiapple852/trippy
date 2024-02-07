@@ -45,7 +45,7 @@ Options:
   -a, --tui-address-mode <TUI_ADDRESS_MODE>                How to render addresses [default: host] [possible values: ip, host, both]
       --tui-as-mode <TUI_AS_MODE>                          How to render AS information [default: asn] [possible values: asn, prefix, country-code,
                                                            registry, allocated, name]
-      --tui-custom-columns <TUI_CUSTOM_COLUMNS>            Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]
+      --tui-custom-columns <TUI_CUSTOM_COLUMNS>            Custom columns to be displayed in the TUI hops table [default: holsravbwdt]
       --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>  How to render ICMP extensions [default: off] [possible values: off, mpls, full, all]
       --tui-geoip-mode <TUI_GEOIP_MODE>                    How to render GeoIp information [default: short] [possible values: off, short, long, location]
   -M, --tui-max-addrs <TUI_MAX_ADDRS>                      The maximum number of addresses to show per hop [default: auto]

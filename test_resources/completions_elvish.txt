@@ -60,7 +60,7 @@ set edit:completion:arg-completer[trip] = {|@words|
             cand -a 'How to render addresses [default: host]'
             cand --tui-address-mode 'How to render addresses [default: host]'
             cand --tui-as-mode 'How to render AS information [default: asn]'
-            cand --tui-custom-columns 'Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]'
+            cand --tui-custom-columns 'Custom columns to be displayed in the TUI hops table [default: holsravbwdt]'
             cand --tui-icmp-extension-mode 'How to render ICMP extensions [default: off]'
             cand --tui-geoip-mode 'How to render GeoIp information [default: short]'
             cand -M 'The maximum number of addresses to show per hop [default: auto]'

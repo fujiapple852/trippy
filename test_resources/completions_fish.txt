@@ -22,7 +22,7 @@ complete -c trip -s r -l dns-resolve-method -d 'How to perform DNS queries [defa
 complete -c trip -l dns-timeout -d 'The maximum time to wait to perform DNS queries [default: 5s]' -r
 complete -c trip -s a -l tui-address-mode -d 'How to render addresses [default: host]' -r -f -a "{ip	'Show IP address only',host	'Show reverse-lookup DNS hostname only',both	'Show both IP address and reverse-lookup DNS hostname'}"
 complete -c trip -l tui-as-mode -d 'How to render AS information [default: asn]' -r -f -a "{asn	'Show the ASN',prefix	'Display the AS prefix',country-code	'Display the country code',registry	'Display the registry name',allocated	'Display the allocated date',name	'Display the AS name'}"
-complete -c trip -l tui-custom-columns -d 'Custom columns to be displayed in the TUI hops table [default: HOLSRAVBWDT]' -r
+complete -c trip -l tui-custom-columns -d 'Custom columns to be displayed in the TUI hops table [default: holsravbwdt]' -r
 complete -c trip -l tui-icmp-extension-mode -d 'How to render ICMP extensions [default: off]' -r -f -a "{off	'Do not show `icmp` extensions',mpls	'Show MPLS label(s) only',full	'Show full `icmp` extension data for all known extensions',all	'Show full `icmp` extension data for all classes'}"
 complete -c trip -l tui-geoip-mode -d 'How to render GeoIp information [default: short]' -r -f -a "{off	'Do not display GeoIp data',short	'Show short format',long	'Show long format',location	'Show latitude and Longitude format'}"
 complete -c trip -s M -l tui-max-addrs -d 'The maximum number of addresses to show per hop [default: auto]' -r
