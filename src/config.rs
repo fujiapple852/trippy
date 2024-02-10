@@ -646,7 +646,7 @@ impl TrippyConfig {
         validate_read_timeout(read_timeout)?;
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
-        validate_packet_size(packet_size)?;
+        validate_packet_size(addr_family, packet_size)?;
         validate_tui_refresh_rate(tui_refresh_rate)?;
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
@@ -998,15 +998,22 @@ fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
 }
 
 /// Validate `packet_size`.
-fn validate_packet_size(packet_size: u16) -> anyhow::Result<()> {
-    if (constants::MIN_PACKET_SIZE..=constants::MAX_PACKET_SIZE).contains(&packet_size) {
+fn validate_packet_size(address_family: IpAddrFamily, packet_size: u16) -> anyhow::Result<()> {
+    let min_size = match address_family {
+        IpAddrFamily::Ipv4Only => constants::MIN_PACKET_SIZE_IPV4,
+        IpAddrFamily::Ipv6Only | IpAddrFamily::Ipv6thenIpv4 | IpAddrFamily::Ipv4thenIpv6 => {
+            constants::MIN_PACKET_SIZE_IPV6
+        }
+    };
+    if (min_size..=constants::MAX_PACKET_SIZE).contains(&packet_size) {
         Ok(())
     } else {
         Err(anyhow!(
-            "packet-size ({}) must be between {} and {} inclusive",
+            "packet-size ({}) must be between {} and {} inclusive for {}",
             packet_size,
-            constants::MIN_PACKET_SIZE,
-            constants::MAX_PACKET_SIZE
+            min_size,
+            constants::MAX_PACKET_SIZE,
+            address_family,
         ))
     }
 }
@@ -1318,8 +1325,12 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().packet_size(84).build()); "default packet size")]
     #[test_case("trip example.com --packet-size 120", Ok(cfg().packet_size(120).build()); "custom packet size")]
     #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format packet size")]
-    #[test_case("trip example.com --packet-size 27", Err(anyhow!("packet-size (27) must be between 28 and 1024 inclusive")); "invalid low packet size")]
-    #[test_case("trip example.com --packet-size 1025", Err(anyhow!("packet-size (1025) must be between 28 and 1024 inclusive")); "invalid high packet size")]
+    #[test_case("trip example.com --packet-size 47 -F ipv4-then-ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv4thenIpv6")); "invalid low packet size for ipv4 then ipv6")]
+    #[test_case("trip example.com --packet-size 47 -F ipv6-then-ipv4", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6thenIpv4")); "invalid low packet size for ipv6 then ipv4")]
+    #[test_case("trip example.com --packet-size 27 -F ipv4", Err(anyhow!("packet-size (27) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid low packet size for ipv4")]
+    #[test_case("trip example.com --packet-size 1025 -F ipv4", Err(anyhow!("packet-size (1025) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid high packet size for ipv4")]
+    #[test_case("trip example.com --packet-size 47 -F ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid low packet size for ipv6")]
+    #[test_case("trip example.com --packet-size 1025 -F ipv6", Err(anyhow!("packet-size (1025) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid high packet size for ipv6")]
     #[test_case("trip example.com --packet-size 100000", Err(anyhow!("error: invalid value for one of the arguments")); "invalid out of range packet size")]
     fn test_packet_size(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
