@@ -719,6 +719,50 @@ mod tests {
     }
 
     #[test]
+    fn test_dispatch_udp_probe_paris_privileged() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        // packet size and payload pattern are ignored for paris mode as a
+        // fixed two byte payload is used to hold the sequence
+        let packet_size = PacketSize(300);
+        let payload_pattern = PayloadPattern(0xaa);
+        let multipath_strategy = MultipathStrategy::Paris;
+        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            45 00 00 1e 04 d2 40 00 0a 11 00 00 01 02 03 04
+            05 06 07 08 00 7b 01 c8 00 0a 80 e8 6c 9b
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+            multipath_strategy,
+            ipv4_byte_order,
+        )?;
+        Ok(())
+    }
+
+    #[test]
     fn test_dispatch_udp_probe_invalid_packet_size_low() -> anyhow::Result<()> {
         let probe = make_udp_probe(123, 456);
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
