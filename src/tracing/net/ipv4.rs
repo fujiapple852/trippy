@@ -1122,6 +1122,58 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_udp_no_extensions() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 c0 00 70 0e c8 00 00 40 01 e7 9e c0 a8 01 01
+            c0 a8 01 15 0b 00 12 98 00 00 00 00 45 00 00 54
+            90 69 00 00 01 11 0b ea c0 a8 01 15 8e fa cc 8e
+            7c 55 81 06 00 40 e4 cb 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1").unwrap()), addr);
+        assert_eq!(36969, identifier);
+        assert_eq!(
+            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142").unwrap()),
+            dest_addr
+        );
+        assert_eq!(31829, src_port);
+        assert_eq!(33030, dest_port);
+        assert_eq!(58571, checksum);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
