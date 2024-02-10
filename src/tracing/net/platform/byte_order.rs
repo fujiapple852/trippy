@@ -8,7 +8,7 @@ use std::net::IpAddr;
 /// To quote directly from the `mtr` source code (from `check_length_order` in `probe_unix.c`):
 ///
 /// "Nearly all fields in the IP header should be encoded in network byte
-/// order prior to passing to send().  However, the required byte order of
+/// order prior to passing to `send()`.  However, the required byte order of
 /// the length field of the IP header is inconsistent between operating
 /// systems and operating system versions.  FreeBSD 11 requires the length
 /// field in network byte order, but some older versions of FreeBSD
