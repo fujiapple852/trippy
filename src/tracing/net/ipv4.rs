@@ -937,6 +937,52 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_dispatch_tcp_probe() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let tos = TypeOfService(0);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
+        let expected_set_ttl = 10;
+        let expected_set_tos = 0;
+        let expected_connect_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+
+        let ctx = MockSocket::new_stream_socket_ipv4_context();
+        ctx.expect().returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_ttl()
+                .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tos()
+                .with(predicate::eq(expected_set_tos))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_connect()
+                .with(predicate::eq(expected_connect_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            Ok(mocket)
+        });
+
+        dispatch_tcp_probe::<MockSocket>(&probe, src_addr, dest_addr, tos)?;
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
