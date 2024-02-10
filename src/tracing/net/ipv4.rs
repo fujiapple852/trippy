@@ -37,6 +37,14 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
+/// The minimum size of ICMP packets we allow.
+const MIN_PACKET_SIZE_ICMP: usize =
+    Ipv4Packet::minimum_packet_size() + IcmpPacket::minimum_packet_size();
+
+/// The minimum size of UDP packets we allow.
+const MIN_PACKET_SIZE_UDP: usize =
+    Ipv4Packet::minimum_packet_size() + UdpPacket::minimum_packet_size();
+
 /// The value for the IPv4 `flags_and_fragment_offset` field to set the `Don't fragment` bit.
 ///
 /// 0100 0000 0000 0000
@@ -56,7 +64,7 @@ pub fn dispatch_icmp_probe<S: Socket>(
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
+    if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let echo_request = make_echo_request_icmp_packet(
@@ -95,7 +103,7 @@ pub fn dispatch_udp_probe<S: Socket>(
     ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
+    if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let payload_size = udp_payload_size(packet_size);
