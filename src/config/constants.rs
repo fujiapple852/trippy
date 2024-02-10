@@ -91,8 +91,11 @@ pub const MIN_GRACE_DURATION_MS: Duration = Duration::from_millis(10);
 /// The maximum grace duration.
 pub const MAX_GRACE_DURATION_MS: Duration = Duration::from_millis(1000);
 
-/// The minimum packet size we allow.
-pub const MIN_PACKET_SIZE: u16 = 28;
+/// The minimum IPv4 packet size we allow.
+pub const MIN_PACKET_SIZE_IPV4: u16 = 28;
+
+/// The minimum IPv6 packet size we allow.
+pub const MIN_PACKET_SIZE_IPV6: u16 = 48;
 
 /// The maximum packet size we allow.
 pub const MAX_PACKET_SIZE: u16 = 1024;
