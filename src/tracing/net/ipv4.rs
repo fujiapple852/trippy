@@ -549,7 +549,30 @@ mod tests {
     }
 
     #[test]
-    fn test_dispatch_icmp_probe_invalid_packet_size() -> anyhow::Result<()> {
+    fn test_dispatch_icmp_probe_invalid_packet_size_low() -> anyhow::Result<()> {
+        let probe = make_probe();
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let packet_size = PacketSize(27);
+        let payload_pattern = PayloadPattern(0x00);
+        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let mut mocket = MockSocket::new();
+        let err = dispatch_icmp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            packet_size,
+            payload_pattern,
+            ipv4_byte_order,
+        )
+        .unwrap_err();
+        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_icmp_probe_invalid_packet_size_high() -> anyhow::Result<()> {
         let probe = make_probe();
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
