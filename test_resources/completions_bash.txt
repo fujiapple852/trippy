@@ -26,14 +26,30 @@ _trip() {
             fi
             case "${prev}" in
                 --config-file)
+                    local oldifs
+                    if [[ -v IFS ]]; then
+                        oldifs="$IFS"
+                    fi
+                    IFS=$'\n'
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ -v oldifs ]]; then
+                        IFS="$oldifs"
+                    fi
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o filenames
                     fi
                     return 0
                     ;;
                 -c)
+                    local oldifs
+                    if [[ -v IFS ]]; then
+                        oldifs="$IFS"
+                    fi
+                    IFS=$'\n'
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ -v oldifs ]]; then
+                        IFS="$oldifs"
+                    fi
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o filenames
                     fi
@@ -256,14 +272,30 @@ _trip() {
                     return 0
                     ;;
                 --geoip-mmdb-file)
+                    local oldifs
+                    if [[ -v IFS ]]; then
+                        oldifs="$IFS"
+                    fi
+                    IFS=$'\n'
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ -v oldifs ]]; then
+                        IFS="$oldifs"
+                    fi
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o filenames
                     fi
                     return 0
                     ;;
                 -G)
+                    local oldifs
+                    if [[ -v IFS ]]; then
+                        oldifs="$IFS"
+                    fi
+                    IFS=$'\n'
                     COMPREPLY=($(compgen -f "${cur}"))
+                    if [[ -v oldifs ]]; then
+                        IFS="$oldifs"
+                    fi
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o filenames
                     fi
