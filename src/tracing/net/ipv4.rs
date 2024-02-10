@@ -1028,6 +1028,56 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_icmp_no_extensions() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+             45 20 00 70 07 d7 00 00 3b 01 e9 5d 8e fa 3d 81
+             c0 a8 01 15 0b 00 f4 ff 00 00 00 00 45 60 00 54
+             65 b0 40 00 01 01 e4 11 c0 a8 01 15 8e fb de ce
+             08 00 01 11 75 d7 81 17 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Disabled,
+        )?
+        .unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                        identifier,
+                        sequence,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(
+            IpAddr::V4(Ipv4Addr::from_str("142.250.61.129").unwrap()),
+            addr
+        );
+        assert_eq!(30167, identifier);
+        assert_eq!(33047, sequence);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
