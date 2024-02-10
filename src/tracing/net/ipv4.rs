@@ -1078,6 +1078,50 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_icmp_no_extensions() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 20 00 38 00 00 40 00 70 01 33 ea 14 00 00 fe
+            c0 a8 01 15 03 01 fc fe 00 00 00 00 45 00 00 54
+            00 00 40 00 80 01 23 ee c0 a8 01 15 14 00 00 fe
+            08 00 fb d9 7b 01 81 24
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Disabled,
+        )?
+        .unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                        identifier,
+                        sequence,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("20.0.0.254").unwrap()), addr);
+        assert_eq!(31489, identifier);
+        assert_eq!(33060, sequence);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
