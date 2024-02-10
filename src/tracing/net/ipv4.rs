@@ -1174,6 +1174,58 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_udp_no_extensions() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 20 00 70 bc f6 00 00 39 01 f0 a7 09 09 09 09
+            c0 a8 01 15 03 0a d1 16 00 00 00 00 45 20 00 54
+            a2 09 00 00 01 11 43 a1 c0 a8 01 15 09 09 09 09
+            80 0b 80 f2 00 40 2a a1 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()), addr);
+        assert_eq!(41481, identifier);
+        assert_eq!(
+            IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()),
+            dest_addr
+        );
+        assert_eq!(32779, src_port);
+        assert_eq!(33010, dest_port);
+        assert_eq!(10913, checksum);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
