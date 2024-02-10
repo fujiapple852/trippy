@@ -508,6 +508,9 @@ mod tests {
     use crate::tracing::{Port, Round, TimeToLive};
     use mockall::predicate;
     use std::str::FromStr;
+    use std::sync::Mutex;
+
+    static MTX: Mutex<()> = Mutex::new(());
 
     // Test dispatching a IPv4/ICMP probe.
     #[test]
@@ -747,6 +750,124 @@ mod tests {
             )
             .times(1)
             .returning(|_, _| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+            multipath_strategy,
+            ipv4_byte_order,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_unprivileged_no_payload() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let privilege_mode = PrivilegeMode::Unprivileged;
+        let packet_size = PacketSize(28);
+        let payload_pattern = PayloadPattern(0x00);
+        let multipath_strategy = MultipathStrategy::Classic;
+        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let expected_send_to_buf = hex_literal::hex!("");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
+        let expected_set_ttl = 10;
+
+        let mut mocket = MockSocket::new();
+
+        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
+        ctx.expect().returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_ttl()
+                .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_send_to()
+                .with(
+                    predicate::eq(expected_send_to_buf),
+                    predicate::eq(expected_send_to_addr),
+                )
+                .times(1)
+                .returning(|_, _| Ok(()));
+
+            Ok(mocket)
+        });
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+            multipath_strategy,
+            ipv4_byte_order,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_unprivileged_with_payload() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let privilege_mode = PrivilegeMode::Unprivileged;
+        let packet_size = PacketSize(36);
+        let payload_pattern = PayloadPattern(0x1f);
+        let multipath_strategy = MultipathStrategy::Classic;
+        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
+        let expected_set_ttl = 10;
+
+        let mut mocket = MockSocket::new();
+
+        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
+        ctx.expect().returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_ttl()
+                .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_send_to()
+                .with(
+                    predicate::eq(expected_send_to_buf),
+                    predicate::eq(expected_send_to_addr),
+                )
+                .times(1)
+                .returning(|_, _| Ok(()));
+
+            Ok(mocket)
+        });
 
         dispatch_udp_probe(
             &mut mocket,
