@@ -699,13 +699,20 @@ mod state {
         ) {
             // Retrieve and update the `ProbeState` at `sequence`.
             let probe = self.probe_at(sequence);
-            let ProbeState::Awaited(awaited) = probe else {
-                debug_assert!(
-                    false,
-                    "completed probe was not in Awaited state (seq={})",
-                    sequence.0
-                );
-                return;
+            let awaited = match probe {
+                ProbeState::Awaited(awaited) => awaited,
+                // there is a valid scenario for TCP where a probe is already
+                // `Complete`, see `test_tcp_dest_unreachable_and_refused`.
+                ProbeState::Complete(_) => {
+                    return;
+                }
+                _ => {
+                    debug_assert!(
+                        false,
+                        "completed probe was not in Awaited state (probe={probe:#?})"
+                    );
+                    return;
+                }
             };
             let completed = awaited.complete(host, received, icmp_packet_type, extensions);
             let ttl = completed.ttl;
