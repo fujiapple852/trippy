@@ -1403,6 +1403,110 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_tcp_socket_tcp_reply() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
+        let expected_peer_addr = SocketAddr::new(dest_addr, 456);
+
+        let mut mocket = MockSocket::new();
+        mocket.expect_take_error().times(1).returning(|| Ok(None));
+        mocket
+            .expect_peer_addr()
+            .times(1)
+            .returning(move || Ok(Some(expected_peer_addr)));
+        mocket.expect_shutdown().times(1).returning(|| Ok(()));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(456), dest_addr)?.unwrap();
+
+        let ProbeResponse::TcpReply(ProbeResponseData {
+            addr,
+            resp_seq:
+                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    dest_addr,
+                    src_port,
+                    dest_port,
+                }),
+            ..
+        }) = resp
+        else {
+            panic!("expected TcpReply")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(456, dest_port);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_tcp_socket_tcp_refused() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_take_error()
+            .times(1)
+            .returning(|| Ok(Some(SocketError::ConnectionRefused)));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+
+        let ProbeResponse::TcpRefused(ProbeResponseData {
+            addr,
+            resp_seq:
+                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    dest_addr,
+                    src_port,
+                    dest_port,
+                }),
+            ..
+        }) = resp
+        else {
+            panic!("expected TcpRefused")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(80, dest_port);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_tcp_socket_tcp_host_unreachable() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_take_error()
+            .times(1)
+            .returning(|| Ok(Some(SocketError::HostUnreachable)));
+        mocket
+            .expect_icmp_error_info()
+            .times(1)
+            .returning(move || Ok(dest_addr));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(80, dest_port);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
