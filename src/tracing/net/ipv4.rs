@@ -1276,6 +1276,53 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_tcp_no_extensions() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 20 00 5c d6 e0 00 00 39 01 d6 d1 09 09 09 09
+            c0 a8 01 15 03 0a d0 f7 00 00 00 00 45 20 00 40
+            00 00 00 00 01 06 e5 c9 c0 a8 01 15 09 09 09 09
+            80 f2 27 1b 5e b1 fa c7 00 00 00 00 b0 02 ff ff
+            a4 53 00 00 02 04 05 b4 01 03 03 06 01 01 08 0a
+            1d 02 a0 50 00 00 00 00 04 02 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()), addr);
+        assert_eq!(
+            IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()),
+            dest_addr
+        );
+        assert_eq!(33010, src_port);
+        assert_eq!(10011, dest_port);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
