@@ -3,7 +3,7 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::common::process_result;
 use crate::tracing::net::platform;
-use crate::tracing::net::socket::Socket;
+use crate::tracing::net::socket::{Socket, SocketError};
 use crate::tracing::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use crate::tracing::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use crate::tracing::packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -241,24 +241,23 @@ pub fn recv_tcp_socket<S: Socket>(
                 resp_seq,
             ))));
         }
-        Some(err) => {
-            if let Some(code) = err.raw_os_error() {
-                if platform::is_conn_refused_error(code) {
-                    return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
-                        SystemTime::now(),
-                        dest_addr,
-                        resp_seq,
-                    ))));
-                }
-                if platform::is_host_unreachable_error(code) {
-                    let error_addr = tcp_socket.icmp_error_info()?;
-                    return Ok(Some(ProbeResponse::TimeExceeded(
-                        ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
-                        None,
-                    )));
-                }
+        Some(err) => match err {
+            SocketError::ConnectionRefused => {
+                return Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
+                    SystemTime::now(),
+                    dest_addr,
+                    resp_seq,
+                ))));
             }
-        }
+            SocketError::HostUnreachable => {
+                let error_addr = tcp_socket.icmp_error_info()?;
+                return Ok(Some(ProbeResponse::TimeExceeded(
+                    ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                    None,
+                )));
+            }
+            SocketError::Other(_) => {}
+        },
     };
     Ok(None)
 }
