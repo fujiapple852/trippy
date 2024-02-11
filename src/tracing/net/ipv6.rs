@@ -18,7 +18,7 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
-use crate::tracing::{MultipathStrategy, PrivilegeMode, Protocol};
+use crate::tracing::{MultipathStrategy, Port, PrivilegeMode, Protocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -201,10 +201,12 @@ pub fn recv_icmp_probe<S: Socket>(
 #[instrument(skip(tcp_socket))]
 pub fn recv_tcp_socket<S: Socket>(
     tcp_socket: &mut S,
-    sequence: Sequence,
+    src_port: Port,
+    dest_port: Port,
     dest_addr: IpAddr,
 ) -> TraceResult<Option<ProbeResponse>> {
-    let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(0, sequence.0));
+    let resp_seq =
+        ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
     match tcp_socket.take_error()? {
         None => {
             let addr = tcp_socket
