@@ -29,6 +29,7 @@ pub mod source;
 pub use platform::SocketImpl;
 
 /// An abstraction over a network interface for tracing.
+#[cfg_attr(test, mockall::automock)]
 pub trait Network {
     /// Send a `Probe`.
     fn send_probe(&mut self, probe: Probe) -> TraceResult<()>;
