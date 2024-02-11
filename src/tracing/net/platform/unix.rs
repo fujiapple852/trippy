@@ -1,7 +1,7 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
-use crate::tracing::net::socket::Socket;
+use crate::tracing::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use nix::{
     sys::select::FdSet,
@@ -124,16 +124,7 @@ pub fn startup() -> TraceResult<()> {
 }
 
 pub fn is_not_in_progress_error(code: i32) -> bool {
-    nix::Error::from_i32(code) != nix::Error::EINPROGRESS
-}
-
-pub fn is_conn_refused_error(code: i32) -> bool {
-    nix::Error::from_i32(code) == nix::Error::ECONNREFUSED
-}
-
-#[must_use]
-pub fn is_host_unreachable_error(_code: i32) -> bool {
-    false
+    Error::from_i32(code) != Error::EINPROGRESS
 }
 
 /// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
@@ -437,9 +428,17 @@ impl Socket for SocketImpl {
         Ok(addr)
     }
     #[instrument(skip(self), ret)]
-    fn take_error(&mut self) -> IoResult<Option<io::Error>> {
+    fn take_error(&mut self) -> IoResult<Option<SocketError>> {
         self.inner
             .take_error()
+            .map(|err| {
+                err.map(|e| match e.raw_os_error() {
+                    Some(errno) if Error::from_i32(errno) == Error::ECONNREFUSED => {
+                        SocketError::ConnectionRefused
+                    }
+                    _ => SocketError::Other(e),
+                })
+            })
             .map_err(|err| IoError::Other(err, IoOperation::TakeError))
     }
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)]

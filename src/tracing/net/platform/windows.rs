@@ -2,7 +2,7 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation, IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::windows::adapter::Adapters;
-use crate::tracing::net::socket::Socket;
+use crate::tracing::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::ffi::c_void;
@@ -89,16 +89,6 @@ pub fn startup() -> TraceResult<()> {
 #[must_use]
 pub fn is_not_in_progress_error(code: i32) -> bool {
     code != WSAEINPROGRESS
-}
-
-#[must_use]
-pub fn is_conn_refused_error(code: i32) -> bool {
-    code == WSAECONNREFUSED
-}
-
-#[must_use]
-pub fn is_host_unreachable_error(code: i32) -> bool {
-    code == WSAEHOSTUNREACH
 }
 
 /// `WinSock` version 2.2
@@ -553,10 +543,12 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self), ret)]
-    fn take_error(&mut self) -> IoResult<Option<Error>> {
+    fn take_error(&mut self) -> IoResult<Option<SocketError>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
-            Ok(errno) => Ok(Some(Error::from_raw_os_error(errno))),
+            Ok(errno) if errno == WSAEHOSTUNREACH => Ok(Some(SocketError::HostUnreachable)),
+            Ok(errno) if errno == WSAECONNREFUSED => Ok(Some(SocketError::ConnectionRefused)),
+            Ok(errno) => Ok(Some(SocketError::Other(Error::from_raw_os_error(errno)))),
             Err(e) => Err(e),
         }
         .map_err(|err| IoError::Other(err, IoOperation::TakeError))

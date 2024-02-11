@@ -43,9 +43,17 @@ where
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
     fn shutdown(&mut self) -> Result<()>;
     fn peer_addr(&mut self) -> Result<Option<SocketAddr>>;
-    fn take_error(&mut self) -> Result<Option<std::io::Error>>;
+    fn take_error(&mut self) -> Result<Option<SocketError>>;
     fn icmp_error_info(&mut self) -> Result<IpAddr>;
     fn close(&mut self) -> Result<()>;
+}
+
+/// A socket error returned by `Socket::take_error`.
+#[derive(Debug)]
+pub enum SocketError {
+    ConnectionRefused,
+    HostUnreachable,
+    Other(std::io::Error),
 }
 
 #[cfg(test)]
