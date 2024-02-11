@@ -78,7 +78,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
     /// Send the next probe if required.
     ///
-    /// Send a `ProbeState` for the next time-to-live (ttl) if all of the following are true:
+    /// Send a `ProbeState` for the next time-to-live (ttl) if all the following are true:
     ///
     /// 1 - the target host has not been found
     /// 2 - the next ttl is not greater than the maximum allowed ttl
@@ -128,7 +128,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
     /// Read and process the next incoming `ICMP` packet.
     ///
-    /// We allow multiple probes to be in-flight at any time and we cannot guaranteed that responses
+    /// We allow multiple probes to be in-flight at any time, and we cannot guarantee that responses
     /// will be received in-order.  We therefore maintain a buffer which holds details of each
     /// `ProbeState` which is indexed by the offset of the sequence number from the sequence number
     /// at the beginning of the round.  The sequence number is set in the outgoing `ICMP`
@@ -139,7 +139,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     /// can read the `identifier` that we set which we can now validate to ensure we only
     /// process responses which correspond to packets sent from this process.  For The `UDP` and
     /// `TCP` protocols, only packets destined for our src port will be delivered to us by the
-    /// OS and so no other `identifier` is needed and so we allow the special case value of 0.
+    /// OS and so no other `identifier` is needed, and so we allow the special case value of 0.
     ///
     /// When we process an `EchoReply` from the target host we extract the time-to-live from the
     /// corresponding original `EchoRequest`.  Note that this may not be the greatest
@@ -185,7 +185,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     ///
     /// A round is considered to be complete when:
     ///
-    /// 1 - the round has exceed the minimum round duration AND
+    /// 1 - the round has exceeded the minimum round duration AND
     /// 2 - the duration since the last packet was received exceeds the grace period AND
     /// 3 - either:
     ///     A - the target has been found OR
@@ -327,7 +327,7 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
 
 /// Mutable state needed for the tracing algorithm.
 ///
-/// This is contained within a sub-module to ensure that mutations are only performed via methods on
+/// This is contained within a submodule to ensure that mutations are only performed via methods on
 /// the `TracerState` struct.
 mod state {
     use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
@@ -347,7 +347,7 @@ mod state {
 
     /// The maximum sequence number.
     ///
-    /// The sequence number is only ever wrapped between rounds and so we need to ensure that there
+    /// The sequence number is only ever wrapped between rounds, and so we need to ensure that there
     /// are enough sequence numbers for a complete round.
     ///
     /// A sequence number can be skipped if, for example, the port for that sequence number cannot
@@ -360,7 +360,7 @@ mod state {
     /// We cap the number of sequences that can potentially be skipped in a round to ensure that
     /// sequence number does not even need to wrap around during a round.
     ///
-    /// We only ever send `ttl` in the range 1..255 and so we may use all buffer capacity, except
+    /// We only ever send `ttl` in the range 1..255, and so we may use all buffer capacity, except
     /// the minimum needed to send up to a max `ttl` of 255 (a `ttl` of 0 is never sent).
     const MAX_SEQUENCE: Sequence = Sequence(u16::MAX - BUFFER_SIZE);
 
@@ -388,7 +388,7 @@ mod state {
         /// The observed time-to-live of the `EchoReply` from the target host.
         ///
         /// Note that this is _not_ reset each round and that it can also _change_ over time,
-        /// including going _down_ as responses can be are received out-of-order.
+        /// including going _down_ as responses can be received out-of-order.
         target_ttl: Option<TimeToLive>,
         /// The timestamp of the echo response packet.
         received_time: Option<SystemTime>,
@@ -457,7 +457,7 @@ mod state {
             round_size.0 < BUFFER_SIZE
         }
 
-        /// Have all round completed?
+        /// Are all rounds complete?
         pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
             match max_rounds {
                 None => false,
@@ -496,7 +496,7 @@ mod state {
         /// the previous `ttl` and the current `sequence`.
         ///
         /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method
-        /// then afterwards:
+        /// then afterward:
         /// - The `ProbeState` at sequence `3` will be set to `Skipped` state
         /// - A new `ProbeState` will be created at sequence `4` with a `ttl` of `5`
         #[instrument(skip(self))]
@@ -683,7 +683,7 @@ mod state {
         /// - the latest packet `received_time` in this round
         /// - whether the target has been found in this round
         ///
-        /// The ICMP replies may arrive out-of-order and so we must be careful here to avoid
+        /// The ICMP replies may arrive out-of-order, and so we must be careful here to avoid
         /// overwriting the state with stale values.  We may also receive multiple replies
         /// from the target host with differing time-to-live values and so must ensure we
         /// use the time-to-live with the lowest sequence number.
