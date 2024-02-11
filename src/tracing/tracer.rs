@@ -325,6 +325,73 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tracing::net::MockNetwork;
+    use crate::tracing::{MaxRounds, Port};
+    use std::net::Ipv4Addr;
+    use std::num::NonZeroUsize;
+
+    // The network can return both `DestinationUnreachable` and `TcpRefused`
+    // for the same sequence number.  This can occur for the target hop for
+    // TCP protocol as the network layer check for ICMP responses such as
+    // `DestinationUnreachable` and also synthesizes a `TcpRefused` response.
+    //
+    // This test simulates sending 1 TCP probe (seq=33000) and receiving two
+    // responses for that probe, a `DestinationUnreachable` followed by a
+    // `TcpRefused`.
+    #[test]
+    fn test_tcp_dest_unreachable_and_refused() -> anyhow::Result<()> {
+        let sequence = 33000;
+        let target_addr = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1));
+
+        let mut network = MockNetwork::new();
+        let mut seq = mockall::Sequence::new();
+        network.expect_send_probe().times(1).returning(|_| Ok(()));
+        network
+            .expect_recv_probe()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(move || {
+                Ok(Some(ProbeResponse::DestinationUnreachable(
+                    ProbeResponseData::new(
+                        SystemTime::now(),
+                        target_addr,
+                        ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
+                    ),
+                    None,
+                )))
+            });
+        network
+            .expect_recv_probe()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(move || {
+                Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
+                    SystemTime::now(),
+                    target_addr,
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
+                ))))
+            });
+
+        let config = Config {
+            target_addr,
+            max_rounds: Some(MaxRounds(NonZeroUsize::MIN)),
+            initial_sequence: Sequence(sequence),
+            port_direction: PortDirection::FixedDest(Port(80)),
+            protocol: Protocol::Tcp,
+            ..Default::default()
+        };
+        let tracer = Tracer::new(&config, |_| {});
+        let mut state = TracerState::new(config);
+        tracer.send_request(&mut network, &mut state)?;
+        tracer.recv_response(&mut network, &mut state)?;
+        tracer.recv_response(&mut network, &mut state)?;
+        Ok(())
+    }
+}
+
 /// Mutable state needed for the tracing algorithm.
 ///
 /// This is contained within a submodule to ensure that mutations are only performed via methods on
