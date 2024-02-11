@@ -3,8 +3,8 @@ use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::{Probe, ProbeResponse};
-use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TypeOfService};
-use crate::tracing::{ChannelConfig, MultipathStrategy, PrivilegeMode, Protocol};
+use crate::tracing::types::{PacketSize, PayloadPattern, TypeOfService};
+use crate::tracing::{ChannelConfig, MultipathStrategy, Port, PrivilegeMode, Protocol};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -177,8 +177,12 @@ impl<S: Socket> TracerChannel<S> {
             }
             _ => unreachable!(),
         }?;
-        self.tcp_probes
-            .push(TcpProbe::new(socket, probe.sequence, SystemTime::now()));
+        self.tcp_probes.push(TcpProbe::new(
+            socket,
+            probe.src_port,
+            probe.dest_port,
+            SystemTime::now(),
+        ));
         Ok(())
     }
 
@@ -225,12 +229,18 @@ impl<S: Socket> TracerChannel<S> {
         if let Some(i) = found_index {
             let mut probe = self.tcp_probes.remove(i);
             match self.dest_addr {
-                IpAddr::V4(_) => {
-                    ipv4::recv_tcp_socket(&mut probe.socket, probe.sequence, self.dest_addr)
-                }
-                IpAddr::V6(_) => {
-                    ipv6::recv_tcp_socket(&mut probe.socket, probe.sequence, self.dest_addr)
-                }
+                IpAddr::V4(_) => ipv4::recv_tcp_socket(
+                    &mut probe.socket,
+                    probe.src_port,
+                    probe.dest_port,
+                    self.dest_addr,
+                ),
+                IpAddr::V6(_) => ipv6::recv_tcp_socket(
+                    &mut probe.socket,
+                    probe.src_port,
+                    probe.dest_port,
+                    self.dest_addr,
+                ),
             }
         } else {
             Ok(None)
@@ -241,15 +251,17 @@ impl<S: Socket> TracerChannel<S> {
 /// An entry in the TCP probes array.
 struct TcpProbe<S: Socket> {
     socket: S,
-    sequence: Sequence,
+    src_port: Port,
+    dest_port: Port,
     start: SystemTime,
 }
 
 impl<S: Socket> TcpProbe<S> {
-    pub fn new(socket: S, sequence: Sequence, start: SystemTime) -> Self {
+    pub fn new(socket: S, src_port: Port, dest_port: Port, start: SystemTime) -> Self {
         Self {
             socket,
-            sequence,
+            src_port,
+            dest_port,
             start,
         }
     }
