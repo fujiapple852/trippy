@@ -1,6 +1,5 @@
-use crate::tracing::error::TracerError::AddressNotAvailable;
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
-use crate::tracing::net::platform;
+use crate::tracing::net::platform::in_progress_error;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
@@ -9,20 +8,71 @@ pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
     match res {
         Ok(()) => Ok(()),
         Err(err) => {
-            if let Some(code) = err.raw_os_error() {
-                if platform::is_not_in_progress_error(code) {
-                    match err.kind() {
-                        ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                            Err(AddressNotAvailable(addr))
-                        }
-                        _ => Err(TracerError::IoError(err)),
-                    }
-                } else {
-                    Ok(())
-                }
+            if err.raw_os_error() == in_progress_error().raw_os_error() {
+                Ok(())
             } else {
-                Err(TracerError::IoError(err))
+                match err.kind() {
+                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
+                        Err(TracerError::AddressNotAvailable(addr))
+                    }
+                    _ => Err(TracerError::IoError(err)),
+                }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tracing::error::{IoError, IoOperation};
+    use std::net::{Ipv4Addr, SocketAddrV4};
+    use tokio::io;
+
+    const ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
+
+    #[test]
+    fn test_ok() {
+        let res = Ok(());
+        let trace_res = process_result(ADDR, res);
+        assert!(trace_res.is_ok());
+    }
+
+    #[test]
+    fn test_err() {
+        let io_error = io::Error::from(ErrorKind::ConnectionRefused);
+        let res = Err(IoError::Connect(io_error, ADDR));
+        let trace_res = process_result(ADDR, res);
+        let trace_io_error = trace_res.unwrap_err();
+        assert!(matches!(trace_io_error, TracerError::IoError(_)));
+    }
+
+    #[test]
+    fn test_addr_in_use_err() {
+        let res = Err(IoError::Other(
+            io::Error::from(ErrorKind::AddrInUse),
+            IoOperation::Read,
+        ));
+        let trace_res = process_result(ADDR, res);
+        let trace_err = trace_res.unwrap_err();
+        assert!(matches!(trace_err, TracerError::AddressNotAvailable(ADDR)));
+    }
+
+    #[test]
+    fn test_addr_not_avail_err() {
+        let res = Err(IoError::Bind(
+            io::Error::from(ErrorKind::AddrNotAvailable),
+            ADDR,
+        ));
+        let trace_res = process_result(ADDR, res);
+        let trace_err = trace_res.unwrap_err();
+        assert!(matches!(trace_err, TracerError::AddressNotAvailable(ADDR)));
+    }
+
+    #[test]
+    fn test_in_progress_ok() {
+        let res = Err(IoError::Other(in_progress_error(), IoOperation::Select));
+        let trace_res = process_result(ADDR, res);
+        assert!(trace_res.is_ok());
     }
 }

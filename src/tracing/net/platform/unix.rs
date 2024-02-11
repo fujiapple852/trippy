@@ -123,8 +123,8 @@ pub fn startup() -> TraceResult<()> {
     Ok(())
 }
 
-pub fn is_not_in_progress_error(code: i32) -> bool {
-    Error::from_i32(code) != Error::EINPROGRESS
+pub fn in_progress_error() -> io::Error {
+    io::Error::from(Error::EINPROGRESS)
 }
 
 /// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.

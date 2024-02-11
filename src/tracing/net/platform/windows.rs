@@ -86,9 +86,8 @@ pub fn startup() -> TraceResult<()> {
     SocketImpl::startup().map_err(TracerError::IoError)
 }
 
-#[must_use]
-pub fn is_not_in_progress_error(code: i32) -> bool {
-    code != WSAEINPROGRESS
+pub fn in_progress_error() -> Error {
+    Error::from_raw_os_error(WSAEINPROGRESS)
 }
 
 /// `WinSock` version 2.2
