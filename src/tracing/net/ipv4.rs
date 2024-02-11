@@ -1323,6 +1323,86 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_wrong_icmp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+             45 20 00 70 07 d7 00 00 3b 01 e9 5d 8e fa 3d 81
+             c0 a8 01 15 0b 00 f4 ff 00 00 00 00 45 60 00 54
+             65 b0 40 00 01 01 e4 11 c0 a8 01 15 8e fb de ce
+             08 00 01 11 75 d7 81 17 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(3)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_wrong_udp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 c0 00 70 0e c8 00 00 40 01 e7 9e c0 a8 01 01
+            c0 a8 01 15 0b 00 12 98 00 00 00 00 45 00 00 54
+            90 69 00 00 01 11 0b ea c0 a8 01 15 8e fa cc 8e
+            7c 55 81 06 00 40 e4 cb 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(3)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_wrong_tcp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 20 00 5c a6 9d 00 00 3b 01 54 e5 d1 55 f0 eb
+            c0 a8 01 15 0b 00 12 79 00 00 00 00 45 80 00 40
+            00 00 40 00 01 06 5b f2 c0 a8 01 15 8e fa cc 8e
+            80 fd 00 50 61 f2 4d 4a 00 00 00 00 b0 02 ff ff
+            14 05 00 00 02 04 05 b4 01 03 03 06 01 01 08 0a
+            55 59 7f cd 00 00 00 00 04 02 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(3)
+            .returning(mocket_read!(expected_read_buf));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
     // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
