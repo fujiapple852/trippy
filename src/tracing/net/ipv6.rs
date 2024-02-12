@@ -18,7 +18,7 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
-use crate::tracing::{MultipathStrategy, Port, PrivilegeMode, Protocol};
+use crate::tracing::{Flags, Port, PrivilegeMode, Protocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -75,7 +75,6 @@ pub fn dispatch_udp_probe<S: Socket>(
     privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    multipath_strategy: MultipathStrategy,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
     if packet_size > MAX_PACKET_SIZE {
@@ -84,14 +83,9 @@ pub fn dispatch_udp_probe<S: Socket>(
     let payload_size = udp_payload_size(packet_size);
     let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
     match privilege_mode {
-        PrivilegeMode::Privileged => dispatch_udp_probe_raw(
-            raw_send_socket,
-            probe,
-            src_addr,
-            dest_addr,
-            payload,
-            multipath_strategy,
-        ),
+        PrivilegeMode::Privileged => {
+            dispatch_udp_probe_raw(raw_send_socket, probe, src_addr, dest_addr, payload)
+        }
         PrivilegeMode::Unprivileged => {
             dispatch_udp_probe_non_raw::<S>(probe, src_addr, dest_addr, payload)
         }
@@ -106,11 +100,10 @@ fn dispatch_udp_probe_raw<S: Socket>(
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
     payload: &[u8],
-    multipath_strategy: MultipathStrategy,
 ) -> TraceResult<()> {
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let payload_paris = probe.sequence.0.to_be_bytes();
-    let payload = if multipath_strategy == MultipathStrategy::Paris {
+    let payload = if probe.flags.contains(Flags::PARIS_CHECKSUM) {
         payload_paris.as_slice()
     } else {
         payload
@@ -123,7 +116,7 @@ fn dispatch_udp_probe_raw<S: Socket>(
         probe.dest_port.0,
         payload,
     )?;
-    if multipath_strategy == MultipathStrategy::Paris {
+    if probe.flags.contains(Flags::PARIS_CHECKSUM) {
         let checksum = udp.get_checksum().to_be_bytes();
         let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
         udp.set_checksum(payload);

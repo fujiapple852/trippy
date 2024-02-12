@@ -281,17 +281,6 @@ impl ChannelConfigBuilder {
         }
     }
 
-    /// Set the channel multipath strategy.
-    #[must_use]
-    pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
-        Self {
-            config: ChannelConfig {
-                multipath_strategy,
-                ..self.config
-            },
-        }
-    }
-
     /// Set the channel packet size.
     #[must_use]
     pub fn packet_size(self, packet_size: PacketSize) -> Self {
@@ -371,7 +360,6 @@ pub struct ChannelConfig {
     pub target_addr: IpAddr,
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
-    pub multipath_strategy: MultipathStrategy,
     pub tos: TypeOfService,
     pub icmp_extension_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
@@ -388,7 +376,6 @@ impl ChannelConfig {
         target_addr: IpAddr,
         packet_size: u16,
         payload_pattern: u8,
-        multipath_strategy: MultipathStrategy,
         tos: u8,
         icmp_extension_mode: IcmpExtensionParseMode,
         read_timeout: Duration,
@@ -401,7 +388,6 @@ impl ChannelConfig {
             target_addr,
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
-            multipath_strategy,
             tos: TypeOfService(tos),
             icmp_extension_mode,
             read_timeout,
@@ -419,7 +405,6 @@ impl Default for ChannelConfig {
             target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             packet_size: PacketSize(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
             payload_pattern: PayloadPattern(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
-            multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
             tos: TypeOfService(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extension_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
@@ -700,7 +685,6 @@ mod tests {
         let cfg = ChannelConfigBuilder::new(SOURCE_ADDR, TARGET_ADDR)
             .protocol(Protocol::Tcp)
             .privilege_mode(PrivilegeMode::Unprivileged)
-            .multipath_strategy(MultipathStrategy::Dublin)
             .packet_size(PacketSize(128))
             .payload_pattern(PayloadPattern(0xff))
             .tos(TypeOfService(0x1a))
@@ -712,7 +696,6 @@ mod tests {
         assert_eq!(TARGET_ADDR, cfg.target_addr);
         assert_eq!(Protocol::Tcp, cfg.protocol);
         assert_eq!(PrivilegeMode::Unprivileged, cfg.privilege_mode);
-        assert_eq!(MultipathStrategy::Dublin, cfg.multipath_strategy);
         assert_eq!(PacketSize(128), cfg.packet_size);
         assert_eq!(PayloadPattern(0xff), cfg.payload_pattern);
         assert_eq!(TypeOfService(0x1a), cfg.tos);

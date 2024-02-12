@@ -4,7 +4,7 @@ use crate::tracing::net::socket::Socket;
 use crate::tracing::net::{ipv4, ipv6, platform, Network};
 use crate::tracing::probe::{Probe, ProbeResponse};
 use crate::tracing::types::{PacketSize, PayloadPattern, TypeOfService};
-use crate::tracing::{ChannelConfig, MultipathStrategy, Port, PrivilegeMode, Protocol};
+use crate::tracing::{ChannelConfig, Port, PrivilegeMode, Protocol};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -25,7 +25,6 @@ pub struct TracerChannel<S: Socket> {
     dest_addr: IpAddr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    multipath_strategy: MultipathStrategy,
     tos: TypeOfService,
     icmp_extension_mode: IcmpExtensionParseMode,
     read_timeout: Duration,
@@ -65,7 +64,6 @@ impl<S: Socket> TracerChannel<S> {
             dest_addr: config.target_addr,
             packet_size: config.packet_size,
             payload_pattern: config.payload_pattern,
-            multipath_strategy: config.multipath_strategy,
             tos: config.tos,
             icmp_extension_mode: config.icmp_extension_mode,
             read_timeout: config.read_timeout,
@@ -145,7 +143,6 @@ impl<S: Socket> TracerChannel<S> {
                     self.privilege_mode,
                     self.packet_size,
                     self.payload_pattern,
-                    self.multipath_strategy,
                     self.ipv4_length_order,
                 )
             }
@@ -158,7 +155,6 @@ impl<S: Socket> TracerChannel<S> {
                     self.privilege_mode,
                     self.packet_size,
                     self.payload_pattern,
-                    self.multipath_strategy,
                 )
             }
             _ => unreachable!(),

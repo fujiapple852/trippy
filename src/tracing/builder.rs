@@ -109,10 +109,6 @@ impl<F: Fn(&TracerRound<'_>)> Builder<F> {
     #[must_use]
     pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
         Self {
-            channel_config: ChannelConfig {
-                multipath_strategy,
-                ..self.channel_config
-            },
             tracer_config: Config {
                 multipath_strategy,
                 ..self.tracer_config
