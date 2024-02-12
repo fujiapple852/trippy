@@ -400,7 +400,7 @@ mod state {
     use crate::tracing::constants::MAX_SEQUENCE_PER_ROUND;
     use crate::tracing::probe::{Extensions, IcmpPacketType, Probe, ProbeState};
     use crate::tracing::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
-    use crate::tracing::{Config, MultipathStrategy, PortDirection, Protocol};
+    use crate::tracing::{Config, Flags, MultipathStrategy, PortDirection, Protocol};
     use std::array::from_fn;
     use std::net::IpAddr;
     use std::time::SystemTime;
@@ -538,7 +538,7 @@ mod state {
         /// `1..254` to allow us to use a `u8`.
         #[instrument(skip(self))]
         pub fn next_probe(&mut self, sent: SystemTime) -> Probe {
-            let (src_port, dest_port, identifier) = self.probe_data();
+            let (src_port, dest_port, identifier, flags) = self.probe_data();
             let probe = Probe::new(
                 self.sequence,
                 identifier,
@@ -547,6 +547,7 @@ mod state {
                 self.ttl,
                 self.round,
                 sent,
+                flags,
             );
             let probe_index = usize::from(self.sequence - self.round_sequence);
             self.buffer[probe_index] = ProbeState::Awaited(probe.clone());
@@ -570,7 +571,7 @@ mod state {
         pub fn reissue_probe(&mut self, sent: SystemTime) -> Probe {
             let probe_index = usize::from(self.sequence - self.round_sequence);
             self.buffer[probe_index - 1] = ProbeState::Skipped;
-            let (src_port, dest_port, identifier) = self.probe_data();
+            let (src_port, dest_port, identifier, flags) = self.probe_data();
             let probe = Probe::new(
                 self.sequence,
                 identifier,
@@ -579,6 +580,7 @@ mod state {
                 self.ttl - TimeToLive(1),
                 self.round,
                 sent,
+                flags,
             );
             self.buffer[probe_index] = ProbeState::Awaited(probe.clone());
             debug_assert!(self.sequence < Sequence(u16::MAX));
@@ -590,7 +592,7 @@ mod state {
         ///
         /// This will differ depending on the `TracerProtocol`, `MultipathStrategy` &
         /// `PortDirection`.
-        fn probe_data(&self) -> (Port, Port, TraceId) {
+        fn probe_data(&self) -> (Port, Port, TraceId, Flags) {
             match self.config.protocol {
                 Protocol::Icmp => self.probe_icmp_data(),
                 Protocol::Udp => self.probe_udp_data(),
@@ -599,20 +601,31 @@ mod state {
         }
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current ICMP probe.
-        fn probe_icmp_data(&self) -> (Port, Port, TraceId) {
-            (Port(0), Port(0), self.config.trace_identifier)
+        fn probe_icmp_data(&self) -> (Port, Port, TraceId, Flags) {
+            (
+                Port(0),
+                Port(0),
+                self.config.trace_identifier,
+                Flags::empty(),
+            )
         }
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current UDP probe.
-        fn probe_udp_data(&self) -> (Port, Port, TraceId) {
+        fn probe_udp_data(&self) -> (Port, Port, TraceId, Flags) {
             match self.config.multipath_strategy {
                 MultipathStrategy::Classic => match self.config.port_direction {
-                    PortDirection::FixedSrc(src_port) => {
-                        (Port(src_port.0), Port(self.sequence.0), TraceId(0))
-                    }
-                    PortDirection::FixedDest(dest_port) => {
-                        (Port(self.sequence.0), Port(dest_port.0), TraceId(0))
-                    }
+                    PortDirection::FixedSrc(src_port) => (
+                        Port(src_port.0),
+                        Port(self.sequence.0),
+                        TraceId(0),
+                        Flags::empty(),
+                    ),
+                    PortDirection::FixedDest(dest_port) => (
+                        Port(self.sequence.0),
+                        Port(dest_port.0),
+                        TraceId(0),
+                        Flags::empty(),
+                    ),
                     PortDirection::FixedBoth(_, _) | PortDirection::None => {
                         unimplemented!()
                     }
@@ -621,15 +634,24 @@ mod state {
                     let round_port = ((self.config.initial_sequence.0 as usize + self.round.0)
                         % usize::from(u16::MAX)) as u16;
                     match self.config.port_direction {
-                        PortDirection::FixedSrc(src_port) => {
-                            (Port(src_port.0), Port(round_port), TraceId(0))
-                        }
-                        PortDirection::FixedDest(dest_port) => {
-                            (Port(round_port), Port(dest_port.0), TraceId(0))
-                        }
-                        PortDirection::FixedBoth(src_port, dest_port) => {
-                            (Port(src_port.0), Port(dest_port.0), TraceId(0))
-                        }
+                        PortDirection::FixedSrc(src_port) => (
+                            Port(src_port.0),
+                            Port(round_port),
+                            TraceId(0),
+                            Flags::PARIS_CHECKSUM,
+                        ),
+                        PortDirection::FixedDest(dest_port) => (
+                            Port(round_port),
+                            Port(dest_port.0),
+                            TraceId(0),
+                            Flags::PARIS_CHECKSUM,
+                        ),
+                        PortDirection::FixedBoth(src_port, dest_port) => (
+                            Port(src_port.0),
+                            Port(dest_port.0),
+                            TraceId(0),
+                            Flags::PARIS_CHECKSUM,
+                        ),
                         PortDirection::None => unimplemented!(),
                     }
                 }
@@ -637,18 +659,23 @@ mod state {
                     let round_port = ((self.config.initial_sequence.0 as usize + self.round.0)
                         % usize::from(u16::MAX)) as u16;
                     match self.config.port_direction {
-                        PortDirection::FixedSrc(src_port) => {
-                            (Port(src_port.0), Port(round_port), TraceId(self.sequence.0))
-                        }
+                        PortDirection::FixedSrc(src_port) => (
+                            Port(src_port.0),
+                            Port(round_port),
+                            TraceId(self.sequence.0),
+                            Flags::empty(),
+                        ),
                         PortDirection::FixedDest(dest_port) => (
                             Port(round_port),
                             Port(dest_port.0),
                             TraceId(self.sequence.0),
+                            Flags::empty(),
                         ),
                         PortDirection::FixedBoth(src_port, dest_port) => (
                             Port(src_port.0),
                             Port(dest_port.0),
                             TraceId(self.sequence.0),
+                            Flags::empty(),
                         ),
                         PortDirection::None => unimplemented!(),
                     }
@@ -657,13 +684,13 @@ mod state {
         }
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current TCP probe.
-        fn probe_tcp_data(&self) -> (Port, Port, TraceId) {
+        fn probe_tcp_data(&self) -> (Port, Port, TraceId, Flags) {
             let (src_port, dest_port) = match self.config.port_direction {
                 PortDirection::FixedSrc(src_port) => (src_port.0, self.sequence.0),
                 PortDirection::FixedDest(dest_port) => (self.sequence.0, dest_port.0),
                 PortDirection::FixedBoth(_, _) | PortDirection::None => unimplemented!(),
             };
-            (Port(src_port), Port(dest_port), TraceId(0))
+            (Port(src_port), Port(dest_port), TraceId(0), Flags::empty())
         }
 
         /// Mark the `ProbeState` at `sequence` completed as `TimeExceeded` and update the round state.

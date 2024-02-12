@@ -441,7 +441,7 @@ mod tests {
     use crate::mocket_recv_from;
     use crate::tracing::error::IoResult;
     use crate::tracing::net::socket::MockSocket;
-    use crate::tracing::{Port, Round, TimeToLive};
+    use crate::tracing::{Flags, Port, Round, TimeToLive};
     use mockall::predicate;
     use std::str::FromStr;
 
@@ -456,6 +456,7 @@ mod tests {
             TimeToLive(10),
             Round(0),
             SystemTime::now(),
+            Flags::empty(),
         );
         let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
         let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;

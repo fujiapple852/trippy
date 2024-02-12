@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use derive_more::{Add, AddAssign, Rem, Sub};
 use std::num::NonZeroUsize;
 
@@ -40,6 +41,15 @@ pub struct TypeOfService(pub u8);
 /// Port newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Port(pub u16);
+
+bitflags! {
+    /// Probe flags.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Flags: u32 {
+        /// Swap the checksum and payload (UDP only).
+        const PARIS_CHECKSUM = 1;
+    }
+}
 
 impl From<Sequence> for usize {
     fn from(sequence: Sequence) -> Self {

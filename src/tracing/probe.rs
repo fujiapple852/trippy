@@ -1,4 +1,4 @@
-use crate::tracing::types::{Port, Round, Sequence, TimeToLive, TraceId};
+use crate::tracing::types::{Flags, Port, Round, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 
@@ -33,10 +33,13 @@ pub struct Probe {
     pub round: Round,
     /// Timestamp when the probe was sent.
     pub sent: SystemTime,
+    /// Probe flags.
+    pub flags: Flags,
 }
 
 impl Probe {
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         sequence: Sequence,
         identifier: TraceId,
@@ -45,6 +48,7 @@ impl Probe {
         ttl: TimeToLive,
         round: Round,
         sent: SystemTime,
+        flags: Flags,
     ) -> Self {
         Self {
             sequence,
@@ -54,6 +58,7 @@ impl Probe {
             ttl,
             round,
             sent,
+            flags,
         }
     }
 
