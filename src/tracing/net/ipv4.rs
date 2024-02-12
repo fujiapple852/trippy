@@ -19,7 +19,7 @@ use crate::tracing::probe::{
     ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
-use crate::tracing::{MultipathStrategy, Port, PrivilegeMode, Protocol};
+use crate::tracing::{Flags, Port, PrivilegeMode, Protocol};
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
@@ -99,7 +99,6 @@ pub fn dispatch_udp_probe<S: Socket>(
     privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    multipath_strategy: MultipathStrategy,
     ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
@@ -115,7 +114,6 @@ pub fn dispatch_udp_probe<S: Socket>(
             src_addr,
             dest_addr,
             payload,
-            multipath_strategy,
             ipv4_byte_order,
         ),
         PrivilegeMode::Unprivileged => {
@@ -136,13 +134,12 @@ fn dispatch_udp_probe_raw<S: Socket>(
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     payload: &[u8],
-    multipath_strategy: MultipathStrategy,
     ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let payload_paris = probe.sequence.0.to_be_bytes();
-    let payload = if multipath_strategy == MultipathStrategy::Paris {
+    let payload = if probe.flags.contains(Flags::PARIS_CHECKSUM) {
         payload_paris.as_slice()
     } else {
         payload
@@ -155,7 +152,7 @@ fn dispatch_udp_probe_raw<S: Socket>(
         probe.dest_port.0,
         payload,
     )?;
-    if multipath_strategy == MultipathStrategy::Paris {
+    if probe.flags.contains(Flags::PARIS_CHECKSUM) {
         let checksum = udp.get_checksum().to_be_bytes();
         let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
         udp.set_checksum(payload);
@@ -644,7 +641,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
@@ -672,7 +668,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )?;
         Ok(())
@@ -686,7 +681,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(38);
         let payload_pattern = PayloadPattern(0xaa);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
@@ -715,7 +709,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )?;
         Ok(())
@@ -723,7 +716,10 @@ mod tests {
 
     #[test]
     fn test_dispatch_udp_probe_paris_privileged() -> anyhow::Result<()> {
-        let probe = make_udp_probe(123, 456);
+        let probe = Probe {
+            flags: Flags::PARIS_CHECKSUM,
+            ..make_udp_probe(123, 456)
+        };
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let privilege_mode = PrivilegeMode::Privileged;
@@ -731,7 +727,6 @@ mod tests {
         // fixed two byte payload is used to hold the sequence
         let packet_size = PacketSize(300);
         let payload_pattern = PayloadPattern(0xaa);
-        let multipath_strategy = MultipathStrategy::Paris;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
@@ -759,7 +754,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )?;
         Ok(())
@@ -774,7 +768,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
@@ -818,7 +811,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )?;
         Ok(())
@@ -833,7 +825,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(36);
         let payload_pattern = PayloadPattern(0x1f);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
@@ -877,7 +868,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )?;
         Ok(())
@@ -891,7 +881,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(27);
         let payload_pattern = PayloadPattern(0x00);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
@@ -902,7 +891,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )
         .unwrap_err();
@@ -918,7 +906,6 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
-        let multipath_strategy = MultipathStrategy::Classic;
         let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
@@ -929,7 +916,6 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
-            multipath_strategy,
             ipv4_byte_order,
         )
         .unwrap_err();

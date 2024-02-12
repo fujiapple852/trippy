@@ -285,7 +285,6 @@ fn make_channel_config(
         target_addr,
         args.packet_size,
         args.payload_pattern,
-        args.multipath_strategy,
         args.tos,
         args.icmp_extension_parse_mode,
         args.read_timeout,
