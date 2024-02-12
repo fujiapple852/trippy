@@ -36,9 +36,9 @@ pub enum Mode {
     Tui,
     /// Display a continuous stream of tracing data
     Stream,
-    /// Generate an pretty text table report for N cycles.
+    /// Generate a pretty text table report for N cycles.
     Pretty,
-    /// Generate a markdown text table report for N cycles.
+    /// Generate a Markdown text table report for N cycles.
     Markdown,
     /// Generate a CSV report for N cycles.
     Csv,
@@ -46,7 +46,7 @@ pub enum Mode {
     Json,
     /// Generate a Graphviz DOT file for N cycles.
     Dot,
-    /// Display all flows.
+    /// Display all flows for N cycles.
     Flows,
     /// Do not generate any tracing output for N cycles.
     Silent,
@@ -332,6 +332,16 @@ impl TrippyConfig {
             ConfigFile::default()
         };
         Self::build_config(args, cfg_file, platform)
+    }
+
+    /// The maximum number of flows allowed.
+    ///
+    /// This is restricted to 1 for the classic strategy.
+    pub fn max_flows(&self) -> usize {
+        match self.multipath_strategy {
+            MultipathStrategy::Classic => 1,
+            _ => self.tui_max_flows,
+        }
     }
 
     #[allow(clippy::too_many_lines)]
@@ -641,6 +651,7 @@ impl TrippyConfig {
         validate_strategy(multipath_strategy, unprivileged)?;
         validate_protocol_strategy(protocol, multipath_strategy)?;
         validate_multi(mode, protocol, &args.targets, dns_resolve_all)?;
+        validate_flows(mode, multipath_strategy)?;
         validate_ttl(first_ttl, max_ttl)?;
         validate_max_inflight(max_inflight)?;
         validate_read_timeout(read_timeout)?;
@@ -918,6 +929,17 @@ fn validate_multi(
     }
 }
 
+/// Validate that flows and dot mode are only used with paris or dublin
+/// multipath strategy.
+fn validate_flows(mode: Mode, strategy: MultipathStrategy) -> anyhow::Result<()> {
+    match (mode, strategy) {
+        (Mode::Flows | Mode::Dot, MultipathStrategy::Classic) => Err(anyhow!(
+            "this mode requires the paris or dublin multipath strategy"
+        )),
+        _ => Ok(()),
+    }
+}
+
 /// Validate `first_ttl` and `max_ttl`.
 fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
     if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
@@ -1150,11 +1172,13 @@ mod tests {
     #[test_case("trip example.com --mode markdown", Ok(cfg().mode(Mode::Markdown).max_rounds(Some(10)).build()); "markdown mode")]
     #[test_case("trip example.com --mode csv", Ok(cfg().mode(Mode::Csv).max_rounds(Some(10)).build()); "csv mode")]
     #[test_case("trip example.com --mode json", Ok(cfg().mode(Mode::Json).max_rounds(Some(10)).build()); "json mode")]
-    #[test_case("trip example.com --mode dot", Ok(cfg().mode(Mode::Dot).max_rounds(Some(10)).build()); "dot mode")]
-    #[test_case("trip example.com --mode flows", Ok(cfg().mode(Mode::Flows).max_rounds(Some(10)).build()); "flows mode")]
+    #[test_case("trip example.com --mode dot --udp -R paris", Ok(cfg().mode(Mode::Dot).max_rounds(Some(10)).multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dot mode")]
+    #[test_case("trip example.com --mode flows --udp -R paris", Ok(cfg().mode(Mode::Flows).max_rounds(Some(10)).multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "flows mode")]
     #[test_case("trip example.com --mode silent", Ok(cfg().mode(Mode::Silent).max_rounds(Some(10)).build()); "silent mode")]
     #[test_case("trip example.com -m tui", Ok(cfg().mode(Mode::Tui).build()); "tui mode short")]
     #[test_case("trip example.com --mode foo", Err(anyhow!(format!("error: one of the values isn't valid for an argument"))); "invalid mode")]
+    #[test_case("trip example.com --mode dot", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid dot mode")]
+    #[test_case("trip example.com --mode flows", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid flows mode")]
     fn test_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
