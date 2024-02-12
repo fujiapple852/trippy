@@ -24,6 +24,6 @@ pub use probe::{
 };
 pub use tracer::{CompletionReason, Tracer, TracerRound};
 pub use types::{
-    MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Round, Sequence, TimeToLive, TraceId,
-    TypeOfService,
+    Flags, MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Round, Sequence, TimeToLive,
+    TraceId, TypeOfService,
 };

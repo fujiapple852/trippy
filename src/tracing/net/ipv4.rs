@@ -505,7 +505,7 @@ mod tests {
     use crate::mocket_read;
     use crate::tracing::error::IoResult;
     use crate::tracing::net::socket::MockSocket;
-    use crate::tracing::{Port, Round, TimeToLive};
+    use crate::tracing::{Flags, Port, Round, TimeToLive};
     use mockall::predicate;
     use std::str::FromStr;
     use std::sync::Mutex;
@@ -1540,6 +1540,7 @@ mod tests {
             TimeToLive(10),
             Round(0),
             SystemTime::now(),
+            Flags::empty(),
         )
     }
 
@@ -1552,6 +1553,7 @@ mod tests {
             TimeToLive(10),
             Round(0),
             SystemTime::now(),
+            Flags::empty(),
         )
     }
 }
