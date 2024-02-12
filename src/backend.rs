@@ -19,11 +19,16 @@ pub struct Backend {
 
 impl Backend {
     /// Create a tracing `Backend`.
-    pub fn new(tracer_config: Config, channel_config: ChannelConfig, max_samples: usize) -> Self {
+    pub fn new(
+        tracer_config: Config,
+        channel_config: ChannelConfig,
+        max_samples: usize,
+        max_flows: usize,
+    ) -> Self {
         Self {
             tracer_config,
             channel_config,
-            trace: Arc::new(RwLock::new(Trace::new(max_samples))),
+            trace: Arc::new(RwLock::new(Trace::new(max_samples, max_flows))),
         }
     }
 

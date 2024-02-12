@@ -214,7 +214,12 @@ fn start_tracer(
     };
     let channel_config = make_channel_config(cfg, source_addr, target_addr);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
-    let backend = Backend::new(tracer_config, channel_config, cfg.tui_max_samples);
+    let backend = Backend::new(
+        tracer_config,
+        channel_config,
+        cfg.tui_max_samples,
+        cfg.tui_max_flows,
+    );
     let trace_data = backend.trace();
     thread::Builder::new()
         .name(format!("tracer-{}", tracer_config.trace_identifier.0))
