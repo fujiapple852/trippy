@@ -65,7 +65,6 @@ pub fn dispatch_icmp_probe<S: Socket>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(raw_send_socket, probe))]
 pub fn dispatch_udp_probe<S: Socket>(
     raw_send_socket: &mut S,
@@ -92,7 +91,6 @@ pub fn dispatch_udp_probe<S: Socket>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(udp_send_socket, probe))]
 fn dispatch_udp_probe_raw<S: Socket>(
     udp_send_socket: &mut S,
@@ -131,7 +129,6 @@ fn dispatch_udp_probe_raw<S: Socket>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(probe))]
 fn dispatch_udp_probe_non_raw<S: Socket>(
     probe: Probe,
