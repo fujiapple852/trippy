@@ -54,7 +54,7 @@ impl TuiApp {
         trace_info: Vec<TraceInfo>,
     ) -> Self {
         Self {
-            selected_tracer_data: Trace::new(tui_config.max_samples),
+            selected_tracer_data: Trace::new(tui_config.max_samples, tui_config.max_flows),
             trace_info,
             tui_config,
             table_state: TableState::default(),
@@ -88,7 +88,7 @@ impl TuiApp {
 
     pub fn clear_trace_data(&mut self) {
         *self.trace_info[self.trace_selected].data.write() =
-            Trace::new(self.tui_config.max_samples);
+            Trace::new(self.tui_config.max_samples, self.tui_config.max_flows);
     }
 
     pub fn selected_hop_or_target(&self) -> &Hop {

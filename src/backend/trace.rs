@@ -10,7 +10,16 @@ use trippy::tracing::{Extensions, ProbeState, Round, TimeToLive, TracerRound};
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
 pub struct Trace {
+    /// The maximum number of samples to record per hop.
+    ///
+    /// Once the maximum number of samples has been reached the oldest sample
+    /// is discarded (FIFO).
     max_samples: usize,
+    /// The maximum number of flows to record.
+    ///
+    /// Once the maximum number of flows has been reached no new flows will be
+    /// created, existing flows are updated and are never removed.
+    max_flows: usize,
     /// The flow id for the current round.
     round_flow_id: FlowId,
     /// Tracing data per registered flow id.
@@ -23,12 +32,13 @@ pub struct Trace {
 
 impl Trace {
     /// Create a new `Trace`.
-    pub fn new(max_samples: usize) -> Self {
+    pub fn new(max_samples: usize, max_flows: usize) -> Self {
         Self {
             trace_data: once((Self::default_flow_id(), TraceData::new(max_samples)))
                 .collect::<HashMap<FlowId, TraceData>>(),
             round_flow_id: Self::default_flow_id(),
             max_samples,
+            max_flows,
             registry: FlowRegistry::new(),
             error: None,
         }
@@ -105,10 +115,12 @@ impl Trace {
                 })
                 .take(usize::from(round.largest_ttl.0)),
         );
-        let flow_id = self.registry.register(flow);
-        self.round_flow_id = flow_id;
         self.update_trace_flow(Self::default_flow_id(), round);
-        self.update_trace_flow(flow_id, round);
+        if self.registry.flows().len() < self.max_flows {
+            let flow_id = self.registry.register(flow);
+            self.round_flow_id = flow_id;
+            self.update_trace_flow(flow_id, round);
+        }
     }
 
     fn update_trace_flow(&mut self, flow_id: FlowId, round: &TracerRound<'_>) {
