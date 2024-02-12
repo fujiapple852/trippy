@@ -853,9 +853,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.2"
+version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824b2ae422412366ba479e8111fd301f7b5faece8149317bb81925979a53f520"
+checksum = "233cf39063f058ea2caae4091bf4a3ef70a653afbc026f5c4a4135d114e3c177"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
@@ -1193,7 +1193,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1d3afd2628e69da2be385eb6f2fd57c8ac7977ceeff6dc166ff1657b0e386a9"
 dependencies = [
  "fixedbitset",
- "indexmap 2.2.2",
+ "indexmap 2.2.3",
 ]
 
 [[package]]
@@ -1480,7 +1480,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.2.2",
+ "indexmap 2.2.3",
  "serde",
  "serde_derive",
  "serde_json",
@@ -1506,7 +1506,7 @@ version = "0.9.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adf8a49373e98a4c5f0ceb5d05aa7c648d75f63774981ed95b7c7443bbd50c6e"
 dependencies = [
- "indexmap 2.2.2",
+ "indexmap 2.2.3",
  "itoa",
  "ryu",
  "serde",
@@ -1858,7 +1858,7 @@ version = "0.22.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9ffdf896f8daaabf9b66ba8e77ea1ed5ed0f72821b398aba62352e95062951"
 dependencies = [
- "indexmap 2.2.2",
+ "indexmap 2.2.3",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -1971,7 +1971,7 @@ dependencies = [
  "hex-literal",
  "hickory-resolver",
  "humantime",
- "indexmap 2.2.2",
+ "indexmap 2.2.3",
  "ipnetwork",
  "itertools",
  "maxminddb",
