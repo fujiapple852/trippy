@@ -85,10 +85,23 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
-    let plural_flows = if app.tracer_data().flows().len() > 1 {
-        "flows"
+    let discovered = if app.tui_config.max_flows > 1 {
+        let plural_flows = if app.tracer_data().flows().len() > 1 {
+            "flows"
+        } else {
+            "flow"
+        };
+        format!(
+            ", discovered {} hops and {} unique {}",
+            app.tracer_data().hops(app.selected_flow).len(),
+            app.tracer_data().flows().len(),
+            plural_flows
+        )
     } else {
-        "flow"
+        format!(
+            ", discovered {} hops",
+            app.tracer_data().hops(app.selected_flow).len()
+        )
     };
     let left_line = vec![
         Line::from(vec![
@@ -104,12 +117,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         Line::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(render_status(app)),
-            Span::raw(format!(
-                ", discovered {} hops and {} unique {}",
-                app.tracer_data().hops(app.selected_flow).len(),
-                app.tracer_data().flows().len(),
-                plural_flows
-            )),
+            Span::raw(discovered),
         ]),
     ];
 

@@ -323,7 +323,7 @@ impl TuiApp {
     }
 
     pub fn toggle_flows(&mut self) {
-        if self.trace_info.len() == 1 {
+        if self.trace_info.len() == 1 && self.tui_config.max_flows > 1 {
             if self.show_flows {
                 self.selected_flow = FlowId(0);
                 self.show_flows = false;
