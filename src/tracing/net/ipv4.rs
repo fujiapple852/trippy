@@ -50,7 +50,6 @@ const MIN_PACKET_SIZE_UDP: usize =
 /// 0100 0000 0000 0000
 const DONT_FRAGMENT: u16 = 0x4000;
 
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(icmp_send_socket, probe))]
 pub fn dispatch_icmp_probe<S: Socket>(
     icmp_send_socket: &mut S,
@@ -126,7 +125,6 @@ pub fn dispatch_udp_probe<S: Socket>(
 ///
 /// As `IP_HDRINCL` is set we must supply the IP and UDP headers which allows us to set custom
 /// values for certain fields such as the checksum as required by the Paris tracing strategy.
-#[allow(clippy::too_many_arguments)]
 #[instrument(skip(raw_send_socket, probe))]
 fn dispatch_udp_probe_raw<S: Socket>(
     raw_send_socket: &mut S,
