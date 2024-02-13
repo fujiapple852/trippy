@@ -321,12 +321,15 @@ tui-privacy-max-ttl = 0
 
 # Tui color theme configure.
 #
-# The allowed colors values are:
+# The supported ANSI color values are:
 #   Black, Red, Green, Yellow, Blue, Magenta, Cyan, Gray, DarkGray, LightRed,
 #   LightGreen, LightYellow, LightBlue, LightMagenta, LightCyan, White
 #
-# Color names are case-insensitive and may contain dashes. Raw hex values,
-# such as ffffff for white, may also be used.
+# In addition, CSS named colors (i.e. SkyBlue) and raw hex values (i.e. ffffff)
+# may be used but note that these are only supported on some platforms and
+# terminals and may not render correctly elsewhere.
+#
+# Color names are case-insensitive and may contain dashes.
 #
 # See https://github.com/fujiapple852/trippy#theme-reference for details.
 [theme-colors]
