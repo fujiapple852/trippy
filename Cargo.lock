@@ -2005,11 +2005,12 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.0.4"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f62aeef327ee964aded5f96c50707184e451165ad2e97fa11bea3d3a6a331c1c"
+checksum = "e3b48fdc82106d089a5cbb6b8d1de048c1e3029b6cc6deb3984f454f324bd9a5"
 dependencies = [
  "bytes",
+ "cfg-if",
  "futures-core",
  "ioctl-sys",
  "ipnet",
