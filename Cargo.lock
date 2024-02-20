@@ -869,12 +869,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e186cfbae8084e513daff4240b4797e342f988cecda4fb6c939150f96315fd8"
 
 [[package]]
-name = "ioctl-sys"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bd11f3a29434026f5ff98c730b668ba74b1033637b8817940b54d040696133c"
-
-[[package]]
 name = "ipconfig"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2005,17 +1999,17 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b48fdc82106d089a5cbb6b8d1de048c1e3029b6cc6deb3984f454f324bd9a5"
+checksum = "fff9e6b1a9a54e1da771f6e3560cd37a5bb8e8a87141f9aef290be66d7429204"
 dependencies = [
  "bytes",
  "cfg-if",
  "futures-core",
- "ioctl-sys",
  "ipnet",
  "libc",
  "log",
+ "nix",
  "thiserror",
  "tokio",
  "tokio-util",
