@@ -42,7 +42,7 @@ crossterm = { version = "0.27.0",  default-features = false, features = [ "event
 chrono = { version = "0.4.34", default-features = false, features = [ "clock" ] }
 itertools = "0.12.1"
 serde = { version = "1.0.197", default-features = false }
-serde_json = { version = "1.0.113", default-features = false }
+serde_json = { version = "1.0.114", default-features = false }
 comfy-table = { version = "7.1.0", default-features = false }
 strum = { version = "0.26.1", default-features = false, features = [ "std", "derive" ] }
 etcetera = "0.8.0"
