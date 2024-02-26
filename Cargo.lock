@@ -242,6 +242,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "cfg_aliases"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
+
+[[package]]
 name = "chrono"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1087,6 +1093,18 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
+dependencies = [
+ "bitflags 2.4.2",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
 ]
 
 [[package]]
@@ -1971,7 +1989,7 @@ dependencies = [
  "itertools",
  "maxminddb",
  "mockall",
- "nix",
+ "nix 0.27.1",
  "parking_lot",
  "paste",
  "petgraph",
@@ -1999,9 +2017,9 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff9e6b1a9a54e1da771f6e3560cd37a5bb8e8a87141f9aef290be66d7429204"
+checksum = "99d6e23753e66c13149f0108d835ddc81d7aa316dba1dcdef205e910a7c34de5"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2009,7 +2027,7 @@ dependencies = [
  "ipnet",
  "libc",
  "log",
- "nix",
+ "nix 0.28.0",
  "thiserror",
  "tokio",
  "tokio-util",
