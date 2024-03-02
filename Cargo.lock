@@ -1085,18 +1085,6 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
-dependencies = [
- "bitflags 2.4.2",
- "cfg-if",
- "libc",
- "memoffset",
-]
-
-[[package]]
-name = "nix"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
@@ -1105,6 +1093,7 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+ "memoffset",
 ]
 
 [[package]]
@@ -1989,7 +1978,7 @@ dependencies = [
  "itertools",
  "maxminddb",
  "mockall",
- "nix 0.27.1",
+ "nix",
  "parking_lot",
  "paste",
  "petgraph",
@@ -2027,7 +2016,7 @@ dependencies = [
  "ipnet",
  "libc",
  "log",
- "nix 0.28.0",
+ "nix",
  "thiserror",
  "tokio",
  "tokio-util",
