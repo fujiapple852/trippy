@@ -247,7 +247,7 @@ fn run_frontend(
         Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
         Mode::Pretty => report::table::report_pretty(&traces[0], args.report_cycles, &resolver)?,
         Mode::Markdown => report::table::report_md(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Dot => report::dot::report(&traces[0], args.report_cycles)?,
+        Mode::Dot => report::dot::report(&traces[0], args.report_cycles, &resolver)?,
         Mode::Flows => report::flows::report(&traces[0], args.report_cycles)?,
         Mode::Silent => report::silent::report(&traces[0], args.report_cycles)?,
     }
