@@ -691,7 +691,7 @@ Options:
 ## Theme Reference
 
 The following table lists the default Tui color theme. These can be overridden with the `--tui-theme-colors` command
-line option.
+line option or in the `theme-colors` section of the configuration file.
 
 | Item                                 | Description                                               | Default      |
 |--------------------------------------|-----------------------------------------------------------|--------------|
@@ -727,16 +727,20 @@ line option.
 | `map-info-panel-bg-color`            | The background color of the map info panel                | `black`      |
 | `map-info-panel-text-color`          | The color of text in the map info panel                   | `gray`       |
 
-The supported colors are:
+The supported [ANSI colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) are:
 
 - `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`, `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
 
-Color names are case-insensitive and may contain dashes. Raw hex values, such as `ffffff` for white, may also be used.
+In addition, CSS [named colors](https://developer.mozilla.org/en-US/docs/Web/CSS/named-color) (i.e. SkyBlue) and raw hex
+values (i.e. ffffff) may be used but note that these are only supported on some platforms and terminals and may not
+render correctly elsewhere.
+
+Color names are case-insensitive and may contain dashes.
 
 ## Key Bindings Reference
 
 The following table lists the default Tui command key bindings. These can be overridden with the `--tui-key-bindings`
-command line option.
+command line option or in the `bindings` section of the configuration file.
 
 | Command                | Description                                     | Default  |
 |------------------------|-------------------------------------------------|----------|
