@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added [TUN](https://en.wikipedia.org/wiki/TUN/TAP) based simulation tests ([#908](https://github.com/fujiapple852/trippy/issues/908))
 - Added support for last src port (`S`) and last dest port (`P`) custom columns ([#974](https://github.com/fujiapple852/trippy/issues/974))
 - Added support for last sequence (`Q`) custom columns ([#976](https://github.com/fujiapple852/trippy/issues/976))
+- Added support for more named theme colors ([#1011](https://github.com/fujiapple852/trippy/issues/1011))
 
 ### Changed
 
