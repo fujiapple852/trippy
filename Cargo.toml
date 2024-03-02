@@ -63,7 +63,7 @@ caps = "0.5.5"
 
 # Library dependencies (Unix)
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.27.1", default-features = false, features = [ "user", "poll", "net" ] }
+nix = { version = "0.28.0", default-features = false, features = [ "user", "poll", "net" ] }
 
 # Library dependencies (Windows)
 [target.'cfg(windows)'.dependencies]
