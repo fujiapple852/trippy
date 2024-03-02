@@ -26,6 +26,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Ensure `paris` and `dublin` ECMP strategy are only used with supported
   protocols ([#848](https://github.com/fujiapple852/trippy/issues/848))
+- Restrict flows to `paris` and `dublin` ECMP strategies ([#1007](https://github.com/fujiapple852/trippy/issues/1007))
 - Improved Tui table column layout logic ([#925](https://github.com/fujiapple852/trippy/issues/925))
 - Use exclusive reference `&mut` for all Socket operations ([#843](https://github.com/fujiapple852/trippy/issues/843))
 
