@@ -11,16 +11,21 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for calculating and displaying jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
 - Added support for customizing columns ([#757](https://github.com/fujiapple852/trippy/issues/757))
-- Added support for [IPinfo](https://ipinfo.io) flavoured `mmdb` files ([#862](https://github.com/fujiapple852/trippy/issues/862))
-- Added support for `IPv4->IPv6` and `IPv6->IPv4` DNS fallback modes ([#864](https://github.com/fujiapple852/trippy/issues/864))
-- Added [TUN](https://en.wikipedia.org/wiki/TUN/TAP) based simulation tests ([#908](https://github.com/fujiapple852/trippy/issues/908))
-- Added support for last src port (`S`) and last dest port (`P`) custom columns ([#974](https://github.com/fujiapple852/trippy/issues/974))
+- Added support for [IPinfo](https://ipinfo.io) flavoured `mmdb`
+  files ([#862](https://github.com/fujiapple852/trippy/issues/862))
+- Added support for `IPv4->IPv6` and `IPv6->IPv4` DNS fallback
+  modes ([#864](https://github.com/fujiapple852/trippy/issues/864))
+- Added [TUN](https://en.wikipedia.org/wiki/TUN/TAP) based simulation
+  tests ([#908](https://github.com/fujiapple852/trippy/issues/908))
+- Added support for last src port (`S`) and last dest port (`P`) custom
+  columns ([#974](https://github.com/fujiapple852/trippy/issues/974))
 - Added support for last sequence (`Q`) custom columns ([#976](https://github.com/fujiapple852/trippy/issues/976))
 - Added support for more named theme colors ([#1011](https://github.com/fujiapple852/trippy/issues/1011))
 
 ### Changed
 
-- Ensure `paris` and `dublin` ECMP strategy are only used with supported protocols ([#848](https://github.com/fujiapple852/trippy/issues/848))
+- Ensure `paris` and `dublin` ECMP strategy are only used with supported
+  protocols ([#848](https://github.com/fujiapple852/trippy/issues/848))
 - Improved Tui table column layout logic ([#925](https://github.com/fujiapple852/trippy/issues/925))
 - Use exclusive reference `&mut` for all Socket operations ([#843](https://github.com/fujiapple852/trippy/issues/843))
 
@@ -29,8 +34,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed off-by-one bug in max-rounds calculation ([#906](https://github.com/fujiapple852/trippy/issues/906))
 - Fixed panic with `expand-hosts-max` Tui command ([#892](https://github.com/fujiapple852/trippy/issues/892))
 - Fixed failure to parse generated config file on Windows ([#958](https://github.com/fujiapple852/trippy/issues/958))
-- Fixed tracer panic for `icmp` TimeExceeded "Fragment reassembly time exceeded" packets ([#979](https://github.com/fujiapple852/trippy/issues/979))
-- Fixed tracer not discarding unrelated `icmp` packets for `udp` and `tcp` protocols ([#982](https://github.com/fujiapple852/trippy/issues/982))
+- Fixed tracer panic for `icmp` TimeExceeded "Fragment reassembly time exceeded"
+  packets ([#979](https://github.com/fujiapple852/trippy/issues/979))
+- Fixed tracer not discarding unrelated `icmp` packets for `udp` and `tcp`
+  protocols ([#982](https://github.com/fujiapple852/trippy/issues/982))
 - Fixed incorrect minimum packet size for `IPv6` ([#985](https://github.com/fujiapple852/trippy/issues/985))
 
 ## [0.9.0] - 2023-11-30
