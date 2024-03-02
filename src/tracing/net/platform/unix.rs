@@ -14,6 +14,7 @@ use std::io;
 use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::net::{Shutdown, SocketAddr};
+use std::os::fd::AsFd;
 use std::time::Duration;
 use tracing::instrument;
 
@@ -95,7 +96,7 @@ pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
             ia.address.and_then(|addr| match addr.family() {
                 Some(AddressFamily::Inet) if ia.interface_name == name => addr
                     .as_sockaddr_in()
-                    .map(|sock_addr| IpAddr::V4(Ipv4Addr::from(sock_addr.ip()))),
+                    .map(|sock_addr| IpAddr::V4(sock_addr.ip())),
                 _ => None,
             })
         })
@@ -349,7 +350,7 @@ impl Socket for SocketImpl {
     #[instrument(skip(self))]
     fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
         let mut read = FdSet::new();
-        read.insert(&self.inner);
+        read.insert(self.inner.as_fd());
         let readable = nix::sys::select::select(
             None,
             Some(&mut read),
@@ -369,7 +370,7 @@ impl Socket for SocketImpl {
     #[instrument(skip(self))]
     fn is_writable(&mut self) -> IoResult<bool> {
         let mut write = FdSet::new();
-        write.insert(&self.inner);
+        write.insert(self.inner.as_fd());
         let writable = nix::sys::select::select(
             None,
             None,
@@ -433,7 +434,7 @@ impl Socket for SocketImpl {
             .take_error()
             .map(|err| {
                 err.map(|e| match e.raw_os_error() {
-                    Some(errno) if Error::from_i32(errno) == Error::ECONNREFUSED => {
+                    Some(errno) if Error::from_raw(errno) == Error::ECONNREFUSED => {
                         SocketError::ConnectionRefused
                     }
                     _ => SocketError::Other(e),
