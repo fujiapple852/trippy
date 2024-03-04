@@ -63,6 +63,7 @@ impl Probe {
     }
 
     /// A response has been received and the probe is now complete.
+    #[must_use]
     pub fn complete(
         self,
         host: IpAddr,
