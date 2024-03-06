@@ -410,7 +410,7 @@ impl TraceData {
                 hop.total_time += dur;
                 // Before last is set use it to calc jitter
                 let last_ms = hop.last_ms().unwrap_or_default();
-                let jitter_ms = (last_ms - dur_ms).abs();
+                let jitter_ms = (dur_ms - last_ms).abs();
                 let jitter_dur = Duration::from_secs_f64(jitter_ms / 1000_f64);
                 hop.jitter = hop.last.and(Some(jitter_dur));
                 hop.javg += (jitter_ms - hop.javg) / hop.total_recv as f64;
