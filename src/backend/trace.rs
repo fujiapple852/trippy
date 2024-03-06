@@ -415,7 +415,7 @@ impl TraceData {
                 hop.jitter = hop.last.and(Some(jitter_dur));
                 hop.javg += (jitter_ms - hop.javg) / hop.total_recv as f64;
                 // algorithm is from rfc1889, A.8 or rfc3550
-                hop.jinta += jitter_ms - ((hop.jinta + 8.0) / 16.0);
+                hop.jinta += jitter_ms.max(0.5) - ((hop.jinta + 8.0) / 16.0);
                 hop.jmax = hop
                     .jmax
                     .map_or(Some(jitter_dur), |d| Some(d.max(jitter_dur)));
