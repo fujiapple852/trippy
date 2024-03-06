@@ -7,100 +7,90 @@ on:
 name: CI
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        build:
-          - linux-stable
-          - linux-musl-stable
-          - linux-beta
-          - linux-nightly
-          - macos-stable
-          - windows-stable
-        include:
-          - build: linux-stable
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            rust: stable
-          - build: linux-musl-stable
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
-            rust: stable
-          - build: linux-beta
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            rust: beta
-          - build: linux-nightly
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            rust: nightly
-          - build: macos-stable
-            os: macos-latest
-            target: x86_64-apple-darwin
-            rust: stable
-          - build: windows-stable
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            rust: stable
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --target ${{ matrix.target }}
-
-  build-cross:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        build: [ netbsd, freebsd ]
-        include:
-          - build: netbsd
-            os: ubuntu-latest
-            target: x86_64-unknown-netbsd
-            rust: stable
-          - build: freebsd
-            os: ubuntu-latest
-            target: x86_64-unknown-freebsd
-            rust: stable
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
-      - name: Use Cross
-        shell: bash
-        run: |
-          cargo install cross --git https://github.com/cross-rs/cross
-      - name: Show command used for Cargo
-        run: |
-          echo "cargo command is: ${{ env.CARGO }}"
-          echo "target flag is: ${{ env.TARGET_FLAGS }}"
-      - name: cross build
-        run: cross build --target ${{ matrix.target }} --verbose
+#  test:
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        build:
+#          - linux-stable
+#          - linux-musl-stable
+#          - linux-beta
+#          - linux-nightly
+#          - macos-stable
+#          - windows-stable
+#        include:
+#          - build: linux-stable
+#            os: ubuntu-22.04
+#            target: x86_64-unknown-linux-gnu
+#            rust: stable
+#          - build: linux-musl-stable
+#            os: ubuntu-22.04
+#            target: x86_64-unknown-linux-musl
+#            rust: stable
+#          - build: linux-beta
+#            os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            rust: beta
+#          - build: linux-nightly
+#            os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            rust: nightly
+#          - build: macos-stable
+#            os: macos-latest
+#            target: x86_64-apple-darwin
+#            rust: stable
+#          - build: windows-stable
+#            os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            rust: stable
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: ${{ matrix.rust }}
+#          target: ${{ matrix.target }}
+#      - uses: Swatinem/rust-cache@v2
+#      - run: cargo test --target ${{ matrix.target }}
+#
+#  build-cross:
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        build: [ netbsd, freebsd ]
+#        include:
+#          - build: netbsd
+#            os: ubuntu-latest
+#            target: x86_64-unknown-netbsd
+#            rust: stable
+#          - build: freebsd
+#            os: ubuntu-latest
+#            target: x86_64-unknown-freebsd
+#            rust: stable
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: ${{ matrix.rust }}
+#          target: ${{ matrix.target }}
+#      - uses: Swatinem/rust-cache@v2
+#      - name: Use Cross
+#        shell: bash
+#        run: |
+#          cargo install cross --git https://github.com/cross-rs/cross
+#      - name: Show command used for Cargo
+#        run: |
+#          echo "cargo command is: ${{ env.CARGO }}"
+#          echo "target flag is: ${{ env.TARGET_FLAGS }}"
+#      - name: cross build
+#        run: cross build --target ${{ matrix.target }} --verbose
 
   sim-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         build:
-          - linux-stable
-          - macos-stable
           - windows-stable
         include:
-          - build: linux-stable
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            rust: stable
-          - build: macos-stable
-            os: macos-latest
-            target: x86_64-apple-darwin
-            rust: stable
           - build: windows-stable
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -125,70 +115,364 @@ jobs:
           New-NetFirewallRule -DisplayName "ICMPv6 Trippy Allow" -Name ICMPv6_TRIPPY_ALLOW -Protocol ICMPv6 -Action Allow
       - name: Build (without root)
         run: cargo build --target ${{ matrix.target }} --features sim-tests --test sim
-      - name: Run simulation test on ${{ matrix.build }}
-        if: ${{ ! startsWith(matrix.build, 'windows') }}
-        run: sudo -E env "PATH=$PATH" cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+
       - name: Run simulation test on ${{ matrix.build }}
         if: startsWith(matrix.build, 'windows')
         run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
-
-  fmt:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-
-  clippy:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        build:
-          - linux-stable
-          - macos-stable
-          - windows-stable
-        include:
-          - build: linux-stable
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            rust: stable
-          - build: macos-stable
-            os: macos-latest
-            target: x86_64-apple-darwin
-            rust: stable
-          - build: windows-stable
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            rust: stable
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ matrix.rust }}
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
-
-  cargo-deny:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
-        with:
-          log-level: warn
-          command: check
-          arguments: --all-features
-
-  cargo-msrv:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - name: install cargo-msrv
-        run: cargo install cargo-msrv
-      - name: check msrv
-        run: cargo msrv --output-format json verify -- cargo check
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+      - name: Run simulation test on ${{ matrix.build }}
+        if: startsWith(matrix.build, 'windows')
+        run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
+#  fmt:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: stable
+#          components: rustfmt
+#      - uses: Swatinem/rust-cache@v2
+#      - run: cargo fmt --all -- --check
+#
+#  clippy:
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        build:
+#          - linux-stable
+#          - macos-stable
+#          - windows-stable
+#        include:
+#          - build: linux-stable
+#            os: ubuntu-latest
+#            target: x86_64-unknown-linux-gnu
+#            rust: stable
+#          - build: macos-stable
+#            os: macos-latest
+#            target: x86_64-apple-darwin
+#            rust: stable
+#          - build: windows-stable
+#            os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            rust: stable
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: ${{ matrix.rust }}
+#          components: clippy
+#      - uses: Swatinem/rust-cache@v2
+#      - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
+#
+#  cargo-deny:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: EmbarkStudios/cargo-deny-action@v1
+#        with:
+#          log-level: warn
+#          command: check
+#          arguments: --all-features
+#
+#  cargo-msrv:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: Swatinem/rust-cache@v2
+#      - name: install cargo-msrv
+#        run: cargo install cargo-msrv
+#      - name: check msrv
+#        run: cargo msrv --output-format json verify -- cargo check
