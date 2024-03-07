@@ -17,7 +17,7 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
     RUNTIME.get_or_init(|| {
         tracing_subscriber::fmt()
             .with_span_events(FmtSpan::NONE)
-            .with_env_filter("trippy=debug,sim=debug")
+            .with_env_filter("trippy=off,sim=debug")
             .init();
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
