@@ -39,7 +39,7 @@ humantime = "2.1.0"
 parking_lot = "0.12.1"
 ratatui = "0.26.1"
 crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
-chrono = { version = "0.4.34", default-features = false, features = [ "clock" ] }
+chrono = { version = "0.4.35", default-features = false, features = [ "clock" ] }
 itertools = "0.12.1"
 serde = { version = "1.0.197", default-features = false }
 serde_json = { version = "1.0.114", default-features = false }
