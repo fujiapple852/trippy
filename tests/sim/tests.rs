@@ -16,8 +16,8 @@ static RUNTIME: OnceLock<Arc<Mutex<Runtime>>> = OnceLock::new();
 pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
     RUNTIME.get_or_init(|| {
         tracing_subscriber::fmt()
-            .with_span_events(FmtSpan::ACTIVE)
-            .with_env_filter("trippy=debug,sim=debug")
+            .with_span_events(FmtSpan::NONE)
+            .with_env_filter("trippy=off,sim=off")
             .init();
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
