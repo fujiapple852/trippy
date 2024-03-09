@@ -442,20 +442,14 @@ mod tests {
     use crate::tracing::{Flags, Port, Round, TimeToLive};
     use mockall::predicate;
     use std::str::FromStr;
+    use std::sync::Mutex;
+
+    static MTX: Mutex<()> = Mutex::new(());
 
     // Test dispatching an IPv6/ICMP probe.
     #[test]
     fn test_dispatch_icmp_probe_no_payload() -> anyhow::Result<()> {
-        let probe = Probe::new(
-            Sequence(33000),
-            TraceId(1234),
-            Port(0),
-            Port(0),
-            TimeToLive(10),
-            Round(0),
-            SystemTime::now(),
-            Flags::empty(),
-        );
+        let probe = make_icmp_probe();
         let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
         let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
         let packet_size = PacketSize(48);
@@ -486,6 +480,410 @@ mod tests {
             packet_size,
             payload_pattern,
         )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_icmp_probe_with_payload() -> anyhow::Result<()> {
+        let probe = make_icmp_probe();
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let packet_size = PacketSize(68);
+        let payload_pattern = PayloadPattern(0xff);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            80 00 77 40 04 d2 80 e8 ff ff ff ff ff ff ff ff
+            ff ff ff ff ff ff ff ff ff ff ff ff
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_icmp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_icmp_probe_invalid_packet_size_low() -> anyhow::Result<()> {
+        let probe = make_icmp_probe();
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let packet_size = PacketSize(47);
+        let payload_pattern = PayloadPattern(0x00);
+        let mut mocket = MockSocket::new();
+        let err = dispatch_icmp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            packet_size,
+            payload_pattern,
+        )
+        .unwrap_err();
+        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_icmp_probe_invalid_packet_size_high() -> anyhow::Result<()> {
+        let probe = make_icmp_probe();
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let packet_size = PacketSize(1025);
+        let payload_pattern = PayloadPattern(0x00);
+        let mut mocket = MockSocket::new();
+        let err = dispatch_icmp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            packet_size,
+            payload_pattern,
+        )
+        .unwrap_err();
+        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_privileged_no_payload() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        let packet_size = PacketSize(48);
+        let payload_pattern = PayloadPattern(0x00);
+        let expected_send_to_buf = hex_literal::hex!("00 7b 01 c8 00 08 7a ed");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_privileged_with_payload() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        let packet_size = PacketSize(56);
+        let payload_pattern = PayloadPattern(0xaa);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            00 7b 01 c8 00 10 d0 32 aa aa aa aa aa aa aa aa
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_paris_privileged() -> anyhow::Result<()> {
+        let probe = Probe {
+            flags: Flags::PARIS_CHECKSUM,
+            ..make_udp_probe(123, 456)
+        };
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        // packet size and payload pattern are ignored for paris mode as a
+        // fixed two byte payload is used to hold the sequence
+        let packet_size = PacketSize(300);
+        let payload_pattern = PayloadPattern(0xaa);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            00 7b 01 c8 00 0a 80 e8 fa 00
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_unprivileged_no_payload() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Unprivileged;
+        let packet_size = PacketSize(48);
+        let payload_pattern = PayloadPattern(0x00);
+        let expected_send_to_buf = hex_literal::hex!("");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V6(src_addr), 123);
+        let expected_set_unicast_hops_v6 = 10;
+
+        let mut mocket = MockSocket::new();
+
+        let ctx = MockSocket::new_udp_send_socket_ipv6_context();
+        ctx.expect().with(predicate::eq(false)).returning(move |_| {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_unicast_hops_v6()
+                .times(1)
+                .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_send_to()
+                .with(
+                    predicate::eq(expected_send_to_buf),
+                    predicate::eq(expected_send_to_addr),
+                )
+                .times(1)
+                .returning(|_, _| Ok(()));
+
+            Ok(mocket)
+        });
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_unprivileged_with_payload() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Unprivileged;
+        let packet_size = PacketSize(56);
+        let payload_pattern = PayloadPattern(0x1f);
+        let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V6(src_addr), 123);
+        let expected_set_unicast_hops_v6 = 10;
+
+        let mut mocket = MockSocket::new();
+
+        let ctx = MockSocket::new_udp_send_socket_ipv6_context();
+        ctx.expect().with(predicate::eq(false)).returning(move |_| {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_unicast_hops_v6()
+                .times(1)
+                .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_send_to()
+                .with(
+                    predicate::eq(expected_send_to_buf),
+                    predicate::eq(expected_send_to_addr),
+                )
+                .times(1)
+                .returning(|_, _| Ok(()));
+
+            Ok(mocket)
+        });
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_invalid_packet_size_low() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        let packet_size = PacketSize(47);
+        let payload_pattern = PayloadPattern(0x00);
+        let mut mocket = MockSocket::new();
+        let err = dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )
+        .unwrap_err();
+        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_invalid_packet_size_high() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        let packet_size = PacketSize(1025);
+        let payload_pattern = PayloadPattern(0x00);
+        let mut mocket = MockSocket::new();
+        let err = dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+        )
+        .unwrap_err();
+        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_tcp_probe() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let expected_bind_addr = SocketAddr::new(IpAddr::V6(src_addr), 123);
+        let expected_set_unicast_hops_v6 = 10;
+        let expected_connect_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
+
+        let ctx = MockSocket::new_stream_socket_ipv6_context();
+        ctx.expect().returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_unicast_hops_v6()
+                .times(1)
+                .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_connect()
+                .with(predicate::eq(expected_connect_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            Ok(mocket)
+        });
+
+        dispatch_tcp_probe::<MockSocket>(&probe, src_addr, dest_addr)?;
         Ok(())
     }
 
@@ -521,5 +919,31 @@ mod tests {
         let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
         assert!(resp.is_none());
         Ok(())
+    }
+
+    fn make_icmp_probe() -> Probe {
+        Probe::new(
+            Sequence(33000),
+            TraceId(1234),
+            Port(0),
+            Port(0),
+            TimeToLive(10),
+            Round(0),
+            SystemTime::now(),
+            Flags::empty(),
+        )
+    }
+
+    fn make_udp_probe(src_port: u16, dest_port: u16) -> Probe {
+        Probe::new(
+            Sequence(33000),
+            TraceId(1234),
+            Port(src_port),
+            Port(dest_port),
+            TimeToLive(10),
+            Round(0),
+            SystemTime::now(),
+            Flags::empty(),
+        )
     }
 }
