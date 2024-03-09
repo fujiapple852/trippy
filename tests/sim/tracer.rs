@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy::tracing::{
     defaults, Builder, CompletionReason, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, ProbeState, Protocol, TimeToLive, TraceId, TracerRound,
+    PortDirection, PrivilegeMode, ProbeState, Protocol, TimeToLive, TraceId, TracerRound,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -51,6 +51,7 @@ impl Tracer {
     pub fn trace(&self) -> anyhow::Result<()> {
         let result = RefCell::new(Ok(()));
         let tracer_res = Builder::new(self.sim.target, |round| self.validate_round(round, &result))
+            .privilege_mode(PrivilegeMode::from(self.sim.privilege_mode))
             .trace_identifier(TraceId(self.sim.icmp_identifier))
             .protocol(Protocol::from(self.sim.protocol))
             .port_direction(PortDirection::from(self.sim.port_direction))
