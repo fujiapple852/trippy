@@ -181,7 +181,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
 ) -> TraceResult<()> {
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
-    let mut socket = S::new_udp_dgram_socket_ipv4()?;
+    let mut socket = S::new_udp_send_socket_ipv4(false)?;
     process_result(local_addr, socket.bind(local_addr))?;
     socket.set_ttl(u32::from(probe.ttl.0))?;
     socket.send_to(payload, remote_addr)?;
@@ -774,8 +774,8 @@ mod tests {
 
         let mut mocket = MockSocket::new();
 
-        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
-        ctx.expect().returning(move || {
+        let ctx = MockSocket::new_udp_send_socket_ipv4_context();
+        ctx.expect().with(predicate::eq(false)).returning(move |_| {
             let mut mocket = MockSocket::new();
             mocket
                 .expect_bind()
@@ -831,8 +831,8 @@ mod tests {
 
         let mut mocket = MockSocket::new();
 
-        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
-        ctx.expect().returning(move || {
+        let ctx = MockSocket::new_udp_send_socket_ipv4_context();
+        ctx.expect().with(predicate::eq(false)).returning(move |_| {
             let mut mocket = MockSocket::new();
             mocket
                 .expect_bind()
