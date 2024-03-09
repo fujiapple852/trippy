@@ -887,6 +887,565 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_recv_icmp_probe_echo_reply() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            81 00 52 c0 55 b9 81 26 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Disabled,
+        )?
+        .unwrap();
+
+        let ProbeResponse::EchoReply(ProbeResponseData {
+            addr,
+            resp_seq:
+                ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    identifier,
+                    sequence,
+                }),
+            ..
+        }) = resp
+        else {
+            panic!("expected EchoReply")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(21945, identifier);
+        assert_eq!(33062, sequence);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_icmp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 4e c5 00 00 00 00 60 0f 08 00 00 2c 3a 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 04 4e 42 00 00 00 00 00 00 00 00 00 00 00 81
+            80 00 53 c6 55 b9 81 20 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Disabled,
+        )?
+        .unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                        identifier,
+                        sequence,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(21945, identifier);
+        assert_eq!(33056, sequence);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_icmp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            01 00 ad ba 00 00 00 00 60 06 08 00 00 2c 3a 02
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            14 04 68 00 40 03 0c 02 00 00 00 00 00 00 00 69
+            80 00 02 62 57 a5 80 ed 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Disabled,
+        )?
+        .unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                        identifier,
+                        sequence,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(22437, identifier);
+        assert_eq!(33005, sequence);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_udp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 7b a7 00 00 00 00 60 04 04 00 00 2c 11 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 04 4e 42 00 00 00 00 00 00 00 00 00 00 00 81
+            58 a6 81 05 00 2c d0 f1 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(0, identifier);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a04:4e42::81").unwrap()),
+            dest_addr
+        );
+        assert_eq!(22694, src_port);
+        assert_eq!(33029, dest_port);
+        assert_eq!(53489, checksum);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_udp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            01 00 a5 f5 00 00 00 00 60 03 08 00 00 2c 11 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 1f 00 00 00 00 00 00 20 0e
+            67 6d 81 5e 00 2c 94 12 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(0, identifier);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:81f::200e").unwrap()),
+            dest_addr
+        );
+        assert_eq!(26477, src_port);
+        assert_eq!(33118, dest_port);
+        assert_eq!(37906, checksum);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_tcp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 f0 2d 00 00 00 00 68 0b 09 00 00 2c 06 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 15 00 00 00 00 00 00 20 0e
+            81 0e 00 50 aa c4 08 e6 00 00 00 00 b0 c2 ff ff
+            6d b4 00 00 02 04 04 c4 01 03 03 06 01 01 08 0a
+            cc f7 44 c9 00 00 00 00 04 02 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:815::200e").unwrap()),
+            dest_addr
+        );
+        assert_eq!(33038, src_port);
+        assert_eq!(80, dest_port);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_destination_unreachable_tcp_no_extensions() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            01 00 b1 e9 00 00 00 00 60 04 07 00 00 2c 06 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 21 00 00 00 00 00 00 20 0e
+            81 24 00 7b 35 d2 32 c6 00 00 00 00 b0 c2 ff ff
+            71 b2 00 00 02 04 04 c4 01 03 03 06 01 01 08 0a
+            fa 0b 5e 7c 00 00 00 00 04 02 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::DestinationUnreachable(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected DestinationUnreachable")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:821::200e").unwrap()),
+            dest_addr
+        );
+        assert_eq!(33060, src_port);
+        assert_eq!(123, dest_port);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_wrong_icmp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 4e c5 00 00 00 00 60 0f 08 00 00 2c 3a 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 04 4e 42 00 00 00 00 00 00 00 00 00 00 00 81
+            80 00 53 c6 55 b9 81 20 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(3)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_wrong_udp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 7b a7 00 00 00 00 60 04 04 00 00 2c 11 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 04 4e 42 00 00 00 00 00 00 00 00 00 00 00 81
+            58 a6 81 05 00 2c d0 f1 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(3)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_icmp_probe_wrong_tcp_original_datagram_type_ignored() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 f0 2d 00 00 00 00 68 0b 09 00 00 2c 06 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 15 00 00 00 00 00 00 20 0e
+            81 0e 00 50 aa c4 08 e6 00 00 00 00 b0 c2 ff ff
+            6d b4 00 00 02 04 04 c4 01 03 03 06 01 01 08 0a
+            cc f7 44 c9 00 00 00 00 04 02 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(3)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_some());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        assert!(resp.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_tcp_socket_tcp_reply() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_peer_addr = SocketAddr::new(dest_addr, 456);
+
+        let mut mocket = MockSocket::new();
+        mocket.expect_take_error().times(1).returning(|| Ok(None));
+        mocket
+            .expect_peer_addr()
+            .times(1)
+            .returning(move || Ok(Some(expected_peer_addr)));
+        mocket.expect_shutdown().times(1).returning(|| Ok(()));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(456), dest_addr)?.unwrap();
+
+        let ProbeResponse::TcpReply(ProbeResponseData {
+            addr,
+            resp_seq:
+                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    dest_addr,
+                    src_port,
+                    dest_port,
+                }),
+            ..
+        }) = resp
+        else {
+            panic!("expected TcpReply")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(456, dest_port);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_tcp_socket_tcp_refused() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_take_error()
+            .times(1)
+            .returning(|| Ok(Some(SocketError::ConnectionRefused)));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+
+        let ProbeResponse::TcpRefused(ProbeResponseData {
+            addr,
+            resp_seq:
+                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    dest_addr,
+                    src_port,
+                    dest_port,
+                }),
+            ..
+        }) = resp
+        else {
+            panic!("expected TcpRefused")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(80, dest_port);
+        Ok(())
+    }
+
+    #[test]
+    fn test_recv_tcp_socket_tcp_host_unreachable() -> anyhow::Result<()> {
+        let dest_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_take_error()
+            .times(1)
+            .returning(|| Ok(Some(SocketError::HostUnreachable)));
+        mocket
+            .expect_icmp_error_info()
+            .times(1)
+            .returning(move || Ok(dest_addr));
+
+        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(dest_addr, addr);
+        assert_eq!(33000, src_port);
+        assert_eq!(80, dest_port);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     // This ICMPv6 packet has code 1 ("Fragment reassembly time exceeded")
     // and must be ignored.
     //
