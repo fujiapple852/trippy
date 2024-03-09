@@ -36,6 +36,14 @@ const MAX_ICMP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_
 /// The maximum size of ICMP payload we allow.
 const MAX_ICMP_PAYLOAD_BUF: usize = MAX_ICMP_PACKET_BUF - IcmpPacket::minimum_packet_size();
 
+/// The minimum size of ICMP packets we allow.
+const MIN_PACKET_SIZE_ICMP: usize =
+    Ipv6Packet::minimum_packet_size() + IcmpPacket::minimum_packet_size();
+
+/// The minimum size of UDP packets we allow.
+const MIN_PACKET_SIZE_UDP: usize =
+    Ipv6Packet::minimum_packet_size() + UdpPacket::minimum_packet_size();
+
 #[instrument(skip(icmp_send_socket, probe))]
 pub fn dispatch_icmp_probe<S: Socket>(
     icmp_send_socket: &mut S,
@@ -47,7 +55,7 @@ pub fn dispatch_icmp_probe<S: Socket>(
 ) -> TraceResult<()> {
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
+    if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let echo_request = make_echo_request_icmp_packet(
@@ -76,7 +84,7 @@ pub fn dispatch_udp_probe<S: Socket>(
     payload_pattern: PayloadPattern,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
-    if packet_size > MAX_PACKET_SIZE {
+    if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
         return Err(TracerError::InvalidPacketSize(packet_size));
     }
     let payload_size = udp_payload_size(packet_size);
