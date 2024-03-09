@@ -6,6 +6,8 @@ use trippy::tracing::Port;
 #[derive(Debug, Deserialize)]
 pub struct Simulation {
     pub name: String,
+    #[serde(default)]
+    pub privilege_mode: PrivilegeMode,
     pub target: IpAddr,
     pub protocol: Protocol,
     #[serde(default)]
@@ -57,6 +59,22 @@ pub struct SingleHost {
     pub addr: IpAddr,
     /// The simulated round trim time (RTT) in ms.
     pub rtt_ms: u16,
+}
+
+#[derive(Copy, Clone, Debug, Default, Deserialize)]
+pub enum PrivilegeMode {
+    #[default]
+    Privileged,
+    Unprivileged,
+}
+
+impl From<PrivilegeMode> for trippy::tracing::PrivilegeMode {
+    fn from(value: PrivilegeMode) -> Self {
+        match value {
+            PrivilegeMode::Privileged => Self::Privileged,
+            PrivilegeMode::Unprivileged => Self::Unprivileged,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Deserialize)]

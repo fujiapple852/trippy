@@ -49,6 +49,13 @@ fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }
 
+// unprivileged mode is only supported on macOS
+#[cfg(target_os = "macos")]
+#[test_case(sim!("ipv4_udp_classic_unprivileged.yaml"))]
+fn test_simulation_macos(simulation: Simulation) -> anyhow::Result<()> {
+    run_simulation_with_retry(simulation)
+}
+
 fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     let runtime = runtime().lock().unwrap();
     let simulation = Arc::new(simulation);
