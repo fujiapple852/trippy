@@ -1,6 +1,6 @@
 pub mod byte_order;
 
-pub use byte_order::PlatformIpv4FieldByteOrder;
+pub use byte_order::Ipv4ByteOrder;
 use std::net::IpAddr;
 
 #[cfg(unix)]
@@ -19,7 +19,7 @@ pub use self::windows::*;
 /// Platform specific operations.
 pub trait Platform {
     /// Determine the required byte ordering for IPv4 header fields.
-    fn byte_order_for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>;
+    fn byte_order_for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder>;
 
     /// Lookup an `IpAddr` for an interface.
     ///
