@@ -1,11 +1,11 @@
 use crate::tracing::error::TraceResult;
-use crate::tracing::net::platform::{Platform, PlatformIpv4FieldByteOrder};
+use crate::tracing::net::platform::{Ipv4ByteOrder, Platform};
 use std::net::IpAddr;
 
 pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
-    fn byte_order_for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+    fn byte_order_for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
         address::for_address(addr)
     }
     fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
@@ -18,7 +18,7 @@ impl Platform for PlatformImpl {
 
 mod address {
     use crate::tracing::error::{TraceResult, TracerError};
-    use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
+    use crate::tracing::net::platform::Ipv4ByteOrder;
     use crate::tracing::net::socket::Socket;
     use crate::tracing::SocketImpl;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
@@ -39,22 +39,22 @@ mod address {
     /// we skip the check and return network byte order unconditionally.
     #[cfg(target_os = "linux")]
     #[allow(clippy::unnecessary_wraps)]
-    pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-        Ok(PlatformIpv4FieldByteOrder::Network)
+    pub fn for_address(_src_addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+        Ok(Ipv4ByteOrder::Network)
     }
 
     #[cfg(not(target_os = "linux"))]
     #[instrument(ret)]
-    pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+    pub fn for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
         let addr = match addr {
             IpAddr::V4(addr) => addr,
-            IpAddr::V6(_) => return Ok(PlatformIpv4FieldByteOrder::Network),
+            IpAddr::V6(_) => return Ok(Ipv4ByteOrder::Network),
         };
         match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
-            Ok(()) => Ok(PlatformIpv4FieldByteOrder::Network),
+            Ok(()) => Ok(Ipv4ByteOrder::Network),
             Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
                 match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
-                    Ok(()) => Ok(PlatformIpv4FieldByteOrder::Host),
+                    Ok(()) => Ok(Ipv4ByteOrder::Host),
                     Err(err) => Err(err),
                 }
             }

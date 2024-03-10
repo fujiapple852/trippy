@@ -58,7 +58,7 @@ pub fn dispatch_icmp_probe<S: Socket>(
     dest_addr: Ipv4Addr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::Ipv4ByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
@@ -98,7 +98,7 @@ pub fn dispatch_udp_probe<S: Socket>(
     privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::Ipv4ByteOrder,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
@@ -132,7 +132,7 @@ fn dispatch_udp_probe_raw<S: Socket>(
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     payload: &[u8],
-    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::Ipv4ByteOrder,
 ) -> TraceResult<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
@@ -310,7 +310,7 @@ fn make_udp_packet<'a>(
 #[allow(clippy::too_many_arguments)]
 fn make_ipv4_packet<'a>(
     ipv4_buf: &'a mut [u8],
-    ipv4_byte_order: platform::PlatformIpv4FieldByteOrder,
+    ipv4_byte_order: platform::Ipv4ByteOrder,
     protocol: IpProtocol,
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
@@ -515,7 +515,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 00 00 40 00 0a 01 00 00 01 02 03 04
@@ -553,7 +553,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(48);
         let payload_pattern = PayloadPattern(0xff);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 30 00 00 40 00 0a 01 00 00 01 02 03 04
@@ -592,7 +592,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(27);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_icmp_probe(
             &mut mocket,
@@ -615,7 +615,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_icmp_probe(
             &mut mocket,
@@ -639,7 +639,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -679,7 +679,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(38);
         let payload_pattern = PayloadPattern(0xaa);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 26 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -725,7 +725,7 @@ mod tests {
         // fixed two byte payload is used to hold the sequence
         let packet_size = PacketSize(300);
         let payload_pattern = PayloadPattern(0xaa);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1e 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -766,7 +766,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
@@ -823,7 +823,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(36);
         let payload_pattern = PayloadPattern(0x1f);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
@@ -879,7 +879,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(27);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
             &mut mocket,
@@ -904,7 +904,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::PlatformIpv4FieldByteOrder::Network;
+        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
             &mut mocket,

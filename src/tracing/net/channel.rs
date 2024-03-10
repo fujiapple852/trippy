@@ -21,7 +21,7 @@ pub struct TracerChannel<S: Socket> {
     privilege_mode: PrivilegeMode,
     protocol: Protocol,
     src_addr: IpAddr,
-    ipv4_length_order: platform::PlatformIpv4FieldByteOrder,
+    ipv4_length_order: platform::Ipv4ByteOrder,
     dest_addr: IpAddr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
@@ -48,8 +48,7 @@ impl<S: Socket> TracerChannel<S> {
         }
         let raw = config.privilege_mode == PrivilegeMode::Privileged;
         platform::startup()?;
-        let ipv4_length_order =
-            platform::PlatformIpv4FieldByteOrder::for_address(config.source_addr)?;
+        let ipv4_length_order = platform::Ipv4ByteOrder::for_address(config.source_addr)?;
         let send_socket = match config.protocol {
             Protocol::Icmp => Some(make_icmp_send_socket(config.source_addr, raw)?),
             Protocol::Udp => Some(make_udp_send_socket(config.source_addr, raw)?),

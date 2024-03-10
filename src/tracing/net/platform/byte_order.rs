@@ -15,13 +15,13 @@ use std::net::IpAddr;
 /// require host byte order.  OS X requires the length field in host
 /// byte order.  Linux will accept either byte order."
 #[derive(Debug, Copy, Clone)]
-pub enum PlatformIpv4FieldByteOrder {
+pub enum Ipv4ByteOrder {
     #[cfg(all(unix, not(target_os = "linux"), not(target_os = "windows")))]
     Host,
     Network,
 }
 
-impl PlatformIpv4FieldByteOrder {
+impl Ipv4ByteOrder {
     /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
     /// `fragment_offset`.
     ///
@@ -40,14 +40,14 @@ impl PlatformIpv4FieldByteOrder {
     /// For a little-endian architecture:
     ///
     /// Try        Host (LE)    Wire (BE)   Order (if succeeds)
-    /// normal     34 12        12 34       `PlatformIpv4FieldByteOrder::Network`
-    /// swapped    12 34        34 12       `PlatformIpv4FieldByteOrder::Host`
+    /// normal     34 12        12 34       `Ipv4ByteOrder::Network`
+    /// swapped    12 34        34 12       `Ipv4ByteOrder::Host`
     ///
     /// For a big-endian architecture:
     ///
     /// Try        Host (BE)    Wire (BE)   Order (if succeeds)
-    /// normal     12 34        12 34       `Ipv4TotalLengthByteOrder::Host`
-    /// swapped    34 12        34 12       `Ipv4TotalLengthByteOrder::Network`
+    /// normal     12 34        12 34       `Ipv4ByteOrder::Host`
+    /// swapped    34 12        34 12       `Ipv4ByteOrder::Network`
     pub fn for_address(addr: IpAddr) -> TraceResult<Self> {
         PlatformImpl::byte_order_for_address(addr)
     }

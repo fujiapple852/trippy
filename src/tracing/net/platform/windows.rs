@@ -1,4 +1,4 @@
-use super::byte_order::PlatformIpv4FieldByteOrder;
+use super::byte_order::Ipv4ByteOrder;
 use crate::tracing::error::{IoError, IoOperation, IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::windows::adapter::Adapters;
@@ -66,8 +66,8 @@ pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
     #[allow(clippy::unnecessary_wraps)]
-    fn byte_order_for_address(_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-        Ok(PlatformIpv4FieldByteOrder::Network)
+    fn byte_order_for_address(_addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+        Ok(Ipv4ByteOrder::Network)
     }
 
     fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
