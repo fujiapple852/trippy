@@ -201,4 +201,26 @@ mod tests {
         assert_eq!(44222, packet.get_checksum());
         assert!(packet.payload().is_empty());
     }
+
+    #[test]
+    fn test_new_insufficient_buffer() {
+        const SIZE: usize = UdpPacket::minimum_packet_size();
+        let mut buf = [0_u8; SIZE - 1];
+        let err = UdpPacket::new(&mut buf).unwrap_err();
+        assert_eq!(
+            PacketError::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
+            err
+        );
+    }
+
+    #[test]
+    fn test_new_view_insufficient_buffer() {
+        const SIZE: usize = UdpPacket::minimum_packet_size();
+        let buf = [0_u8; SIZE - 1];
+        let err = UdpPacket::new_view(&buf).unwrap_err();
+        assert_eq!(
+            PacketError::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
+            err
+        );
+    }
 }
