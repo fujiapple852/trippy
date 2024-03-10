@@ -1,12 +1,11 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
-use crate::tracing::error::{IoResult, TraceResult, TracerError};
+use crate::tracing::error::{IoResult, TraceResult};
 use crate::tracing::net::platform::Platform;
 use crate::tracing::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use nix::{
     sys::select::FdSet,
-    sys::socket::{AddressFamily, SockaddrLike},
     sys::time::{TimeVal, TimeValLike},
     Error,
 };
@@ -23,117 +22,146 @@ pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
     fn byte_order_for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-        for_address(addr)
+        address::for_address(addr)
     }
     fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+        address::lookup_interface_addr(addr, name)
+    }
+    fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+        address::discover_local_addr(target_addr, port)
+    }
+}
+
+mod address {
+    use crate::tracing::error::{TraceResult, TracerError};
+    use crate::tracing::net::platform::PlatformIpv4FieldByteOrder;
+    use crate::tracing::net::socket::Socket;
+    use crate::tracing::SocketImpl;
+    use nix::sys::socket::{AddressFamily, SockaddrLike};
+    use std::net::{IpAddr, SocketAddr};
+    use tracing::instrument;
+
+    #[cfg(not(target_os = "linux"))]
+    use std::net::Ipv4Addr;
+
+    /// The size of the test packet to use for discovering the `total_length` byte order.
+    #[cfg(not(target_os = "linux"))]
+    const TEST_PACKET_LENGTH: u16 = 256;
+
+    /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
+    /// `fragment_offset`.
+    ///
+    /// Linux accepts either network byte order or host byte order for the `total_length` field and so
+    /// we skip the check and return network byte order unconditionally.
+    #[cfg(target_os = "linux")]
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+        Ok(PlatformIpv4FieldByteOrder::Network)
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    #[instrument(ret)]
+    pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+        let addr = match addr {
+            IpAddr::V4(addr) => addr,
+            IpAddr::V6(_) => return Ok(PlatformIpv4FieldByteOrder::Network),
+        };
+        match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
+            Ok(()) => Ok(PlatformIpv4FieldByteOrder::Network),
+            Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
+                match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
+                    Ok(()) => Ok(PlatformIpv4FieldByteOrder::Host),
+                    Err(err) => Err(err),
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    /// Attempt to send an `ICMP` packet to a local address.
+    ///
+    /// The packet is actually of length `256` bytes but we set the `total_length` based on the input
+    /// provided so as to test if the OS rejects the attempt during the call to `send_to`.
+    ///
+    /// Note that this implementation will try to create an `IPPROTO_ICMP` socket and if that fails it
+    /// will fallback to creating an `IPPROTO_RAW` socket.
+    #[cfg(not(target_os = "linux"))]
+    #[instrument(ret)]
+    fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
+        use crate::tracing::packet;
+        use socket2::Protocol;
+        let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
+        let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
+        icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
+        icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
+        icmp.set_identifier(0);
+        icmp.set_sequence(0);
+        icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
+        let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
+        let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
+        ipv4.set_version(4);
+        ipv4.set_header_length(5);
+        ipv4.set_protocol(packet::IpProtocol::Icmp);
+        ipv4.set_ttl(255);
+        ipv4.set_source(src_addr);
+        ipv4.set_destination(Ipv4Addr::LOCALHOST);
+        ipv4.set_total_length(total_length);
+        ipv4.set_payload(icmp.packet());
+        let mut probe_socket = SocketImpl::new_dgram_ipv4(Protocol::ICMPV4)
+            .or_else(|_| SocketImpl::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW)))?;
+        probe_socket.set_header_included(true)?;
+        let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+        probe_socket.send_to(ipv4.packet(), remote_addr)?;
+        Ok(())
+    }
+
+    pub fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
         match addr {
             IpAddr::V4(_) => lookup_interface_addr_ipv4(name),
             IpAddr::V6(_) => lookup_interface_addr_ipv6(name),
         }
     }
-    fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
-        discover_local_addr(target_addr, port)
-    }
-}
 
-/// The size of the test packet to use for discovering the `total_length` byte order.
-#[cfg(not(target_os = "linux"))]
-const TEST_PACKET_LENGTH: u16 = 256;
-
-/// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
-/// `fragment_offset`.
-///
-/// Linux accepts either network byte order or host byte order for the `total_length` field and so
-/// we skip the check and return network byte order unconditionally.
-#[cfg(target_os = "linux")]
-#[allow(clippy::unnecessary_wraps)]
-fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-    Ok(PlatformIpv4FieldByteOrder::Network)
-}
-
-#[cfg(not(target_os = "linux"))]
-#[instrument(ret)]
-fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-    let addr = match addr {
-        IpAddr::V4(addr) => addr,
-        IpAddr::V6(_) => return Ok(PlatformIpv4FieldByteOrder::Network),
-    };
-    match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
-        Ok(()) => Ok(PlatformIpv4FieldByteOrder::Network),
-        Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
-            match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
-                Ok(()) => Ok(PlatformIpv4FieldByteOrder::Host),
-                Err(err) => Err(err),
-            }
-        }
-        Err(err) => Err(err),
-    }
-}
-
-/// Attempt to send an `ICMP` packet to a local address.
-///
-/// The packet is actually of length `256` bytes but we set the `total_length` based on the input
-/// provided so as to test if the OS rejects the attempt during the call to `send_to`.
-///
-/// Note that this implementation will try to create an `IPPROTO_ICMP` socket and if that fails it
-/// will fallback to creating an `IPPROTO_RAW` socket.
-#[cfg(not(target_os = "linux"))]
-#[instrument(ret)]
-fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
-    use crate::tracing::packet;
-    let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
-    let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
-    icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
-    icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
-    icmp.set_identifier(0);
-    icmp.set_sequence(0);
-    icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
-    let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
-    let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
-    ipv4.set_version(4);
-    ipv4.set_header_length(5);
-    ipv4.set_protocol(packet::IpProtocol::Icmp);
-    ipv4.set_ttl(255);
-    ipv4.set_source(src_addr);
-    ipv4.set_destination(Ipv4Addr::LOCALHOST);
-    ipv4.set_total_length(total_length);
-    ipv4.set_payload(icmp.packet());
-    let mut probe_socket = SocketImpl::new_dgram_ipv4(Protocol::ICMPV4)
-        .or_else(|_| SocketImpl::new_raw_ipv4(Protocol::from(nix::libc::IPPROTO_RAW)))?;
-    probe_socket.set_header_included(true)?;
-    let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
-    probe_socket.send_to(ipv4.packet(), remote_addr)?;
-    Ok(())
-}
-
-#[instrument(ret)]
-fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
-    nix::ifaddrs::getifaddrs()
-        .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
-        .find_map(|ia| {
-            ia.address.and_then(|addr| match addr.family() {
-                Some(AddressFamily::Inet) if ia.interface_name == name => addr
-                    .as_sockaddr_in()
-                    .map(|sock_addr| IpAddr::V4(sock_addr.ip())),
-                _ => None,
+    #[instrument(ret)]
+    fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
+        nix::ifaddrs::getifaddrs()
+            .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
+            .find_map(|ia| {
+                ia.address.and_then(|addr| match addr.family() {
+                    Some(AddressFamily::Inet) if ia.interface_name == name => addr
+                        .as_sockaddr_in()
+                        .map(|sock_addr| IpAddr::V4(sock_addr.ip())),
+                    _ => None,
+                })
             })
-        })
-        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
-}
+            .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+    }
 
-#[instrument(ret)]
-fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
-    nix::ifaddrs::getifaddrs()
-        .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
-        .find_map(|ia| {
-            ia.address.and_then(|addr| match addr.family() {
-                Some(AddressFamily::Inet6) if ia.interface_name == name => addr
-                    .as_sockaddr_in6()
-                    .map(|sock_addr| IpAddr::V6(sock_addr.ip())),
-                _ => None,
+    #[instrument(ret)]
+    fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+        nix::ifaddrs::getifaddrs()
+            .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
+            .find_map(|ia| {
+                ia.address.and_then(|addr| match addr.family() {
+                    Some(AddressFamily::Inet6) if ia.interface_name == name => addr
+                        .as_sockaddr_in6()
+                        .map(|sock_addr| IpAddr::V6(sock_addr.ip())),
+                    _ => None,
+                })
             })
-        })
-        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+            .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+    }
+
+    // Note that no packets are transmitted by this method.
+    #[instrument(ret)]
+    pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+        let mut socket = match target_addr {
+            IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
+            IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
+        }?;
+        socket.connect(SocketAddr::new(target_addr, port))?;
+        Ok(socket.local_addr()?.ok_or(TracerError::MissingAddr)?.ip())
+    }
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -144,17 +172,6 @@ pub fn startup() -> TraceResult<()> {
 
 pub fn in_progress_error() -> io::Error {
     io::Error::from(Error::EINPROGRESS)
-}
-
-// Note that no packets are transmitted by this method.
-#[instrument(ret)]
-pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
-    let mut socket = match target_addr {
-        IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
-    }?;
-    socket.connect(SocketAddr::new(target_addr, port))?;
-    Ok(socket.local_addr()?.ok_or(TracerError::MissingAddr)?.ip())
 }
 
 /// A network socket.
