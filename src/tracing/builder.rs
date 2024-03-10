@@ -300,7 +300,7 @@ impl<F: Fn(&TracerRound<'_>)> Builder<F> {
     /// Start the tracer.
     pub fn start(self) -> TraceResult<()> {
         let trace_identifier = self.trace_identifier.unwrap_or_default();
-        let source_addr = SourceAddr::discover(
+        let source_addr = SourceAddr::discover::<SocketImpl>(
             self.target_addr,
             self.tracer_config.port_direction,
             self.interface.as_deref(),

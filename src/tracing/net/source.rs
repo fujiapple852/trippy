@@ -1,8 +1,7 @@
 use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
 use crate::tracing::net::platform;
-use crate::tracing::net::platform::SocketImpl;
-use crate::tracing::net::socket::Socket as _;
+use crate::tracing::net::socket::Socket;
 use crate::tracing::types::Port;
 use crate::tracing::PortDirection;
 use std::net::{IpAddr, SocketAddr};
@@ -15,7 +14,7 @@ pub struct SourceAddr;
 
 impl SourceAddr {
     /// Discover the source `IpAddr`.
-    pub fn discover(
+    pub fn discover<S: Socket>(
         target_addr: IpAddr,
         port_direction: PortDirection,
         interface: Option<&str>,
@@ -28,8 +27,8 @@ impl SourceAddr {
     }
 
     /// Validate that we can bind to the source `IpAddr`.
-    pub fn validate(source_addr: IpAddr) -> TraceResult<IpAddr> {
-        let mut socket = udp_socket_for_addr_family(source_addr)?;
+    pub fn validate<S: Socket>(source_addr: IpAddr) -> TraceResult<IpAddr> {
+        let mut socket = udp_socket_for_addr_family::<S>(source_addr)?;
         let sock_addr = SocketAddr::new(source_addr, 0);
         match socket.bind(sock_addr) {
             Ok(()) => {
@@ -42,10 +41,10 @@ impl SourceAddr {
 }
 
 /// Create a socket suitable for a given address.
-pub fn udp_socket_for_addr_family(addr: IpAddr) -> TraceResult<SocketImpl> {
+fn udp_socket_for_addr_family<S: Socket>(addr: IpAddr) -> TraceResult<S> {
     Ok(match addr {
-        IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
+        IpAddr::V4(_) => S::new_udp_dgram_socket_ipv4(),
+        IpAddr::V6(_) => S::new_udp_dgram_socket_ipv6(),
     }?)
 }
 
