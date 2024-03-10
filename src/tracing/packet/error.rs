@@ -4,7 +4,7 @@ use thiserror::Error;
 pub type PacketResult<T> = Result<T, PacketError>;
 
 /// A packet error.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum PacketError {
     /// Attempting to create a packet with a insufficient buffer size.
     #[error("insufficient buffer for {0} packet, minimum={1}, provided={2}")]

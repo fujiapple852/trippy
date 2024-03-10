@@ -211,6 +211,28 @@ mod tests {
         assert_eq!(u16::MAX, packet.get_checksum());
         assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
     }
+
+    #[test]
+    fn test_new_insufficient_buffer() {
+        const SIZE: usize = IcmpPacket::minimum_packet_size();
+        let mut buf = [0_u8; SIZE - 1];
+        let err = IcmpPacket::new(&mut buf).unwrap_err();
+        assert_eq!(
+            PacketError::InsufficientPacketBuffer(String::from("IcmpPacket"), SIZE, SIZE - 1),
+            err
+        );
+    }
+
+    #[test]
+    fn test_new_view_insufficient_buffer() {
+        const SIZE: usize = IcmpPacket::minimum_packet_size();
+        let buf = [0_u8; SIZE - 1];
+        let err = IcmpPacket::new_view(&buf).unwrap_err();
+        assert_eq!(
+            PacketError::InsufficientPacketBuffer(String::from("IcmpPacket"), SIZE, SIZE - 1),
+            err
+        );
+    }
 }
 
 pub mod echo_request {
@@ -439,6 +461,36 @@ pub mod echo_request {
             assert_eq!(24731, packet.get_identifier());
             assert_eq!(33000, packet.get_sequence());
             assert!(packet.payload().is_empty());
+        }
+
+        #[test]
+        fn test_new_insufficient_buffer() {
+            const SIZE: usize = EchoRequestPacket::minimum_packet_size();
+            let mut buf = [0_u8; SIZE - 1];
+            let err = EchoRequestPacket::new(&mut buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
+        }
+
+        #[test]
+        fn test_new_view_insufficient_buffer() {
+            const SIZE: usize = EchoRequestPacket::minimum_packet_size();
+            let buf = [0_u8; SIZE - 1];
+            let err = EchoRequestPacket::new_view(&buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("EchoRequestPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
         }
     }
 }
@@ -670,6 +722,36 @@ pub mod echo_reply {
             assert_eq!(33012, packet.get_sequence());
             assert!(packet.payload().is_empty());
         }
+
+        #[test]
+        fn test_new_insufficient_buffer() {
+            const SIZE: usize = EchoReplyPacket::minimum_packet_size();
+            let mut buf = [0_u8; SIZE - 1];
+            let err = EchoReplyPacket::new(&mut buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
+        }
+
+        #[test]
+        fn test_new_view_insufficient_buffer() {
+            const SIZE: usize = EchoReplyPacket::minimum_packet_size();
+            let buf = [0_u8; SIZE - 1];
+            let err = EchoReplyPacket::new_view(&buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("EchoReplyPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
+        }
     }
 }
 
@@ -894,6 +976,36 @@ pub mod time_exceeded {
             assert_eq!(62702, packet.get_checksum());
             assert_eq!(17, packet.get_length());
             assert!(packet.payload().is_empty());
+        }
+
+        #[test]
+        fn test_new_insufficient_buffer() {
+            const SIZE: usize = TimeExceededPacket::minimum_packet_size();
+            let mut buf = [0_u8; SIZE - 1];
+            let err = TimeExceededPacket::new(&mut buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
+        }
+
+        #[test]
+        fn test_new_view_insufficient_buffer() {
+            const SIZE: usize = TimeExceededPacket::minimum_packet_size();
+            let buf = [0_u8; SIZE - 1];
+            let err = TimeExceededPacket::new_view(&buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("TimeExceededPacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
         }
     }
 }
@@ -1127,6 +1239,36 @@ pub mod destination_unreachable {
             assert_eq!(57308, packet.get_checksum());
             assert_eq!(0, packet.get_length());
             assert!(packet.payload().is_empty());
+        }
+
+        #[test]
+        fn test_new_insufficient_buffer() {
+            const SIZE: usize = DestinationUnreachablePacket::minimum_packet_size();
+            let mut buf = [0_u8; SIZE - 1];
+            let err = DestinationUnreachablePacket::new(&mut buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
+        }
+
+        #[test]
+        fn test_new_view_insufficient_buffer() {
+            const SIZE: usize = DestinationUnreachablePacket::minimum_packet_size();
+            let buf = [0_u8; SIZE - 1];
+            let err = DestinationUnreachablePacket::new_view(&buf).unwrap_err();
+            assert_eq!(
+                PacketError::InsufficientPacketBuffer(
+                    String::from("DestinationUnreachablePacket"),
+                    SIZE,
+                    SIZE - 1
+                ),
+                err
+            );
         }
     }
 }
