@@ -1,9 +1,12 @@
 pub mod byte_order;
+
 pub use byte_order::PlatformIpv4FieldByteOrder;
+use std::net::IpAddr;
 
 #[cfg(unix)]
 mod unix;
 
+use crate::tracing::error::TraceResult;
 #[cfg(unix)]
 pub use unix::*;
 
@@ -12,3 +15,18 @@ mod windows;
 
 #[cfg(windows)]
 pub use self::windows::*;
+
+/// Platform specific operations.
+pub trait Platform {
+    /// Determine the required byte ordering for IPv4 header fields.
+    fn byte_order_for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder>;
+
+    /// Lookup an `IpAddr` for an interface.
+    ///
+    /// If the interface has more than one address then an arbitrary address
+    /// is selected and returned.
+    fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr>;
+
+    /// Discover a local `IpAddr` which can route to the target address.
+    fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr>;
+}

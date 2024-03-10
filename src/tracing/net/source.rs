@@ -1,6 +1,6 @@
 use crate::tracing::error::TraceResult;
 use crate::tracing::error::TracerError::InvalidSourceAddr;
-use crate::tracing::net::platform;
+use crate::tracing::net::platform::Platform;
 use crate::tracing::net::socket::Socket;
 use crate::tracing::types::Port;
 use crate::tracing::PortDirection;
@@ -14,21 +14,24 @@ pub struct SourceAddr;
 
 impl SourceAddr {
     /// Discover the source `IpAddr`.
-    pub fn discover<S: Socket>(
+    pub fn discover<S: Socket, P: Platform>(
         target_addr: IpAddr,
         port_direction: PortDirection,
         interface: Option<&str>,
     ) -> TraceResult<IpAddr> {
         let port = port_direction.dest().unwrap_or(DISCOVERY_PORT).0;
         match interface.as_ref() {
-            Some(interface) => lookup_interface_addr(target_addr, interface),
-            None => platform::discover_local_addr(target_addr, port),
+            Some(interface) => P::lookup_interface_addr(target_addr, interface),
+            None => P::discover_local_addr(target_addr, port),
         }
     }
 
     /// Validate that we can bind to the source `IpAddr`.
     pub fn validate<S: Socket>(source_addr: IpAddr) -> TraceResult<IpAddr> {
-        let mut socket = udp_socket_for_addr_family::<S>(source_addr)?;
+        let mut socket = match source_addr {
+            IpAddr::V4(_) => S::new_udp_dgram_socket_ipv4(),
+            IpAddr::V6(_) => S::new_udp_dgram_socket_ipv6(),
+        }?;
         let sock_addr = SocketAddr::new(source_addr, 0);
         match socket.bind(sock_addr) {
             Ok(()) => {
@@ -37,21 +40,5 @@ impl SourceAddr {
             }
             Err(_) => Err(InvalidSourceAddr(sock_addr.ip())),
         }
-    }
-}
-
-/// Create a socket suitable for a given address.
-fn udp_socket_for_addr_family<S: Socket>(addr: IpAddr) -> TraceResult<S> {
-    Ok(match addr {
-        IpAddr::V4(_) => S::new_udp_dgram_socket_ipv4(),
-        IpAddr::V6(_) => S::new_udp_dgram_socket_ipv6(),
-    }?)
-}
-
-/// Lookup the address for a named interface.
-fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
-    match addr {
-        IpAddr::V4(_) => platform::lookup_interface_addr_ipv4(name),
-        IpAddr::V6(_) => platform::lookup_interface_addr_ipv6(name),
     }
 }

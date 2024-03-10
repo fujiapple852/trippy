@@ -2,6 +2,7 @@ use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation, IoResult, TraceResult, TracerError};
 use crate::tracing::net::channel::MAX_PACKET_SIZE;
 use crate::tracing::net::platform::windows::adapter::Adapters;
+use crate::tracing::net::platform::Platform;
 use crate::tracing::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
@@ -61,24 +62,24 @@ macro_rules! syscall_threading {
     }};
 }
 
-#[allow(clippy::unnecessary_wraps)]
-pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
-    Ok(PlatformIpv4FieldByteOrder::Network)
-}
+pub struct PlatformImpl;
 
-#[instrument(ret)]
-pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(&Adapters::ipv4()?, name)
-}
+impl Platform for PlatformImpl {
+    #[allow(clippy::unnecessary_wraps)]
+    fn byte_order_for_address(_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+        Ok(PlatformIpv4FieldByteOrder::Network)
+    }
 
-#[instrument(ret)]
-pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
-    lookup_interface_addr(&Adapters::ipv6()?, name)
-}
+    fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+        match addr {
+            IpAddr::V4(_) => lookup_interface_addr(&Adapters::ipv4()?, name),
+            IpAddr::V6(_) => lookup_interface_addr(&Adapters::ipv6()?, name),
+        }
+    }
 
-#[instrument(skip(_port), ret)]
-pub fn discover_local_addr(target: IpAddr, _port: u16) -> TraceResult<IpAddr> {
-    routing_interface_query(target)
+    fn discover_local_addr(target_addr: IpAddr, _port: u16) -> TraceResult<IpAddr> {
+        routing_interface_query(target_addr)
+    }
 }
 
 #[instrument]

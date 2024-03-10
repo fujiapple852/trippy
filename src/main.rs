@@ -39,8 +39,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
-    ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PortDirection, Protocol,
-    SocketImpl,
+    ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PlatformImpl, PortDirection,
+    Protocol, SocketImpl,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -210,7 +210,7 @@ fn start_tracer(
     trace_identifier: u16,
 ) -> Result<TraceInfo, Error> {
     let source_addr = match cfg.source_addr {
-        None => SourceAddr::discover::<SocketImpl>(
+        None => SourceAddr::discover::<SocketImpl, PlatformImpl>(
             target_addr,
             cfg.port_direction,
             cfg.interface.as_deref(),
