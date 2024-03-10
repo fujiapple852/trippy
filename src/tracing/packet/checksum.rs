@@ -129,6 +129,29 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
+    fn test_empty_ipv4_checksum() {
+        let src_addr = Ipv4Addr::from_str("192.168.1.201").unwrap();
+        let dest_addr = Ipv4Addr::from_str("142.250.66.46").unwrap();
+        assert_eq!(0, ipv4_header_checksum(&[]));
+        assert_eq!(0, icmp_ipv4_checksum(&[]));
+        assert_eq!(27732, udp_ipv4_checksum(&[], src_addr, dest_addr));
+        assert_eq!(27743, tcp_ipv4_checksum(&[], src_addr, dest_addr));
+    }
+
+    #[test]
+    fn test_empty_ipv6_checksum() {
+        let src_addr = Ipv6Addr::from_str("fe80::811:3f6:7601:6c3f").unwrap();
+        let dest_addr = Ipv6Addr::from_str("fe80::1c8d:7d69:d0b6:8182").unwrap();
+        assert_eq!(10316, icmp_ipv6_checksum(&[], src_addr, dest_addr));
+        assert_eq!(10357, udp_ipv6_checksum(&[], src_addr, dest_addr));
+    }
+
+    #[test]
+    fn test_odd_length() {
+        assert_eq!(65535, ipv4_header_checksum(&[0x00]));
+    }
+
+    #[test]
     fn test_icmp_ipv4_checksum() {
         let bytes = [
             0x0b, 0x00, 0x88, 0xeb, 0x00, 0x00, 0x00, 0x00, 0x45, 0x00, 0x00, 0x54, 0xb0, 0xde,
