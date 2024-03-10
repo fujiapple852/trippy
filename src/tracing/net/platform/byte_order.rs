@@ -1,5 +1,5 @@
 use crate::tracing::error::TraceResult;
-use crate::tracing::net::platform::for_address;
+use crate::tracing::net::platform::{Platform, PlatformImpl};
 use std::net::IpAddr;
 
 /// The byte order to encode the `total_length`, `flags` and `fragment_offset` fields of the IPv4
@@ -49,7 +49,7 @@ impl PlatformIpv4FieldByteOrder {
     /// normal     12 34        12 34       `Ipv4TotalLengthByteOrder::Host`
     /// swapped    34 12        34 12       `Ipv4TotalLengthByteOrder::Network`
     pub fn for_address(addr: IpAddr) -> TraceResult<Self> {
-        for_address(addr)
+        PlatformImpl::byte_order_for_address(addr)
     }
 
     /// Adjust the IPv4 `total_length` header.

@@ -1,4 +1,5 @@
 use crate::tracing::error::TraceResult;
+use crate::tracing::net::PlatformImpl;
 use crate::tracing::{
     ChannelConfig, Config, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
     PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SocketImpl,
@@ -300,7 +301,7 @@ impl<F: Fn(&TracerRound<'_>)> Builder<F> {
     /// Start the tracer.
     pub fn start(self) -> TraceResult<()> {
         let trace_identifier = self.trace_identifier.unwrap_or_default();
-        let source_addr = SourceAddr::discover::<SocketImpl>(
+        let source_addr = SourceAddr::discover::<SocketImpl, PlatformImpl>(
             self.target_addr,
             self.tracer_config.port_direction,
             self.interface.as_deref(),

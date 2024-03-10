@@ -17,7 +17,7 @@ pub use config::{
 };
 pub use net::channel::TracerChannel;
 pub use net::source::SourceAddr;
-pub use net::SocketImpl;
+pub use net::{PlatformImpl, SocketImpl};
 pub use probe::{
     Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
     ProbeComplete, ProbeState, UnknownExtension,

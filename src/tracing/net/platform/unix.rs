@@ -1,6 +1,7 @@
 use super::byte_order::PlatformIpv4FieldByteOrder;
 use crate::tracing::error::{IoError, IoOperation};
 use crate::tracing::error::{IoResult, TraceResult, TracerError};
+use crate::tracing::net::platform::Platform;
 use crate::tracing::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use nix::{
@@ -18,6 +19,23 @@ use std::os::fd::AsFd;
 use std::time::Duration;
 use tracing::instrument;
 
+pub struct PlatformImpl;
+
+impl Platform for PlatformImpl {
+    fn byte_order_for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+        for_address(addr)
+    }
+    fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+        match addr {
+            IpAddr::V4(_) => lookup_interface_addr_ipv4(name),
+            IpAddr::V6(_) => lookup_interface_addr_ipv6(name),
+        }
+    }
+    fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+        discover_local_addr(target_addr, port)
+    }
+}
+
 /// The size of the test packet to use for discovering the `total_length` byte order.
 #[cfg(not(target_os = "linux"))]
 const TEST_PACKET_LENGTH: u16 = 256;
@@ -29,13 +47,13 @@ const TEST_PACKET_LENGTH: u16 = 256;
 /// we skip the check and return network byte order unconditionally.
 #[cfg(target_os = "linux")]
 #[allow(clippy::unnecessary_wraps)]
-pub fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+fn for_address(_src_addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
     Ok(PlatformIpv4FieldByteOrder::Network)
 }
 
 #[cfg(not(target_os = "linux"))]
 #[instrument(ret)]
-pub fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
+fn for_address(addr: IpAddr) -> TraceResult<PlatformIpv4FieldByteOrder> {
     let addr = match addr {
         IpAddr::V4(addr) => addr,
         IpAddr::V6(_) => return Ok(PlatformIpv4FieldByteOrder::Network),
@@ -89,7 +107,7 @@ fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceRes
 }
 
 #[instrument(ret)]
-pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
+fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
     nix::ifaddrs::getifaddrs()
         .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
         .find_map(|ia| {
@@ -104,7 +122,7 @@ pub fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
 }
 
 #[instrument(ret)]
-pub fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
     nix::ifaddrs::getifaddrs()
         .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
         .find_map(|ia| {
@@ -128,9 +146,7 @@ pub fn in_progress_error() -> io::Error {
     io::Error::from(Error::EINPROGRESS)
 }
 
-/// Discover the local `IpAddr` that will be used to communicate with the given target `IpAddr`.
-///
-/// Note that no packets are transmitted by this method.
+// Note that no packets are transmitted by this method.
 #[instrument(ret)]
 pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
     let mut socket = match target_addr {

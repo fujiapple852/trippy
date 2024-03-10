@@ -26,7 +26,7 @@ pub mod channel;
 pub mod source;
 
 /// The platform specific socket type.
-pub use platform::SocketImpl;
+pub use platform::{PlatformImpl, SocketImpl};
 
 /// An abstraction over a network interface for tracing.
 #[cfg_attr(test, mockall::automock)]
