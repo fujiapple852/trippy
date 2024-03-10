@@ -74,3 +74,57 @@ impl From<ExtensionObjectPacket<'_>> for UnknownExtension {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Convert a single MPLS extension which contains two labels.
+    #[test]
+    fn test_convert_mpls_extensions() {
+        let buf = hex_literal::hex!("20 00 96 53 00 0c 01 01 06 9f 18 01 00 00 29 ff");
+        let exts = Extensions::try_from(buf.as_slice()).unwrap();
+        assert_eq!(1, exts.extensions.len());
+        match &exts.extensions[0] {
+            Extension::Mpls(mpls) => {
+                assert_eq!(2, mpls.members.len());
+                assert_eq!(27121, mpls.members[0].label);
+                assert_eq!(1, mpls.members[0].ttl);
+                assert_eq!(4, mpls.members[0].exp);
+                assert_eq!(0, mpls.members[0].bos);
+                assert_eq!(2, mpls.members[1].label);
+                assert_eq!(255, mpls.members[1].ttl);
+                assert_eq!(4, mpls.members[1].exp);
+                assert_eq!(1, mpls.members[1].bos);
+            }
+            Extension::Unknown(_) => panic!("expected Extension::Mpls"),
+        }
+    }
+
+    /// Convert a single unknown extension.
+    #[test]
+    fn test_convert_unknown_extensions() {
+        let buf = hex_literal::hex!("20 00 96 53 00 0c 99 01 06 9f 18 01 00 00 29 ff");
+        let exts = Extensions::try_from(buf.as_slice()).unwrap();
+        assert_eq!(1, exts.extensions.len());
+        match &exts.extensions[0] {
+            Extension::Unknown(unknown) => {
+                assert_eq!(0x99, unknown.class_num);
+                assert_eq!(0x01, unknown.class_subtype);
+                assert_eq!(
+                    hex_literal::hex!("06 9f 18 01 00 00 29 ff"),
+                    unknown.bytes.as_slice()
+                );
+            }
+            Extension::Mpls(_) => panic!("expected Extension::Unknown"),
+        }
+    }
+
+    /// Convert an extension with an unknown header version.
+    #[test]
+    fn test_convert_unknown_version() {
+        let buf = hex_literal::hex!("30 00 96 53 00 0c 99 01 06 9f 18 01 00 00 29 ff");
+        let exts = Extensions::try_from(buf.as_slice()).unwrap();
+        assert_eq!(0, exts.extensions.len());
+    }
+}
