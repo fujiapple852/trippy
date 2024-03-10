@@ -40,6 +40,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use trippy::dns::{DnsResolver, Resolver};
 use trippy::tracing::{
     ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PortDirection, Protocol,
+    SocketImpl,
 };
 use trippy::tracing::{PrivilegeMode, SourceAddr};
 
@@ -209,8 +210,12 @@ fn start_tracer(
     trace_identifier: u16,
 ) -> Result<TraceInfo, Error> {
     let source_addr = match cfg.source_addr {
-        None => SourceAddr::discover(target_addr, cfg.port_direction, cfg.interface.as_deref())?,
-        Some(addr) => SourceAddr::validate(addr)?,
+        None => SourceAddr::discover::<SocketImpl>(
+            target_addr,
+            cfg.port_direction,
+            cfg.interface.as_deref(),
+        )?,
+        Some(addr) => SourceAddr::validate::<SocketImpl>(addr)?,
     };
     let channel_config = make_channel_config(cfg, source_addr, target_addr);
     let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
