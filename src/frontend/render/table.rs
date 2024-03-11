@@ -138,6 +138,7 @@ fn new_cell(
     config: &TuiConfig,
 ) -> Cell<'static> {
     let is_target = app.tracer_data().is_target(hop, app.selected_flow);
+    let total_recv = hop.total_recv();
     match column {
         Column::Ttl => render_usize_cell(hop.ttl().into()),
         Column::Host => {
@@ -151,16 +152,16 @@ fn new_cell(
         Column::LossPct => render_loss_pct_cell(hop),
         Column::Sent => render_usize_cell(hop.total_sent()),
         Column::Received => render_usize_cell(hop.total_recv()),
-        Column::Last => render_float_cell(hop.last_ms(), 1),
+        Column::Last => render_float_cell(hop.last_ms(), 1, total_recv),
         Column::Average => render_avg_cell(hop),
-        Column::Best => render_float_cell(hop.best_ms(), 1),
-        Column::Worst => render_float_cell(hop.worst_ms(), 1),
+        Column::Best => render_float_cell(hop.best_ms(), 1, total_recv),
+        Column::Worst => render_float_cell(hop.worst_ms(), 1, total_recv),
         Column::StdDev => render_stddev_cell(hop),
         Column::Status => render_status_cell(hop, is_target),
-        Column::Jitter => render_float_cell(hop.jitter_ms(), 1),
-        Column::Javg => render_float_cell(Some(hop.javg_ms()), 1),
-        Column::Jmax => render_float_cell(hop.jmax_ms(), 1),
-        Column::Jinta => render_float_cell(Some(hop.jinta()), 1),
+        Column::Jitter => render_float_cell(hop.jitter_ms(), 1, total_recv),
+        Column::Javg => render_float_cell(Some(hop.javg_ms()), 1, total_recv),
+        Column::Jmax => render_float_cell(hop.jmax_ms(), 1, total_recv),
+        Column::Jinta => render_float_cell(Some(hop.jinta()), 1, total_recv),
         Column::LastSrcPort => render_port_cell(hop.last_src_port()),
         Column::LastDestPort => render_port_cell(hop.last_dest_port()),
         Column::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
@@ -191,8 +192,12 @@ fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
     })
 }
 
-fn render_float_cell(value: Option<f64>, places: usize) -> Cell<'static> {
-    Cell::from(value.map(|v| format!("{v:.places$}")).unwrap_or_default())
+fn render_float_cell(value: Option<f64>, places: usize, total_recv: usize) -> Cell<'static> {
+    Cell::from(if total_recv > 0 {
+        value.map(|v| format!("{v:.places$}")).unwrap_or_default()
+    } else {
+        String::default()
+    })
 }
 
 fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
