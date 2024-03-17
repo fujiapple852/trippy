@@ -1090,8 +1090,8 @@ mod state {
                 state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, Round(2000));
-            assert_eq!(state.round_sequence, Sequence(33000));
-            assert_eq!(state.sequence, Sequence(33000));
+            assert_eq!(state.round_sequence, Sequence(57130));
+            assert_eq!(state.sequence, Sequence(57130));
         }
 
         #[test]
@@ -1121,16 +1121,16 @@ mod state {
                 state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, Round(2000));
-            assert_eq!(state.round_sequence, Sequence(56876));
-            assert_eq!(state.sequence, Sequence(56876));
+            assert_eq!(state.round_sequence, Sequence(41128));
+            assert_eq!(state.sequence, Sequence(41128));
         }
 
         #[test]
         fn test_in_round() {
             let state = TracerState::new(cfg(Sequence(33000)));
             assert!(state.in_round(Sequence(33000)));
-            assert!(state.in_round(Sequence(34023)));
-            assert!(!state.in_round(Sequence(34024)));
+            assert!(state.in_round(Sequence(33511)));
+            assert!(!state.in_round(Sequence(33512)));
         }
 
         #[test]
