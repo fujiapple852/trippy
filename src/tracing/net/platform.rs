@@ -17,6 +17,7 @@ mod windows;
 pub use self::windows::*;
 
 /// Platform specific operations.
+#[cfg_attr(test, mockall::automock)]
 pub trait Platform {
     /// Determine the required byte ordering for IPv4 header fields.
     fn byte_order_for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder>;
