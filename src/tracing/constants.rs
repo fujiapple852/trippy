@@ -6,7 +6,7 @@ pub const MAX_TTL: u8 = 254;
 /// This is set to be far larger than the `MAX_TTL` to allow for the re-issue of probes (with the
 /// next sequence number, but the same ttl) which can occur for some protocols such as TCP when it
 /// cannot bind to a given port.
-pub const MAX_SEQUENCE_PER_ROUND: u16 = 1024;
+pub const MAX_SEQUENCE_PER_ROUND: u16 = 512;
 
 /// The maximum _starting_ sequence number allowed.
 ///
