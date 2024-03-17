@@ -46,9 +46,11 @@ impl SourceAddr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tracing::error::{IoError, TracerError};
     use crate::tracing::net::platform::MockPlatform;
     use crate::tracing::net::socket::MockSocket;
     use mockall::predicate;
+    use std::io::Error;
     use std::str::FromStr;
     use std::sync::Mutex;
 
@@ -143,5 +145,77 @@ mod tests {
             SourceAddr::discover::<MockSocket, MockPlatform>(expected_target, direction, interface)
                 .unwrap();
         assert_eq!(expected_src, src_addr);
+    }
+
+    #[test]
+    fn test_validate_ipv4() {
+        let _m = MTX.lock();
+
+        let addr = IpAddr::from_str("192.168.0.1").unwrap();
+        let expected_bind_addr = SocketAddr::new(addr, 0);
+
+        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
+        ctx.expect().times(1).returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket.expect_close().times(1).returning(|| Ok(()));
+
+            Ok(mocket)
+        });
+
+        let src_addr = SourceAddr::validate::<MockSocket>(addr).unwrap();
+        assert_eq!(addr, src_addr);
+    }
+
+    #[test]
+    fn test_validate_ipv6() {
+        let _m = MTX.lock();
+
+        let addr = IpAddr::from_str("2a00:1450:4009:815::200e").unwrap();
+        let expected_bind_addr = SocketAddr::new(addr, 0);
+
+        let ctx = MockSocket::new_udp_dgram_socket_ipv6_context();
+        ctx.expect().times(1).returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket.expect_close().times(1).returning(|| Ok(()));
+
+            Ok(mocket)
+        });
+
+        let src_addr = SourceAddr::validate::<MockSocket>(addr).unwrap();
+        assert_eq!(addr, src_addr);
+    }
+
+    #[test]
+    fn test_validate_invalid() {
+        let _m = MTX.lock();
+
+        let addr = IpAddr::from_str("1.2.3.4").unwrap();
+        let expected_bind_addr = SocketAddr::new(addr, 0);
+
+        let ctx = MockSocket::new_udp_dgram_socket_ipv4_context();
+        ctx.expect().times(1).returning(move || {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|addr| Err(IoError::Bind(Error::last_os_error(), addr)));
+            Ok(mocket)
+        });
+
+        let err = SourceAddr::validate::<MockSocket>(addr).unwrap_err();
+        assert!(matches!(err, TracerError::InvalidSourceAddr(_)));
     }
 }
