@@ -731,6 +731,61 @@ mod tests {
         Ok(())
     }
 
+    // Here we send probe 33007 (the 8th probe when starting from 33000) and
+    // so the payload will be 13 octets in length (7 + 6 for the magic prefix
+    // "trippy").
+    #[test]
+    fn test_dispatch_udp_probe_dublin_privileged() -> anyhow::Result<()> {
+        let probe = Probe {
+            flags: Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
+            sequence: Sequence(33007),
+            identifier: TraceId(33007),
+            ..make_udp_probe(123, 456)
+        };
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        // packet size and payload pattern are ignored for ipv6/udp/dublin mode.
+        let packet_size = PacketSize(300);
+        let payload_pattern = PayloadPattern(0xaa);
+        let initial_sequence = Sequence(33000);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            00 7b 01 c8 00 15 82 76
+            74 72 69 70 70 79 aa aa
+            aa aa aa aa aa
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+            initial_sequence,
+        )?;
+        Ok(())
+    }
+
     #[test]
     fn test_dispatch_udp_probe_classic_unprivileged_no_payload() -> anyhow::Result<()> {
         let _m = MTX.lock();
