@@ -42,3 +42,106 @@ impl SourceAddr {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tracing::net::platform::MockPlatform;
+    use crate::tracing::net::socket::MockSocket;
+    use mockall::predicate;
+    use std::str::FromStr;
+    use std::sync::Mutex;
+
+    static MTX: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn test_discover_local_addr_default_port() {
+        let _m = MTX.lock();
+
+        let direction = PortDirection::None;
+        let interface = None;
+        let expected_target = IpAddr::from_str("1.2.3.4").unwrap();
+        let expected_port = DISCOVERY_PORT.0;
+        let expected_src = IpAddr::from_str("192.168.0.1").unwrap();
+
+        let ctx = MockPlatform::discover_local_addr_context();
+        ctx.expect()
+            .with(predicate::eq(expected_target), predicate::eq(expected_port))
+            .times(1)
+            .returning(move |_, _| Ok(expected_src));
+
+        let src_addr =
+            SourceAddr::discover::<MockSocket, MockPlatform>(expected_target, direction, interface)
+                .unwrap();
+        assert_eq!(expected_src, src_addr);
+    }
+
+    #[test]
+    fn test_discover_local_addr_fixed_dest_port() {
+        let _m = MTX.lock();
+
+        let direction = PortDirection::FixedDest(Port(99));
+        let interface = None;
+        let expected_target = IpAddr::from_str("1.2.3.4").unwrap();
+        let expected_port = 99;
+        let expected_src = IpAddr::from_str("192.168.0.1").unwrap();
+
+        let ctx = MockPlatform::discover_local_addr_context();
+        ctx.expect()
+            .with(predicate::eq(expected_target), predicate::eq(expected_port))
+            .times(1)
+            .returning(move |_, _| Ok(expected_src));
+
+        let src_addr =
+            SourceAddr::discover::<MockSocket, MockPlatform>(expected_target, direction, interface)
+                .unwrap();
+        assert_eq!(expected_src, src_addr);
+    }
+
+    #[test]
+    fn test_discover_local_addr_fixed_both_port() {
+        let _m = MTX.lock();
+
+        let direction = PortDirection::FixedBoth(Port(1), Port(99));
+        let interface = None;
+        let expected_target = IpAddr::from_str("1.2.3.4").unwrap();
+        let expected_port = 99;
+        let expected_src = IpAddr::from_str("192.168.0.1").unwrap();
+
+        let ctx = MockPlatform::discover_local_addr_context();
+        ctx.expect()
+            .with(predicate::eq(expected_target), predicate::eq(expected_port))
+            .times(1)
+            .returning(move |_, _| Ok(expected_src));
+
+        let src_addr =
+            SourceAddr::discover::<MockSocket, MockPlatform>(expected_target, direction, interface)
+                .unwrap();
+        assert_eq!(expected_src, src_addr);
+    }
+
+    #[test]
+    fn test_discover_lookup_interface() {
+        let _m = MTX.lock();
+
+        let direction = PortDirection::None;
+        let interface = Some("en0");
+        let expected_target = IpAddr::from_str("1.2.3.4").unwrap();
+        let expected_src = IpAddr::from_str("192.168.0.1").unwrap();
+        let expected_interface = "en0";
+
+        let ctx = MockPlatform::lookup_interface_addr_context();
+        ctx.expect()
+            .with(
+                predicate::eq(expected_target),
+                predicate::eq(expected_interface),
+            )
+            .times(1)
+            .returning(move |_, _| Ok(expected_src));
+
+        let src_addr =
+            SourceAddr::discover::<MockSocket, MockPlatform>(expected_target, direction, interface)
+                .unwrap();
+        assert_eq!(expected_src, src_addr);
+    }
+}
