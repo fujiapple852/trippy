@@ -6,6 +6,7 @@ use trippy::tracing::Port;
 #[derive(Debug, Deserialize)]
 pub struct Simulation {
     pub name: String,
+    pub rounds: Option<usize>,
     #[serde(default)]
     pub privilege_mode: PrivilegeMode,
     pub target: IpAddr,
@@ -16,6 +17,7 @@ pub struct Simulation {
     pub multipath_strategy: MultipathStrategy,
     #[serde(default)]
     pub icmp_identifier: u16,
+    pub initial_sequence: Option<u16>,
     pub packet_size: Option<u16>,
     pub payload_pattern: Option<u8>,
     pub min_round_duration: Option<u64>,
