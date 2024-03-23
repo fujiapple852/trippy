@@ -63,11 +63,11 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     let name = simulation.name.clone();
     for attempt in 1..=MAX_ATTEMPTS {
         info!("start simulating {} [attempt #{}]", name, attempt);
-        if runtime.block_on(run_simulation(simulation.clone())).is_ok() {
+        if let Err(err) = runtime.block_on(run_simulation(simulation.clone())) {
+            error!("failed simulating {} {} [attempt #{}]", name, err, attempt);
+        } else {
             info!("end simulating {} [attempt #{}]", name, attempt);
             return Ok(());
-        } else {
-            error!("failed simulating {} [attempt #{}]", name, attempt);
         }
     }
     anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
