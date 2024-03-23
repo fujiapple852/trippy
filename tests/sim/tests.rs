@@ -41,6 +41,7 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_icmp_min.yaml"))]
 #[test_case(sim!("ipv4_icmp_pattern.yaml"))]
 #[test_case(sim!("ipv4_icmp_quick.yaml"))]
+#[test_case(sim!("ipv4_icmp_wrap.yaml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_src.yaml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_dest.yaml"))]
 #[test_case(sim!("ipv4_udp_paris_fixed_both.yaml"))]
