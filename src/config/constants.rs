@@ -13,6 +13,9 @@ pub const MAX_HOPS: usize = u8::MAX as usize;
 /// The default value for `mode`.
 pub const DEFAULT_MODE: Mode = Mode::Tui;
 
+/// The default value for `unsafe-assume-privileged`.
+pub const DEFAULT_UNSAFE_ASSUME_PRIVILEGED: bool = false;
+
 /// The default value for `all_resolved_ips`.
 pub const DEFAULT_DNS_RESOLVE_ALL: bool = false;
 

@@ -364,6 +364,12 @@ impl TrippyConfig {
             cfg_file_trace.unprivileged,
             defaults::DEFAULT_PRIVILEGE_MODE.is_unprivileged(),
         );
+        let unsafe_assume_privileged = cfg_layer_bool_flag(
+            args.unsafe_assume_privileged,
+            cfg_file_trace.unsafe_assume_privileged,
+            constants::DEFAULT_UNSAFE_ASSUME_PRIVILEGED,
+        );
+        let effective_has_privileges = has_privileges || unsafe_assume_privileged;
         let privilege_mode = if unprivileged {
             PrivilegeMode::Unprivileged
         } else {
@@ -646,7 +652,7 @@ impl TrippyConfig {
             Some(n) if n > 0 => Some(n),
             _ => None,
         };
-        validate_privilege(privilege_mode, has_privileges, needs_privileges)?;
+        validate_privilege(privilege_mode, effective_has_privileges, needs_privileges)?;
         validate_logging(mode, verbose)?;
         validate_strategy(multipath_strategy, unprivileged)?;
         validate_protocol_strategy(protocol, multipath_strategy)?;
@@ -1597,6 +1603,7 @@ mod tests {
     #[test_case("trip example.com --unprivileged", false, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "no privilege and not needs in unprivileged mode")]
     #[test_case("trip example.com --unprivileged", false, true, Err(anyhow!("unprivileged mode not supported on this platform\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs in unprivileged mode")]
     #[test_case("trip example.com --unprivileged", true, true, Err(anyhow!("unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "has privilege and needs in unprivileged mode")]
+    #[test_case("trip example.com --unsafe-assume-privileged", false, false, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "unsafe assume privileged")]
     fn test_privilege(
         cmd: &str,
         has_privileges: bool,

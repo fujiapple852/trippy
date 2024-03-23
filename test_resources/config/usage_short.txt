@@ -10,6 +10,7 @@ Options:
   -m, --mode <MODE>                                        Output mode [default: tui] [possible values: tui, stream, pretty, markdown, csv, json, dot,
                                                            flows, silent]
   -u, --unprivileged                                       Trace without requiring elevated privileges on supported platforms [default: false]
+      --unsafe-assume-privileged                           Assume elevated privileges [default: false]
   -p, --protocol <PROTOCOL>                                Tracing protocol [default: icmp] [possible values: icmp, udp, tcp]
       --udp                                                Trace using the UDP protocol
       --tcp                                                Trace using the TCP protocol

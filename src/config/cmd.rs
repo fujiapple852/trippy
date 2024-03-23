@@ -30,6 +30,10 @@ pub struct Args {
     #[arg(short = 'u', long)]
     pub unprivileged: bool,
 
+    /// Assume elevated privileges [default: false]
+    #[arg(long)]
+    pub unsafe_assume_privileged: bool,
+
     /// Tracing protocol [default: icmp]
     #[arg(value_enum, short = 'p', long)]
     pub protocol: Option<ProtocolConfig>,
