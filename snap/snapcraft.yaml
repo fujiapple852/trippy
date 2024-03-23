@@ -75,4 +75,5 @@ apps:
       - network-bind
       - network
       - network-observe
-      - home
+      - home:
+          read: all
