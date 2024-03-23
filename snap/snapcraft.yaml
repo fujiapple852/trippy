@@ -76,3 +76,4 @@ apps:
       - network
       - network-observe
       - home
+      - personal-files
