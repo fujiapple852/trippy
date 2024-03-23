@@ -16,7 +16,7 @@ pub const DEFAULT_MODE: Mode = Mode::Tui;
 /// The default value for `unsafe-assume-privileged`.
 pub const DEFAULT_UNSAFE_ASSUME_PRIVILEGED: bool = false;
 
-/// The default value for `all_resolved_ips`.
+/// The default value for `all-resolved-ips`.
 pub const DEFAULT_DNS_RESOLVE_ALL: bool = false;
 
 /// The default value for `log-format`.
@@ -58,7 +58,7 @@ pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 /// The default value for `tui-refresh-rate`.
 pub const DEFAULT_TUI_REFRESH_RATE: &str = "100ms";
 
-/// The default value for `tui_privacy_max_ttl`.
+/// The default value for `tui-privacy-max-ttl`.
 pub const DEFAULT_TUI_PRIVACY_MAX_TTL: u8 = 0;
 
 /// The default value for `dns-resolve-method`.
