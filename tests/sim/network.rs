@@ -1,5 +1,6 @@
 use crate::simulation::{Protocol, Response, Simulation, SingleHost};
 use crate::tun_device::TunDevice;
+use std::io;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -20,6 +21,8 @@ use trippy::tracing::packet::tcp::TcpPacket;
 use trippy::tracing::packet::udp::UdpPacket;
 use trippy::tracing::packet::IpProtocol;
 
+const READ_TIMEOUT: Duration = Duration::from_millis(10);
+
 pub async fn run(
     tun: Arc<Mutex<TunDevice>>,
     sim: Arc<Simulation>,
@@ -30,18 +33,19 @@ pub async fn run(
         let mut buf = [0_u8; 4096];
         let bytes_read = {
             let tun = tun.clone();
-            let mut tun = tun.lock().await;
             tokio::select!(
                 _ = token.cancelled() => {
                     handles.into_iter().for_each(|h| h.abort());
                     return Ok(())
                 },
-                bytes_read = tun.read(&mut buf) => {
+                bytes_read = read_with_timeout(&mut buf, tun) => {
                     bytes_read?
                 },
             )
         };
-
+        if bytes_read == 0 {
+            continue;
+        }
         let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
         if ipv4.get_version() != 4 {
             debug!("skipping ipv6 packet");
@@ -200,6 +204,15 @@ pub async fn run(
         };
         handles.push(handle);
     }
+}
+
+/// Read from the tun device with a timeout.
+///
+/// Note that the tun device is only locked for the timeout period
+async fn read_with_timeout(buf: &mut [u8], tun: Arc<Mutex<TunDevice>>) -> io::Result<usize> {
+    tokio::time::timeout(READ_TIMEOUT, tun.lock().await.read(buf))
+        .await
+        .unwrap_or(Ok(0))
 }
 
 fn make_time_exceeded_v4<'a>(
