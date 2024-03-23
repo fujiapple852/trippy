@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy::tracing::{
     defaults, Builder, CompletionReason, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, PrivilegeMode, ProbeState, Protocol, TimeToLive, TraceId, TracerRound,
+    PortDirection, PrivilegeMode, ProbeState, Protocol, Sequence, TimeToLive, TraceId, TracerRound,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -53,6 +53,11 @@ impl Tracer {
         let tracer_res = Builder::new(self.sim.target, |round| self.validate_round(round, &result))
             .privilege_mode(PrivilegeMode::from(self.sim.privilege_mode))
             .trace_identifier(TraceId(self.sim.icmp_identifier))
+            .initial_sequence(Sequence(
+                self.sim
+                    .initial_sequence
+                    .unwrap_or(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
+            ))
             .protocol(Protocol::from(self.sim.protocol))
             .port_direction(PortDirection::from(self.sim.port_direction))
             .multipath_strategy(MultipathStrategy::from(self.sim.multipath_strategy))
@@ -78,7 +83,12 @@ impl Tracer {
                 defaults::DEFAULT_STRATEGY_GRACE_DURATION,
                 Duration::from_millis,
             ))
-            .max_rounds(MaxRounds(NonZeroUsize::MIN))
+            .max_rounds(MaxRounds(
+                self.sim
+                    .rounds
+                    .and_then(NonZeroUsize::new)
+                    .unwrap_or(NonZeroUsize::MIN),
+            ))
             .start()
             .map_err(anyhow::Error::from);
         thread::sleep(CLEANUP_DELAY);
