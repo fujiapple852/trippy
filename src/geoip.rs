@@ -311,8 +311,8 @@ impl GeoIpLookup {
     /// If an entry is found it is cached and returned, otherwise None is returned.
     pub fn lookup(&self, addr: IpAddr) -> anyhow::Result<Option<Rc<GeoIpCity>>> {
         if let Some(reader) = &self.reader {
-            if let Some(geo) = self.cache.borrow().get(&addr).map(Clone::clone) {
-                return Ok(Some(geo));
+            if let Some(geo) = self.cache.borrow().get(&addr) {
+                return Ok(Some(geo.clone()));
             }
             let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
                 GeoIpCity::from(reader.lookup::<ipinfo::IpInfoGeoIp>(addr)?)

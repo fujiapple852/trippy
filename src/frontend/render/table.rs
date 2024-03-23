@@ -91,10 +91,7 @@ fn render_table_row(
     config: &TuiConfig,
     custom_columns: &Columns,
 ) -> Row<'static> {
-    let is_selected_hop = app
-        .selected_hop()
-        .map(|h| h.ttl() == hop.ttl())
-        .unwrap_or_default();
+    let is_selected_hop = app.selected_hop().is_some_and(|h| h.ttl() == hop.ttl());
     let is_in_round = app.tracer_data().is_in_round(hop, app.selected_flow);
     let (_, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
