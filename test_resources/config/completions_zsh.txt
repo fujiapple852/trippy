@@ -135,6 +135,7 @@ active\:"Display enter and exit event spans"
 full\:"Display all event spans"))' \
 '-u[Trace without requiring elevated privileges on supported platforms \[default\: false\]]' \
 '--unprivileged[Trace without requiring elevated privileges on supported platforms \[default\: false\]]' \
+'--unsafe-assume-privileged[Assume elevated privileges \[default\: false\]]' \
 '(-p --protocol --tcp --icmp)--udp[Trace using the UDP protocol]' \
 '(-p --protocol --udp --icmp)--tcp[Trace using the TCP protocol]' \
 '(-p --protocol --udp --tcp)--icmp[Trace using the ICMP protocol]' \

@@ -106,6 +106,7 @@ impl Default for ConfigFile {
 pub struct ConfigTrippy {
     pub mode: Option<Mode>,
     pub unprivileged: Option<bool>,
+    pub unsafe_assume_privileged: Option<bool>,
     pub log_format: Option<LogFormat>,
     pub log_filter: Option<String>,
     pub log_span_events: Option<LogSpanEvents>,
@@ -116,6 +117,7 @@ impl Default for ConfigTrippy {
         Self {
             mode: Some(super::constants::DEFAULT_MODE),
             unprivileged: Some(defaults::DEFAULT_PRIVILEGE_MODE.is_unprivileged()),
+            unsafe_assume_privileged: Some(super::constants::DEFAULT_UNSAFE_ASSUME_PRIVILEGED),
             log_format: Some(super::constants::DEFAULT_LOG_FORMAT),
             log_filter: Some(String::from(super::constants::DEFAULT_LOG_FILTER)),
             log_span_events: Some(super::constants::DEFAULT_LOG_SPAN_EVENTS),

@@ -85,6 +85,7 @@ Register-ArgumentCompleter -Native -CommandName 'trip' -ScriptBlock {
             [CompletionResult]::new('--log-span-events', 'log-span-events', [CompletionResultType]::ParameterName, 'The debug log format [default: off]')
             [CompletionResult]::new('-u', 'u', [CompletionResultType]::ParameterName, 'Trace without requiring elevated privileges on supported platforms [default: false]')
             [CompletionResult]::new('--unprivileged', 'unprivileged', [CompletionResultType]::ParameterName, 'Trace without requiring elevated privileges on supported platforms [default: false]')
+            [CompletionResult]::new('--unsafe-assume-privileged', 'unsafe-assume-privileged', [CompletionResultType]::ParameterName, 'Assume elevated privileges [default: false]')
             [CompletionResult]::new('--udp', 'udp', [CompletionResultType]::ParameterName, 'Trace using the UDP protocol')
             [CompletionResult]::new('--tcp', 'tcp', [CompletionResultType]::ParameterName, 'Trace using the TCP protocol')
             [CompletionResult]::new('--icmp', 'icmp', [CompletionResultType]::ParameterName, 'Trace using the ICMP protocol')
