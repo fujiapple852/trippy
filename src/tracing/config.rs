@@ -1,4 +1,4 @@
-use crate::tracing::constants::{MAX_SEQUENCE, MAX_TTL};
+use crate::tracing::constants::{MAX_INITIAL_SEQUENCE, MAX_TTL};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
     MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
@@ -605,9 +605,9 @@ impl Config {
                 "max_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
-        if initial_sequence > MAX_SEQUENCE {
+        if initial_sequence > MAX_INITIAL_SEQUENCE {
             return Err(TracerError::BadConfig(format!(
-                "initial_sequence ({initial_sequence}) > {MAX_SEQUENCE}"
+                "initial_sequence ({initial_sequence}) > {MAX_INITIAL_SEQUENCE}"
             )));
         }
         let max_rounds = match max_rounds {
