@@ -1,18 +1,26 @@
-FROM rust:1.74 as build-env
-RUN rustup target add x86_64-unknown-linux-musl
-WORKDIR /app
-COPY Cargo.toml /app
-COPY Cargo.lock /app
-RUN mkdir /app/src
-RUN echo "fn main() {}" > /app/src/main.rs
-RUN cargo build --release --target=x86_64-unknown-linux-musl
-COPY src /app/src
-COPY trippy-config-sample.toml /app
-COPY README.md /app
-COPY LICENSE /app
-RUN cargo build --release --target=x86_64-unknown-linux-musl
+FROM alpine:3.19.0 as build-env
 
-FROM alpine
-RUN apk update && apk add ncurses
-COPY --from=build-env /app/target/x86_64-unknown-linux-musl/release/trip /
-ENTRYPOINT [ "./trip" ]
+RUN apk add --no-cache \
+    curl=8.5.0-r0 \
+    build-base=0.5-r3 \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.19/main
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.70.0
+
+COPY Cargo* /home
+
+RUN mkdir /home/src && echo "fn main() {}" > /home/src/main.rs
+
+RUN source "$HOME/.cargo/env" && cd /home && cargo +1.70.0 build --release
+
+ADD ./ /home
+
+RUN source "$HOME/.cargo/env" && cd /home && cargo +1.70.0 build --release
+
+FROM scratch
+
+COPY --from=build-env /home/target/release/trip /
+
+COPY LICENSE /
+
+ENTRYPOINT ["./trip"]
