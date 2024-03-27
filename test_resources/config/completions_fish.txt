@@ -39,7 +39,6 @@ complete -c trip -l log-format -d 'The debug log format [default: pretty]' -r -f
 complete -c trip -l log-filter -d 'The debug log filter [default: trippy=debug]' -r
 complete -c trip -l log-span-events -d 'The debug log format [default: off]' -r -f -a "{off	'Do not display event spans',active	'Display enter and exit event spans',full	'Display all event spans'}"
 complete -c trip -s u -l unprivileged -d 'Trace without requiring elevated privileges on supported platforms [default: false]'
-complete -c trip -l unsafe-assume-privileged -d 'Assume elevated privileges [default: false]'
 complete -c trip -l udp -d 'Trace using the UDP protocol'
 complete -c trip -l tcp -d 'Trace using the TCP protocol'
 complete -c trip -l icmp -d 'Trace using the ICMP protocol'
