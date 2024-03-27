@@ -27,9 +27,6 @@ Options:
   -u, --unprivileged
           Trace without requiring elevated privileges on supported platforms [default: false]
 
-      --unsafe-assume-privileged
-          Assume elevated privileges [default: false]
-
   -p, --protocol <PROTOCOL>
           Tracing protocol [default: icmp]
 

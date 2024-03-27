@@ -82,7 +82,6 @@ set edit:completion:arg-completer[trip] = {|@words|
             cand --log-span-events 'The debug log format [default: off]'
             cand -u 'Trace without requiring elevated privileges on supported platforms [default: false]'
             cand --unprivileged 'Trace without requiring elevated privileges on supported platforms [default: false]'
-            cand --unsafe-assume-privileged 'Assume elevated privileges [default: false]'
             cand --udp 'Trace using the UDP protocol'
             cand --tcp 'Trace using the TCP protocol'
             cand --icmp 'Trace using the ICMP protocol'

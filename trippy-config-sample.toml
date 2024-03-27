@@ -44,16 +44,6 @@ mode = "tui"
 # Note: not supported on all platforms.
 unprivileged = false
 
-# Assume elevated privileges [default: false]
-#
-# This option can be helpful for execution environments which use non-standard
-# techniques to allow unprivileged processes to create raw sockets which cannot
-# be detected automatically.
-#
-# Warning: setting this option to true will bypass platform specifc checks for
-# elevated privileges and as a result ungraceful runtime failures may occur.
-unsafe-assume-privileged = false
-
 # How to format log data.
 #
 # Allowed values are:
