@@ -1253,7 +1253,73 @@ mod tests {
         assert_eq!(None, extensions);
         Ok(())
     }
-    
+
+    // Here we receive a TimeExceeded in UDP/Dublin mode and so extract the
+    // sequence from the length of the UDP payload, after subtracting the
+    // length of the magic prefix "trippy" (11 - 6 == 5).
+    //
+    // Note we do not know if we are in UDP/Dublin mode when decoding the
+    // packet and so the decision to reject the probe response is left to
+    // the `tracer::Tracer::validate(..)` function.
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_udp_dublin_with_magic() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 23 6f 00 00 00 00 60 0e 0e 00 00 13 11 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 20 00 00 00 00 00 00 20 0e
+            80 e8 13 88 00 13 9a 42 74 72 69 70 70 79 00 00
+            00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                        payload_len,
+                        has_magic,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(0, identifier);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:820::200e").unwrap()),
+            dest_addr
+        );
+        assert_eq!(33000, src_port);
+        assert_eq!(5000, dest_port);
+        assert_eq!(39490, checksum);
+        assert_eq!(5, payload_len);
+        assert!(has_magic);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
     #[test]
     fn test_recv_icmp_probe_time_exceeded_tcp_no_extensions() -> anyhow::Result<()> {
         let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
