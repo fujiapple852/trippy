@@ -585,20 +585,11 @@ impl TrippyConfig {
             (true, _, _, _) => IpAddrFamily::Ipv4Only,
             (_, true, _, _) => IpAddrFamily::Ipv6Only,
         };
-
-        #[allow(clippy::match_same_arms)]
-        let multipath_strategy = match (multipath_strategy_cfg, addr_family) {
-            (MultipathStrategyConfig::Classic, _) => Ok(MultipathStrategy::Classic),
-            (MultipathStrategyConfig::Paris, _) => Ok(MultipathStrategy::Paris),
-            (
-                MultipathStrategyConfig::Dublin,
-                IpAddrFamily::Ipv4Only | IpAddrFamily::Ipv4thenIpv6 | IpAddrFamily::Ipv6thenIpv4,
-            ) => Ok(MultipathStrategy::Dublin),
-            (MultipathStrategyConfig::Dublin, IpAddrFamily::Ipv6Only) => Err(anyhow!(
-                "Dublin multipath strategy not implemented for IPv6 yet!"
-            )),
-        }?;
-
+        let multipath_strategy = match multipath_strategy_cfg {
+            MultipathStrategyConfig::Classic => MultipathStrategy::Classic,
+            MultipathStrategyConfig::Paris => MultipathStrategy::Paris,
+            MultipathStrategyConfig::Dublin => MultipathStrategy::Dublin,
+        };
         let port_direction = match (protocol, source_port, target_port, multipath_strategy_cfg) {
             (Protocol::Icmp, _, _, _) => PortDirection::None,
             (Protocol::Udp, None, None, _) => PortDirection::new_fixed_src(pid.max(1024)),

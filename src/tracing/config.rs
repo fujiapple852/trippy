@@ -1,4 +1,4 @@
-use crate::tracing::constants::{MAX_SEQUENCE, MAX_TTL};
+use crate::tracing::constants::{MAX_INITIAL_SEQUENCE, MAX_TTL};
 use crate::tracing::error::{TraceResult, TracerError};
 use crate::tracing::types::{
     MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Sequence, TimeToLive, TraceId,
@@ -360,6 +360,7 @@ pub struct ChannelConfig {
     pub target_addr: IpAddr,
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
+    pub initial_sequence: Sequence,
     pub tos: TypeOfService,
     pub icmp_extension_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
@@ -376,6 +377,7 @@ impl ChannelConfig {
         target_addr: IpAddr,
         packet_size: u16,
         payload_pattern: u8,
+        initial_sequence: u16,
         tos: u8,
         icmp_extension_mode: IcmpExtensionParseMode,
         read_timeout: Duration,
@@ -388,6 +390,7 @@ impl ChannelConfig {
             target_addr,
             packet_size: PacketSize(packet_size),
             payload_pattern: PayloadPattern(payload_pattern),
+            initial_sequence: Sequence(initial_sequence),
             tos: TypeOfService(tos),
             icmp_extension_mode,
             read_timeout,
@@ -405,6 +408,7 @@ impl Default for ChannelConfig {
             target_addr: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             packet_size: PacketSize(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
             payload_pattern: PayloadPattern(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
+            initial_sequence: Sequence(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
             tos: TypeOfService(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extension_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
@@ -605,9 +609,9 @@ impl Config {
                 "max_ttl ({first_ttl}) > {MAX_TTL}"
             )));
         }
-        if initial_sequence > MAX_SEQUENCE {
+        if initial_sequence > MAX_INITIAL_SEQUENCE {
             return Err(TracerError::BadConfig(format!(
-                "initial_sequence ({initial_sequence}) > {MAX_SEQUENCE}"
+                "initial_sequence ({initial_sequence}) > {MAX_INITIAL_SEQUENCE}"
             )));
         }
         let max_rounds = match max_rounds {

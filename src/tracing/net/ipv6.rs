@@ -44,6 +44,9 @@ const MIN_PACKET_SIZE_ICMP: usize =
 const MIN_PACKET_SIZE_UDP: usize =
     Ipv6Packet::minimum_packet_size() + UdpPacket::minimum_packet_size();
 
+/// Magic prefix for IPv6/UDP/Dublin payloads.
+const MAGIC: &[u8] = b"trippy";
+
 #[instrument(skip(icmp_send_socket, probe))]
 pub fn dispatch_icmp_probe<S: Socket>(
     icmp_send_socket: &mut S,
@@ -73,6 +76,7 @@ pub fn dispatch_icmp_probe<S: Socket>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(skip(raw_send_socket, probe))]
 pub fn dispatch_udp_probe<S: Socket>(
     raw_send_socket: &mut S,
@@ -82,6 +86,7 @@ pub fn dispatch_udp_probe<S: Socket>(
     privilege_mode: PrivilegeMode,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
+    initial_sequence: Sequence,
 ) -> TraceResult<()> {
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
@@ -90,9 +95,15 @@ pub fn dispatch_udp_probe<S: Socket>(
     let payload_size = udp_payload_size(packet_size);
     let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
     match privilege_mode {
-        PrivilegeMode::Privileged => {
-            dispatch_udp_probe_raw(raw_send_socket, probe, src_addr, dest_addr, payload)
-        }
+        PrivilegeMode::Privileged => dispatch_udp_probe_raw(
+            raw_send_socket,
+            probe,
+            src_addr,
+            dest_addr,
+            payload,
+            payload_pattern,
+            initial_sequence,
+        ),
         PrivilegeMode::Unprivileged => {
             dispatch_udp_probe_non_raw::<S>(probe, src_addr, dest_addr, payload)
         }
@@ -106,11 +117,18 @@ fn dispatch_udp_probe_raw<S: Socket>(
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
     payload: &[u8],
+    payload_pattern: PayloadPattern,
+    initial_sequence: Sequence,
 ) -> TraceResult<()> {
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+    let mut dublin_payload = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
     let payload_paris = probe.sequence.0.to_be_bytes();
     let payload = if probe.flags.contains(Flags::PARIS_CHECKSUM) {
         payload_paris.as_slice()
+    } else if probe.flags.contains(Flags::DUBLIN_IPV6_PAYLOAD_LENGTH) {
+        let payload_len = probe.sequence.0 - initial_sequence.0;
+        dublin_payload[..MAGIC.len()].copy_from_slice(MAGIC);
+        &dublin_payload[..usize::from(payload_len) + MAGIC.len()]
     } else {
         payload
     };
@@ -371,13 +389,21 @@ fn extract_probe_resp_seq(
             )))
         }
         (Protocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port, checksum) = extract_udp_packet(ipv6)?;
+            let (src_port, dest_port, checksum, udp_payload_len) = extract_udp_packet(ipv6)?;
+            let has_magic = udp_payload_has_magic_prefix(ipv6)?;
+            let payload_len = if has_magic {
+                udp_payload_len - MAGIC.len() as u16
+            } else {
+                udp_payload_len
+            };
             Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 0,
                 IpAddr::V6(ipv6.get_destination_address()),
                 src_port,
                 dest_port,
                 checksum,
+                payload_len,
+                has_magic,
             )))
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
@@ -400,12 +426,13 @@ fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     ))
 }
 
-fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
+fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
     let udp_packet = UdpPacket::new_view(ipv6.payload())?;
     Ok((
         udp_packet.get_source(),
         udp_packet.get_destination(),
         udp_packet.get_checksum(),
+        udp_packet.get_length() - UdpPacket::minimum_packet_size() as u16,
     ))
 }
 
@@ -431,6 +458,11 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16)> {
 fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     let tcp_packet = TcpPacket::new_view(ipv6.payload())?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
+}
+
+fn udp_payload_has_magic_prefix(ipv6: &Ipv6Packet<'_>) -> TraceResult<bool> {
+    let udp_packet = UdpPacket::new_view(ipv6.payload())?;
+    Ok(udp_packet.payload().starts_with(MAGIC))
 }
 
 #[cfg(test)]
@@ -574,6 +606,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(48);
         let payload_pattern = PayloadPattern(0x00);
+        let initial_sequence = Sequence(33000);
         let expected_send_to_buf = hex_literal::hex!("00 7b 01 c8 00 08 7a ed");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
 
@@ -600,6 +633,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )?;
         Ok(())
     }
@@ -612,6 +646,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(56);
         let payload_pattern = PayloadPattern(0xaa);
+        let initial_sequence = Sequence(33000);
         let expected_send_to_buf = hex_literal::hex!(
             "
             00 7b 01 c8 00 10 d0 32 aa aa aa aa aa aa aa aa
@@ -642,6 +677,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )?;
         Ok(())
     }
@@ -659,6 +695,7 @@ mod tests {
         // fixed two byte payload is used to hold the sequence
         let packet_size = PacketSize(300);
         let payload_pattern = PayloadPattern(0xaa);
+        let initial_sequence = Sequence(33000);
         let expected_send_to_buf = hex_literal::hex!(
             "
             00 7b 01 c8 00 0a 80 e8 fa 00
@@ -689,6 +726,62 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
+        )?;
+        Ok(())
+    }
+
+    // Here we send probe 33007 (the 8th probe when starting from 33000) and
+    // so the payload will be 13 octets in length (7 + 6 for the magic prefix
+    // "trippy").
+    #[test]
+    fn test_dispatch_udp_probe_dublin_privileged() -> anyhow::Result<()> {
+        let probe = Probe {
+            flags: Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
+            sequence: Sequence(33007),
+            identifier: TraceId(33007),
+            ..make_udp_probe(123, 456)
+        };
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
+        let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        // packet size and payload pattern are ignored for ipv6/udp/dublin mode.
+        let packet_size = PacketSize(300);
+        let payload_pattern = PayloadPattern(0xaa);
+        let initial_sequence = Sequence(33000);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            00 7b 01 c8 00 15 82 76
+            74 72 69 70 70 79 aa aa
+            aa aa aa aa aa
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mocket
+            .expect_set_unicast_hops_v6()
+            .times(1)
+            .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+
+        dispatch_udp_probe(
+            &mut mocket,
+            probe,
+            src_addr,
+            dest_addr,
+            privilege_mode,
+            packet_size,
+            payload_pattern,
+            initial_sequence,
         )?;
         Ok(())
     }
@@ -702,6 +795,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(48);
         let payload_pattern = PayloadPattern(0x00);
+        let initial_sequence = Sequence(33000);
         let expected_send_to_buf = hex_literal::hex!("");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V6(src_addr), 123);
@@ -744,6 +838,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )?;
         Ok(())
     }
@@ -757,6 +852,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(56);
         let payload_pattern = PayloadPattern(0x1f);
+        let initial_sequence = Sequence(33000);
         let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V6(src_addr), 123);
@@ -799,6 +895,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )?;
         Ok(())
     }
@@ -811,6 +908,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(47);
         let payload_pattern = PayloadPattern(0x00);
+        let initial_sequence = Sequence(33000);
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
             &mut mocket,
@@ -820,6 +918,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )
         .unwrap_err();
         assert!(matches!(err, TracerError::InvalidPacketSize(_)));
@@ -834,6 +933,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
+        let initial_sequence = Sequence(33000);
         let mut mocket = MockSocket::new();
         let err = dispatch_udp_probe(
             &mut mocket,
@@ -843,6 +943,7 @@ mod tests {
             privilege_mode,
             packet_size,
             payload_pattern,
+            initial_sequence,
         )
         .unwrap_err();
         assert!(matches!(err, TracerError::InvalidPacketSize(_)));
@@ -1068,6 +1169,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1085,6 +1188,8 @@ mod tests {
         assert_eq!(22694, src_port);
         assert_eq!(33029, dest_port);
         assert_eq!(53489, checksum);
+        assert_eq!(36, payload_len);
+        assert!(!has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1124,6 +1229,8 @@ mod tests {
                         src_port,
                         dest_port,
                         checksum,
+                        payload_len,
+                        has_magic,
                     }),
                 ..
             },
@@ -1141,6 +1248,74 @@ mod tests {
         assert_eq!(26477, src_port);
         assert_eq!(33118, dest_port);
         assert_eq!(37906, checksum);
+        assert_eq!(36, payload_len);
+        assert!(!has_magic);
+        assert_eq!(None, extensions);
+        Ok(())
+    }
+
+    // Here we receive a TimeExceeded in UDP/Dublin mode and so extract the
+    // sequence from the length of the UDP payload, after subtracting the
+    // length of the magic prefix "trippy" (11 - 6 == 5).
+    //
+    // Note we do not know if we are in UDP/Dublin mode when decoding the
+    // packet and so the decision to reject the probe response is left to
+    // the `tracer::Tracer::validate(..)` function.
+    #[test]
+    fn test_recv_icmp_probe_time_exceeded_udp_dublin_with_magic() -> anyhow::Result<()> {
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let expected_recv_from_buf = hex_literal::hex!(
+            "
+            03 00 23 6f 00 00 00 00 60 0e 0e 00 00 13 11 01
+            fd 7a 11 5c a1 e0 ab 12 48 43 cd 96 62 63 08 2a
+            2a 00 14 50 40 09 08 20 00 00 00 00 00 00 20 0e
+            80 e8 13 88 00 13 9a 42 74 72 69 70 70 79 00 00
+            00 00 00
+           "
+        );
+        let expected_recv_from_addr = SocketAddr::new(recv_from_addr, 0);
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_recv_from()
+            .times(1)
+            .returning(mocket_recv_from!(
+                expected_recv_from_buf,
+                expected_recv_from_addr
+            ));
+        let resp =
+            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+
+        let ProbeResponse::TimeExceeded(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        checksum,
+                        payload_len,
+                        has_magic,
+                    }),
+                ..
+            },
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(recv_from_addr, addr);
+        assert_eq!(0, identifier);
+        assert_eq!(
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:820::200e").unwrap()),
+            dest_addr
+        );
+        assert_eq!(33000, src_port);
+        assert_eq!(5000, dest_port);
+        assert_eq!(39490, checksum);
+        assert_eq!(5, payload_len);
+        assert!(has_magic);
         assert_eq!(None, extensions);
         Ok(())
     }

@@ -267,9 +267,18 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 dest_addr,
                 src_port,
                 dest_port,
+                has_magic,
                 ..
-            })
-            | ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+            }) => {
+                let check_ports = validate_ports(self.config.port_direction, src_port, dest_port);
+                let check_dest_addr = self.config.target_addr == dest_addr;
+                let check_magic = match (self.config.multipath_strategy, self.config.target_addr) {
+                    (MultipathStrategy::Dublin, IpAddr::V6(_)) => has_magic,
+                    _ => true,
+                };
+                check_dest_addr && check_ports && check_magic
+            }
+            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -300,13 +309,21 @@ impl<F: Fn(&TracerRound<'_>)> Tracer<F> {
                 src_port,
                 dest_port,
                 checksum,
+                payload_len,
                 ..
             }) => {
-                let sequence = match (self.config.multipath_strategy, self.config.port_direction) {
-                    (MultipathStrategy::Classic, PortDirection::FixedDest(_)) => src_port,
-                    (MultipathStrategy::Classic, _) => dest_port,
-                    (MultipathStrategy::Paris, _) => checksum,
-                    (MultipathStrategy::Dublin, _) => identifier,
+                let sequence = match (
+                    self.config.multipath_strategy,
+                    self.config.port_direction,
+                    self.config.target_addr,
+                ) {
+                    (MultipathStrategy::Classic, PortDirection::FixedDest(_), _) => src_port,
+                    (MultipathStrategy::Classic, _, _) => dest_port,
+                    (MultipathStrategy::Paris, _, _) => checksum,
+                    (MultipathStrategy::Dublin, _, IpAddr::V4(_)) => identifier,
+                    (MultipathStrategy::Dublin, _, IpAddr::V6(_)) => {
+                        self.config.initial_sequence.0 + payload_len
+                    }
                 };
                 (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
             }
@@ -663,19 +680,19 @@ mod state {
                             Port(src_port.0),
                             Port(round_port),
                             TraceId(self.sequence.0),
-                            Flags::empty(),
+                            Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
                         ),
                         PortDirection::FixedDest(dest_port) => (
                             Port(round_port),
                             Port(dest_port.0),
                             TraceId(self.sequence.0),
-                            Flags::empty(),
+                            Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
                         ),
                         PortDirection::FixedBoth(src_port, dest_port) => (
                             Port(src_port.0),
                             Port(dest_port.0),
                             TraceId(self.sequence.0),
-                            Flags::empty(),
+                            Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
                         ),
                         PortDirection::None => unimplemented!(),
                     }
@@ -850,7 +867,7 @@ mod state {
         /// wrapping during a round, which is more problematic.
         #[instrument(skip(self))]
         pub fn advance_round(&mut self, first_ttl: TimeToLive) {
-            if self.sequence >= MAX_SEQUENCE {
+            if self.sequence >= self.max_sequence() {
                 self.sequence = self.config.initial_sequence;
             }
             self.target_found = false;
@@ -860,6 +877,25 @@ mod state {
             self.max_received_ttl = None;
             self.round += Round(1);
             self.ttl = first_ttl;
+        }
+
+        /// The maximum sequence number allowed.
+        ///
+        /// The Dublin multipath strategy for IPv6/udp encodes the sequence
+        /// number as the payload length and consequently the maximum sequence
+        /// number must be no larger than the maximum IPv6/udp payload size.
+        ///
+        /// It is also required that the range of possible sequence numbers is
+        /// _at least_ `BUFFER_SIZE` to ensure delayed responses from a prior
+        /// round are not incorrectly associated with later rounds (see
+        /// `in_round` function).
+        fn max_sequence(&self) -> Sequence {
+            match (self.config.multipath_strategy, self.config.target_addr) {
+                (MultipathStrategy::Dublin, IpAddr::V6(_)) => {
+                    self.config.initial_sequence + Sequence(BUFFER_SIZE)
+                }
+                _ => MAX_SEQUENCE,
+            }
         }
     }
 

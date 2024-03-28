@@ -13,4 +13,4 @@ pub const MAX_SEQUENCE_PER_ROUND: u16 = 512;
 /// This ensures that there are sufficient sequence numbers available for at least _two_ rounds.  We
 /// require two rounds to ensure that delayed probe responses from the immediate prior round can be
 /// detected and excluded.
-pub const MAX_SEQUENCE: u16 = u16::MAX - (MAX_SEQUENCE_PER_ROUND * 2);
+pub const MAX_INITIAL_SEQUENCE: u16 = u16::MAX - (MAX_SEQUENCE_PER_ROUND * 2);
