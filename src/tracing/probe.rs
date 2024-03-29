@@ -209,9 +209,12 @@ pub enum ProbeResponseSeq {
     Tcp(ProbeResponseSeqTcp),
 }
 
+/// The data in the response to an ICMP probe.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqIcmp {
+    /// The ICMP identifier.
     pub identifier: u16,
+    /// The ICMP sequence number.
     pub sequence: u16,
 }
 
@@ -224,14 +227,39 @@ impl ProbeResponseSeqIcmp {
     }
 }
 
+/// The data in the response to a UDP probe.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqUdp {
+    /// The IPv4 identifier.
+    ///
+    /// This will be the sequence number for IPv4/Dublin.
     pub identifier: u16,
+    /// The destination IP address.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub dest_addr: IpAddr,
+    /// The source port.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub src_port: u16,
+    /// The destination port.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub dest_port: u16,
+    /// The UDP checksum.
+    ///
+    /// This will contain the sequence number for IPv4 and IPv6 Paris.
     pub checksum: u16,
+    /// The length of the UDP payload.
+    ///
+    /// This payload length will be the sequence number (offset from the
+    /// initial sequence number) for IPv6 Dublin.  Note that this length
+    /// does not include the length of the MAGIC payload prefix.
     pub payload_len: u16,
+    /// Whether the response had the MAGIC payload prefix.
+    ///
+    /// This will be true for IPv6 Dublin for probe responses which
+    /// originated from the tracer and is used to validate the probe response.
     pub has_magic: bool,
 }
 
@@ -257,10 +285,20 @@ impl ProbeResponseSeqUdp {
     }
 }
 
+/// The data in the response to an TCP probe.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqTcp {
+    /// The destination IP address.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub dest_addr: IpAddr,
+    /// The source port.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub src_port: u16,
+    /// The destination port.
+    ///
+    /// This is used to validate the probe response matches the expected values.
     pub dest_port: u16,
 }
 
