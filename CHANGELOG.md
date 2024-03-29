@@ -11,6 +11,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added support for calculating and displaying jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
 - Added support for customizing columns ([#757](https://github.com/fujiapple852/trippy/issues/757))
+- Added support for reordering and toggling column
+  visibility in Tui ([#1026](https://github.com/fujiapple852/trippy/issues/1026))
+- Added support for [dublin](https://github.com/insomniacslk/dublin-traceroute) ECMP routing
+  for `IPv6/udp` ([#272](https://github.com/fujiapple852/trippy/issues/272))
 - Added support for [IPinfo](https://ipinfo.io) flavoured `mmdb`
   files ([#862](https://github.com/fujiapple852/trippy/issues/862))
 - Added support for `IPv4->IPv6` and `IPv6->IPv4` DNS fallback
@@ -29,6 +33,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Restrict flows to `paris` and `dublin` ECMP strategies ([#1007](https://github.com/fujiapple852/trippy/issues/1007))
 - Improved Tui table column layout logic ([#925](https://github.com/fujiapple852/trippy/issues/925))
 - Use exclusive reference `&mut` for all Socket operations ([#843](https://github.com/fujiapple852/trippy/issues/843))
+- Reduced maximum sequence per round from 1024 to 512 ([#1067](https://github.com/fujiapple852/trippy/issues/1067))
 
 ### Fixed
 
