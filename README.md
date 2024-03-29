@@ -461,12 +461,12 @@ Options:
           Possible values:
           - tui:      Display interactive TUI
           - stream:   Display a continuous stream of tracing data
-          - pretty:   Generate an pretty text table report for N cycles
-          - markdown: Generate a markdown text table report for N cycles
+          - pretty:   Generate a pretty text table report for N cycles
+          - markdown: Generate a Markdown text table report for N cycles
           - csv:      Generate a CSV report for N cycles
           - json:     Generate a JSON report for N cycles
           - dot:      Generate a Graphviz DOT file for N cycles
-          - flows:    Display all flows
+          - flows:    Display all flows for N cycles
           - silent:   Do not generate any tracing output for N cycles
 
   -u, --unprivileged
@@ -489,6 +489,15 @@ Options:
 
       --icmp
           Trace using the ICMP protocol
+
+  -F, --addr-family <ADDR_FAMILY>
+          The address family [default: Ipv4thenIpv6]
+
+          Possible values:
+          - ipv4:           Ipv4 only
+          - ipv6:           Ipv6 only
+          - ipv6-then-ipv4: Ipv6 with a fallback to Ipv4
+          - ipv4-then-ipv6: Ipv4 with a fallback to Ipv6
 
   -4, --ipv4
           Use IPv4 only
@@ -596,6 +605,10 @@ Options:
           - allocated:    Display the allocated date
           - name:         Display the AS name
 
+      --tui-custom-columns <TUI_CUSTOM_COLUMNS>
+          Custom columns to be displayed in the TUI hops table [default:
+          holsravbwdt]
+
       --tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>
           How to render ICMP extensions [default: off]
 
@@ -648,7 +661,7 @@ Options:
           The number of report cycles to run [default: 10]
 
   -G, --geoip-mmdb-file <GEOIP_MMDB_FILE>
-          The MaxMind City GeoLite2 mmdb file
+          The supported MaxMind or IPinfo GeoIp mmdb file
 
       --generate <GENERATE>
           Generate shell completion
