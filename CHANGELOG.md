@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.10.0] - 2024-03-31
+
+### Added
+
 - Added support for calculating and displaying jitter ([#39](https://github.com/fujiapple852/trippy/issues/39))
 - Added support for customizing columns ([#757](https://github.com/fujiapple852/trippy/issues/757))
 - Added support for reordering and toggling column
@@ -318,7 +326,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.9.0...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.10.0...master
+
+[0.10.0]: https://github.com/fujiapple852/trippy/compare/0.9.0...0.10.0
 
 [0.9.0]: https://github.com/fujiapple852/trippy/compare/0.8.0...0.9.0
 
