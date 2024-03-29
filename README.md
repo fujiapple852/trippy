@@ -340,6 +340,12 @@ Trace using `IPv6`:
 trip example.com -6
 ```
 
+Trace using `ipv4-then-ipv6` fallback (or `ipv6-then-ipv4` or `ipv4` or `ipv6`):
+
+```shell
+trip example.com --addr-family ipv4-then-ipv6
+```
+
 Generate a `json` (or `csv`, `pretty`, `markdown`) tracing report with 5 rounds of data:
 
 ```shell
@@ -387,6 +393,12 @@ Hide the IP address, hostname and GeoIp for the first two hops:
 
 ```shell
 trip example.com --tui-privacy-max-ttl 2
+```
+
+Customize Tui columns (see [Column Reference](#column-reference)):
+
+```shell
+trip example.com --tui-custom-columns holsravbwdt
 ```
 
 Customize the color theme:
