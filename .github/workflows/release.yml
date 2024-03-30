@@ -36,6 +36,7 @@ jobs:
       CARGO: cargo
       TARGET_FLAGS: ""
       TARGET_DIR: ./target
+      CROSS_NO_WARNINGS: 0
       RUST_BACKTRACE: 1
     strategy:
       matrix:
