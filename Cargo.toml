@@ -1,6 +1,6 @@
 [package]
 name = "trippy"
-version = "0.10.0-dev"
+version = "0.10.0"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 description = "A network diagnostic tool"
 documentation = "https://github.com/fujiapple852/trippy"
