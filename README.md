@@ -53,12 +53,13 @@ issues.
 - Unprivileged mode
 - Tui interface:
     - Trace multiple targets simultaneously from a single instance of Trippy
-    - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev & status)
+    - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev, jitter & status)
     - Per hop round-trip-time (RTT) history and frequency distributing charts
     - Interactive chart of RTT for all hops in a trace with zooming capability
     - Interactive GeoIp world map
     - Isolate and filter by individual tracing flows
     - Customizable color theme & key bindings
+    - Customizable column order and visibility
     - Configuration via both command line arguments and a configuration file
     - Show multiple hosts per hop with ability to cap display to N hosts and show frequency %
     - Show hop details and navigate hosts within each hop
@@ -70,7 +71,8 @@ issues.
     - Lazy reverse DNS queries
     - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
 - GeoIp:
-    - Lookup and display GeoIp information from local `mmdb` files
+    - Lookup and display GeoIp information from local [MaxMind](https://www.maxmind.com)
+      and [IPinfo](https://ipinfo.io) `mmdb` files
 - Generate tracing reports:
     - `json`, `csv` & tabular (pretty-printed and markdown)
     - Tracing `flows` report
