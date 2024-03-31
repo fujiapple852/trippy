@@ -53,6 +53,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed tracer not discarding unrelated `icmp` packets for `udp` and `tcp`
   protocols ([#982](https://github.com/fujiapple852/trippy/issues/982))
 - Fixed incorrect minimum packet size for `IPv6` ([#985](https://github.com/fujiapple852/trippy/issues/985))
+- Fixed permission denied error reading configuration file from snap
+  installation ([#1058](https://github.com/fujiapple852/trippy/issues/1058))
 
 ## [0.9.0] - 2023-11-30
 
