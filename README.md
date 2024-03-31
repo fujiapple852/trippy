@@ -107,7 +107,7 @@ documentation:
 [![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.10.0)
 
 ```shell
-cargo install trippy
+cargo install trippy --locked
 ```
 
 ### Snap (Linux)
