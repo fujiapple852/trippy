@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+.PHONY: override_dh_strip vendor
+
+%:
+	dh $@
+
+vendor:
+	-[ -d vendor ] && rm -rf vendor
+	cargo vendor
+	tar cJf debian/vendor.tar.xz vendor
+
+override_dh_auto_build:
+	mkdir .cargo
+	cp debian/cargo.config .cargo/config
+	tar xJf debian/vendor.tar.xz
+	cargo build --release --frozen
+
+override_dh_auto_clean:
+	cargo clean
+	rm -rf .cargo vendor
+
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym

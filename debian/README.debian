@@ -1,0 +1,65 @@
+Trippy packaging for Debian and Ubuntu
+======================================
+
+TL;DR: to generate your own debian package with your own Rust toolchain,
+the vendored dependencies need to be generated first with:
+    ./debian/rules vendor
+then you can simply run:
+    debuild --prepend-path ~/.cargo/bin -sa
+as long as the original Trippy source archive
+`trippy_<version>.orig.tar.gz` exists in the parent directory.
+
+---
+
+The debian directory contains the necessary files to generate a debian
+package. In order for the package to be built without network access
+(a requirement for most automatic build systems, such as Debian's
+and Canonical's), we cannot rely on the Cargo automatic dependencies
+resolution.
+
+Instead, the `vendor` rule uses [`cargo vendor`] [1] to "vendor" all
+crates.io dependencies for the project into a `debian/vendor.tar.xz`
+tarball. This tarball contains all remote sources from dependencies that
+are specified in the Cargo manifest. It is automatically extracted during
+the build, which uses the [`--frozen`] [2] option to prevent Cargo from
+attempting to access the network. Once this tarball is generated you
+only need to use `vendor` rule again if you want to refresh the sources
+of the dependencies.
+
+---
+
+The creation and administration of a Personal Package Archive (PPA)
+is beyond the scope of this doc, but if you need to host Trippy in your
+PPA, you simply need to run:
+    debuild --prepend-path ~/.cargo/bin -S -sa
+followed by:
+    dput <your ppa> ../<source_package_name>.changes
+
+The provided `debian` directory targets the Ubuntu Jammy 22.04 LTS
+distribution. It is possible to target other distributions simply
+by editing the `debian/changelog` file and changing the version and
+distribution fields:
+    trippy (0.10.0-1ubuntu0.1~jammy1) jammy; urgency=medium
+    trippy (0.10.0-1ubuntu0.1~mantis1) mantis; urgency=medium
+    trippy (0.10.0-1ubuntu0.1~noble1) noble; urgency=medium
+It is preferable to use `debchange` for this, eg:
+    debchange --distribution noble --newversion 0.10.0-1ubuntu0.1~noble1
+
+---
+
+NOTES:
+- all `commands` are relative to the Trippy source directory.
+- the tarball is compressed with xz as per the [blog post] [3] I used
+as a reference.
+
+TODOS:
+- remove Windows-specific dependencies from the vendored dependencies, see
+[Cargo issue #11929] [4]
+- move the vendor tarball outside of the debian directory, but this can
+only be done once it's been relieved of the Windows-specific dependencies.
+
+REFERENCES:
+[1]: https://doc.rust-lang.org/cargo/commands/cargo-vendor.html
+[2]: https://doc.rust-lang.org/cargo/commands/cargo.html?highlight=frozen#manifest-options
+[3]: https://blog.zhimingwang.org/packaging-rust-project-for-ubuntu-ppa "Packaging a Rust project for Ubuntu PPA"
+[4]: https://github.com/rust-lang/cargo/issues/11929
