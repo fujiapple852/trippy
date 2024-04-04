@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
+
 ### Changed
 
 ### Fixed
