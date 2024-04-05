@@ -455,6 +455,12 @@ Generate `bash` shell completions (or `fish`, `powershell`, `zsh`, `elvish`):
 trip --generate bash
 ```
 
+Generate `ROFF` man page:
+
+```shell
+trip --generate-man
+```
+
 Run in `silent` tracing mode and output `compact` trace logging with `full` span events:
 
 ```shell
@@ -691,6 +697,9 @@ Options:
           Generate shell completion
 
           [possible values: bash, elvish, fish, powershell, zsh]
+
+      --generate-man
+          Generate ROFF man page
 
       --print-config-template
           Print a template toml config file and exit
