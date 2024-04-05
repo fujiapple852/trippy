@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
+- Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
+  page ([#85](https://github.com/fujiapple852/trippy/issues/85))
 
 ### Changed
 
