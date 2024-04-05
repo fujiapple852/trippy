@@ -151,6 +151,7 @@ full\:"Display all event spans"))' \
 '--tui-preserve-screen[Preserve the screen on exit \[default\: false\]]' \
 '--print-tui-theme-items[Print all TUI theme items and exit]' \
 '--print-tui-binding-commands[Print all TUI commands that can be bound and exit]' \
+'--generate-man[Generate ROFF man page]' \
 '--print-config-template[Print a template toml config file and exit]' \
 '-v[Enable verbose debug logging]' \
 '--verbose[Enable verbose debug logging]' \

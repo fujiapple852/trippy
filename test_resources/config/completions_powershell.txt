@@ -101,6 +101,7 @@ Register-ArgumentCompleter -Native -CommandName 'trip' -ScriptBlock {
             [CompletionResult]::new('--tui-preserve-screen', 'tui-preserve-screen', [CompletionResultType]::ParameterName, 'Preserve the screen on exit [default: false]')
             [CompletionResult]::new('--print-tui-theme-items', 'print-tui-theme-items', [CompletionResultType]::ParameterName, 'Print all TUI theme items and exit')
             [CompletionResult]::new('--print-tui-binding-commands', 'print-tui-binding-commands', [CompletionResultType]::ParameterName, 'Print all TUI commands that can be bound and exit')
+            [CompletionResult]::new('--generate-man', 'generate-man', [CompletionResultType]::ParameterName, 'Generate ROFF man page')
             [CompletionResult]::new('--print-config-template', 'print-config-template', [CompletionResultType]::ParameterName, 'Print a template toml config file and exit')
             [CompletionResult]::new('-v', 'v', [CompletionResultType]::ParameterName, 'Enable verbose debug logging')
             [CompletionResult]::new('--verbose', 'verbose', [CompletionResultType]::ParameterName, 'Enable verbose debug logging')

@@ -98,6 +98,7 @@ set edit:completion:arg-completer[trip] = {|@words|
             cand --tui-preserve-screen 'Preserve the screen on exit [default: false]'
             cand --print-tui-theme-items 'Print all TUI theme items and exit'
             cand --print-tui-binding-commands 'Print all TUI commands that can be bound and exit'
+            cand --generate-man 'Generate ROFF man page'
             cand --print-config-template 'Print a template toml config file and exit'
             cand -v 'Enable verbose debug logging'
             cand --verbose 'Enable verbose debug logging'

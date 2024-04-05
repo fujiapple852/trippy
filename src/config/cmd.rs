@@ -15,7 +15,7 @@ use clap_complete::Shell;
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
-    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate"]))]
+    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate", "generate_man"]))]
     pub targets: Vec<String>,
 
     /// Config file
@@ -239,6 +239,10 @@ pub struct Args {
     /// Generate shell completion
     #[arg(long)]
     pub generate: Option<Shell>,
+
+    /// Generate ROFF man page
+    #[arg(long)]
+    pub generate_man: bool,
 
     /// Print a template toml config file and exit
     #[arg(long)]
