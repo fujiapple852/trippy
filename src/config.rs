@@ -254,6 +254,8 @@ pub enum TrippyAction {
     PrintConfigTemplate,
     /// Generate shell completion and exit.
     PrintShellCompletions(Shell),
+    /// Generate a man page and exit.
+    PrintManPage,
 }
 
 impl TrippyAction {
@@ -266,6 +268,8 @@ impl TrippyAction {
             Self::PrintConfigTemplate
         } else if let Some(shell) = args.generate {
             Self::PrintShellCompletions(shell)
+        } else if args.generate_man {
+            Self::PrintManPage
         } else {
             Self::Trippy(TrippyConfig::from(args, platform)?)
         })
@@ -1609,6 +1613,7 @@ mod tests {
     #[test_case("trip --generate zsh", Ok(TrippyAction::PrintShellCompletions(Shell::Zsh)); "generate zsh shell completions")]
     #[test_case("trip --generate bash", Ok(TrippyAction::PrintShellCompletions(Shell::Bash)); "generate bash shell completions")]
     #[test_case("trip --generate foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "generate invalid shell completions")]
+    #[test_case("trip --generate-man", Ok(TrippyAction::PrintManPage); "generate man page")]
     fn test_action(cmd: &str, expected: anyhow::Result<TrippyAction>) {
         compare(parse_action(cmd), expected);
     }

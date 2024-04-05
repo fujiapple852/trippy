@@ -106,6 +106,8 @@ Options:
           The supported MaxMind or IPinfo GeoIp mmdb file
       --generate <GENERATE>
           Generate shell completion [possible values: bash, elvish, fish, powershell, zsh]
+      --generate-man
+          Generate ROFF man page
       --print-config-template
           Print a template toml config file and exit
       --log-format <LOG_FORMAT>

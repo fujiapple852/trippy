@@ -214,6 +214,9 @@ Options:
           
           [possible values: bash, elvish, fish, powershell, zsh]
 
+      --generate-man
+          Generate ROFF man page
+
       --print-config-template
           Print a template toml config file and exit
 

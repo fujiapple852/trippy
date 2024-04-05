@@ -50,6 +50,7 @@ complete -c trip -s z -l dns-lookup-as-info -d 'Lookup autonomous system (AS) in
 complete -c trip -l tui-preserve-screen -d 'Preserve the screen on exit [default: false]'
 complete -c trip -l print-tui-theme-items -d 'Print all TUI theme items and exit'
 complete -c trip -l print-tui-binding-commands -d 'Print all TUI commands that can be bound and exit'
+complete -c trip -l generate-man -d 'Generate ROFF man page'
 complete -c trip -l print-config-template -d 'Print a template toml config file and exit'
 complete -c trip -s v -l verbose -d 'Enable verbose debug logging'
 complete -c trip -s h -l help -d 'Print help (see more with \'--help\')'

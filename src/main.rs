@@ -60,6 +60,7 @@ fn main() -> anyhow::Result<()> {
         TrippyAction::PrintTuiThemeItems => print_tui_theme_items(),
         TrippyAction::PrintTuiBindingCommands => print_tui_binding_commands(),
         TrippyAction::PrintConfigTemplate => print_config_template(),
+        TrippyAction::PrintManPage => print_man_page()?,
         TrippyAction::PrintShellCompletions(shell) => print_shell_completions(shell)?,
     }
     Ok(())
@@ -99,6 +100,11 @@ fn print_config_template() {
 
 fn print_shell_completions(shell: Shell) -> anyhow::Result<()> {
     println!("{}", shell_completions(shell)?);
+    process::exit(0);
+}
+
+fn print_man_page() -> anyhow::Result<()> {
+    println!("{}", man_page()?);
     process::exit(0);
 }
 
@@ -467,6 +473,13 @@ fn shell_completions(shell: Shell) -> anyhow::Result<String> {
     Ok(String::from_utf8(buffer)?)
 }
 
+fn man_page() -> anyhow::Result<String> {
+    let cmd = Args::command();
+    let mut buffer: Vec<u8> = vec![];
+    clap_mangen::Man::new(cmd).render(&mut buffer)?;
+    Ok(String::from_utf8(buffer)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -479,6 +492,7 @@ mod tests {
     #[test_case(include_str!("../test_resources/config/completions_fish.txt"), &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
     #[test_case(include_str!("../test_resources/config/completions_powershell.txt"), &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
     #[test_case(include_str!("../test_resources/config/completions_zsh.txt"), &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
+    #[test_case(include_str!("../test_resources/config/trip.1"), &man_page().unwrap(); "generate man page")]
     fn test_output(expected: &str, actual: &str) {
         if remove_whitespace(actual.to_string()) != remove_whitespace(expected.to_string()) {
             pretty_assertions::assert_eq!(actual, expected);
