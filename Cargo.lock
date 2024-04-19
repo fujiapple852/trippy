@@ -765,9 +765,9 @@ dependencies = [
 
 [[package]]
 name = "hickory-resolver"
-version = "0.24.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35b8f021164e6a984c9030023544c57789c51760065cd510572fedcfb04164e8"
+checksum = "28757f23aa75c98f254cf0405e6d8c25b831b32921b050a66692427679b1f243"
 dependencies = [
  "cfg-if",
  "futures-util",

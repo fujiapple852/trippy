@@ -31,7 +31,7 @@ tracing = { version = "0.1.40", default-features = false }
 # TUI dependencies
 anyhow = "1.0.81"
 dns-lookup = "2.0.4"
-hickory-resolver = "0.24.0"
+hickory-resolver = "0.24.1"
 crossbeam = "0.8.4"
 clap = { version = "4.4.0",  default-features = false, features = [ "cargo", "derive", "wrap_help", "usage", "unstable-styles" ] }
 clap_complete = "4.4.9"
