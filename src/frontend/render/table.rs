@@ -213,9 +213,9 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
 fn render_icmp_packet_type_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cell<'static> {
     match icmp_packet_type {
         None => Cell::from("n/a"),
-        Some(IcmpPacketType::TimeExceeded) => Cell::from("TE"),
-        Some(IcmpPacketType::EchoReply) => Cell::from("ER"),
-        Some(IcmpPacketType::Unreachable) => Cell::from("DU"),
+        Some(IcmpPacketType::TimeExceeded(_)) => Cell::from("TE"),
+        Some(IcmpPacketType::EchoReply(_)) => Cell::from("ER"),
+        Some(IcmpPacketType::Unreachable(_)) => Cell::from("DU"),
         Some(IcmpPacketType::NotApplicable) => Cell::from("NA"),
     }
 }

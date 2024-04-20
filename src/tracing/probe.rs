@@ -120,21 +120,25 @@ pub struct ProbeComplete {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IcmpPacketType {
     /// TimeExceeded packet.
-    TimeExceeded,
+    TimeExceeded(IcmpPacketCode),
     /// EchoReply packet.
-    EchoReply,
+    EchoReply(IcmpPacketCode),
     /// Unreachable packet.
-    Unreachable,
+    Unreachable(IcmpPacketCode),
     /// Non-ICMP response (i.e. for some `UDP` & `TCP` probes).
     NotApplicable,
 }
 
+/// The code of `TimeExceeded`, `EchoReply` and `Unreachable` ICMP packets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IcmpPacketCode(pub u8);
+
 /// The response to a probe.
 #[derive(Debug, Clone)]
 pub enum ProbeResponse {
-    TimeExceeded(ProbeResponseData, Option<Extensions>),
-    DestinationUnreachable(ProbeResponseData, Option<Extensions>),
-    EchoReply(ProbeResponseData),
+    TimeExceeded(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
+    DestinationUnreachable(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
+    EchoReply(ProbeResponseData, IcmpPacketCode),
     TcpReply(ProbeResponseData),
     TcpRefused(ProbeResponseData),
 }
