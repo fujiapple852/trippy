@@ -215,7 +215,7 @@ fn render_icmp_packet_type_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cel
         None => Cell::from("n/a"),
         Some(IcmpPacketType::TimeExceeded) => Cell::from("TE"),
         Some(IcmpPacketType::EchoReply) => Cell::from("ER"),
-        Some(IcmpPacketType::Unreachable) => Cell::from("UR"),
+        Some(IcmpPacketType::Unreachable) => Cell::from("DU"),
         Some(IcmpPacketType::NotApplicable) => Cell::from("NA"),
     }
 }
