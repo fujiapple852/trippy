@@ -12,7 +12,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
 - Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
   page ([#85](https://github.com/fujiapple852/trippy/issues/85))
-- Added support for last icmp packet code (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
+- Added support for last icmp packet type (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
+- Added support for last icmp packet code (`C`) column ([#1109](https://github.com/fujiapple852/trippy/issues/1109))
 
 ### Changed
 
