@@ -164,6 +164,7 @@ fn new_cell(
         ColumnType::LastDestPort => render_port_cell(hop.last_dest_port()),
         ColumnType::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
         ColumnType::LastIcmpPacketType => render_icmp_packet_type_cell(hop.last_icmp_packet_type()),
+        ColumnType::LastIcmpPacketCode => render_icmp_packet_code_cell(hop.last_icmp_packet_type()),
     }
 }
 
@@ -217,6 +218,17 @@ fn render_icmp_packet_type_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cel
         Some(IcmpPacketType::EchoReply(_)) => Cell::from("ER"),
         Some(IcmpPacketType::Unreachable(_)) => Cell::from("DU"),
         Some(IcmpPacketType::NotApplicable) => Cell::from("NA"),
+    }
+}
+
+fn render_icmp_packet_code_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cell<'static> {
+    match icmp_packet_type {
+        Some(
+            IcmpPacketType::Unreachable(code)
+            | IcmpPacketType::TimeExceeded(code)
+            | IcmpPacketType::EchoReply(code),
+        ) => Cell::from(format!("{}", code.0)),
+        _ => Cell::from("n/a"),
     }
 }
 

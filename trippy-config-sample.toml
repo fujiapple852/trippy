@@ -271,6 +271,7 @@ tui-as-mode = "asn"
 #   S - Last probe source port
 #   P - Last probe destination port
 #   T - Last icmp packet type
+#   C - Last icmp packet code
 #
 # The columns will be shown in the order specified.
 tui-custom-columns = "holsravbwdt"
