@@ -850,6 +850,7 @@ configuration file.
 | `Sprt`  | `S`  | The source port for last probe for the hop                                                                                                                                                                                                                                                                                                            |
 | `Dprt`  | `P`  | The destination port for last probe for the hop                                                                                                                                                                                                                                                                                                       |
 | `Type`  | `T`  | The icmp packet type for last probe for the hop:<br/>- TE TimeExceeded<br/>- ER EchoReply<br/>- DU Destination Unreachable<br/>- NA NotApplicable                                                                                                                                                                                                     |
+| `Code`  | `C`  | The icmp packet code for last probe for the hop                                                                                                                                                                                                                                                                                                       |
 
 The default columns are `holsravbwdt`.
 
