@@ -14,8 +14,8 @@ use crate::tracing::packet::tcp::TcpPacket;
 use crate::tracing::packet::udp::UdpPacket;
 use crate::tracing::packet::IpProtocol;
 use crate::tracing::probe::{
-    Extensions, Probe, ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp,
-    ProbeResponseSeqTcp, ProbeResponseSeqUdp,
+    Extensions, IcmpPacketCode, Probe, ProbeResponse, ProbeResponseData, ProbeResponseSeq,
+    ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp,
 };
 use crate::tracing::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::tracing::{Flags, Port, PrivilegeMode, Protocol};
@@ -248,6 +248,7 @@ pub fn recv_tcp_socket<S: Socket>(
                 let error_addr = tcp_socket.icmp_error_info()?;
                 return Ok(Some(ProbeResponse::TimeExceeded(
                     ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                    IcmpPacketCode(1),
                     None,
                 )));
             }
@@ -338,6 +339,7 @@ fn extract_probe_resp(
                 extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                     ProbeResponse::TimeExceeded(
                         ProbeResponseData::new(recv, ip, resp_seq),
+                        IcmpPacketCode(icmp_code.0),
                         extension,
                     )
                 })
@@ -357,6 +359,7 @@ fn extract_probe_resp(
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                 ProbeResponse::DestinationUnreachable(
                     ProbeResponseData::new(recv, ip, resp_seq),
+                    IcmpPacketCode(icmp_code.0),
                     extension,
                 )
             })
@@ -367,9 +370,10 @@ fn extract_probe_resp(
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
-                Some(ProbeResponse::EchoReply(ProbeResponseData::new(
-                    recv, ip, resp_seq,
-                )))
+                Some(ProbeResponse::EchoReply(
+                    ProbeResponseData::new(recv, ip, resp_seq),
+                    IcmpPacketCode(icmp_code.0),
+                ))
             }
             Protocol::Udp | Protocol::Tcp => None,
         },
@@ -1014,21 +1018,25 @@ mod tests {
         )?
         .unwrap();
 
-        let ProbeResponse::EchoReply(ProbeResponseData {
-            addr,
-            resp_seq:
-                ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
-                    identifier,
-                    sequence,
-                }),
-            ..
-        }) = resp
+        let ProbeResponse::EchoReply(
+            ProbeResponseData {
+                addr,
+                resp_seq:
+                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                        identifier,
+                        sequence,
+                    }),
+                ..
+            },
+            icmp_code,
+        ) = resp
         else {
             panic!("expected EchoReply")
         };
         assert_eq!(recv_from_addr, addr);
         assert_eq!(21945, identifier);
         assert_eq!(33062, sequence);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         Ok(())
     }
 
@@ -1071,6 +1079,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1079,6 +1088,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(21945, identifier);
         assert_eq!(33056, sequence);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1122,6 +1132,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1130,6 +1141,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(22437, identifier);
         assert_eq!(33005, sequence);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1174,6 +1186,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1190,6 +1203,7 @@ mod tests {
         assert_eq!(53489, checksum);
         assert_eq!(36, payload_len);
         assert!(!has_magic);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1234,6 +1248,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1250,6 +1265,7 @@ mod tests {
         assert_eq!(37906, checksum);
         assert_eq!(36, payload_len);
         assert!(!has_magic);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1300,6 +1316,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1316,6 +1333,7 @@ mod tests {
         assert_eq!(39490, checksum);
         assert_eq!(5, payload_len);
         assert!(has_magic);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1356,6 +1374,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1368,6 +1387,7 @@ mod tests {
         );
         assert_eq!(33038, src_port);
         assert_eq!(80, dest_port);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1408,6 +1428,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1420,6 +1441,7 @@ mod tests {
         );
         assert_eq!(33060, src_port);
         assert_eq!(123, dest_port);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
@@ -1609,6 +1631,7 @@ mod tests {
                     }),
                 ..
             },
+            icmp_code,
             extensions,
         ) = resp
         else {
@@ -1617,6 +1640,7 @@ mod tests {
         assert_eq!(dest_addr, addr);
         assert_eq!(33000, src_port);
         assert_eq!(80, dest_port);
+        assert_eq!(IcmpPacketCode(1), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
     }
