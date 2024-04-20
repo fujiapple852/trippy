@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::iter::once;
 use std::net::IpAddr;
 use std::time::Duration;
-use trippy::tracing::{Extensions, ProbeState, Round, TimeToLive, TracerRound};
+use trippy::tracing::{Extensions, IcmpPacketType, ProbeState, Round, TimeToLive, TracerRound};
 
 /// The state of all hops in a trace.
 #[derive(Debug, Clone)]
@@ -165,6 +165,8 @@ pub struct Hop {
     last_dest_port: u16,
     /// The sequence number for the last probe for this hop.
     last_sequence: u16,
+    /// The icmp packet type for the last probe for this hop.
+    last_icmp_packet_type: Option<IcmpPacketType>,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
     /// The ICMP extensions for this hop.
@@ -281,6 +283,11 @@ impl Hop {
         self.last_sequence
     }
 
+    /// The icmp packet type for the last probe for this hop.
+    pub fn last_icmp_packet_type(&self) -> Option<IcmpPacketType> {
+        self.last_icmp_packet_type
+    }
+
     /// The last N samples.
     pub fn samples(&self) -> &[Duration] {
         &self.samples
@@ -309,6 +316,7 @@ impl Default for Hop {
             last_src_port: 0_u16,
             last_dest_port: 0_u16,
             last_sequence: 0_u16,
+            last_icmp_packet_type: None,
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
@@ -434,6 +442,7 @@ impl TraceData {
                 hop.last_src_port = complete.src_port.0;
                 hop.last_dest_port = complete.dest_port.0;
                 hop.last_sequence = complete.sequence.0;
+                hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
             }
             ProbeState::Awaited(awaited) => {
                 self.update_lowest_ttl(awaited.ttl);
