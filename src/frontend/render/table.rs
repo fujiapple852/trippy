@@ -13,7 +13,9 @@ use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
 use trippy::dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
-use trippy::tracing::{Extension, Extensions, MplsLabelStackMember, UnknownExtension};
+use trippy::tracing::{
+    Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension,
+};
 
 /// Render the table of data about the hops.
 ///
@@ -161,6 +163,7 @@ fn new_cell(
         ColumnType::LastSrcPort => render_port_cell(hop.last_src_port()),
         ColumnType::LastDestPort => render_port_cell(hop.last_dest_port()),
         ColumnType::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
+        ColumnType::LastIcmpPacketType => render_icmp_packet_type_cell(hop.last_icmp_packet_type()),
     }
 }
 
@@ -205,6 +208,16 @@ fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
         (lost, target) if !target && lost > 0 => "🔵",
         _ => "🟢",
     })
+}
+
+fn render_icmp_packet_type_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cell<'static> {
+    match icmp_packet_type {
+        None => Cell::from("n/a"),
+        Some(IcmpPacketType::TimeExceeded) => Cell::from("TE"),
+        Some(IcmpPacketType::EchoReply) => Cell::from("ER"),
+        Some(IcmpPacketType::Unreachable) => Cell::from("UR"),
+        Some(IcmpPacketType::NotApplicable) => Cell::from("NA"),
+    }
 }
 
 fn render_port_cell(port: u16) -> Cell<'static> {
