@@ -849,6 +849,7 @@ configuration file.
 | `Seq`   | `Q`  | The sequence number for the last probe for the hop                                                                                                                                                                                                                                                                                                    |
 | `Sprt`  | `S`  | The source port for last probe for the hop                                                                                                                                                                                                                                                                                                            |
 | `Dprt`  | `P`  | The destination port for last probe for the hop                                                                                                                                                                                                                                                                                                       |
+| `Type`  | `T`  | The icmp packet type for last probe for the hop:<br/>- TE TimeExceeded<br/>- ER EchoReply<br/>- UR Unreachable<br/>- NA NotApplicable                                                                                                                                                                                                                 |
 
 The default columns are `holsravbwdt`.
 
