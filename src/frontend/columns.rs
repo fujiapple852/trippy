@@ -178,6 +178,8 @@ pub enum ColumnType {
     LastDestPort,
     /// The sequence number for the last probe for this hop.
     LastSeq,
+    /// The icmp packet type for the last probe for this hop.
+    LastIcmpPacketType,
 }
 
 impl From<ColumnType> for char {
@@ -201,6 +203,7 @@ impl From<ColumnType> for char {
             ColumnType::LastSrcPort => 'S',
             ColumnType::LastDestPort => 'P',
             ColumnType::LastSeq => 'Q',
+            ColumnType::LastIcmpPacketType => 'T',
         }
     }
 }
@@ -226,6 +229,7 @@ impl From<TuiColumn> for Column {
             TuiColumn::LastSrcPort => Self::new_shown(ColumnType::LastSrcPort),
             TuiColumn::LastDestPort => Self::new_shown(ColumnType::LastDestPort),
             TuiColumn::LastSeq => Self::new_shown(ColumnType::LastSeq),
+            TuiColumn::LastIcmpPacketType => Self::new_shown(ColumnType::LastIcmpPacketType),
         }
     }
 }
@@ -251,6 +255,7 @@ impl Display for ColumnType {
             Self::LastSrcPort => write!(f, "Sprt"),
             Self::LastDestPort => write!(f, "Dprt"),
             Self::LastSeq => write!(f, "Seq"),
+            Self::LastIcmpPacketType => write!(f, "Type"),
         }
     }
 }
@@ -278,6 +283,7 @@ impl ColumnType {
             Self::LastSrcPort => ColumnWidth::Fixed(7),
             Self::LastDestPort => ColumnWidth::Fixed(7),
             Self::LastSeq => ColumnWidth::Fixed(7),
+            Self::LastIcmpPacketType => ColumnWidth::Fixed(7),
         }
     }
 }
@@ -334,6 +340,7 @@ mod tests {
                 Column::new_hidden(ColumnType::LastSrcPort),
                 Column::new_hidden(ColumnType::LastDestPort),
                 Column::new_hidden(ColumnType::LastSeq),
+                Column::new_hidden(ColumnType::LastIcmpPacketType),
             ])
         );
     }

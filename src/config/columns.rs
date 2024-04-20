@@ -85,6 +85,8 @@ pub enum TuiColumn {
     LastDestPort,
     /// The sequence number for the last probe for this hop.
     LastSeq,
+    /// The icmp packet type for the last probe for this hop.
+    LastIcmpPacketType,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -110,6 +112,7 @@ impl TryFrom<char> for TuiColumn {
             'S' => Ok(Self::LastSrcPort),
             'P' => Ok(Self::LastDestPort),
             'Q' => Ok(Self::LastSeq),
+            'T' => Ok(Self::LastIcmpPacketType),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -136,6 +139,7 @@ impl Display for TuiColumn {
             Self::LastSrcPort => write!(f, "S"),
             Self::LastDestPort => write!(f, "P"),
             Self::LastSeq => write!(f, "Q"),
+            Self::LastIcmpPacketType => write!(f, "T"),
         }
     }
 }
