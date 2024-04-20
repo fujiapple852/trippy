@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
 - Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
   page ([#85](https://github.com/fujiapple852/trippy/issues/85))
+- Added support for last icmp packet code (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
 
 ### Changed
 
@@ -35,7 +36,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tests ([#908](https://github.com/fujiapple852/trippy/issues/908))
 - Added support for last src port (`S`) and last dest port (`P`) custom
   columns ([#974](https://github.com/fujiapple852/trippy/issues/974))
-- Added support for last sequence (`Q`) custom columns ([#976](https://github.com/fujiapple852/trippy/issues/976))
+- Added support for last sequence (`Q`) custom column ([#976](https://github.com/fujiapple852/trippy/issues/976))
 - Added support for more named theme colors ([#1011](https://github.com/fujiapple852/trippy/issues/1011))
 
 ### Changed
