@@ -28,19 +28,19 @@ jobs:
             target: x86_64-unknown-linux-musl
             rust: stable
           - build: linux-beta
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust: beta
           - build: linux-nightly
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust: nightly
           - build: macos-stable
-            os: macos-latest
+            os: macos-13
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-latest
+            os: windows-2022
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
@@ -59,11 +59,11 @@ jobs:
         build: [ netbsd, freebsd ]
         include:
           - build: netbsd
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-netbsd
             rust: stable
           - build: freebsd
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-freebsd
             rust: stable
     steps:
@@ -94,15 +94,15 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
-            os: macos-latest
+            os: macos-13
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-latest
+            os: windows-2022
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
@@ -153,15 +153,15 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
-            os: macos-latest
+            os: macos-13
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-latest
+            os: windows-2022
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
@@ -174,7 +174,7 @@ jobs:
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
   cargo-deny:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v1
@@ -184,7 +184,7 @@ jobs:
           arguments: --all-features
 
   cargo-msrv:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
