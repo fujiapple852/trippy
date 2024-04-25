@@ -17,6 +17,7 @@ jobs:
           - linux-beta
           - linux-nightly
           - macos-stable
+          - macos-stable-arm64
           - windows-stable
         include:
           - build: linux-stable
@@ -38,6 +39,10 @@ jobs:
           - build: macos-stable
             os: macos-13
             target: x86_64-apple-darwin
+            rust: stable
+          - build: macos-stable-arm64
+            os: macos-14
+            target: aarch64-apple-darwin
             rust: stable
           - build: windows-stable
             os: windows-2022
