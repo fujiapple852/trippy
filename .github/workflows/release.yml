@@ -75,10 +75,10 @@ jobs:
 
           # macOS (x86_64 & aarch64)
           - build: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
             target: x86_64-apple-darwin
           - build: aarch64-apple-darwin
-            os: macos-latest
+            os: macos-14
             target: aarch64-apple-darwin
 
           # Windows (x86_64 & aarch64)
