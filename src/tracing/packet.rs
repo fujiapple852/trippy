@@ -32,7 +32,7 @@ fn fmt_payload(bytes: &[u8]) -> String {
     format!("{:02x}", bytes.iter().format(" "))
 }
 
-///
+/// The IP packet next layer protocol.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum IpProtocol {
     Icmp,

@@ -119,9 +119,9 @@ pub struct ProbeComplete {
 /// The type of ICMP packet received.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IcmpPacketType {
-    /// TimeExceeded packet.
+    /// `TimeExceeded` packet.
     TimeExceeded(IcmpPacketCode),
-    /// EchoReply packet.
+    /// `EchoReply` packet.
     EchoReply(IcmpPacketCode),
     /// Unreachable packet.
     Unreachable(IcmpPacketCode),
@@ -190,7 +190,7 @@ pub struct UnknownExtension {
 pub struct ProbeResponseData {
     /// Timestamp of the probe response.
     pub recv: SystemTime,
-    /// The IpAddr that responded to the probe.
+    /// The `IpAddr` that responded to the probe.
     pub addr: IpAddr,
     /// Information about the sequence number of the probe response.
     pub resp_seq: ProbeResponseSeq,

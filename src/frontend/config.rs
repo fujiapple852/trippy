@@ -22,7 +22,7 @@ pub struct TuiConfig {
     pub as_mode: AsMode,
     /// How to render ICMP extensions.
     pub icmp_extension_mode: IcmpExtensionMode,
-    /// How to render GeoIp data.
+    /// How to render `GeoIp` data.
     pub geoip_mode: GeoIpMode,
     /// The maximum number of addresses to show per hop.
     pub max_addrs: Option<u8>,

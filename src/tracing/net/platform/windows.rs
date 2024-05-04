@@ -816,7 +816,7 @@ mod adapter {
     pub struct AdapterAddress {
         /// The adapter friendly name.
         pub name: String,
-        /// The adapter IpAddress.
+        /// The adapter `IpAddress`.
         pub addr: IpAddr,
     }
 

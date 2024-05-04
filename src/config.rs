@@ -175,6 +175,7 @@ pub enum IcmpExtensionMode {
 /// How to render `GeoIp` information in the hop table.
 ///
 /// Note that the hop details view is always shown using the `Long` representation.
+#[allow(clippy::doc_markdown)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GeoIpMode {

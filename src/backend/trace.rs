@@ -438,7 +438,7 @@ impl TraceData {
                 }
                 let host = complete.host;
                 *hop.addrs.entry(host).or_default() += 1;
-                hop.extensions = complete.extensions.clone();
+                hop.extensions.clone_from(&complete.extensions);
                 hop.last_src_port = complete.src_port.0;
                 hop.last_dest_port = complete.dest_port.0;
                 hop.last_sequence = complete.sequence.0;
