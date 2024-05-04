@@ -88,18 +88,18 @@ pub enum DnsEntry {
 /// Information about a resolved `IpAddr`.
 #[derive(Debug, Clone)]
 pub enum Resolved {
-    /// Resolved without AsInfo.
+    /// Resolved without `AsInfo`.
     Normal(IpAddr, Vec<String>),
-    /// Resolved with AsInfo.
+    /// Resolved with `AsInfo`.
     WithAsInfo(IpAddr, Vec<String>, AsInfo),
 }
 
 /// Information about an unresolved `IpAddr`.
 #[derive(Debug, Clone)]
 pub enum Unresolved {
-    /// Unresolved without AsInfo.
+    /// Unresolved without `AsInfo`.
     Normal(IpAddr),
-    /// Unresolved with AsInfo.
+    /// Unresolved with `AsInfo`.
     WithAsInfo(IpAddr, AsInfo),
 }
 

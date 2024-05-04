@@ -878,7 +878,7 @@ pub mod extension_splitter {
                     (payload, extension) if extension.len() >= MIN_HEADER => {
                         (&payload[..length], Some(extension))
                     }
-                    _ => (&icmp_payload, None),
+                    _ => (icmp_payload, None),
                 }
             } else {
                 // a 'non-compliant' ICMP extension padded to 128 octets.

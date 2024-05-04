@@ -26,7 +26,7 @@ pub struct TuiApp {
     ///
     /// Only used in detail mode.
     pub selected_hop_address: usize,
-    /// The FlowId of the selected flow.
+    /// The `FlowId` of the selected flow.
     ///
     /// FlowId(0) represents the unified flow for the trace.
     pub selected_flow: FlowId,

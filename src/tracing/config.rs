@@ -159,7 +159,7 @@ pub enum MultipathStrategy {
     Paris,
     /// The IP `identifier` field is used to store the sequence number.
     ///
-    /// a.k.a [`dublin](https://github.com/insomniacslk/dublin-traceroute) traceroute approach.
+    /// a.k.a [`dublin`](https://github.com/insomniacslk/dublin-traceroute) traceroute approach.
     ///
     /// The allow either the src or dest or both ports to be fixed.
     ///
