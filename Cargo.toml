@@ -68,7 +68,7 @@ nix = { version = "0.28.0", default-features = false, features = [ "user", "poll
 
 # Library dependencies (Windows)
 [target.'cfg(windows)'.dependencies]
-paste = "1.0.14"
+paste = "1.0.15"
 widestring = "1.0.2"
 windows-sys = { version = "0.52.0", features = [
     "Win32_Foundation",
