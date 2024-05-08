@@ -29,7 +29,7 @@ thiserror = "1.0.59"
 tracing = { version = "0.1.40", default-features = false }
 
 # TUI dependencies
-anyhow = "1.0.81"
+anyhow = "1.0.83"
 dns-lookup = "2.0.4"
 hickory-resolver = "0.24.1"
 crossbeam = "0.8.4"
