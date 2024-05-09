@@ -51,7 +51,7 @@ indexmap = { version = "2.2.6", default-features = false }
 maxminddb = "0.24.0"
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [ "json", "env-filter" ] }
 tracing-chrome = "0.7.2"
-petgraph = "0.6.4"
+petgraph = "0.6.5"
 csv = "1.3.0"
 serde_with = "3.8.1"
 encoding_rs_io = "0.1.7"
