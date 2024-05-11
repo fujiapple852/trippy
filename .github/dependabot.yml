@@ -4,4 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+        - dependency-name: "clap*"
+          update-types:
+            - "version-update:semver-patch"
+        - dependency-name: "serde*"
+          update-types:
+            - "version-update:semver-patch"
+        - dependency-name: "anyhow"
+          update-types:
+            - "version-update:semver-patch"
+        - dependency-name: "thiserror"
+          update-types:
+            - "version-update:semver-patch"
+    allow:
+      - dependency-type: "all"
     open-pull-requests-limit: 10
+    rebase-strategy: "disabled"
