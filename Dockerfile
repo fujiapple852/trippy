@@ -1,15 +1,32 @@
-FROM rust:1.74 as build-env
+FROM rust:1.75 as build-env
 RUN rustup target add x86_64-unknown-linux-musl
 WORKDIR /app
 COPY Cargo.toml /app
 COPY Cargo.lock /app
-RUN mkdir /app/src
-RUN echo "fn main() {}" > /app/src/main.rs
+RUN mkdir -p /app/crates/trippy/src
+RUN mkdir -p /app/crates/trippy-core/src
+RUN mkdir -p /app/crates/trippy-dns/src
+RUN mkdir -p /app/crates/trippy-privilege/src
+COPY crates/trippy/Cargo.toml /app/crates/trippy/Cargo.toml
+COPY crates/trippy-core/Cargo.toml /app/crates/trippy-core/Cargo.toml
+COPY crates/trippy-dns/Cargo.toml /app/crates/trippy-dns/Cargo.toml
+COPY crates/trippy-privilege/Cargo.toml /app/crates/trippy-privilege/Cargo.toml
+
+# dummy build to cache dependencies
+RUN echo "fn main() {}" > /app/crates/trippy/src/main.rs
+RUN touch /app/crates/trippy-core/src/lib.rs
+RUN touch /app/crates/trippy-dns/src/lib.rs
+RUN touch /app/crates/trippy-privilege/src/lib.rs
 RUN cargo build --release --target=x86_64-unknown-linux-musl
-COPY src /app/src
+
+# copy the actual application code and build
+COPY crates/trippy/src /app/crates/trippy/src
+COPY crates/trippy-core/src /app/crates/trippy-core/src
+COPY crates/trippy-dns/src /app/crates/trippy-dns/src
+COPY crates/trippy-privilege/src /app/crates/trippy-privilege/src
 COPY trippy-config-sample.toml /app
 COPY README.md /app
-COPY LICENSE /app
+RUN cargo clean --release --target=x86_64-unknown-linux-musl -p trippy-core -p trippy-dns -p trippy-privilege
 RUN cargo build --release --target=x86_64-unknown-linux-musl
 
 FROM alpine
