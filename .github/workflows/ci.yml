@@ -120,8 +120,9 @@ jobs:
       - name: Copy wintun.dll to current dir
         if: startsWith(matrix.build, 'windows')
         shell: bash
+        # The simulation tests run from the crates/trippy-core directory and so `wintun.dll` needs to be copied there
         run: |
-          cp "tests/resources/wintun.dll" "."
+          cp "crates/trippy-core/tests/resources/wintun.dll" "./crates/trippy-core/"
       - name: Allow ICMPv4 and ICMPv6 in Windows defender firewall
         if: startsWith(matrix.build, 'windows')
         shell: pwsh
@@ -195,5 +196,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: install cargo-msrv
         run: cargo install --git https://github.com/foresterre/cargo-msrv.git cargo-msrv
-      - name: check msrv
-        run: cargo msrv --output-format json verify -- cargo check
+      - name: check msrv for trippy
+        run: cargo msrv verify --output-format json --manifest-path crates/trippy/Cargo.toml -- cargo check
+      - name: check msrv for trippy-core
+        run: cargo msrv verify --output-format json --manifest-path crates/trippy-core/Cargo.toml -- cargo check
+      - name: check msrv for trippy-dns
+        run: cargo msrv verify --output-format json --manifest-path crates/trippy-dns/Cargo.toml -- cargo check
+      - name: check msrv for trippy-privilege
+        run: cargo msrv verify --output-format json --manifest-path crates/trippy-privilege/Cargo.toml -- cargo check

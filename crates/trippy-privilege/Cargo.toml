@@ -1,0 +1,33 @@
+[package]
+name = "trippy-privilege"
+description = "Discover platform privileges"
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords = ["traceroute", "ping", "icmp"]
+categories = ["network-programming"]
+
+[dependencies]
+thiserror.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+caps = "0.5.5"
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.28.0", default-features = false, features = [ "user" ] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52.0", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+] }
+paste = "1.0.15"
+
+[dev-dependencies]
+anyhow.workspace = true

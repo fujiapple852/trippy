@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.83"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25bdb32cbbdce2b519a9cd7df3a678443100e265d5e25ca763b7572a5104f5f3"
+checksum = "27a4bd113ab6da4cd0f521068a6e2ee1065eab54107266a11835d02c8ec86a37"
 
 [[package]]
 name = "arrayvec"
@@ -128,7 +128,7 @@ checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -292,7 +292,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -470,7 +470,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -481,7 +481,7 @@ checksum = "733cabb43482b1a1b53eee8583c2b9e8684d592215ea83efd305dd31bc2f0178"
 dependencies = [
  "darling_core",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -537,9 +537,9 @@ checksum = "1435fa1053d8b2fbbe9be7e97eca7f33d37b28409959813daefc1446a14247f1"
 
 [[package]]
 name = "either"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a47c1c47d2f5964e29c61246e81db715514cd532db6b5116a25ea3c03d6780a2"
+checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
 
 [[package]]
 name = "encoding_rs"
@@ -568,7 +568,7 @@ dependencies = [
  "heck 0.4.1",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -947,9 +947,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.154"
+version = "0.2.155"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae743338b92ff9146ce83992f766a31066a91a8c84a45e0e9f21e7cf6de6d346"
+checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
 name = "libloading"
@@ -969,9 +969,9 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
+checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 
 [[package]]
 name = "lock_api"
@@ -1051,9 +1051,9 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d811f3e15f28568be3407c8e7fdb6514c1cda3cb30683f15b6a1a1dc4ea14a7"
+checksum = "87dfd01fe195c66b572b37921ad8803d010623c0aca821bea2302239d155cdae"
 dependencies = [
  "adler",
 ]
@@ -1094,7 +1094,7 @@ dependencies = [
  "cfg-if",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1453,22 +1453,22 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "serde"
-version = "1.0.201"
+version = "1.0.202"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "780f1cebed1629e4753a1a38a3c72d30b97ec044f0aef68cb26650a3c5cf363c"
+checksum = "226b61a0d411b2ba5ff6d7f73a476ac4f8bb900373459cd00fab8512828ba395"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.201"
+version = "1.0.202"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5e405930b9796f1c00bee880d03fc7e0bb4b9a11afc776885ffe84320da2865"
+checksum = "6048858004bcff69094cd972ed40a32500f153bd3be9f716b2eed2e8217c4838"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1518,7 +1518,7 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1605,7 +1605,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ff9eaf853dec4c8802325d8b6d3dffa86cc707fd7a1a4cdbf416e13b061787a"
 dependencies = [
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1639,7 +1639,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1655,9 +1655,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.62"
+version = "2.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f660c3bfcefb88c538776b6685a0c472e3128b51e74d48793dc2a488196e8eb"
+checksum = "7ad3dee41f36859875573074334c200d1add8e4a87bb37113ebd31d926b7b11f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1698,7 +1698,7 @@ dependencies = [
  "cfg-if",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1709,28 +1709,28 @@ checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
  "test-case-core",
 ]
 
 [[package]]
 name = "thiserror"
-version = "1.0.60"
+version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "579e9083ca58dd9dcf91a9923bb9054071b9ebbd800b342194c9feb0ee89fc18"
+checksum = "c546c80d6be4bc6a00c0f01730c08df82eaa7a7a61f11d656526506112cc1709"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.60"
+version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2470041c06ec3ac1ab38d0356a6119054dedaea53e12fbefc0de730a1c08524"
+checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1816,7 +1816,7 @@ checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1885,7 +1885,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]
 
 [[package]]
@@ -1956,52 +1956,91 @@ name = "trippy"
 version = "0.11.0-dev"
 dependencies = [
  "anyhow",
- "arrayvec",
- "bitflags",
- "caps",
  "chrono",
  "clap",
  "clap_complete",
  "clap_mangen",
  "comfy-table",
- "crossbeam",
  "crossterm",
  "csv",
  "derive_more",
- "dns-lookup",
  "encoding_rs_io",
  "etcetera",
- "hex-literal",
- "hickory-resolver",
  "humantime",
  "indexmap 2.2.6",
- "ipnetwork",
  "itertools",
  "maxminddb",
- "mockall",
- "nix",
  "parking_lot",
- "paste",
  "petgraph",
  "pretty_assertions",
- "rand",
  "ratatui",
  "serde",
  "serde_json",
  "serde_with",
  "serde_yaml",
- "socket2",
  "strum",
  "test-case",
  "thiserror",
- "tokio",
- "tokio-util",
  "toml",
  "tracing",
  "tracing-chrome",
  "tracing-subscriber",
+ "trippy-core",
+ "trippy-dns",
+ "trippy-privilege",
+]
+
+[[package]]
+name = "trippy-core"
+version = "0.11.0-dev"
+dependencies = [
+ "anyhow",
+ "arrayvec",
+ "bitflags",
+ "derive_more",
+ "hex-literal",
+ "ipnetwork",
+ "itertools",
+ "mockall",
+ "nix",
+ "paste",
+ "rand",
+ "serde",
+ "serde_yaml",
+ "socket2",
+ "test-case",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
  "tun2",
  "widestring",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "trippy-dns"
+version = "0.11.0-dev"
+dependencies = [
+ "anyhow",
+ "crossbeam",
+ "dns-lookup",
+ "hickory-resolver",
+ "itertools",
+ "parking_lot",
+ "thiserror",
+]
+
+[[package]]
+name = "trippy-privilege"
+version = "0.11.0-dev"
+dependencies = [
+ "anyhow",
+ "caps",
+ "nix",
+ "paste",
+ "thiserror",
  "windows-sys 0.52.0",
 ]
 
@@ -2119,7 +2158,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
  "wasm-bindgen-shared",
 ]
 
@@ -2141,7 +2180,7 @@ checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -2393,5 +2432,5 @@ checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.62",
+ "syn 2.0.64",
 ]

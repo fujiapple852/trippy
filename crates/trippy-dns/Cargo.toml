@@ -1,0 +1,25 @@
+[package]
+name = "trippy-dns"
+description = "A lazy DNS resolver for Trippy"
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords = ["traceroute", "ping", "icmp"]
+categories = ["network-programming"]
+
+[dependencies]
+thiserror.workspace = true
+itertools.workspace = true
+crossbeam = "0.8.4"
+dns-lookup = "2.0.4"
+hickory-resolver = "0.24.1"
+parking_lot.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
