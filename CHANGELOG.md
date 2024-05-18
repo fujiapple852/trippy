@@ -17,6 +17,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Separate library and binary crates ([#1141](https://github.com/fujiapple852/trippy/issues/1141))
+
 ### Fixed
 
 ## [0.10.0] - 2024-03-31
