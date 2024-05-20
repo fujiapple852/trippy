@@ -629,7 +629,7 @@ mod tests {
 
     macro_rules! file {
         ($path:expr) => {{
-            let yaml = include_str!(concat!("../../test_resources/backend/", $path));
+            let yaml = include_str!(concat!("../../tests/resources/backend/", $path));
             serde_yaml::from_str(yaml).unwrap()
         }};
     }

@@ -485,14 +485,14 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case(include_str!("../test_resources/tui/tui_theme_items.txt"), &tui_theme_items(); "tui theme items match")]
-    #[test_case(include_str!("../test_resources/tui/tui_binding_commands.txt"), &tui_binding_commands(); "tui binding commands match")]
-    #[test_case(include_str!("../test_resources/config/completions_bash.txt"), &shell_completions(Shell::Bash).unwrap(); "generate bash shell completions")]
-    #[test_case(include_str!("../test_resources/config/completions_elvish.txt"), &shell_completions(Shell::Elvish).unwrap(); "generate elvish shell completions")]
-    #[test_case(include_str!("../test_resources/config/completions_fish.txt"), &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
-    #[test_case(include_str!("../test_resources/config/completions_powershell.txt"), &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
-    #[test_case(include_str!("../test_resources/config/completions_zsh.txt"), &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
-    #[test_case(include_str!("../test_resources/config/trip.1"), &man_page().unwrap(); "generate man page")]
+    #[test_case(include_str!("../tests/resources/tui/tui_theme_items.txt"), &tui_theme_items(); "tui theme items match")]
+    #[test_case(include_str!("../tests/resources/tui/tui_binding_commands.txt"), &tui_binding_commands(); "tui binding commands match")]
+    #[test_case(include_str!("../tests/resources/config/completions_bash.txt"), &shell_completions(Shell::Bash).unwrap(); "generate bash shell completions")]
+    #[test_case(include_str!("../tests/resources/config/completions_elvish.txt"), &shell_completions(Shell::Elvish).unwrap(); "generate elvish shell completions")]
+    #[test_case(include_str!("../tests/resources/config/completions_fish.txt"), &shell_completions(Shell::Fish).unwrap(); "generate fish shell completions")]
+    #[test_case(include_str!("../tests/resources/config/completions_powershell.txt"), &shell_completions(Shell::PowerShell).unwrap(); "generate powershell shell completions")]
+    #[test_case(include_str!("../tests/resources/config/completions_zsh.txt"), &shell_completions(Shell::Zsh).unwrap(); "generate zsh shell completions")]
+    #[test_case(include_str!("../tests/resources/config/trip.1"), &man_page().unwrap(); "generate man page")]
     fn test_output(expected: &str, actual: &str) {
         if remove_whitespace(actual.to_string()) != remove_whitespace(expected.to_string()) {
             pretty_assertions::assert_eq!(actual, expected);
