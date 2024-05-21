@@ -1096,6 +1096,7 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tests::{insta, remove_whitespace};
     use crossterm::event::KeyCode;
     use std::net::{Ipv4Addr, Ipv6Addr};
     use std::str::FromStr;
@@ -1129,12 +1130,16 @@ mod tests {
         pretty_assertions::assert_eq!(expected, config);
     }
 
-    #[test_case("trip", Err(anyhow!(include_str!("../tests/resources/config/usage_short.txt"))); "show default help")]
-    #[test_case("trip -h", Err(anyhow!(include_str!("../tests/resources/config/usage_short.txt"))); "show short help")]
-    #[test_case("trip --help", Err(anyhow!(include_str!("../tests/resources/config/usage_long.txt"))); "show long help")]
+    #[test_case("trip"; "show default help")]
+    #[test_case("trip -h"; "show short help")]
+    #[test_case("trip --help"; "show long help")]
+    fn test_help(cmd: &str) {
+        compare_snapshot(cmd, parse_config(cmd));
+    }
+
     #[test_case("trip --version", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version")]
     #[test_case("trip -V", Err(anyhow!(format!("trip {}", clap::crate_version!()))); "show version short")]
-    fn test_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+    fn test_version_help(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
@@ -1682,6 +1687,20 @@ mod tests {
         }
     }
 
+    fn compare_snapshot<T>(name: &str, actual: anyhow::Result<T>)
+    where
+        T: std::fmt::Debug,
+    {
+        insta(name, || match actual {
+            Ok(act) => {
+                insta::assert_debug_snapshot!(act);
+            }
+            Err(err) => {
+                insta::assert_snapshot!(remove_whitespace(err.to_string()));
+            }
+        });
+    }
+
     fn cfg() -> TrippyConfigBuilder {
         TrippyConfigBuilder::new(vec![String::from("example.com")])
     }
@@ -1703,11 +1722,6 @@ mod tests {
         Ok(Args::try_parse_from(
             args.iter().map(std::ffi::OsString::from),
         )?)
-    }
-
-    fn remove_whitespace(mut s: String) -> String {
-        s.retain(|c| !c.is_whitespace());
-        s
     }
 
     pub struct TrippyConfigBuilder {

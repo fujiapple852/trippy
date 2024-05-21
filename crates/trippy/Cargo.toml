@@ -53,6 +53,7 @@ clap_mangen = "0.2.20"
 [dev-dependencies]
 test-case.workspace = true
 serde_yaml.workspace = true
+insta = { version = "1.39.0", features = ["serde"] }
 pretty_assertions = "1.4.0"
 
 [package.metadata.generate-rpm]
