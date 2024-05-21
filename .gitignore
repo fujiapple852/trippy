@@ -2,3 +2,4 @@
 .idea
 .DS_Store
 .vscode/launch.json
+*.snap.new
