@@ -23,7 +23,7 @@ socket2 = { version = "0.5.7", features = [ "all" ] }
 bitflags = "2.5.0"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.28.0", default-features = false, features = [ "user", "poll", "net" ] }
+nix = { version = "0.29.0", default-features = false, features = [ "user", "poll", "net" ] }
 
 [target.'cfg(windows)'.dependencies]
 paste = "1.0.15"

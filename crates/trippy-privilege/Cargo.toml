@@ -20,7 +20,7 @@ thiserror.workspace = true
 caps = "0.5.5"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.28.0", default-features = false, features = [ "user" ] }
+nix = { version = "0.29.0", default-features = false, features = [ "user" ] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.52.0", features = [
