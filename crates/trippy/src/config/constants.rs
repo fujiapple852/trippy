@@ -53,7 +53,7 @@ pub const DEFAULT_TUI_MAX_ADDRS: u8 = 0;
 pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 
 /// The default value for `tui-refresh-rate`.
-pub const DEFAULT_TUI_REFRESH_RATE: &str = "100ms";
+pub const DEFAULT_TUI_REFRESH_RATE: Duration = Duration::from_millis(100);
 
 /// The default value for `tui-privacy-max-ttl`.
 pub const DEFAULT_TUI_PRIVACY_MAX_TTL: u8 = 0;
@@ -68,7 +68,7 @@ pub const DEFAULT_ADDR_FAMILY: AddressFamilyConfig = AddressFamilyConfig::Ipv4Th
 pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;
 
 /// The default value for `dns-timeout`.
-pub const DEFAULT_DNS_TIMEOUT: &str = "5s";
+pub const DEFAULT_DNS_TIMEOUT: Duration = Duration::from_millis(5000);
 
 /// The default value for `report-cycles`.
 pub const DEFAULT_REPORT_CYCLES: usize = 10;

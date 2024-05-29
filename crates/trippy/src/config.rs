@@ -2,12 +2,10 @@ use anyhow::anyhow;
 use clap::ValueEnum;
 use clap_complete::Shell;
 use file::ConfigFile;
-use humantime::format_duration;
 use itertools::Itertools;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{
     defaults, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
@@ -409,17 +407,17 @@ impl TrippyConfig {
         );
         let target_port = cfg_layer_opt(args.target_port, cfg_file_strategy.target_port);
         let source_port = cfg_layer_opt(args.source_port, cfg_file_strategy.source_port);
-        let source_address = cfg_layer_opt(args.source_address, cfg_file_strategy.source_address);
+        let source_addr = cfg_layer_opt(args.source_address, cfg_file_strategy.source_address);
         let interface = cfg_layer_opt(args.interface, cfg_file_strategy.interface);
         let min_round_duration = cfg_layer(
             args.min_round_duration,
             cfg_file_strategy.min_round_duration,
-            format_duration(defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION).to_string(),
+            defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
         );
         let max_round_duration = cfg_layer(
             args.max_round_duration,
             cfg_file_strategy.max_round_duration,
-            format_duration(defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION).to_string(),
+            defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION,
         );
         let initial_sequence = cfg_layer(
             args.initial_sequence,
@@ -434,7 +432,7 @@ impl TrippyConfig {
         let grace_duration = cfg_layer(
             args.grace_duration,
             cfg_file_strategy.grace_duration,
-            format_duration(defaults::DEFAULT_STRATEGY_GRACE_DURATION).to_string(),
+            defaults::DEFAULT_STRATEGY_GRACE_DURATION,
         );
         let max_inflight = cfg_layer(
             args.max_inflight,
@@ -479,7 +477,7 @@ impl TrippyConfig {
         let read_timeout = cfg_layer(
             args.read_timeout,
             cfg_file_strategy.read_timeout,
-            format_duration(defaults::DEFAULT_STRATEGY_READ_TIMEOUT).to_string(),
+            defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
         );
         let tui_max_samples = cfg_layer(
             args.tui_max_samples,
@@ -499,7 +497,7 @@ impl TrippyConfig {
         let tui_refresh_rate = cfg_layer(
             args.tui_refresh_rate,
             cfg_file_tui.tui_refresh_rate,
-            String::from(constants::DEFAULT_TUI_REFRESH_RATE),
+            constants::DEFAULT_TUI_REFRESH_RATE,
         );
         let tui_privacy_max_ttl = cfg_layer(
             args.tui_privacy_max_ttl,
@@ -546,7 +544,7 @@ impl TrippyConfig {
         let dns_timeout = cfg_layer(
             args.dns_timeout,
             cfg_file_dns.dns_timeout,
-            String::from(constants::DEFAULT_DNS_TIMEOUT),
+            constants::DEFAULT_DNS_TIMEOUT,
         );
         let report_cycles = cfg_layer(
             args.report_cycles,
@@ -559,18 +557,6 @@ impl TrippyConfig {
             (false, false, false, ProtocolConfig::Tcp) | (_, true, _, _) => Protocol::Tcp,
             (false, false, false, ProtocolConfig::Icmp) | (_, _, true, _) => Protocol::Icmp,
         };
-        let read_timeout = humantime::parse_duration(&read_timeout)?;
-        let min_round_duration = humantime::parse_duration(&min_round_duration)?;
-        let max_round_duration = humantime::parse_duration(&max_round_duration)?;
-        let grace_duration = humantime::parse_duration(&grace_duration)?;
-        let source_addr = source_address
-            .as_ref()
-            .map(|addr| {
-                IpAddr::from_str(addr)
-                    .map_err(|_| anyhow!("invalid source IP address format: {}", addr))
-            })
-            .transpose()?;
-
         #[allow(clippy::match_same_arms)]
         let addr_family = match (
             args.ipv4,
@@ -622,14 +608,12 @@ impl TrippyConfig {
                 ));
             }
         };
-        let tui_refresh_rate = humantime::parse_duration(&tui_refresh_rate)?;
         let dns_resolve_method = match dns_resolve_method_config {
             DnsResolveMethodConfig::System => ResolveMethod::System,
             DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
             DnsResolveMethodConfig::Google => ResolveMethod::Google,
             DnsResolveMethodConfig::Cloudflare => ResolveMethod::Cloudflare,
         };
-        let dns_timeout = humantime::parse_duration(&dns_timeout)?;
         let max_rounds = match mode {
             Mode::Stream | Mode::Tui => None,
             Mode::Pretty
@@ -744,13 +728,13 @@ impl Default for TrippyConfig {
             interface: None,
             multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
             port_direction: PortDirection::None,
-            dns_timeout: duration(constants::DEFAULT_DNS_TIMEOUT),
+            dns_timeout: constants::DEFAULT_DNS_TIMEOUT,
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
             tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
             tui_max_flows: constants::DEFAULT_TUI_MAX_FLOWS,
             tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
-            tui_refresh_rate: duration(constants::DEFAULT_TUI_REFRESH_RATE),
+            tui_refresh_rate: constants::DEFAULT_TUI_REFRESH_RATE,
             tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
             tui_address_mode: constants::DEFAULT_TUI_ADDRESS_MODE,
             tui_as_mode: constants::DEFAULT_TUI_AS_MODE,
@@ -772,10 +756,6 @@ impl Default for TrippyConfig {
             tui_custom_columns: TuiColumns::default(),
         }
     }
-}
-
-fn duration(duration: &str) -> Duration {
-    humantime::parse_duration(duration).expect("valid duration")
 }
 
 fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
@@ -1118,6 +1098,7 @@ mod tests {
     use super::*;
     use crossterm::event::KeyCode;
     use std::net::{Ipv4Addr, Ipv6Addr};
+    use std::str::FromStr;
     use test_case::test_case;
     use trippy_core::Port;
 
@@ -1280,11 +1261,11 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default min round duration")]
     #[test_case("trip example.com --min-round-duration 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration")]
     #[test_case("trip example.com -i 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration short")]
-    #[test_case("trip example.com --min-round-duration 0", Err(anyhow!("time unit needed, for example 0sec or 0ms")); "invalid format min round duration")]
+    #[test_case("trip example.com --min-round-duration 0", Err(anyhow!("error: invalid value '0' for '--min-round-duration <MIN_ROUND_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format min round duration")]
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default max round duration")]
     #[test_case("trip example.com --max-round-duration 1250ms", Ok(cfg().max_round_duration(Duration::from_millis(1250)).build()); "custom max round duration")]
     #[test_case("trip example.com -T 2s", Ok(cfg().max_round_duration(Duration::from_millis(2000)).build()); "custom max round duration short")]
-    #[test_case("trip example.com --min-round-duration 0", Err(anyhow!("time unit needed, for example 0sec or 0ms")); "invalid format max round duration")]
+    #[test_case("trip example.com --max-round-duration 0", Err(anyhow!("error: invalid value '0' for '--max-round-duration <MAX_ROUND_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format max round duration")]
     #[test_case("trip example.com -i 250ms -T 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).max_round_duration(Duration::from_millis(250)).build()); "custom min and max round duration")]
     #[test_case("trip example.com -i 300ms -T 250ms", Err(anyhow!("max-round-duration (250ms) must not be less than min-round-duration (300ms)")); "min round duration greater than max")]
     fn test_round_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1294,7 +1275,7 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().grace_duration(Duration::from_millis(100)).build()); "default grace duration")]
     #[test_case("trip example.com --grace-duration 10ms", Ok(cfg().grace_duration(Duration::from_millis(10)).build()); "custom grace duration")]
     #[test_case("trip example.com -g 50ms", Ok(cfg().grace_duration(Duration::from_millis(50)).build()); "custom grace duration short")]
-    #[test_case("trip example.com --grace-duration 0", Err(anyhow!("time unit needed, for example 0sec or 0ms")); "invalid format grace duration")]
+    #[test_case("trip example.com --grace-duration 0", Err(anyhow!("error: invalid value '0' for '--grace-duration <GRACE_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format grace duration")]
     #[test_case("trip example.com --grace-duration 9ms", Err(anyhow!("grace-duration (9ms) must be between 10ms and 1s inclusive")); "invalid low grace duration")]
     #[test_case("trip example.com --grace-duration 1001ms", Err(anyhow!("grace-duration (1.001s) must be between 10ms and 1s inclusive")); "invalid high grace duration")]
     fn test_grace_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1337,7 +1318,7 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().read_timeout(Duration::from_millis(10)).build()); "default read timeout")]
     #[test_case("trip example.com --read-timeout 20ms", Ok(cfg().read_timeout(Duration::from_millis(20)).build()); "custom read timeout")]
-    #[test_case("trip example.com --read-timeout 20", Err(anyhow!("time unit needed, for example 20sec or 20ms")); "invalid custom read timeout")]
+    #[test_case("trip example.com --read-timeout 20", Err(anyhow!("error: invalid value '20' for '--read-timeout <READ_TIMEOUT>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom read timeout")]
     #[test_case("trip example.com --read-timeout 9ms", Err(anyhow!("read-timeout (9ms) must be between 10ms and 100ms inclusive")); "invalid low custom read timeout")]
     #[test_case("trip example.com --read-timeout 101ms", Err(anyhow!("read-timeout (101ms) must be between 10ms and 100ms inclusive")); "invalid high custom read timeout")]
     fn test_read_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1370,7 +1351,7 @@ mod tests {
     #[test_case("trip example.com --source-address 10.0.0.1", Ok(cfg().source_addr(Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)))).build()); "custom ipv4 source address")]
     #[test_case("trip example.com --source-address 2404:6800:4005:81a::200e", Ok(cfg().source_addr(Some(IpAddr::V6(Ipv6Addr::from_str("2404:6800:4005:81a::200e").unwrap()))).build()); "custom ipv6 source address")]
     #[test_case("trip example.com -A 10.0.0.1", Ok(cfg().source_addr(Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)))).build()); "custom ipv4 source address short")]
-    #[test_case("trip example.com --source-address foobar", Err(anyhow!("invalid source IP address format: foobar")); "invalid source address")]
+    #[test_case("trip example.com --source-address foobar", Err(anyhow!("error: invalid value 'foobar' for '--source-address <SOURCE_ADDRESS>': invalid IP address syntax For more information, try '--help'.")); "invalid source address")]
     fn test_source_address(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1384,7 +1365,7 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().dns_timeout(Duration::from_millis(5000)).build()); "default dns timeout")]
     #[test_case("trip example.com --dns-timeout 20ms", Ok(cfg().dns_timeout(Duration::from_millis(20)).build()); "custom dns timeout")]
-    #[test_case("trip example.com --dns-timeout 20", Err(anyhow!("time unit needed, for example 20sec or 20ms")); "invalid custom dns timeout")]
+    #[test_case("trip example.com --dns-timeout 20", Err(anyhow!("error: invalid value '20' for '--dns-timeout <DNS_TIMEOUT>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom dns timeout")]
     fn test_dns_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1440,7 +1421,8 @@ mod tests {
     #[test_case("trip example.com --tui-refresh-rate 200ms", Ok(cfg().tui_refresh_rate(Duration::from_millis(200)).build()); "custom tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate 49ms", Err(anyhow!("tui-refresh-rate (49ms) must be between 50ms and 1s inclusive")); "invalid low tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate 1001ms", Err(anyhow!("tui-refresh-rate (1.001s) must be between 50ms and 1s inclusive")); "invalid high tui refresh rate")]
-    #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("expected number at 0")); "invalid format tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("error: invalid value 'foo' for '--tui-refresh-rate <TUI_REFRESH_RATE>': expected number at 0 For more information, try '--help'.")); "invalid format tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 10xx", Err(anyhow!("error: invalid value '10xx' for '--tui-refresh-rate <TUI_REFRESH_RATE>': unknown time unit \"xx\", supported units: ns, us, ms, sec, min, hours, days, weeks, months, years (and few variations) For more information, try '--help'.")); "invalid time unit tui refresh rate")]
     fn test_tui_refresh_rate(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
