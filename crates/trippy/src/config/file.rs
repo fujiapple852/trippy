@@ -7,11 +7,13 @@ use crate::config::{
 use anyhow::Context;
 use encoding_rs_io::DecodeReaderBytes;
 use etcetera::BaseStrategy;
-use humantime::format_duration;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::net::IpAddr;
 use std::path::Path;
+use std::str::FromStr;
+use std::time::Duration;
 use trippy_core::defaults;
 
 const DEFAULT_CONFIG_FILE: &str = "trippy.toml";
@@ -130,13 +132,21 @@ pub struct ConfigStrategy {
     pub addr_family: Option<AddressFamilyConfig>,
     pub target_port: Option<u16>,
     pub source_port: Option<u16>,
-    pub source_address: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "addr_deser")]
+    pub source_address: Option<IpAddr>,
     pub interface: Option<String>,
-    pub min_round_duration: Option<String>,
-    pub max_round_duration: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub min_round_duration: Option<Duration>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub max_round_duration: Option<Duration>,
     pub initial_sequence: Option<u16>,
     pub multipath_strategy: Option<MultipathStrategyConfig>,
-    pub grace_duration: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub grace_duration: Option<Duration>,
     pub max_inflight: Option<u8>,
     pub first_ttl: Option<u8>,
     pub max_ttl: Option<u8>,
@@ -144,7 +154,9 @@ pub struct ConfigStrategy {
     pub payload_pattern: Option<u8>,
     pub tos: Option<u8>,
     pub icmp_extensions: Option<bool>,
-    pub read_timeout: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub read_timeout: Option<Duration>,
 }
 
 impl Default for ConfigStrategy {
@@ -156,19 +168,13 @@ impl Default for ConfigStrategy {
             source_port: None,
             source_address: None,
             interface: None,
-            min_round_duration: Some(
-                format_duration(defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION).to_string(),
-            ),
-            max_round_duration: Some(
-                format_duration(defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION).to_string(),
-            ),
+            min_round_duration: Some(defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION),
+            max_round_duration: Some(defaults::DEFAULT_STRATEGY_MAX_ROUND_DURATION),
             initial_sequence: Some(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
             multipath_strategy: Some(MultipathStrategyConfig::from(
                 defaults::DEFAULT_STRATEGY_MULTIPATH,
             )),
-            grace_duration: Some(
-                format_duration(defaults::DEFAULT_STRATEGY_GRACE_DURATION).to_string(),
-            ),
+            grace_duration: Some(defaults::DEFAULT_STRATEGY_GRACE_DURATION),
             max_inflight: Some(defaults::DEFAULT_STRATEGY_MAX_INFLIGHT),
             first_ttl: Some(defaults::DEFAULT_STRATEGY_FIRST_TTL),
             max_ttl: Some(defaults::DEFAULT_STRATEGY_MAX_TTL),
@@ -176,9 +182,7 @@ impl Default for ConfigStrategy {
             payload_pattern: Some(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
             tos: Some(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE.is_enabled()),
-            read_timeout: Some(
-                format_duration(defaults::DEFAULT_STRATEGY_READ_TIMEOUT).to_string(),
-            ),
+            read_timeout: Some(defaults::DEFAULT_STRATEGY_READ_TIMEOUT),
         }
     }
 }
@@ -189,7 +193,9 @@ pub struct ConfigDns {
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
     pub dns_resolve_all: Option<bool>,
     pub dns_lookup_as_info: Option<bool>,
-    pub dns_timeout: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub dns_timeout: Option<Duration>,
 }
 
 impl Default for ConfigDns {
@@ -198,7 +204,7 @@ impl Default for ConfigDns {
             dns_resolve_method: Some(super::constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_resolve_all: Some(super::constants::DEFAULT_DNS_RESOLVE_ALL),
             dns_lookup_as_info: Some(super::constants::DEFAULT_DNS_LOOKUP_AS_INFO),
-            dns_timeout: Some(String::from(super::constants::DEFAULT_DNS_TIMEOUT)),
+            dns_timeout: Some(super::constants::DEFAULT_DNS_TIMEOUT),
         }
     }
 }
@@ -223,7 +229,9 @@ pub struct ConfigTui {
     pub tui_max_samples: Option<usize>,
     pub tui_max_flows: Option<usize>,
     pub tui_preserve_screen: Option<bool>,
-    pub tui_refresh_rate: Option<String>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub tui_refresh_rate: Option<Duration>,
     pub tui_privacy_max_ttl: Option<u8>,
     pub tui_address_mode: Option<AddressMode>,
     pub tui_as_mode: Option<AsMode>,
@@ -240,7 +248,7 @@ impl Default for ConfigTui {
             tui_max_samples: Some(super::constants::DEFAULT_TUI_MAX_SAMPLES),
             tui_max_flows: Some(super::constants::DEFAULT_TUI_MAX_FLOWS),
             tui_preserve_screen: Some(super::constants::DEFAULT_TUI_PRESERVE_SCREEN),
-            tui_refresh_rate: Some(String::from(super::constants::DEFAULT_TUI_REFRESH_RATE)),
+            tui_refresh_rate: Some(super::constants::DEFAULT_TUI_REFRESH_RATE),
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),
@@ -397,6 +405,24 @@ impl Default for ConfigBindings {
             quit: Some(bindings.quit),
         }
     }
+}
+
+fn humantime_deser<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    humantime::parse_duration(&String::deserialize(deserializer)?)
+        .map_err(serde::de::Error::custom)
+        .map(Some)
+}
+
+fn addr_deser<'de, D>(deserializer: D) -> Result<Option<IpAddr>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    IpAddr::from_str(&String::deserialize(deserializer)?)
+        .map_err(serde::de::Error::custom)
+        .map(Some)
 }
 
 #[cfg(test)]

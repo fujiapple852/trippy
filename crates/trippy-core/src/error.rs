@@ -23,9 +23,9 @@ pub enum TracerError {
     IoError(#[from] IoError),
     #[error("insufficient buffer capacity")]
     InsufficientCapacity,
-    #[error("address not available: {0}")]
+    #[error("address {0} not available")]
     AddressNotAvailable(SocketAddr),
-    #[error("invalid source IP address: {0}")]
+    #[error("source IP address {0} could not be bound")]
     InvalidSourceAddr(IpAddr),
     #[error("missing address from socket call")]
     MissingAddr,

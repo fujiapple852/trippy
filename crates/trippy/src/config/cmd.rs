@@ -9,6 +9,9 @@ use anyhow::anyhow;
 use clap::builder::Styles;
 use clap::Parser;
 use clap_complete::Shell;
+use std::net::IpAddr;
+use std::str::FromStr;
+use std::time::Duration;
 
 /// Trace a route to a host and record statistics
 #[allow(clippy::doc_markdown)]
@@ -93,25 +96,25 @@ pub struct Args {
     pub source_port: Option<u16>,
 
     /// The source IP address [default: auto]
-    #[arg(short = 'A', long, conflicts_with = "interface")]
-    pub source_address: Option<String>,
+    #[arg(short = 'A', long, value_parser = parse_addr, conflicts_with = "interface")]
+    pub source_address: Option<IpAddr>,
 
     /// The network interface [default: auto]
     #[arg(short = 'I', long)]
     pub interface: Option<String>,
 
     /// The minimum duration of every round [default: 1s]
-    #[arg(short = 'i', long)]
-    pub min_round_duration: Option<String>,
+    #[arg(short = 'i', long, value_parser = parse_duration)]
+    pub min_round_duration: Option<Duration>,
 
     /// The maximum duration of every round [default: 1s]
-    #[arg(short = 'T', long)]
-    pub max_round_duration: Option<String>,
+    #[arg(short = 'T', long, value_parser = parse_duration)]
+    pub max_round_duration: Option<Duration>,
 
     /// The period of time to wait for additional ICMP responses after the target has responded
     /// [default: 100ms]
-    #[arg(short = 'g', long)]
-    pub grace_duration: Option<String>,
+    #[arg(short = 'g', long, value_parser = parse_duration)]
+    pub grace_duration: Option<Duration>,
 
     /// The initial sequence number [default: 33000]
     #[arg(long)]
@@ -150,8 +153,8 @@ pub struct Args {
     pub icmp_extensions: bool,
 
     /// The socket read timeout [default: 10ms]
-    #[arg(long)]
-    pub read_timeout: Option<String>,
+    #[arg(long, value_parser = parse_duration)]
+    pub read_timeout: Option<Duration>,
 
     /// How to perform DNS queries [default: system]
     #[arg(value_enum, short = 'r', long)]
@@ -162,8 +165,8 @@ pub struct Args {
     pub dns_resolve_all: bool,
 
     /// The maximum time to wait to perform DNS queries [default: 5s]
-    #[arg(long)]
-    pub dns_timeout: Option<String>,
+    #[arg(long, value_parser = parse_duration)]
+    pub dns_timeout: Option<Duration>,
 
     /// Lookup autonomous system (AS) information during DNS queries [default: false]
     #[arg(long, short = 'z')]
@@ -206,8 +209,8 @@ pub struct Args {
     pub tui_preserve_screen: bool,
 
     /// The Tui refresh rate [default: 100ms]
-    #[arg(long)]
-    pub tui_refresh_rate: Option<String>,
+    #[arg(long, value_parser = parse_duration)]
+    pub tui_refresh_rate: Option<Duration>,
 
     /// The maximum ttl of hops which will be masked for privacy [default: 0]
     #[arg(long)]
@@ -282,4 +285,12 @@ fn parse_tui_binding_value(value: &str) -> anyhow::Result<(TuiCommandItem, TuiKe
     let item = TuiCommandItem::try_from(&value[..pos])?;
     let binding = TuiKeyBinding::try_from(&value[pos + 1..])?;
     Ok((item, binding))
+}
+
+fn parse_duration(value: &str) -> anyhow::Result<Duration> {
+    Ok(humantime::parse_duration(value)?)
+}
+
+fn parse_addr(value: &str) -> anyhow::Result<IpAddr> {
+    Ok(IpAddr::from_str(value)?)
 }
