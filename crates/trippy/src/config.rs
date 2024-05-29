@@ -1174,7 +1174,7 @@ mod tests {
     #[test_case("trip example.com --mode flows --udp -R paris", Ok(cfg().mode(Mode::Flows).max_rounds(Some(10)).multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "flows mode")]
     #[test_case("trip example.com --mode silent", Ok(cfg().mode(Mode::Silent).max_rounds(Some(10)).build()); "silent mode")]
     #[test_case("trip example.com -m tui", Ok(cfg().mode(Mode::Tui).build()); "tui mode short")]
-    #[test_case("trip example.com --mode foo", Err(anyhow!(format!("error: one of the values isn't valid for an argument"))); "invalid mode")]
+    #[test_case("trip example.com --mode foo", Err(anyhow!(format!("error: invalid value 'foo' for '--mode <MODE>' [possible values: tui, stream, pretty, markdown, csv, json, dot, flows, silent] For more information, try '--help'."))); "invalid mode")]
     #[test_case("trip example.com --mode dot", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid dot mode")]
     #[test_case("trip example.com --mode flows", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid flows mode")]
     fn test_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1192,9 +1192,9 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
-    #[test_case("trip example.com --dummy", Err(anyhow!("error: unexpected argument found")); "invalid argument")]
+    #[test_case("trip example.com --dummy", Err(anyhow!("error: unexpected argument '--dummy' found")); "invalid argument")]
     fn test_unexpected(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
-        compare(parse_config(cmd), expected);
+        compare_lines(parse_config(cmd), expected, Some(1));
     }
 
     #[test_case("trip example.com", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "default strategy")]
@@ -1202,7 +1202,7 @@ mod tests {
     #[test_case("trip example.com -R classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy short")]
     #[test_case("trip example.com --multipath-strategy paris --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "paris strategy")]
     #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
-    #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid strategy")]
+    #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: invalid value 'tokyo' for '--multipath-strategy <MULTIPATH_STRATEGY>' [possible values: classic, paris, dublin] For more information, try '--help'.")); "invalid strategy")]
     #[test_case("trip example.com --icmp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not support for icmp")); "paris with invalid protocol icmp")]
     #[test_case("trip example.com --icmp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not support for icmp")); "dublin with invalid protocol icmp")]
     #[test_case("trip example.com --tcp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not yet supported for tcp")); "paris with invalid protocol tcp")]
@@ -1215,11 +1215,11 @@ mod tests {
     #[test_case("trip example.com --protocol icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol")]
     #[test_case("trip example.com --protocol udp", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol")]
     #[test_case("trip example.com --protocol tcp", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(80))).build()); "tcp protocol")]
-    #[test_case("trip example.com --protocol foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid protocol")]
+    #[test_case("trip example.com --protocol foo", Err(anyhow!("error: invalid value 'foo' for '--protocol <PROTOCOL>' [possible values: icmp, udp, tcp] For more information, try '--help'.")); "invalid protocol")]
     #[test_case("trip example.com -p icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol short")]
     #[test_case("trip example.com -p udp", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol short")]
     #[test_case("trip example.com -p tcp", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(80))).build()); "tcp protocol short")]
-    #[test_case("trip example.com -p foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid protocol short")]
+    #[test_case("trip example.com -p foo", Err(anyhow!("error: invalid value 'foo' for '--protocol <PROTOCOL>' [possible values: icmp, udp, tcp] For more information, try '--help'.")); "invalid protocol short")]
     #[test_case("trip example.com --icmp", Ok(cfg().protocol(Protocol::Icmp).port_direction(PortDirection::None).build()); "icmp protocol shortcut")]
     #[test_case("trip example.com --udp", Ok(cfg().protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol shortcut")]
     #[test_case("trip example.com --tcp", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(80))).build()); "tcp protocol shortcut")]
@@ -1253,10 +1253,10 @@ mod tests {
     #[test_case("trip example.com --addr-family ipv4-then-ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "ipv4 then ipv6 address family")]
     #[test_case("trip example.com --addr-family ipv6-then-ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv6thenIpv4).build()); "ipv6 then ipv4 address family")]
     #[test_case("trip example.com -F ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "custom address family short")]
-    #[test_case("trip example.com --addr-family foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid address family")]
+    #[test_case("trip example.com --addr-family foo", Err(anyhow!("error: invalid value 'foo' for '--addr-family <ADDR_FAMILY>' [possible values: ipv4, ipv6, ipv6-then-ipv4, ipv4-then-ipv6] For more information, try '--help'.")); "invalid address family")]
     #[test_case("trip example.com -4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family shortcut")]
     #[test_case("trip example.com -6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family shortcut")]
-    #[test_case("trip example.com -5", Err(anyhow!("error: unexpected argument found")); "invalid address family shortcut")]
+    #[test_case("trip example.com -5", Err(anyhow!("error: unexpected argument '-5' found tip: to pass '-5' as a value, use '-- -5' Usage: trip [OPTIONS] [TARGETS]... For more information, try '--help'.")); "invalid address family shortcut")]
     fn test_addr_family(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1265,12 +1265,12 @@ mod tests {
     #[test_case("trip example.com --first-ttl 5", Ok(cfg().first_ttl(5).build()); "custom first ttl")]
     #[test_case("trip example.com -f 5", Ok(cfg().first_ttl(5).build()); "custom first ttl short")]
     #[test_case("trip example.com --first-ttl 0", Err(anyhow!("first-ttl (0) must be in the range 1..255")); "invalid low first ttl")]
-    #[test_case("trip example.com --first-ttl 500", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high first ttl")]
+    #[test_case("trip example.com --first-ttl 500", Err(anyhow!("error: invalid value '500' for '--first-ttl <FIRST_TTL>': 500 is not in 0..=255 For more information, try '--help'.")); "invalid high first ttl")]
     #[test_case("trip example.com", Ok(cfg().first_ttl(1).build()); "default max ttl")]
     #[test_case("trip example.com --max-ttl 5", Ok(cfg().max_ttl(5).build()); "custom max ttl")]
     #[test_case("trip example.com -t 5", Ok(cfg().max_ttl(5).build()); "custom max ttl short")]
     #[test_case("trip example.com --max-ttl 0", Err(anyhow!("max-ttl (0) must be in the range 1..255")); "invalid low max ttl")]
-    #[test_case("trip example.com --max-ttl 500", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high max ttl")]
+    #[test_case("trip example.com --max-ttl 500", Err(anyhow!("error: invalid value '500' for '--max-ttl <MAX_TTL>': 500 is not in 0..=255 For more information, try '--help'.")); "invalid high max ttl")]
     #[test_case("trip example.com --first-ttl 3 --max-ttl 2", Err(anyhow!("first-ttl (3) must be less than or equal to max-ttl (2)")); "first ttl higher than max ttl")]
     #[test_case("trip example.com --first-ttl 5 --max-ttl 5", Ok(cfg().first_ttl(5).max_ttl(5).build()); "custom first and max ttl")]
     fn test_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1304,17 +1304,17 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().max_inflight(24).build()); "default max inflight")]
     #[test_case("trip example.com --max-inflight 12", Ok(cfg().max_inflight(12).build()); "custom max inflight")]
     #[test_case("trip example.com -U 20", Ok(cfg().max_inflight(20).build()); "custom max inflight short")]
-    #[test_case("trip example.com --max-inflight foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format max inflight")]
+    #[test_case("trip example.com --max-inflight foo", Err(anyhow!("error: invalid value 'foo' for '--max-inflight <MAX_INFLIGHT>': invalid digit found in string For more information, try '--help'.")); "invalid format max inflight")]
     #[test_case("trip example.com --max-inflight 0", Err(anyhow!("max-inflight (0) must be greater than zero")); "invalid low max inflight")]
-    #[test_case("trip example.com --max-inflight 300", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high max inflight")]
+    #[test_case("trip example.com --max-inflight 300", Err(anyhow!("error: invalid value '300' for '--max-inflight <MAX_INFLIGHT>': 300 is not in 0..=255 For more information, try '--help'.")); "invalid high max inflight")]
     fn test_max_inflight(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
     #[test_case("trip example.com", Ok(cfg().initial_sequence(33000).build()); "default initial sequence")]
     #[test_case("trip example.com --initial-sequence 5000", Ok(cfg().initial_sequence(5000).build()); "custom initial sequence")]
-    #[test_case("trip example.com --initial-sequence foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format initial sequence")]
-    #[test_case("trip example.com --initial-sequence 100000", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high initial sequence")]
+    #[test_case("trip example.com --initial-sequence foo", Err(anyhow!("error: invalid value 'foo' for '--initial-sequence <INITIAL_SEQUENCE>': invalid digit found in string For more information, try '--help'. ")); "invalid format initial sequence")]
+    #[test_case("trip example.com --initial-sequence 100000", Err(anyhow!("error: invalid value '100000' for '--initial-sequence <INITIAL_SEQUENCE>': 100000 is not in 0..=65535 For more information, try '--help'.")); "invalid high initial sequence")]
     fn test_init_seq(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1322,8 +1322,8 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().tos(0).build()); "default tos")]
     #[test_case("trip example.com --tos 255", Ok(cfg().tos(0xFF).build()); "custom tos")]
     #[test_case("trip example.com -Q 255", Ok(cfg().tos(0xFF).build()); "custom tos short")]
-    #[test_case("trip example.com --tos foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format tos")]
-    #[test_case("trip example.com --tos 300", Err(anyhow!("error: invalid value for one of the arguments")); "invalid high tos")]
+    #[test_case("trip example.com --tos foo", Err(anyhow!("error: invalid value 'foo' for '--tos <TOS>': invalid digit found in string For more information, try '--help'.")); "invalid format tos")]
+    #[test_case("trip example.com --tos 300", Err(anyhow!("error: invalid value '300' for '--tos <TOS>': 300 is not in 0..=255 For more information, try '--help'.")); "invalid high tos")]
     fn test_tos(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1346,22 +1346,22 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().packet_size(84).build()); "default packet size")]
     #[test_case("trip example.com --packet-size 120", Ok(cfg().packet_size(120).build()); "custom packet size")]
-    #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format packet size")]
+    #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value 'foo' for '--packet-size <PACKET_SIZE>': invalid digit found in string For more information, try '--help'.")); "invalid format packet size")]
     #[test_case("trip example.com --packet-size 47 -F ipv4-then-ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv4thenIpv6")); "invalid low packet size for ipv4 then ipv6")]
     #[test_case("trip example.com --packet-size 47 -F ipv6-then-ipv4", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6thenIpv4")); "invalid low packet size for ipv6 then ipv4")]
     #[test_case("trip example.com --packet-size 27 -F ipv4", Err(anyhow!("packet-size (27) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid low packet size for ipv4")]
     #[test_case("trip example.com --packet-size 1025 -F ipv4", Err(anyhow!("packet-size (1025) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid high packet size for ipv4")]
     #[test_case("trip example.com --packet-size 47 -F ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid low packet size for ipv6")]
     #[test_case("trip example.com --packet-size 1025 -F ipv6", Err(anyhow!("packet-size (1025) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid high packet size for ipv6")]
-    #[test_case("trip example.com --packet-size 100000", Err(anyhow!("error: invalid value for one of the arguments")); "invalid out of range packet size")]
+    #[test_case("trip example.com --packet-size 100000", Err(anyhow!("error: invalid value '100000' for '--packet-size <PACKET_SIZE>': 100000 is not in 0..=65535 For more information, try '--help'.")); "invalid out of range packet size")]
     fn test_packet_size(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
     #[test_case("trip example.com", Ok(cfg().payload_pattern(0).build()); "default payload pattern size")]
     #[test_case("trip example.com --payload-pattern 255", Ok(cfg().payload_pattern(0xFF).build()); "custom payload pattern")]
-    #[test_case("trip example.com --payload-pattern foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid format payload pattern")]
-    #[test_case("trip example.com --payload-pattern 256", Err(anyhow!("error: invalid value for one of the arguments")); "invalid out of range payload pattern")]
+    #[test_case("trip example.com --payload-pattern foo", Err(anyhow!("error: invalid value 'foo' for '--payload-pattern <PAYLOAD_PATTERN>': invalid digit found in string For more information, try '--help'.")); "invalid format payload pattern")]
+    #[test_case("trip example.com --payload-pattern 256", Err(anyhow!("error: invalid value '256' for '--payload-pattern <PAYLOAD_PATTERN>': 256 is not in 0..=255 For more information, try '--help'.")); "invalid out of range payload pattern")]
     fn test_payload_pattern(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1395,7 +1395,7 @@ mod tests {
     #[test_case("trip example.com --dns-resolve-method google", Ok(cfg().dns_resolve_method(ResolveMethod::Google).build()); "custom resolve method google")]
     #[test_case("trip example.com --dns-resolve-method cloudflare", Ok(cfg().dns_resolve_method(ResolveMethod::Cloudflare).build()); "custom resolve method cloudflare")]
     #[test_case("trip example.com --dns-resolve-method resolv", Ok(cfg().dns_resolve_method(ResolveMethod::Resolv).build()); "custom resolve method resolv")]
-    #[test_case("trip example.com --dns-resolve-method foobar", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid resolve method")]
+    #[test_case("trip example.com --dns-resolve-method foobar", Err(anyhow!("error: invalid value 'foobar' for '--dns-resolve-method <DNS_RESOLVE_METHOD>' [possible values: system, resolv, google, cloudflare] For more information, try '--help'.")); "invalid resolve method")]
     fn test_dns_resolve(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1418,14 +1418,14 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().tui_max_samples(256).build()); "default max samples")]
     #[test_case("trip example.com --tui-max-samples 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples")]
     #[test_case("trip example.com -s 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples short")]
-    #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid max samples")]
+    #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: invalid value 'foo' for '--tui-max-samples <TUI_MAX_SAMPLES>': invalid digit found in string For more information, try '--help'.")); "invalid max samples")]
     fn test_tui_max_samples(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
     #[test_case("trip example.com", Ok(cfg().tui_max_flows(64).build()); "default max flows")]
     #[test_case("trip example.com --tui-max-flows 100", Ok(cfg().tui_max_flows(100).build()); "custom max flows")]
-    #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid max flows")]
+    #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: invalid value 'foo' for '--tui-max-flows <TUI_MAX_FLOWS>': invalid digit found in string For more information, try '--help'.")); "invalid max flows")]
     fn test_tui_max_flows(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1447,7 +1447,7 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().tui_privacy_max_ttl(0).build()); "default tui privacy max ttl")]
     #[test_case("trip example.com --tui-privacy-max-ttl 4", Ok(cfg().tui_privacy_max_ttl(4).build()); "custom tui privacy max ttl")]
-    #[test_case("trip example.com --tui-privacy-max-ttl foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui privacy max ttl")]
+    #[test_case("trip example.com --tui-privacy-max-ttl foo", Err(anyhow!("error: invalid value 'foo' for '--tui-privacy-max-ttl <TUI_PRIVACY_MAX_TTL>': invalid digit found in string For more information, try '--help'.")); "invalid tui privacy max ttl")]
     fn test_tui_privacy_max_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1457,7 +1457,7 @@ mod tests {
     #[test_case("trip example.com --tui-address-mode host", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "host tui address mode")]
     #[test_case("trip example.com --tui-address-mode both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "both tui address mode")]
     #[test_case("trip example.com -a both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "custom tui address mode short")]
-    #[test_case("trip example.com --tui-address-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui address mode")]
+    #[test_case("trip example.com --tui-address-mode foo", Err(anyhow!("error: invalid value 'foo' for '--tui-address-mode <TUI_ADDRESS_MODE>' [possible values: ip, host, both] For more information, try '--help'.")); "invalid tui address mode")]
     fn test_tui_address_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1469,7 +1469,7 @@ mod tests {
     #[test_case("trip example.com --tui-as-mode registry", Ok(cfg().tui_as_mode(AsMode::Registry).build()); "registry tui as mode")]
     #[test_case("trip example.com --tui-as-mode allocated", Ok(cfg().tui_as_mode(AsMode::Allocated).build()); "allocated tui as mode")]
     #[test_case("trip example.com --tui-as-mode name", Ok(cfg().tui_as_mode(AsMode::Name).build()); "name tui as mode")]
-    #[test_case("trip example.com --tui-as-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui as mode")]
+    #[test_case("trip example.com --tui-as-mode foo", Err(anyhow!("error: invalid value 'foo' for '--tui-as-mode <TUI_AS_MODE>' [possible values: asn, prefix, country-code, registry, allocated, name] For more information, try '--help'.")); "invalid tui as mode")]
     fn test_tui_as_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1487,7 +1487,7 @@ mod tests {
     #[test_case("trip example.com --tui-icmp-extension-mode mpls", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Mpls).build()); "mpls tui icmp extension mode")]
     #[test_case("trip example.com --tui-icmp-extension-mode full", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::Full).build()); "full tui icmp extension mode")]
     #[test_case("trip example.com --tui-icmp-extension-mode all", Ok(cfg().tui_icmp_extension_mode(IcmpExtensionMode::All).build()); "all tui icmp extension mode")]
-    #[test_case("trip example.com --tui-icmp-extension-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui icmp extension mode")]
+    #[test_case("trip example.com --tui-icmp-extension-mode foo", Err(anyhow!("error: invalid value 'foo' for '--tui-icmp-extension-mode <TUI_ICMP_EXTENSION_MODE>' [possible values: off, mpls, full, all] For more information, try '--help'.")); "invalid tui icmp extension mode")]
     fn test_tui_icmp_extension_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1498,7 +1498,7 @@ mod tests {
     #[test_case("trip example.com --tui-geoip-mode long --geoip-mmdb-file foo.mmdb", Ok(cfg().tui_geoip_mode(GeoIpMode::Long).geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "long tui geoip mode")]
     #[test_case("trip example.com --tui-geoip-mode location --geoip-mmdb-file foo.mmdb", Ok(cfg().tui_geoip_mode(GeoIpMode::Location).geoip_mmdb_file(Some(String::from("foo.mmdb"))).build()); "location tui geoip mode")]
     #[test_case("trip example.com --tui-geoip-mode short", Err(anyhow!("geoip-mmdb-file must be given for tui-geoip-mode of `Short`")); "custom tui geoip mode without geoip")]
-    #[test_case("trip example.com --tui-geoip-mode foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid tui geoip mode")]
+    #[test_case("trip example.com --tui-geoip-mode foo", Err(anyhow!("error: invalid value 'foo' for '--tui-geoip-mode <TUI_GEOIP_MODE>' [possible values: off, short, long, location] For more information, try '--help'.")); "invalid tui geoip mode")]
     fn test_tui_geoip_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1506,7 +1506,7 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().tui_max_addrs(None).build()); "default tui max addrs")]
     #[test_case("trip example.com --tui-max-addrs 5", Ok(cfg().tui_max_addrs(Some(5)).build()); "custom tui max addrs")]
     #[test_case("trip example.com -M 7", Ok(cfg().tui_max_addrs(Some(7)).build()); "custom tui max addrs short")]
-    #[test_case("trip example.com --tui-max-addrs foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui max addrs")]
+    #[test_case("trip example.com --tui-max-addrs foo", Err(anyhow!("error: invalid value 'foo' for '--tui-max-addrs <TUI_MAX_ADDRS>': invalid digit found in string For more information, try '--help'.")); "invalid tui max addrs")]
     fn test_tui_max_addrs(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1515,11 +1515,11 @@ mod tests {
     #[test_case("trip example.com --tui-theme-colors bg-color=red", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, ..Default::default() }).build()); "custom tui theme named color")]
     #[test_case("trip example.com --tui-theme-colors bg-color=010203", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color")]
     #[test_case("trip example.com --tui-theme-colors bg-color=red,text-color=blue", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, text_color: TuiColor::Blue, ..Default::default() }).build()); "custom tui theme multiple")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=0", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme truncated hex value")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid named color")]
-    #[test_case("trip example.com --tui-theme-colors foo-color=red", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid item")]
-    #[test_case("trip example.com --tui-theme-colors foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid syntax")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=red, text-color=blue", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui theme invalid multiple with space")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=0", Err(anyhow!("error: invalid value 'bg-color=0' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: 0 For more information, try '--help'.")); "invalid tui theme truncated hex value")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=foo", Err(anyhow!("error: invalid value 'bg-color=foo' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: foo For more information, try '--help'. ")); "invalid tui theme invalid named color")]
+    #[test_case("trip example.com --tui-theme-colors foo-color=red", Err(anyhow!("error: invalid value 'foo-color=red' for '--tui-theme-colors <TUI_THEME_COLORS>': Matching variant not found For more information, try '--help'.")); "invalid tui theme invalid item")]
+    #[test_case("trip example.com --tui-theme-colors foo", Err(anyhow!("error: invalid value 'foo' for '--tui-theme-colors <TUI_THEME_COLORS>': invalid theme value: expected format `item=value` For more information, try '--help'.")); "invalid tui theme invalid syntax")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red, text-color=blue", Err(anyhow!("error: invalid value '' for '--tui-theme-colors <TUI_THEME_COLORS>': invalid theme value: expected format `item=value` For more information, try '--help'.")); "invalid tui theme invalid multiple with space")]
     fn test_tui_theme(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1527,10 +1527,10 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().tui_bindings(TuiBindings::default()).build()); "default tui bindings")]
     #[test_case("trip example.com --tui-key-bindings toggle-help=h", Ok(cfg().tui_bindings(TuiBindings { toggle_help: TuiKeyBinding::new(KeyCode::Char('h')), ..Default::default() }).build()); "custom tui bindings")]
     #[test_case("trip example.com --tui-key-bindings toggle-help=h,toggle-map=m", Ok(cfg().tui_bindings(TuiBindings { toggle_help: TuiKeyBinding::new(KeyCode::Char('h')), toggle_map: TuiKeyBinding::new(KeyCode::Char('m')), ..Default::default() }).build()); "custom tui bindings multiple")]
-    #[test_case("trip example.com --tui-key-bindings foo=h", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding command")]
-    #[test_case("trip example.com --tui-key-bindings toggle-help=123", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding key")]
+    #[test_case("trip example.com --tui-key-bindings foo=h", Err(anyhow!("error: invalid value 'foo=h' for '--tui-key-bindings <TUI_KEY_BINDINGS>': Matching variant not found For more information, try '--help'.")); "invalid tui binding command")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=123", Err(anyhow!("error: invalid value 'toggle-help=123' for '--tui-key-bindings <TUI_KEY_BINDINGS>': unknown key binding '123' For more information, try '--help'.")); "invalid tui binding key")]
     #[test_case("trip example.com --tui-key-bindings toggle-help=h,toggle-map=h", Err(anyhow!("Duplicate key bindings: h: [toggle-map and toggle-help]")); "invalid tui binding duplicate binding")]
-    #[test_case("trip example.com --tui-key-bindings toggle-help=h, toggle-map=m", Err(anyhow!("error: invalid value for one of the arguments")); "invalid tui binding multiple with space")]
+    #[test_case("trip example.com --tui-key-bindings toggle-help=h, toggle-map=m", Err(anyhow!("error: invalid value '' for '--tui-key-bindings <TUI_KEY_BINDINGS>': invalid binding value: expected format `item=value` For more information, try '--help'.")); "invalid tui binding multiple with space")]
     fn test_tui_bindings(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1539,7 +1539,7 @@ mod tests {
     #[test_case("trip example.com --mode csv --report-cycles 5", Ok(cfg().report_cycles(5).mode(Mode::Csv).max_rounds(Some(5)).build()); "custom report cycles")]
     #[test_case("trip example.com --mode pretty -C 5", Ok(cfg().report_cycles(5).mode(Mode::Pretty).max_rounds(Some(5)).build()); "custom report cycles short")]
     #[test_case("trip example.com --report-cycles 0", Err(anyhow!("report-cycles (0) must be greater than zero")); "invalid low report cycles")]
-    #[test_case("trip example.com --report-cycles foo", Err(anyhow!("error: invalid value for one of the arguments")); "invalid report cycles")]
+    #[test_case("trip example.com --report-cycles foo", Err(anyhow!("error: invalid value 'foo' for '--report-cycles <REPORT_CYCLES>': invalid digit found in string For more information, try '--help'.")); "invalid report cycles")]
     fn test_report_cycles(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1570,7 +1570,7 @@ mod tests {
     #[test_case("trip example.com --log-format pretty", Ok(cfg().log_format(LogFormat::Pretty).build()); "pretty log format")]
     #[test_case("trip example.com --log-format json", Ok(cfg().log_format(LogFormat::Json).build()); "json log format")]
     #[test_case("trip example.com --log-format chrome", Ok(cfg().log_format(LogFormat::Chrome).build()); "chrome log format")]
-    #[test_case("trip example.com --log-format foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid log format")]
+    #[test_case("trip example.com --log-format foo", Err(anyhow!("error: invalid value 'foo' for '--log-format <LOG_FORMAT>' [possible values: compact, pretty, json, chrome] For more information, try '--help'.")); "invalid log format")]
     fn test_log_format(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1579,7 +1579,7 @@ mod tests {
     #[test_case("trip example.com --log-span-events off", Ok(cfg().log_span_events(LogSpanEvents::Off).build()); "off log span")]
     #[test_case("trip example.com --log-span-events active", Ok(cfg().log_span_events(LogSpanEvents::Active).build()); "active log span")]
     #[test_case("trip example.com --log-span-events full", Ok(cfg().log_span_events(LogSpanEvents::Full).build()); "full log span")]
-    #[test_case("trip example.com --log-span-events foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "invalid log span")]
+    #[test_case("trip example.com --log-span-events foo", Err(anyhow!("error: invalid value 'foo' for '--log-span-events <LOG_SPAN_EVENTS>' [possible values: off, active, full] For more information, try '--help'.")); "invalid log span")]
     fn test_log_span(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1615,7 +1615,7 @@ mod tests {
     #[test_case("trip --generate powershell", Ok(TrippyAction::PrintShellCompletions(Shell::PowerShell)); "generate powershell shell completions")]
     #[test_case("trip --generate zsh", Ok(TrippyAction::PrintShellCompletions(Shell::Zsh)); "generate zsh shell completions")]
     #[test_case("trip --generate bash", Ok(TrippyAction::PrintShellCompletions(Shell::Bash)); "generate bash shell completions")]
-    #[test_case("trip --generate foo", Err(anyhow!("error: one of the values isn't valid for an argument")); "generate invalid shell completions")]
+    #[test_case("trip --generate foo", Err(anyhow!("error: invalid value 'foo' for '--generate <GENERATE>' [possible values: bash, elvish, fish, powershell, zsh] For more information, try '--help'.")); "generate invalid shell completions")]
     #[test_case("trip --generate-man", Ok(TrippyAction::PrintManPage); "generate man page")]
     fn test_action(cmd: &str, expected: anyhow::Result<TrippyAction>) {
         compare(parse_action(cmd), expected);
@@ -1650,16 +1650,44 @@ mod tests {
         )?)
     }
 
-    fn compare<T: PartialEq + Eq + std::fmt::Debug>(
+    fn compare<T>(actual: anyhow::Result<T>, expected: anyhow::Result<T>)
+    where
+        T: PartialEq + Eq + std::fmt::Debug,
+    {
+        compare_lines(actual, expected, None);
+    }
+
+    fn compare_lines<T>(
         actual: anyhow::Result<T>,
         expected: anyhow::Result<T>,
-    ) {
+        lines: Option<usize>,
+    ) where
+        T: PartialEq + Eq + std::fmt::Debug,
+    {
         match (actual, expected) {
             (Ok(cfg), Ok(exp)) => {
                 pretty_assertions::assert_eq!(cfg, exp);
             }
             (Err(err), Err(exp_err)) => {
-                if remove_whitespace(err.to_string()) != remove_whitespace(exp_err.to_string()) {
+                if let Some(lines) = lines {
+                    let fst = err
+                        .to_string()
+                        .lines()
+                        .nth(lines)
+                        .map(ToString::to_string)
+                        .unwrap_or_default();
+                    let snd = exp_err
+                        .to_string()
+                        .lines()
+                        .nth(lines)
+                        .map(ToString::to_string)
+                        .unwrap_or_default();
+                    if remove_whitespace(fst) != remove_whitespace(snd) {
+                        pretty_assertions::assert_eq!(err.to_string(), exp_err.to_string());
+                    }
+                } else if remove_whitespace(err.to_string())
+                    != remove_whitespace(exp_err.to_string())
+                {
                     pretty_assertions::assert_eq!(err.to_string(), exp_err.to_string());
                 }
             }
