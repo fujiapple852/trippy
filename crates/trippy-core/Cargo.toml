@@ -46,7 +46,7 @@ test-case.workspace = true
 serde_yaml.workspace = true
 hex-literal = "0.4.1"
 rand = "0.8.5"
-tokio = { version = "1.37.0", features = [ "full" ] }
+tokio = { version = "1.38.0", features = [ "full" ] }
 tokio-util = "0.7.11"
 ipnetwork = "0.20.0"
 mockall = "0.12.1"
