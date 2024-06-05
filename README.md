@@ -941,6 +941,8 @@ by [Team Cymru](https://team-cymru.com).
 
 The [trippy.cli.rs](https://trippy.cli.rs) CNAME hosting is provided by [cli.rs](https://cli.rs).
 
+The Trippy chat room is sponsored by [Zulip](https://zulip.com).
+
 ## License
 
 This project is distributed under the terms of the Apache License (Version 2.0).
