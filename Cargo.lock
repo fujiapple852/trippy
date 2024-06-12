@@ -1082,6 +1082,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1498,7 +1507,7 @@ dependencies = [
  "cassowary",
  "compact_str",
  "crossterm",
- "itertools",
+ "itertools 0.12.1",
  "lru",
  "paste",
  "stability",
@@ -2165,7 +2174,7 @@ dependencies = [
  "humantime",
  "indexmap 2.2.6",
  "insta",
- "itertools",
+ "itertools 0.13.0",
  "maxminddb",
  "parking_lot",
  "petgraph",
@@ -2197,7 +2206,7 @@ dependencies = [
  "derive_more",
  "hex-literal",
  "ipnetwork",
- "itertools",
+ "itertools 0.13.0",
  "mockall",
  "nix",
  "paste",
@@ -2224,7 +2233,7 @@ dependencies = [
  "crossbeam",
  "dns-lookup",
  "hickory-resolver",
- "itertools",
+ "itertools 0.13.0",
  "parking_lot",
  "thiserror",
 ]
@@ -2293,7 +2302,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a5fbabedabe362c618c714dbefda9927b5afc8e2a8102f47f081089a9019226"
 dependencies = [
- "itertools",
+ "itertools 0.12.1",
  "unicode-width",
 ]
 
