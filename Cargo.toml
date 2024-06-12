@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/trippy", "crates/trippy-core", "crates/trippy-packet", "crates/trippy-privilege", "crates/trippy-dns"]
+members = ["crates/trippy", "crates/trippy-core", "crates/trippy-packet", "crates/trippy-privilege", "crates/trippy-dns", "examples/*"]
 
 [workspace.package]
 version = "0.11.0-dev"
@@ -14,6 +14,10 @@ edition = "2021"
 rust-version = "1.75"
 
 [workspace.dependencies]
+trippy-core = { version = "0.11.0-dev", path = "crates/trippy-core" }
+trippy-privilege = { version = "0.11.0-dev", path = "crates/trippy-privilege" }
+trippy-dns = { version = "0.11.0-dev", path = "crates/trippy-dns" }
+trippy-packet = { version = "0.11.0-dev", path = "crates/trippy-packet" }
 thiserror = "1.0.60"
 anyhow = "1.0.83"
 itertools = "0.13.0"

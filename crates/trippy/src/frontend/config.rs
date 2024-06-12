@@ -32,6 +32,8 @@ pub struct TuiConfig {
     pub bindings: Bindings,
     /// The columns to display in the hops table.
     pub tui_columns: Columns,
+    pub geoip_mmdb_file: Option<String>,
+    pub dns_resolve_all: bool,
 }
 
 impl TuiConfig {
@@ -49,6 +51,9 @@ impl TuiConfig {
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
         tui_columns: &TuiColumns,
+
+        geoip_mmdb_file: Option<String>,
+        dns_resolve_all: bool,
     ) -> Self {
         Self {
             refresh_rate,
@@ -63,6 +68,8 @@ impl TuiConfig {
             theme: Theme::from(tui_theme),
             bindings: Bindings::from(*tui_bindings),
             tui_columns: Columns::from(tui_columns.clone()),
+            geoip_mmdb_file,
+            dns_resolve_all,
         }
     }
 }

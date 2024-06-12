@@ -20,7 +20,7 @@ mod address {
     use crate::error::{TraceResult, TracerError};
     use crate::net::platform::Ipv4ByteOrder;
     use crate::net::socket::Socket;
-    use crate::SocketImpl;
+    use crate::net::SocketImpl;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
     use std::net::{IpAddr, SocketAddr};
     use tracing::instrument;

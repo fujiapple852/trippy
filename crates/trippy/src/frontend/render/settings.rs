@@ -199,43 +199,55 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
 /// Format trace settings.
 fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let cfg = app.tracer_config();
-    let interface = if let Some(iface) = cfg.interface.as_deref() {
+    let interface = if let Some(iface) = cfg.data.interface() {
         iface.to_string()
     } else {
         "auto".to_string()
     };
-    let (src_port, dst_port) = match cfg.port_direction {
+    let (src_port, dst_port) = match cfg.data.port_direction() {
         PortDirection::None => ("n/a".to_string(), "n/a".to_string()),
         PortDirection::FixedDest(dst) => ("auto".to_string(), format!("{}", dst.0)),
         PortDirection::FixedSrc(src) => (format!("{}", src.0), "auto".to_string()),
         PortDirection::FixedBoth(src, dst) => (format!("{}", src.0), format!("{}", dst.0)),
     };
     vec![
-        SettingsItem::new("first-ttl", format!("{}", cfg.first_ttl)),
-        SettingsItem::new("max-ttl", format!("{}", cfg.max_ttl)),
+        SettingsItem::new("first-ttl", format!("{}", cfg.data.first_ttl().0)),
+        SettingsItem::new("max-ttl", format!("{}", cfg.data.max_ttl().0)),
         SettingsItem::new(
             "min-round-duration",
-            format!("{}", format_duration(cfg.min_round_duration)),
+            format!("{}", format_duration(cfg.data.min_round_duration())),
         ),
         SettingsItem::new(
             "max-round-duration",
-            format!("{}", format_duration(cfg.max_round_duration)),
+            format!("{}", format_duration(cfg.data.max_round_duration())),
         ),
         SettingsItem::new(
             "grace-duration",
-            format!("{}", format_duration(cfg.grace_duration)),
+            format!("{}", format_duration(cfg.data.grace_duration())),
         ),
-        SettingsItem::new("max-inflight", format!("{}", cfg.max_inflight)),
-        SettingsItem::new("initial-sequence", format!("{}", cfg.initial_sequence)),
+        SettingsItem::new("max-inflight", format!("{}", cfg.data.max_inflight().0)),
+        SettingsItem::new(
+            "initial-sequence",
+            format!("{}", cfg.data.initial_sequence().0),
+        ),
         SettingsItem::new(
             "read-timeout",
-            format!("{}", format_duration(cfg.read_timeout)),
+            format!("{}", format_duration(cfg.data.read_timeout())),
         ),
-        SettingsItem::new("packet-size", format!("{}", cfg.packet_size)),
-        SettingsItem::new("payload-pattern", format!("{}", cfg.payload_pattern)),
-        SettingsItem::new("icmp-extensions", format!("{}", cfg.icmp_extensions)),
+        SettingsItem::new("packet-size", format!("{}", cfg.data.packet_size().0)),
+        SettingsItem::new(
+            "payload-pattern",
+            format!("{}", cfg.data.payload_pattern().0),
+        ),
+        SettingsItem::new(
+            "icmp-extensions",
+            format!("{}", cfg.data.icmp_extension_parse_mode()),
+        ),
         SettingsItem::new("interface", interface),
-        SettingsItem::new("multipath-strategy", cfg.multipath_strategy.to_string()),
+        SettingsItem::new(
+            "multipath-strategy",
+            cfg.data.multipath_strategy().to_string(),
+        ),
         SettingsItem::new("target-port", dst_port),
         SettingsItem::new("source-port", src_port),
         SettingsItem::new(
@@ -262,7 +274,7 @@ fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "dns-resolve-all",
-            format!("{}", app.tracer_config().dns_resolve_all),
+            format!("{}", app.tui_config.dns_resolve_all),
         ),
         SettingsItem::new(
             "dns-lookup-as-info",
@@ -275,7 +287,7 @@ fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
 fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
     vec![SettingsItem::new(
         "geoip-mmdb-file",
-        app.tracer_config()
+        app.tui_config
             .geoip_mmdb_file
             .as_deref()
             .unwrap_or("none")

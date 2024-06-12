@@ -29,6 +29,10 @@ pub enum TracerError {
     InvalidSourceAddr(IpAddr),
     #[error("missing address from socket call")]
     MissingAddr,
+    #[error("connect callback error: {0}")]
+    PrivilegeError(#[from] trippy_privilege::Error),
+    #[error("tracer error: {0}")]
+    Other(String),
 }
 
 /// Custom IO error result.

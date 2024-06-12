@@ -1,99 +1,104 @@
-use crate::backend::flows::{Flow, FlowId, FlowRegistry};
-use crate::config::MAX_HOPS;
+use crate::config::StateConfig;
+use crate::constants::MAX_TTL;
+use crate::flows::{Flow, FlowId, FlowRegistry};
+use crate::{Extensions, IcmpPacketType, ProbeState, Round, TimeToLive, TracerRound};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
 use std::net::IpAddr;
 use std::time::Duration;
-use trippy_core::{Extensions, IcmpPacketType, ProbeState, Round, TimeToLive, TracerRound};
 
-/// The state of all hops in a trace.
-#[derive(Debug, Clone)]
-pub struct Trace {
-    /// The maximum number of samples to record per hop.
-    ///
-    /// Once the maximum number of samples has been reached the oldest sample
-    /// is discarded (FIFO).
-    max_samples: usize,
-    /// The maximum number of flows to record.
-    ///
-    /// Once the maximum number of flows has been reached no new flows will be
-    /// created, existing flows are updated and are never removed.
-    max_flows: usize,
+/// The state of a trace.
+#[derive(Debug, Clone, Default)]
+pub struct TraceState {
+    state_config: StateConfig,
     /// The flow id for the current round.
     round_flow_id: FlowId,
     /// Tracing data per registered flow id.
-    trace_data: HashMap<FlowId, TraceData>,
+    state: HashMap<FlowId, FlowState>,
     /// Flow registry.
     registry: FlowRegistry,
     /// Tracing error message.
     error: Option<String>,
 }
 
-impl Trace {
+impl TraceState {
     /// Create a new `Trace`.
-    pub fn new(max_samples: usize, max_flows: usize) -> Self {
+    #[must_use]
+    pub fn new(state_config: StateConfig) -> Self {
         Self {
-            trace_data: once((Self::default_flow_id(), TraceData::new(max_samples)))
-                .collect::<HashMap<FlowId, TraceData>>(),
+            state: once((
+                Self::default_flow_id(),
+                FlowState::new(state_config.max_samples),
+            ))
+            .collect::<HashMap<FlowId, FlowState>>(),
             round_flow_id: Self::default_flow_id(),
-            max_samples,
-            max_flows,
+            state_config,
             registry: FlowRegistry::new(),
             error: None,
         }
     }
 
     /// Return the id of the default flow.
+    #[must_use]
     pub fn default_flow_id() -> FlowId {
         FlowId(0)
     }
 
     /// Information about each hop for a given flow.
+    #[must_use]
     pub fn hops(&self, flow_id: FlowId) -> &[Hop] {
-        self.trace_data[&flow_id].hops()
+        self.state[&flow_id].hops()
     }
 
     /// Is a given `Hop` the target hop for a given flow?
     ///
     /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
     ///
-    /// Note that if the target host does not respond to probes then the the highest `ttl` observed
+    /// Note that if the target host does not respond to probes then the highest `ttl` observed
     /// will be one greater than the `ttl` of the last host which did respond.
+    #[must_use]
     pub fn is_target(&self, hop: &Hop, flow_id: FlowId) -> bool {
-        self.trace_data[&flow_id].is_target(hop)
+        self.state[&flow_id].is_target(hop)
     }
 
     /// Is a given `Hop` in the current round for a given flow?
+    #[must_use]
     pub fn is_in_round(&self, hop: &Hop, flow_id: FlowId) -> bool {
-        self.trace_data[&flow_id].is_in_round(hop)
+        self.state[&flow_id].is_in_round(hop)
     }
 
     /// Return the target `Hop` for a given flow.
+    #[must_use]
     pub fn target_hop(&self, flow_id: FlowId) -> &Hop {
-        self.trace_data[&flow_id].target_hop()
+        self.state[&flow_id].target_hop()
     }
 
     /// The current round of tracing for a given flow.
+    #[must_use]
     pub fn round(&self, flow_id: FlowId) -> Option<usize> {
-        self.trace_data[&flow_id].round()
+        self.state[&flow_id].round()
     }
 
     /// The total rounds of tracing for a given flow.
+    #[must_use]
     pub fn round_count(&self, flow_id: FlowId) -> usize {
-        self.trace_data[&flow_id].round_count()
+        self.state[&flow_id].round_count()
     }
 
     /// The `FlowId` for the current round.
+    #[must_use]
     pub fn round_flow_id(&self) -> FlowId {
         self.round_flow_id
     }
 
     /// The registry of flows in the trace.
+    #[must_use]
     pub fn flows(&self) -> &[(Flow, FlowId)] {
         self.registry.flows()
     }
 
+    #[must_use]
     pub fn error(&self) -> Option<&str> {
         self.error.as_deref()
     }
@@ -103,17 +108,19 @@ impl Trace {
     }
 
     /// The maximum number of samples to record per hop.
+    #[must_use]
     pub fn max_samples(&self) -> usize {
-        self.max_samples
+        self.state_config.max_samples
     }
 
     /// The maximum number of flows to record.
+    #[must_use]
     pub fn max_flows(&self) -> usize {
-        self.max_flows
+        self.state_config.max_flows
     }
 
     /// Update the tracing state from a `TracerRound`.
-    pub(super) fn update_from_round(&mut self, round: &TracerRound<'_>) {
+    pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
         let flow = Flow::from_hops(
             round
                 .probes
@@ -126,7 +133,7 @@ impl Trace {
                 .take(usize::from(round.largest_ttl.0)),
         );
         self.update_trace_flow(Self::default_flow_id(), round);
-        if self.registry.flows().len() < self.max_flows {
+        if self.registry.flows().len() < self.state_config.max_flows {
             let flow_id = self.registry.register(flow);
             self.round_flow_id = flow_id;
             self.update_trace_flow(flow_id, round);
@@ -135,9 +142,9 @@ impl Trace {
 
     fn update_trace_flow(&mut self, flow_id: FlowId, round: &TracerRound<'_>) {
         let flow_trace = self
-            .trace_data
+            .state
             .entry(flow_id)
-            .or_insert_with(|| TraceData::new(self.max_samples));
+            .or_insert_with(|| FlowState::new(self.state_config.max_samples));
         flow_trace.update_from_round(round);
     }
 }
@@ -187,6 +194,7 @@ pub struct Hop {
 
 impl Hop {
     /// The time-to-live of this hop.
+    #[must_use]
     pub fn ttl(&self) -> u8 {
         self.ttl
     }
@@ -201,21 +209,25 @@ impl Hop {
     }
 
     /// The number of unique address observed for this time-to-live.
+    #[must_use]
     pub fn addr_count(&self) -> usize {
         self.addrs.len()
     }
 
     /// The total number of probes sent.
+    #[must_use]
     pub fn total_sent(&self) -> usize {
         self.total_sent
     }
 
     /// The total number of probes responses received.
+    #[must_use]
     pub fn total_recv(&self) -> usize {
         self.total_recv
     }
 
     /// The % of packets that are lost.
+    #[must_use]
     pub fn loss_pct(&self) -> f64 {
         if self.total_sent > 0 {
             let lost = self.total_sent - self.total_recv;
@@ -226,21 +238,25 @@ impl Hop {
     }
 
     /// The duration of the last probe.
+    #[must_use]
     pub fn last_ms(&self) -> Option<f64> {
         self.last.map(|last| last.as_secs_f64() * 1000_f64)
     }
 
     /// The duration of the best probe observed.
+    #[must_use]
     pub fn best_ms(&self) -> Option<f64> {
         self.best.map(|last| last.as_secs_f64() * 1000_f64)
     }
 
     /// The duration of the worst probe observed.
+    #[must_use]
     pub fn worst_ms(&self) -> Option<f64> {
         self.worst.map(|last| last.as_secs_f64() * 1000_f64)
     }
 
     /// The average duration of all probes.
+    #[must_use]
     pub fn avg_ms(&self) -> f64 {
         if self.total_recv() > 0 {
             (self.total_time.as_secs_f64() * 1000_f64) / self.total_recv as f64
@@ -250,6 +266,7 @@ impl Hop {
     }
 
     /// The standard deviation of all probes.
+    #[must_use]
     pub fn stddev_ms(&self) -> f64 {
         if self.total_recv > 1 {
             (self.m2 / (self.total_recv - 1) as f64).sqrt()
@@ -259,50 +276,60 @@ impl Hop {
     }
 
     /// The duration of the jitter probe observed.
+    #[must_use]
     pub fn jitter_ms(&self) -> Option<f64> {
         self.jitter.map(|j| j.as_secs_f64() * 1000_f64)
     }
 
-    /// The duration of the jworst probe observed.
+    /// The duration of the worst probe observed.
+    #[must_use]
     pub fn jmax_ms(&self) -> Option<f64> {
         self.jmax.map(|x| x.as_secs_f64() * 1000_f64)
     }
 
     /// The jitter average duration of all probes.
+    #[must_use]
     pub fn javg_ms(&self) -> f64 {
         self.javg
     }
 
     /// The jitter interval of all probes.
+    #[must_use]
     pub fn jinta(&self) -> f64 {
         self.jinta
     }
 
     /// The source port for last probe for this hop.
+    #[must_use]
     pub fn last_src_port(&self) -> u16 {
         self.last_src_port
     }
 
     /// The destination port for last probe for this hop.
+    #[must_use]
     pub fn last_dest_port(&self) -> u16 {
         self.last_dest_port
     }
 
     /// The sequence number for the last probe for this hop.
+    #[must_use]
     pub fn last_sequence(&self) -> u16 {
         self.last_sequence
     }
 
     /// The icmp packet type for the last probe for this hop.
+    #[must_use]
     pub fn last_icmp_packet_type(&self) -> Option<IcmpPacketType> {
         self.last_icmp_packet_type
     }
 
     /// The last N samples.
+    #[must_use]
     pub fn samples(&self) -> &[Duration] {
         &self.samples
     }
 
+    #[must_use]
     pub fn extensions(&self) -> Option<&Extensions> {
         self.extensions.as_ref()
     }
@@ -335,9 +362,9 @@ impl Default for Hop {
     }
 }
 
-/// Data for a trace.
+/// Data for a single trace flow.
 #[derive(Debug, Clone)]
-struct TraceData {
+struct FlowState {
     /// The maximum number of samples to record.
     max_samples: usize,
     /// The lowest ttl observed across all rounds.
@@ -354,7 +381,7 @@ struct TraceData {
     hops: Vec<Hop>,
 }
 
-impl TraceData {
+impl FlowState {
     fn new(max_samples: usize) -> Self {
         Self {
             max_samples,
@@ -363,7 +390,7 @@ impl TraceData {
             highest_ttl_for_round: 0,
             round: None,
             round_count: 0,
-            hops: (0..MAX_HOPS).map(|_| Hop::default()).collect(),
+            hops: (0..MAX_TTL).map(|_| Hop::default()).collect(),
         }
     }
 
@@ -491,6 +518,10 @@ impl TraceData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeState, Sequence,
+        TimeToLive, TraceId,
+    };
     use anyhow::anyhow;
     use serde::Deserialize;
     use std::collections::HashSet;
@@ -498,10 +529,6 @@ mod tests {
     use std::str::FromStr;
     use std::time::SystemTime;
     use test_case::test_case;
-    use trippy_core::{
-        CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeState, Sequence,
-        TimeToLive, TraceId,
-    };
 
     /// A test scenario.
     #[derive(Deserialize, Debug)]
@@ -639,7 +666,7 @@ mod tests {
 
     macro_rules! file {
         ($path:expr) => {{
-            let yaml = include_str!(concat!("../../tests/resources/backend/", $path));
+            let yaml = include_str!(concat!("../tests/resources/backend/", $path));
             serde_yaml::from_str(yaml).unwrap()
         }};
     }
@@ -649,7 +676,10 @@ mod tests {
     #[test_case(file!("ipv4_4probes_all_status.yaml"))]
     #[test_case(file!("ipv4_4probes_0latency.yaml"))]
     fn test_scenario(scenario: Scenario) {
-        let mut trace = Trace::new(100, 1);
+        let mut trace = TraceState::new(StateConfig {
+            max_flows: 1,
+            ..StateConfig::default()
+        });
         for (i, round) in scenario.rounds.into_iter().enumerate() {
             let probes = round
                 .probes
@@ -662,7 +692,7 @@ mod tests {
                 TracerRound::new(&probes, largest_ttl, CompletionReason::TargetFound);
             trace.update_from_round(&tracer_round);
         }
-        let actual_hops = trace.hops(Trace::default_flow_id());
+        let actual_hops = trace.hops(TraceState::default_flow_id());
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
             assert_eq!(actual.ttl(), expected.ttl);

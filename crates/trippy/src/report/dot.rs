@@ -1,9 +1,9 @@
 use crate::app::TraceInfo;
-use crate::backend::flows::FlowEntry;
 use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
 use std::fmt::{Debug, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
+use trippy_core::FlowEntry;
 
 /// Run a trace and generate a dot file.
 pub fn report(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
@@ -14,7 +14,7 @@ pub fn report(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
         }
     }
     super::wait_for_round(&info.data, report_cycles)?;
-    let trace = info.data.read().clone();
+    let trace = info.data.snapshot();
     let mut graph: DiGraphMap<IpAddr, ()> = DiGraphMap::new();
     for (flow, _id) in trace.flows() {
         for (fst, snd) in flow.entries.windows(2).map(|pair| (pair[0], pair[1])) {

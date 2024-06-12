@@ -1,14 +1,13 @@
 use crate::simulation::{Response, Simulation, SingleHost};
 use std::cell::RefCell;
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy_core::{
-    defaults, Builder, CompletionReason, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, PrivilegeMode, ProbeState, Protocol, Sequence, TimeToLive, TraceId, TracerRound,
+    defaults, Builder, CompletionReason, MultipathStrategy, PortDirection, PrivilegeMode,
+    ProbeState, Protocol, TimeToLive, TracerRound,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -50,27 +49,27 @@ impl Tracer {
 
     pub fn trace(&self) -> anyhow::Result<()> {
         let result = RefCell::new(Ok(()));
-        let tracer_res = Builder::new(self.sim.target, |round| self.validate_round(round, &result))
+        let tracer = Builder::new(self.sim.target)
             .privilege_mode(PrivilegeMode::from(self.sim.privilege_mode))
-            .trace_identifier(TraceId(self.sim.icmp_identifier))
-            .initial_sequence(Sequence(
+            .trace_identifier(self.sim.icmp_identifier)
+            .initial_sequence(
                 self.sim
                     .initial_sequence
                     .unwrap_or(defaults::DEFAULT_STRATEGY_INITIAL_SEQUENCE),
-            ))
+            )
             .protocol(Protocol::from(self.sim.protocol))
             .port_direction(PortDirection::from(self.sim.port_direction))
             .multipath_strategy(MultipathStrategy::from(self.sim.multipath_strategy))
-            .packet_size(PacketSize(
+            .packet_size(
                 self.sim
                     .packet_size
                     .unwrap_or(defaults::DEFAULT_STRATEGY_PACKET_SIZE),
-            ))
-            .payload_pattern(PayloadPattern(
+            )
+            .payload_pattern(
                 self.sim
                     .payload_pattern
                     .unwrap_or(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
-            ))
+            )
             .min_round_duration(self.sim.min_round_duration.map_or(
                 defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
                 Duration::from_millis,
@@ -83,13 +82,10 @@ impl Tracer {
                 defaults::DEFAULT_STRATEGY_GRACE_DURATION,
                 Duration::from_millis,
             ))
-            .max_rounds(MaxRounds(
-                self.sim
-                    .rounds
-                    .and_then(NonZeroUsize::new)
-                    .unwrap_or(NonZeroUsize::MIN),
-            ))
-            .start()
+            .max_rounds(self.sim.rounds.or(Some(1)))
+            .build()?;
+        let tracer_res = tracer
+            .run_with(|round| self.validate_round(round, &result))
             .map_err(anyhow::Error::from);
         thread::sleep(CLEANUP_DELAY);
         self.token.cancel();

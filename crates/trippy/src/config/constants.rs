@@ -4,12 +4,6 @@ use crate::config::{
 };
 use std::time::Duration;
 
-/// The maximum number of hops we allow.
-///
-/// The IP `ttl` is a u8 (0..255) but since a `ttl` of zero isn't useful we only allow 255 distinct
-/// hops.
-pub const MAX_HOPS: usize = u8::MAX as usize;
-
 /// The default value for `mode`.
 pub const DEFAULT_MODE: Mode = Mode::Tui;
 

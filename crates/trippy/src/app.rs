@@ -1,26 +1,18 @@
-use crate::backend::trace::Trace;
-use crate::backend::Backend;
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
-use parking_lot::RwLock;
 use std::net::IpAddr;
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use trippy_core::{
-    ChannelConfig, Config, IcmpExtensionParseMode, MultipathStrategy, PlatformImpl, PortDirection,
-    PrivilegeMode, Protocol, SocketImpl, SourceAddr,
-};
+use trippy_core::{Builder, Tracer};
 use trippy_dns::{DnsResolver, Resolver};
 use trippy_privilege::Privilege;
 
+/// Run the trippy application.
 pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     let _guard = configure_logging(cfg);
     let resolver = start_dns_resolver(cfg)?;
@@ -60,33 +52,34 @@ fn start_tracer(
     target_addr: IpAddr,
     trace_identifier: u16,
 ) -> Result<TraceInfo, Error> {
-    let source_addr = match cfg.source_addr {
-        None => SourceAddr::discover::<SocketImpl, PlatformImpl>(
-            target_addr,
-            cfg.port_direction,
-            cfg.interface.as_deref(),
-        )?,
-        Some(addr) => SourceAddr::validate::<SocketImpl>(addr)?,
-    };
-    let channel_config = make_channel_config(cfg, source_addr, target_addr);
-    let tracer_config = make_tracer_config(cfg, target_addr, trace_identifier)?;
-    let backend = Backend::new(
-        tracer_config,
-        channel_config,
-        cfg.max_samples,
-        cfg.max_flows(),
-    );
-    let trace_data = backend.trace();
-    thread::Builder::new()
-        .name(format!("tracer-{}", tracer_config.trace_identifier.0))
-        .spawn(move || backend.start().expect("failed to run tracer backend"))?;
-    Ok(make_trace_info(
-        cfg,
-        trace_data,
-        source_addr,
-        target_host.to_string(),
-        target_addr,
-    ))
+    let (tracer, _) = Builder::new(target_addr)
+        .interface(cfg.interface.clone())
+        .source_addr(cfg.source_addr)
+        .privilege_mode(cfg.privilege_mode)
+        .protocol(cfg.protocol)
+        .packet_size(cfg.packet_size)
+        .payload_pattern(cfg.payload_pattern)
+        .tos(cfg.tos)
+        .icmp_extension_parse_mode(cfg.icmp_extension_parse_mode)
+        .read_timeout(cfg.read_timeout)
+        .tcp_connect_timeout(cfg.min_round_duration)
+        .trace_identifier(trace_identifier)
+        .max_rounds(cfg.max_rounds)
+        .first_ttl(cfg.first_ttl)
+        .max_ttl(cfg.max_ttl)
+        .grace_duration(cfg.grace_duration)
+        .max_inflight(cfg.max_inflight)
+        .initial_sequence(cfg.initial_sequence)
+        .multipath_strategy(cfg.multipath_strategy)
+        .port_direction(cfg.port_direction)
+        .min_round_duration(cfg.min_round_duration)
+        .max_round_duration(cfg.max_round_duration)
+        .max_flows(cfg.max_flows())
+        .max_samples(cfg.max_samples)
+        .drop_privileges(true)
+        .build()?
+        .spawn()?;
+    Ok(make_trace_info(tracer, target_host.to_string()))
 }
 
 /// Run the TUI, stream or report.
@@ -195,84 +188,6 @@ fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
     None
 }
 
-/// Make the tracer configuration.
-fn make_tracer_config(
-    args: &TrippyConfig,
-    target_addr: IpAddr,
-    trace_identifier: u16,
-) -> anyhow::Result<Config> {
-    Ok(Config::new(
-        target_addr,
-        args.protocol,
-        args.max_rounds,
-        trace_identifier,
-        args.first_ttl,
-        args.max_ttl,
-        args.grace_duration,
-        args.max_inflight,
-        args.initial_sequence,
-        args.multipath_strategy,
-        args.port_direction,
-        args.min_round_duration,
-        args.max_round_duration,
-    )?)
-}
-
-/// Make the tracer configuration.
-fn make_channel_config(
-    args: &TrippyConfig,
-    source_addr: IpAddr,
-    target_addr: IpAddr,
-) -> ChannelConfig {
-    ChannelConfig::new(
-        args.privilege_mode,
-        args.protocol,
-        source_addr,
-        target_addr,
-        args.packet_size,
-        args.payload_pattern,
-        args.initial_sequence,
-        args.tos,
-        args.icmp_extension_parse_mode,
-        args.read_timeout,
-        args.min_round_duration,
-    )
-}
-
-/// Make the per-trace information.
-fn make_trace_info(
-    args: &TrippyConfig,
-    trace_data: Arc<RwLock<Trace>>,
-    source_addr: IpAddr,
-    target: String,
-    target_addr: IpAddr,
-) -> TraceInfo {
-    TraceInfo::new(
-        trace_data,
-        source_addr,
-        target,
-        target_addr,
-        args.privilege_mode,
-        args.multipath_strategy,
-        args.port_direction,
-        args.protocol,
-        args.first_ttl,
-        args.max_ttl,
-        args.grace_duration,
-        args.min_round_duration,
-        args.max_round_duration,
-        args.max_inflight,
-        args.initial_sequence,
-        args.icmp_extension_parse_mode,
-        args.read_timeout,
-        args.packet_size,
-        args.payload_pattern,
-        args.interface.clone(),
-        args.geoip_mmdb_file.clone(),
-        args.dns_resolve_all,
-    )
-}
-
 /// Make the TUI configuration.
 fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
     TuiConfig::new(
@@ -288,86 +203,29 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_theme,
         &args.tui_bindings,
         &args.tui_custom_columns,
+        args.geoip_mmdb_file.clone(),
+        args.dns_resolve_all,
     )
+}
+
+/// Make the per-trace information.
+fn make_trace_info(tracer: Tracer, target: String) -> TraceInfo {
+    TraceInfo::new(tracer, target)
 }
 
 /// Information about a `Trace` needed for the Tui, stream and reports.
 #[derive(Debug, Clone)]
 pub struct TraceInfo {
-    pub data: Arc<RwLock<Trace>>,
-    pub source_addr: IpAddr,
+    pub data: Tracer,
     pub target_hostname: String,
-    pub target_addr: IpAddr,
-    pub privilege_mode: PrivilegeMode,
-    pub multipath_strategy: MultipathStrategy,
-    pub port_direction: PortDirection,
-    pub protocol: Protocol,
-    pub first_ttl: u8,
-    pub max_ttl: u8,
-    pub grace_duration: Duration,
-    pub min_round_duration: Duration,
-    pub max_round_duration: Duration,
-    pub max_inflight: u8,
-    pub initial_sequence: u16,
-    pub icmp_extensions: IcmpExtensionParseMode,
-    pub read_timeout: Duration,
-    pub packet_size: u16,
-    pub payload_pattern: u8,
-    pub interface: Option<String>,
-    pub geoip_mmdb_file: Option<String>,
-    pub dns_resolve_all: bool,
 }
 
 impl TraceInfo {
-    #[allow(clippy::too_many_arguments)]
     #[must_use]
-    pub fn new(
-        data: Arc<RwLock<Trace>>,
-        source_addr: IpAddr,
-        target_hostname: String,
-        target_addr: IpAddr,
-        privilege_mode: PrivilegeMode,
-        multipath_strategy: MultipathStrategy,
-        port_direction: PortDirection,
-        protocol: Protocol,
-        first_ttl: u8,
-        max_ttl: u8,
-        grace_duration: Duration,
-        min_round_duration: Duration,
-        max_round_duration: Duration,
-        max_inflight: u8,
-        initial_sequence: u16,
-        icmp_extensions: IcmpExtensionParseMode,
-        read_timeout: Duration,
-        packet_size: u16,
-        payload_pattern: u8,
-        interface: Option<String>,
-        geoip_mmdb_file: Option<String>,
-        dns_resolve_all: bool,
-    ) -> Self {
+    pub fn new(data: Tracer, target_hostname: String) -> Self {
         Self {
             data,
-            source_addr,
             target_hostname,
-            target_addr,
-            privilege_mode,
-            multipath_strategy,
-            port_direction,
-            protocol,
-            first_ttl,
-            max_ttl,
-            grace_duration,
-            min_round_duration,
-            max_round_duration,
-            max_inflight,
-            initial_sequence,
-            icmp_extensions,
-            read_timeout,
-            packet_size,
-            payload_pattern,
-            interface,
-            geoip_mmdb_file,
-            dns_resolve_all,
         }
     }
 }
