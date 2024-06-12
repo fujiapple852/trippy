@@ -1,0 +1,12 @@
+[package]
+name = "traceroute"
+version = "0.1.0"
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.75"
+
+[dependencies]
+trippy = { version = "0.11.0-dev", path = "../../crates/trippy" }
+anyhow = "1.0.86"
+itertools = "0.13.0"
+clap = "4.5.7"

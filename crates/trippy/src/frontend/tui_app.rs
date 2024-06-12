@@ -1,17 +1,17 @@
 use crate::app::TraceInfo;
-use crate::backend::flows::FlowId;
-use crate::backend::trace::Hop;
-use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::{SETTINGS_TABS, SETTINGS_TAB_COLUMNS};
 use crate::geoip::GeoIpLookup;
 use itertools::Itertools;
 use ratatui::widgets::TableState;
 use std::time::SystemTime;
+use trippy_core::FlowId;
+use trippy_core::Hop;
+use trippy_core::TraceState;
 use trippy_dns::{DnsResolver, ResolveMethod};
 
 pub struct TuiApp {
-    pub selected_tracer_data: Trace,
+    pub selected_tracer_data: TraceState,
     pub trace_info: Vec<TraceInfo>,
     pub tui_config: TuiConfig,
     /// The state of the hop table.
@@ -54,7 +54,7 @@ impl TuiApp {
         trace_info: Vec<TraceInfo>,
     ) -> Self {
         Self {
-            selected_tracer_data: Trace::new(0, 0),
+            selected_tracer_data: TraceState::default(),
             trace_info,
             tui_config,
             table_state: TableState::default(),
@@ -62,7 +62,7 @@ impl TuiApp {
             trace_selected: 0,
             settings_tab_selected: 0,
             selected_hop_address: 0,
-            selected_flow: Trace::default_flow_id(),
+            selected_flow: TraceState::default_flow_id(),
             flow_counts: vec![],
             resolver,
             geoip_lookup,
@@ -78,19 +78,16 @@ impl TuiApp {
         }
     }
 
-    pub fn tracer_data(&self) -> &Trace {
+    pub fn tracer_data(&self) -> &TraceState {
         &self.selected_tracer_data
     }
 
     pub fn snapshot_trace_data(&mut self) {
-        self.selected_tracer_data = self.trace_info[self.trace_selected].data.read().clone();
+        self.selected_tracer_data = self.trace_info[self.trace_selected].data.snapshot();
     }
 
     pub fn clear_trace_data(&mut self) {
-        *self.trace_info[self.trace_selected].data.write() = Trace::new(
-            self.selected_tracer_data.max_samples(),
-            self.selected_tracer_data.max_flows(),
-        );
+        self.trace_info[self.trace_selected].data.clear();
     }
 
     pub fn selected_hop_or_target(&self) -> &Hop {

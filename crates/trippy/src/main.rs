@@ -22,7 +22,6 @@ use std::process;
 use trippy_privilege::Privilege;
 
 mod app;
-mod backend;
 mod config;
 mod frontend;
 mod geoip;

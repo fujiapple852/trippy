@@ -1,6 +1,6 @@
 use crate::app::TraceInfo;
-use crate::backend::trace::Trace;
 use crate::report::types::{Hop, Host, Info, Report};
+use trippy_core::TraceState;
 use trippy_dns::Resolver;
 
 /// Generate a json report of trace data.
@@ -11,14 +11,14 @@ pub fn report<R: Resolver>(
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
     let hops: Vec<Hop> = trace
-        .hops(Trace::default_flow_id())
+        .hops(TraceState::default_flow_id())
         .iter()
         .map(|hop| Hop::from((hop, resolver)))
         .collect();
     let report = Report {
         info: Info {
             target: Host {
-                ip: info.target_addr,
+                ip: info.data.target_addr(),
                 hostname: info.target_hostname.to_string(),
             },
         },

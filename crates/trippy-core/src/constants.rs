@@ -1,4 +1,7 @@
 /// The maximum time-to-live value allowed.
+///
+/// The IP `ttl` is an u8 (0..255) but since a `ttl` of zero isn't useful we only allow 254 distinct
+/// hops (1..255).
 pub const MAX_TTL: u8 = 254;
 
 /// The maximum number of sequence numbers allowed per round.

@@ -1,7 +1,6 @@
-use crate::backend::trace::Trace;
 use anyhow::anyhow;
-use parking_lot::RwLock;
-use std::sync::Arc;
+use trippy_core::TraceState;
+use trippy_core::Tracer;
 
 pub mod csv;
 pub mod dot;
@@ -13,12 +12,12 @@ pub mod table;
 mod types;
 
 /// Block until trace data for round `round` is available.
-fn wait_for_round(trace_data: &Arc<RwLock<Trace>>, report_cycles: usize) -> anyhow::Result<Trace> {
-    let mut trace = trace_data.read().clone();
-    while trace.round(Trace::default_flow_id()).is_none()
-        || trace.round(Trace::default_flow_id()) < Some(report_cycles - 1)
+fn wait_for_round(trace_data: &Tracer, report_cycles: usize) -> anyhow::Result<TraceState> {
+    let mut trace = trace_data.snapshot();
+    while trace.round(TraceState::default_flow_id()).is_none()
+        || trace.round(TraceState::default_flow_id()) < Some(report_cycles - 1)
     {
-        trace = trace_data.read().clone();
+        trace = trace_data.snapshot();
         if let Some(err) = trace.error() {
             return Err(anyhow!("error: {}", err));
         }

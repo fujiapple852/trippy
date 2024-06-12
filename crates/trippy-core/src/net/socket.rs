@@ -52,8 +52,9 @@ where
 #[derive(Debug)]
 pub enum SocketError {
     ConnectionRefused,
+    #[allow(dead_code)]
     HostUnreachable,
-    Other(std::io::Error),
+    Other(#[allow(dead_code)] std::io::Error),
 }
 
 #[cfg(test)]

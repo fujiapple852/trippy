@@ -1,4 +1,3 @@
-use crate::backend::trace::Hop;
 use crate::frontend::tui_app::TuiApp;
 use itertools::Itertools;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -9,6 +8,7 @@ use ratatui::widgets::canvas::{Canvas, Circle, Context, Map, MapResolution, Rect
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
 use std::collections::HashMap;
+use trippy_core::Hop;
 
 /// Render the `GeoIp` map.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
@@ -148,7 +148,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
         "**Hidden**".to_string()
     } else {
         match locations.as_slice() {
-            _ if app.tracer_config().geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
+            _ if app.tui_config.geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
             [] if selected_hop.addr_count() > 0 => format!(
                 "No GeoIp data for hop {} ({})",
                 selected_hop.ttl(),

@@ -14,11 +14,14 @@ keywords = ["traceroute", "ping", "icmp"]
 categories = ["network-programming"]
 
 [dependencies]
-trippy-packet = { version = "0.11.0-dev", path = "../trippy-packet" }
+trippy-packet.workspace = true
+trippy-privilege.workspace = true
 derive_more.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 itertools.workspace = true
+parking_lot.workspace = true
+indexmap = { version = "2.2.6", default-features = false, features = [ "std" ] }
 arrayvec = { version = "0.7.4", default-features = false }
 socket2 = { version = "0.5.7", features = [ "all" ] }
 bitflags = "2.5.0"

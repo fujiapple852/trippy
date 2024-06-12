@@ -747,6 +747,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hello-world"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "trippy",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2072,6 +2080,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "traceroute"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "itertools 0.13.0",
+ "trippy",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2172,11 +2190,9 @@ dependencies = [
  "encoding_rs_io",
  "etcetera",
  "humantime",
- "indexmap 2.2.6",
  "insta",
  "itertools 0.13.0",
  "maxminddb",
- "parking_lot",
  "petgraph",
  "pretty_assertions",
  "ratatui",
@@ -2205,10 +2221,12 @@ dependencies = [
  "bitflags",
  "derive_more",
  "hex-literal",
+ "indexmap 2.2.6",
  "ipnetwork",
  "itertools 0.13.0",
  "mockall",
  "nix",
+ "parking_lot",
  "paste",
  "rand",
  "serde",
@@ -2221,6 +2239,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "trippy-packet",
+ "trippy-privilege",
  "tun2",
  "widestring",
  "windows-sys 0.52.0",

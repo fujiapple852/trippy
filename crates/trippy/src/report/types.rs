@@ -1,4 +1,3 @@
-use crate::backend;
 use itertools::Itertools;
 use serde::{Serialize, Serializer};
 use std::fmt::{Display, Formatter};
@@ -45,8 +44,8 @@ pub struct Hop {
     pub jinta: f64,
 }
 
-impl<R: Resolver> From<(&backend::trace::Hop, &R)> for Hop {
-    fn from((value, resolver): (&backend::trace::Hop, &R)) -> Self {
+impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
+    fn from((value, resolver): (&trippy_core::Hop, &R)) -> Self {
         let hosts = Hosts::from((value.addrs(), resolver));
         let extensions = value.extensions().map(Extensions::from).unwrap_or_default();
         Self {

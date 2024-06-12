@@ -1,4 +1,3 @@
-use crate::backend::trace::Hop;
 use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
 use crate::frontend::columns::{ColumnType, Columns};
 use crate::frontend::config::TuiConfig;
@@ -12,6 +11,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
+use trippy_core::Hop;
 use trippy_core::{Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension};
 use trippy_dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 

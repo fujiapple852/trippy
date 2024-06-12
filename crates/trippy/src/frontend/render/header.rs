@@ -40,22 +40,22 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    let protocol = match app.tracer_config().protocol {
+    let protocol = match app.tracer_config().data.protocol() {
         Protocol::Icmp => format!(
             "icmp({}, {})",
-            render_target_family(app.tracer_config().target_addr),
-            app.tracer_config().privilege_mode
+            render_target_family(app.tracer_config().data.target_addr()),
+            app.tracer_config().data.privilege_mode()
         ),
         Protocol::Udp => format!(
             "udp({}, {}, {})",
-            render_target_family(app.tracer_config().target_addr),
-            app.tracer_config().multipath_strategy,
-            app.tracer_config().privilege_mode
+            render_target_family(app.tracer_config().data.target_addr()),
+            app.tracer_config().data.multipath_strategy(),
+            app.tracer_config().data.privilege_mode()
         ),
         Protocol::Tcp => format!(
             "tcp({}, {})",
-            render_target_family(app.tracer_config().target_addr),
-            app.tracer_config().privilege_mode
+            render_target_family(app.tracer_config().data.target_addr()),
+            app.tracer_config().data.privilege_mode()
         ),
     };
     let details = if app.show_hop_details {
@@ -138,28 +138,29 @@ fn render_target_family(target: IpAddr) -> &'static str {
 
 /// Render the source address of the trace.
 fn render_source(app: &TuiApp) -> String {
-    let src_hostname = app
-        .resolver
-        .lazy_reverse_lookup(app.tracer_config().source_addr);
-    let src_addr = app.tracer_config().source_addr;
-    match app.tracer_config().port_direction {
-        PortDirection::None => {
-            format!("{src_hostname} ({src_addr})")
+    if let Some(src_addr) = app.tracer_config().data.source_addr() {
+        let src_hostname = app.resolver.lazy_reverse_lookup(src_addr);
+        match app.tracer_config().data.port_direction() {
+            PortDirection::None => {
+                format!("{src_hostname} ({src_addr})")
+            }
+            PortDirection::FixedDest(_) => {
+                format!("{src_hostname}:* ({src_addr}:*)")
+            }
+            PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
+                format!("{src_hostname}:{} ({src_addr}:{})", src.0, src.0)
+            }
         }
-        PortDirection::FixedDest(_) => {
-            format!("{src_hostname}:* ({src_addr}:*)")
-        }
-        PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
-            format!("{src_hostname}:{} ({src_addr}:{})", src.0, src.0)
-        }
+    } else {
+        String::from("unknown")
     }
 }
 
 /// Render the destination address.
 fn render_destination(app: &TuiApp) -> String {
     let dest_hostname = &app.tracer_config().target_hostname;
-    let dest_addr = app.tracer_config().target_addr;
-    match app.tracer_config().port_direction {
+    let dest_addr = app.tracer_config().data.target_addr();
+    match app.tracer_config().data.port_direction() {
         PortDirection::None => {
             format!("{dest_hostname} ({dest_addr})")
         }

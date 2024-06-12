@@ -1,10 +1,10 @@
-use crate::config::IcmpExtensionParseMode;
+use crate::config::{ChannelConfig, IcmpExtensionParseMode};
 use crate::error::{TraceResult, TracerError};
 use crate::net::socket::Socket;
 use crate::net::{ipv4, ipv6, platform, Network};
 use crate::probe::{Probe, ProbeResponse};
 use crate::types::{PacketSize, PayloadPattern, TypeOfService};
-use crate::{ChannelConfig, Port, PrivilegeMode, Protocol, Sequence};
+use crate::{Port, PrivilegeMode, Protocol, Sequence};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -66,7 +66,7 @@ impl<S: Socket> TracerChannel<S> {
             payload_pattern: config.payload_pattern,
             initial_sequence: config.initial_sequence,
             tos: config.tos,
-            icmp_extension_mode: config.icmp_extension_mode,
+            icmp_extension_mode: config.icmp_extension_parse_mode,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             send_socket,

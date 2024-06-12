@@ -9,6 +9,7 @@ use std::net::IpAddr;
 use std::time::Duration;
 use trippy_core::{
     defaults, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
+    MAX_TTL,
 };
 use trippy_dns::{IpAddrFamily, ResolveMethod};
 
@@ -23,7 +24,6 @@ use crate::config::file::ConfigTui;
 pub use binding::{TuiBindings, TuiCommandItem, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
-pub use constants::MAX_HOPS;
 pub use theme::{TuiColor, TuiTheme, TuiThemeItem};
 use trippy_privilege::Privilege;
 
@@ -931,13 +931,13 @@ fn validate_flows(mode: Mode, strategy: MultipathStrategy) -> anyhow::Result<()>
 
 /// Validate `first_ttl` and `max_ttl`.
 fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
-    if (first_ttl as usize) < 1 || (first_ttl as usize) > MAX_HOPS {
+    if !(1..=MAX_TTL).contains(&first_ttl) {
         Err(anyhow!(
-            "first-ttl ({first_ttl}) must be in the range 1..{MAX_HOPS}"
+            "first-ttl ({first_ttl}) must be in the range 1..{MAX_TTL}"
         ))
-    } else if (max_ttl as usize) < 1 || (max_ttl as usize) > MAX_HOPS {
+    } else if !(1..=MAX_TTL).contains(&max_ttl) {
         Err(anyhow!(
-            "max-ttl ({max_ttl}) must be in the range 1..{MAX_HOPS}"
+            "max-ttl ({max_ttl}) must be in the range 1..{MAX_TTL}"
         ))
     } else if first_ttl > max_ttl {
         Err(anyhow!(
@@ -1261,12 +1261,12 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().first_ttl(1).build()); "default first ttl")]
     #[test_case("trip example.com --first-ttl 5", Ok(cfg().first_ttl(5).build()); "custom first ttl")]
     #[test_case("trip example.com -f 5", Ok(cfg().first_ttl(5).build()); "custom first ttl short")]
-    #[test_case("trip example.com --first-ttl 0", Err(anyhow!("first-ttl (0) must be in the range 1..255")); "invalid low first ttl")]
+    #[test_case("trip example.com --first-ttl 0", Err(anyhow!("first-ttl (0) must be in the range 1..254")); "invalid low first ttl")]
     #[test_case("trip example.com --first-ttl 500", Err(anyhow!("error: invalid value '500' for '--first-ttl <FIRST_TTL>': 500 is not in 0..=255 For more information, try '--help'.")); "invalid high first ttl")]
     #[test_case("trip example.com", Ok(cfg().first_ttl(1).build()); "default max ttl")]
     #[test_case("trip example.com --max-ttl 5", Ok(cfg().max_ttl(5).build()); "custom max ttl")]
     #[test_case("trip example.com -t 5", Ok(cfg().max_ttl(5).build()); "custom max ttl short")]
-    #[test_case("trip example.com --max-ttl 0", Err(anyhow!("max-ttl (0) must be in the range 1..255")); "invalid low max ttl")]
+    #[test_case("trip example.com --max-ttl 0", Err(anyhow!("max-ttl (0) must be in the range 1..254")); "invalid low max ttl")]
     #[test_case("trip example.com --max-ttl 500", Err(anyhow!("error: invalid value '500' for '--max-ttl <MAX_TTL>': 500 is not in 0..=255 For more information, try '--help'.")); "invalid high max ttl")]
     #[test_case("trip example.com --first-ttl 3 --max-ttl 2", Err(anyhow!("first-ttl (3) must be less than or equal to max-ttl (2)")); "first ttl higher than max ttl")]
     #[test_case("trip example.com --first-ttl 5 --max-ttl 5", Ok(cfg().first_ttl(5).max_ttl(5).build()); "custom first and max ttl")]
