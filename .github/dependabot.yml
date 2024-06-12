@@ -18,6 +18,6 @@ updates:
           update-types:
             - "version-update:semver-patch"
     allow:
-      - dependency-type: "all"
+      - dependency-type: "direct"
     open-pull-requests-limit: 10
     rebase-strategy: "disabled"
