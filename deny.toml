@@ -1,16 +1,10 @@
 [licenses]
-unlicensed = "deny"
+version = 2
 allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "ISC", "BSD-2-Clause", "BSD-3-Clause", "WTFPL" ]
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
-default = "deny"
 confidence-threshold = 0.8
 exceptions = []
 
 [advisories]
+version = 2
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-unmaintained = "deny"
-yanked = "warn"
-notice = "warn"
