@@ -329,10 +329,8 @@ impl TrippyConfig {
     pub fn from(args: Args, privilege: &Privilege, pid: u16) -> anyhow::Result<Self> {
         let cfg_file = if let Some(cfg) = &args.config_file {
             file::read_config_file(cfg)?
-        } else if let Some(cfg) = file::read_default_config_file()? {
-            cfg
         } else {
-            ConfigFile::default()
+            file::read_default_config_file()?.unwrap_or_default()
         };
         Self::build_config(args, cfg_file, privilege, pid)
     }
