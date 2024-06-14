@@ -47,6 +47,7 @@
 #![allow(
     clippy::module_name_repetitions,
     clippy::struct_field_names,
+    clippy::use_self,
     clippy::option_if_let_else,
     clippy::missing_const_for_fn,
     clippy::cast_possible_truncation,
