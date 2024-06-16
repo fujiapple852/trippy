@@ -376,7 +376,7 @@ impl TraceInfo {
 
 /// Information about a tracing target.
 #[derive(Debug, Clone)]
-pub struct TargetInfo {
+struct TargetInfo {
     pub hostname: String,
     pub addr: IpAddr,
 }
