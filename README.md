@@ -617,6 +617,12 @@ Options:
           Lookup autonomous system (AS) information during DNS queries [default:
           false]
 
+  -s, --max-samples <MAX_SAMPLES>
+          The maximum number of samples to record per hop [default: 256]
+
+      --max-flows <MAX_FLOWS>
+          The maximum number of flows to record [default: 64]
+
   -a, --tui-address-mode <TUI_ADDRESS_MODE>
           How to render addresses [default: host]
 
@@ -660,12 +666,6 @@ Options:
 
   -M, --tui-max-addrs <TUI_MAX_ADDRS>
           The maximum number of addresses to show per hop [default: auto]
-
-  -s, --tui-max-samples <TUI_MAX_SAMPLES>
-          The maximum number of samples to record per hop [default: 256]
-
-      --tui-max-flows <TUI_MAX_FLOWS>
-          The maximum number of flows to show [default: 64]
 
       --tui-preserve-screen
           Preserve the screen on exit [default: false]
