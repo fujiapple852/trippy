@@ -73,7 +73,7 @@ fn start_tracer(
     let backend = Backend::new(
         tracer_config,
         channel_config,
-        cfg.tui_max_samples,
+        cfg.max_samples,
         cfg.max_flows(),
     );
     let trace_data = backend.trace();
@@ -285,8 +285,6 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         args.tui_icmp_extension_mode,
         args.tui_geoip_mode,
         args.tui_max_addrs,
-        args.tui_max_samples,
-        args.max_flows(),
         args.tui_theme,
         &args.tui_bindings,
         &args.tui_custom_columns,

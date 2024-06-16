@@ -9,7 +9,7 @@ use ratatui::Frame;
 /// Render the ping history for all hops as a chart.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let selected_hop = app.selected_hop_or_target();
-    let samples = app.tui_config.max_samples / app.zoom_factor;
+    let samples = app.selected_tracer_data.max_samples() / app.zoom_factor;
     let series_data = app
         .selected_tracer_data
         .hops(app.selected_flow)

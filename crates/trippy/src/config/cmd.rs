@@ -172,6 +172,14 @@ pub struct Args {
     #[arg(long, short = 'z')]
     pub dns_lookup_as_info: bool,
 
+    /// The maximum number of samples to record per hop [default: 256]
+    #[arg(long, short = 's')]
+    pub max_samples: Option<usize>,
+
+    /// The maximum number of flows to record [default: 64]
+    #[arg(long)]
+    pub max_flows: Option<usize>,
+
     /// How to render addresses [default: host]
     #[arg(value_enum, short = 'a', long)]
     pub tui_address_mode: Option<AddressMode>,
@@ -195,14 +203,6 @@ pub struct Args {
     /// The maximum number of addresses to show per hop [default: auto]
     #[arg(short = 'M', long)]
     pub tui_max_addrs: Option<u8>,
-
-    /// The maximum number of samples to record per hop [default: 256]
-    #[arg(long, short = 's')]
-    pub tui_max_samples: Option<usize>,
-
-    /// The maximum number of flows to show [default: 64]
-    #[arg(long)]
-    pub tui_max_flows: Option<usize>,
 
     /// Preserve the screen on exit [default: false]
     #[arg(long)]

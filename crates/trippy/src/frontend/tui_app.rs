@@ -54,7 +54,7 @@ impl TuiApp {
         trace_info: Vec<TraceInfo>,
     ) -> Self {
         Self {
-            selected_tracer_data: Trace::new(tui_config.max_samples, tui_config.max_flows),
+            selected_tracer_data: Trace::new(0, 0),
             trace_info,
             tui_config,
             table_state: TableState::default(),
@@ -87,8 +87,10 @@ impl TuiApp {
     }
 
     pub fn clear_trace_data(&mut self) {
-        *self.trace_info[self.trace_selected].data.write() =
-            Trace::new(self.tui_config.max_samples, self.tui_config.max_flows);
+        *self.trace_info[self.trace_selected].data.write() = Trace::new(
+            self.selected_tracer_data.max_samples(),
+            self.selected_tracer_data.max_flows(),
+        );
     }
 
     pub fn selected_hop_or_target(&self) -> &Hop {
@@ -137,7 +139,7 @@ impl TuiApp {
             })
             .sorted_by(order_flows)
             .rev()
-            .take(self.tui_config.max_flows)
+            .take(self.selected_tracer_data.max_flows())
             .collect::<Vec<_>>();
     }
 
@@ -362,7 +364,7 @@ impl TuiApp {
     }
 
     pub fn toggle_flows(&mut self) {
-        if self.trace_info.len() == 1 && self.tui_config.max_flows > 1 {
+        if self.trace_info.len() == 1 && self.selected_tracer_data.max_flows() > 1 {
             if self.show_flows {
                 self.selected_flow = FlowId(0);
                 self.show_flows = false;

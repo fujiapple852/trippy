@@ -162,8 +162,6 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, String, Vec<SettingsI
 /// Format Tui settings.
 fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
     vec![
-        SettingsItem::new("tui-max-samples", format!("{}", app.tui_config.max_samples)),
-        SettingsItem::new("tui-max-flows", format!("{}", app.tui_config.max_flows)),
         SettingsItem::new(
             "tui-preserve-screen",
             format!("{}", app.tui_config.preserve_screen),
@@ -240,6 +238,14 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("multipath-strategy", cfg.multipath_strategy.to_string()),
         SettingsItem::new("target-port", dst_port),
         SettingsItem::new("source-port", src_port),
+        SettingsItem::new(
+            "max-samples",
+            format!("{}", app.selected_tracer_data.max_samples()),
+        ),
+        SettingsItem::new(
+            "max-flows",
+            format!("{}", app.selected_tracer_data.max_flows()),
+        ),
     ]
 }
 
@@ -449,8 +455,8 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 7] = [
-    ("Tui", 10),
-    ("Trace", 15),
+    ("Tui", 8),
+    ("Trace", 17),
     ("Dns", 4),
     ("GeoIp", 1),
     ("Bindings", 29),

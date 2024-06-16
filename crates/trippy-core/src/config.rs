@@ -63,6 +63,12 @@ pub mod defaults {
 
     /// The default TCP connect timeout.
     pub const DEFAULT_STRATEGY_TCP_CONNECT_TIMEOUT: Duration = Duration::from_millis(1000);
+
+    /// The default value for `max-samples`.
+    pub const DEFAULT_MAX_SAMPLES: usize = 256;
+
+    /// The default value for `max-flows`.
+    pub const DEFAULT_MAX_FLOWS: usize = 64;
 }
 
 /// The privilege mode.

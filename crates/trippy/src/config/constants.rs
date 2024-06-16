@@ -25,12 +25,6 @@ pub const DEFAULT_LOG_SPAN_EVENTS: LogSpanEvents = LogSpanEvents::Off;
 /// The default value for `log-filter`.
 pub const DEFAULT_LOG_FILTER: &str = "trippy=debug";
 
-/// The default value for `tui-max-samples`.
-pub const DEFAULT_TUI_MAX_SAMPLES: usize = 256;
-
-/// The default value for `tui-max-flows`.
-pub const DEFAULT_TUI_MAX_FLOWS: usize = 64;
-
 /// The default value for `tui-preserve-screen`.
 pub const DEFAULT_TUI_PRESERVE_SCREEN: bool = false;
 

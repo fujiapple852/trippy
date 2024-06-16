@@ -19,6 +19,7 @@ mod constants;
 mod file;
 mod theme;
 
+use crate::config::file::ConfigTui;
 pub use binding::{TuiBindings, TuiCommandItem, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
@@ -300,8 +301,8 @@ pub struct TrippyConfig {
     pub dns_timeout: Duration,
     pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
-    pub tui_max_samples: usize,
-    pub tui_max_flows: usize,
+    pub max_samples: usize,
+    pub max_flows: usize,
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
     pub tui_privacy_max_ttl: u8,
@@ -341,7 +342,7 @@ impl TrippyConfig {
     pub fn max_flows(&self) -> usize {
         match self.multipath_strategy {
             MultipathStrategy::Classic => 1,
-            _ => self.tui_max_flows,
+            _ => self.max_flows,
         }
     }
 
@@ -361,6 +362,7 @@ impl TrippyConfig {
         let cfg_file_tui = cfg_file.tui.unwrap_or_default();
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
         let cfg_file_report = cfg_file.report.unwrap_or_default();
+        validate_deprecated(&cfg_file_tui)?;
         let mode = cfg_layer(args.mode, cfg_file_trace.mode, constants::DEFAULT_MODE);
         let unprivileged = cfg_layer_bool_flag(
             args.unprivileged,
@@ -477,15 +479,15 @@ impl TrippyConfig {
             cfg_file_strategy.read_timeout,
             defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
         );
-        let tui_max_samples = cfg_layer(
-            args.tui_max_samples,
-            cfg_file_tui.tui_max_samples,
-            constants::DEFAULT_TUI_MAX_SAMPLES,
+        let max_samples = cfg_layer(
+            args.max_samples,
+            cfg_file_strategy.max_samples,
+            defaults::DEFAULT_MAX_SAMPLES,
         );
-        let tui_max_flows = cfg_layer(
-            args.tui_max_flows,
-            cfg_file_tui.tui_max_flows,
-            constants::DEFAULT_TUI_MAX_FLOWS,
+        let max_flows = cfg_layer(
+            args.max_flows,
+            cfg_file_strategy.max_flows,
+            defaults::DEFAULT_MAX_FLOWS,
         );
         let tui_preserve_screen = cfg_layer_bool_flag(
             args.tui_preserve_screen,
@@ -677,8 +679,8 @@ impl TrippyConfig {
             dns_timeout,
             dns_resolve_method,
             dns_lookup_as_info,
-            tui_max_samples,
-            tui_max_flows,
+            max_samples,
+            max_flows,
             tui_preserve_screen,
             tui_refresh_rate,
             tui_privacy_max_ttl,
@@ -729,8 +731,8 @@ impl Default for TrippyConfig {
             dns_timeout: constants::DEFAULT_DNS_TIMEOUT,
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
-            tui_max_samples: constants::DEFAULT_TUI_MAX_SAMPLES,
-            tui_max_flows: constants::DEFAULT_TUI_MAX_FLOWS,
+            max_samples: defaults::DEFAULT_MAX_SAMPLES,
+            max_flows: defaults::DEFAULT_MAX_FLOWS,
             tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
             tui_refresh_rate: constants::DEFAULT_TUI_REFRESH_RATE,
             tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
@@ -793,6 +795,17 @@ fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
         (true, _) => true,
         (false, Some(val)) => val,
         (false, None) => default,
+    }
+}
+
+/// Check for deprecated fields.
+fn validate_deprecated(cfg_file_tui: &ConfigTui) -> anyhow::Result<()> {
+    if cfg_file_tui.deprecated_tui_max_samples.is_some() {
+        Err(anyhow!("tui-max-samples in [tui] section is deprecated, use max-samples in [strategy] section instead"))
+    } else if cfg_file_tui.deprecated_tui_max_flows.is_some() {
+        Err(anyhow!("tui-max-flows in [tui] section is deprecated, use max-flows in [strategy] section instead"))
+    } else {
+        Ok(())
     }
 }
 
@@ -1399,18 +1412,18 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
-    #[test_case("trip example.com", Ok(cfg().tui_max_samples(256).build()); "default max samples")]
-    #[test_case("trip example.com --tui-max-samples 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples")]
-    #[test_case("trip example.com -s 100", Ok(cfg().tui_max_samples(100).build()); "custom max samples short")]
-    #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: invalid value 'foo' for '--tui-max-samples <TUI_MAX_SAMPLES>': invalid digit found in string For more information, try '--help'.")); "invalid max samples")]
-    fn test_tui_max_samples(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+    #[test_case("trip example.com", Ok(cfg().max_samples(256).build()); "default max samples")]
+    #[test_case("trip example.com --max-samples 100", Ok(cfg().max_samples(100).build()); "custom max samples")]
+    #[test_case("trip example.com -s 100", Ok(cfg().max_samples(100).build()); "custom max samples short")]
+    #[test_case("trip example.com --max-samples foo", Err(anyhow!("error: invalid value 'foo' for '--max-samples <MAX_SAMPLES>': invalid digit found in string For more information, try '--help'.")); "invalid max samples")]
+    fn test_max_samples(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
-    #[test_case("trip example.com", Ok(cfg().tui_max_flows(64).build()); "default max flows")]
-    #[test_case("trip example.com --tui-max-flows 100", Ok(cfg().tui_max_flows(100).build()); "custom max flows")]
-    #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: invalid value 'foo' for '--tui-max-flows <TUI_MAX_FLOWS>': invalid digit found in string For more information, try '--help'.")); "invalid max flows")]
-    fn test_tui_max_flows(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+    #[test_case("trip example.com", Ok(cfg().max_flows(64).build()); "default max flows")]
+    #[test_case("trip example.com --max-flows 100", Ok(cfg().max_flows(100).build()); "custom max flows")]
+    #[test_case("trip example.com --max-flows foo", Err(anyhow!("error: invalid value 'foo' for '--max-flows <MAX_FLOWS>': invalid digit found in string For more information, try '--help'.")); "invalid max flows")]
+    fn test_max_flows(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
@@ -1604,6 +1617,12 @@ mod tests {
     #[test_case("trip --generate-man", Ok(TrippyAction::PrintManPage); "generate man page")]
     fn test_action(cmd: &str, expected: anyhow::Result<TrippyAction>) {
         compare(parse_action(cmd), expected);
+    }
+
+    #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: unexpected argument '--tui-max-samples' found")); "deprecated tui max samples")]
+    #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: unexpected argument '--tui-max-flows' found")); "deprecated tui max flows")]
+    fn test_deprecated(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare_lines(parse_config(cmd), expected, Some(0));
     }
 
     fn parse_action(cmd: &str) -> anyhow::Result<TrippyAction> {
@@ -1952,19 +1971,19 @@ mod tests {
             }
         }
 
-        pub fn tui_max_samples(self, tui_max_samples: usize) -> Self {
+        pub fn max_samples(self, tui_max_samples: usize) -> Self {
             Self {
                 config: TrippyConfig {
-                    tui_max_samples,
+                    max_samples: tui_max_samples,
                     ..self.config
                 },
             }
         }
 
-        pub fn tui_max_flows(self, tui_max_flows: usize) -> Self {
+        pub fn max_flows(self, max_flows: usize) -> Self {
             Self {
                 config: TrippyConfig {
-                    tui_max_flows,
+                    max_flows,
                     ..self.config
                 },
             }
