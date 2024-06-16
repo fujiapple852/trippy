@@ -2263,20 +2263,22 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "1.3.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5af6b725dd317dd689d1e37f559e70cfbe6e87effdaf5f62c80d919bfc9eda95"
+checksum = "27292e82cd2fdfe35a1cdffd2936f213d1a1f2abcb5115ba2ba465681a3c9cdf"
 dependencies = [
  "bytes",
  "cfg-if",
  "futures-core",
  "ipnet",
  "libc",
+ "libloading",
  "log",
  "nix",
  "thiserror",
  "tokio",
  "tokio-util",
+ "windows-sys 0.52.0",
  "wintun",
 ]
 
