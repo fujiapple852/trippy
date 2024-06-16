@@ -16,14 +16,11 @@
 #![forbid(unsafe_code)]
 
 use crate::backend::Backend;
-use crate::config::{
-    LogFormat, LogSpanEvents, Mode, TrippyAction, TrippyConfig, TuiCommandItem, TuiThemeItem,
-};
+use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyAction, TrippyConfig};
 use crate::geoip::GeoIpLookup;
 use anyhow::{anyhow, Error};
 use backend::trace::Trace;
-use clap::{CommandFactory, Parser};
-use clap_complete::Shell;
+use clap::Parser;
 use config::Args;
 use frontend::TuiConfig;
 use parking_lot::RwLock;
@@ -31,7 +28,6 @@ use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{process, thread};
-use strum::VariantNames;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -48,6 +44,7 @@ mod backend;
 mod config;
 mod frontend;
 mod geoip;
+mod print;
 mod report;
 mod util;
 
@@ -58,11 +55,11 @@ fn main() -> anyhow::Result<()> {
     let pid = u16::try_from(process::id() % u32::from(u16::MAX))?;
     match TrippyAction::from(args, &privilege, pid)? {
         TrippyAction::Trippy(cfg) => run_trippy(&cfg, pid)?,
-        TrippyAction::PrintTuiThemeItems => print_tui_theme_items(),
-        TrippyAction::PrintTuiBindingCommands => print_tui_binding_commands(),
-        TrippyAction::PrintConfigTemplate => print_config_template(),
-        TrippyAction::PrintManPage => print_man_page()?,
-        TrippyAction::PrintShellCompletions(shell) => print_shell_completions(shell)?,
+        TrippyAction::PrintTuiThemeItems => print::print_tui_theme_items(),
+        TrippyAction::PrintTuiBindingCommands => print::print_tui_binding_commands(),
+        TrippyAction::PrintConfigTemplate => print::print_config_template(),
+        TrippyAction::PrintManPage => print::print_man_page()?,
+        TrippyAction::PrintShellCompletions(shell) => print::print_shell_completions(shell)?,
     }
     Ok(())
 }
@@ -82,31 +79,6 @@ fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     let traces = start_tracers(cfg, &addrs, pid)?;
     Privilege::drop_privileges()?;
     run_frontend(cfg, resolver, geoip_lookup, traces)
-}
-
-fn print_tui_theme_items() {
-    println!("{}", tui_theme_items());
-    process::exit(0);
-}
-
-fn print_tui_binding_commands() {
-    println!("{}", tui_binding_commands());
-    process::exit(0);
-}
-
-fn print_config_template() {
-    println!("{}", include_str!("../../../trippy-config-sample.toml"));
-    process::exit(0);
-}
-
-fn print_shell_completions(shell: Shell) -> anyhow::Result<()> {
-    println!("{}", shell_completions(shell)?);
-    process::exit(0);
-}
-
-fn print_man_page() -> anyhow::Result<()> {
-    println!("{}", man_page()?);
-    process::exit(0);
 }
 
 /// Start the DNS resolver.
@@ -449,55 +421,5 @@ impl TraceInfo {
             geoip_mmdb_file,
             dns_resolve_all,
         }
-    }
-}
-
-fn tui_theme_items() -> String {
-    format!(
-        "TUI theme color items: {}",
-        TuiThemeItem::VARIANTS.join(", ")
-    )
-}
-
-fn tui_binding_commands() -> String {
-    format!(
-        "TUI binding commands: {}",
-        TuiCommandItem::VARIANTS.join(", ")
-    )
-}
-
-fn shell_completions(shell: Shell) -> anyhow::Result<String> {
-    let mut cmd = Args::command();
-    let name = cmd.get_name().to_string();
-    let mut buffer: Vec<u8> = vec![];
-    clap_complete::generate(shell, &mut cmd, name, &mut buffer);
-    Ok(String::from_utf8(buffer)?)
-}
-
-fn man_page() -> anyhow::Result<String> {
-    let cmd = Args::command();
-    let mut buffer: Vec<u8> = vec![];
-    clap_mangen::Man::new(cmd).render(&mut buffer)?;
-    Ok(String::from_utf8(buffer)?)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::util::{insta, remove_whitespace};
-    use test_case::test_case;
-
-    #[test_case(&tui_theme_items(), "tui theme items match"; "tui theme items match")]
-    #[test_case(&tui_binding_commands(), "tui binding commands match"; "tui binding commands match")]
-    #[test_case(&shell_completions(Shell::Bash).unwrap(), "generate bash shell completions"; "generate bash shell completions")]
-    #[test_case(&shell_completions(Shell::Elvish).unwrap(), "generate elvish shell completions"; "generate elvish shell completions")]
-    #[test_case(&shell_completions(Shell::Fish).unwrap(), "generate fish shell completions"; "generate fish shell completions")]
-    #[test_case(&shell_completions(Shell::PowerShell).unwrap(), "generate powershell shell completions"; "generate powershell shell completions")]
-    #[test_case(&shell_completions(Shell::Zsh).unwrap(), "generate zsh shell completions"; "generate zsh shell completions")]
-    #[test_case(&man_page().unwrap(), "generate man page"; "generate man page")]
-    fn test_output(actual: &str, name: &str) {
-        insta(name, || {
-            insta::assert_snapshot!(remove_whitespace(actual.to_string()));
-        });
     }
 }
