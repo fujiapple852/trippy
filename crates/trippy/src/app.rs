@@ -38,91 +38,6 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     run_frontend(cfg, resolver, geoip_lookup, traces)
 }
 
-/// Start the DNS resolver.
-fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
-    Ok(DnsResolver::start(trippy_dns::Config::new(
-        cfg.dns_resolve_method,
-        cfg.addr_family,
-        cfg.dns_timeout,
-    ))?)
-}
-
-fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
-    if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
-        GeoIpLookup::from_file(path)
-    } else {
-        Ok(GeoIpLookup::empty())
-    }
-}
-
-fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
-    if cfg.verbose {
-        let fmt_span = match cfg.log_span_events {
-            LogSpanEvents::Off => FmtSpan::NONE,
-            LogSpanEvents::Active => FmtSpan::ACTIVE,
-            LogSpanEvents::Full => FmtSpan::FULL,
-        };
-        match cfg.log_format {
-            LogFormat::Compact => {
-                tracing_subscriber::fmt()
-                    .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
-                    .compact()
-                    .init();
-            }
-            LogFormat::Pretty => {
-                tracing_subscriber::fmt()
-                    .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
-                    .pretty()
-                    .init();
-            }
-            LogFormat::Json => {
-                tracing_subscriber::fmt()
-                    .with_span_events(fmt_span)
-                    .with_env_filter(&cfg.log_filter)
-                    .json()
-                    .init();
-            }
-            LogFormat::Chrome => {
-                let (chrome_layer, guard) = ChromeLayerBuilder::new()
-                    .writer(std::io::stdout())
-                    .include_args(true)
-                    .build();
-                tracing_subscriber::registry().with(chrome_layer).init();
-                return Some(guard);
-            }
-        }
-    }
-    None
-}
-
-/// Resolve targets.
-fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result<Vec<TargetInfo>> {
-    cfg.targets
-        .iter()
-        .flat_map(|target| match resolver.lookup(target) {
-            Ok(addrs) => addrs
-                .into_iter()
-                .enumerate()
-                .take_while(|(i, _)| if cfg.dns_resolve_all { true } else { *i == 0 })
-                .map(|(i, addr)| {
-                    let hostname = if cfg.dns_resolve_all {
-                        format!("{} [{}]", target, i + 1)
-                    } else {
-                        target.to_string()
-                    };
-                    Ok(TargetInfo { hostname, addr })
-                })
-                .collect::<Vec<_>>()
-                .into_iter(),
-            Err(e) => {
-                vec![Err(anyhow!("failed to resolve target: {} ({})", target, e))].into_iter()
-            }
-        })
-        .collect::<anyhow::Result<Vec<_>>>()
-}
-
 /// Start all tracers.
 fn start_tracers(
     cfg: &TrippyConfig,
@@ -193,6 +108,91 @@ fn run_frontend(
         Mode::Silent => report::silent::report(&traces[0], args.report_cycles)?,
     }
     Ok(())
+}
+
+/// Resolve targets.
+fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result<Vec<TargetInfo>> {
+    cfg.targets
+        .iter()
+        .flat_map(|target| match resolver.lookup(target) {
+            Ok(addrs) => addrs
+                .into_iter()
+                .enumerate()
+                .take_while(|(i, _)| if cfg.dns_resolve_all { true } else { *i == 0 })
+                .map(|(i, addr)| {
+                    let hostname = if cfg.dns_resolve_all {
+                        format!("{} [{}]", target, i + 1)
+                    } else {
+                        target.to_string()
+                    };
+                    Ok(TargetInfo { hostname, addr })
+                })
+                .collect::<Vec<_>>()
+                .into_iter(),
+            Err(e) => {
+                vec![Err(anyhow!("failed to resolve target: {} ({})", target, e))].into_iter()
+            }
+        })
+        .collect::<anyhow::Result<Vec<_>>>()
+}
+
+/// Start the DNS resolver.
+fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
+    Ok(DnsResolver::start(trippy_dns::Config::new(
+        cfg.dns_resolve_method,
+        cfg.addr_family,
+        cfg.dns_timeout,
+    ))?)
+}
+
+fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
+    if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
+        GeoIpLookup::from_file(path)
+    } else {
+        Ok(GeoIpLookup::empty())
+    }
+}
+
+fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
+    if cfg.verbose {
+        let fmt_span = match cfg.log_span_events {
+            LogSpanEvents::Off => FmtSpan::NONE,
+            LogSpanEvents::Active => FmtSpan::ACTIVE,
+            LogSpanEvents::Full => FmtSpan::FULL,
+        };
+        match cfg.log_format {
+            LogFormat::Compact => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .compact()
+                    .init();
+            }
+            LogFormat::Pretty => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .pretty()
+                    .init();
+            }
+            LogFormat::Json => {
+                tracing_subscriber::fmt()
+                    .with_span_events(fmt_span)
+                    .with_env_filter(&cfg.log_filter)
+                    .json()
+                    .init();
+            }
+            LogFormat::Chrome => {
+                let (chrome_layer, guard) = ChromeLayerBuilder::new()
+                    .writer(std::io::stdout())
+                    .include_args(true)
+                    .build();
+                tracing_subscriber::registry().with(chrome_layer).init();
+                return Some(guard);
+            }
+        }
+    }
+    None
 }
 
 /// Make the tracer configuration.
@@ -293,13 +293,6 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
     )
 }
 
-/// Information about a tracing target.
-#[derive(Debug, Clone)]
-pub struct TargetInfo {
-    pub hostname: String,
-    pub addr: IpAddr,
-}
-
 /// Information about a `Trace` needed for the Tui, stream and reports.
 #[derive(Debug, Clone)]
 pub struct TraceInfo {
@@ -379,4 +372,11 @@ impl TraceInfo {
             dns_resolve_all,
         }
     }
+}
+
+/// Information about a tracing target.
+#[derive(Debug, Clone)]
+pub struct TargetInfo {
+    pub hostname: String,
+    pub addr: IpAddr,
 }
