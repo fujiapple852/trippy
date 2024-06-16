@@ -19,6 +19,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Separate library and binary crates ([#1141](https://github.com/fujiapple852/trippy/issues/1141))
 - Improved error messages ([#1150](https://github.com/fujiapple852/trippy/issues/1150))
+- [BREAKING CHANGE] `tui-max-[samples|flows]` renamed
+  as `max-[samples|flows]` ([#1187](https://github.com/fujiapple852/trippy/issues/1187))
 
 ### Fixed
 
