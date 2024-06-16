@@ -1,6 +1,6 @@
+use crate::app::TraceInfo;
 use crate::backend::trace::Trace;
 use crate::report::types::Hop;
-use crate::TraceInfo;
 use anyhow::anyhow;
 use std::thread::sleep;
 use trippy_dns::Resolver;

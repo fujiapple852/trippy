@@ -1,10 +1,10 @@
+use crate::app::TraceInfo;
 use crate::backend::flows::FlowId;
 use crate::backend::trace::Hop;
 use crate::backend::trace::Trace;
 use crate::frontend::config::TuiConfig;
 use crate::frontend::render::settings::{SETTINGS_TABS, SETTINGS_TAB_COLUMNS};
 use crate::geoip::GeoIpLookup;
-use crate::TraceInfo;
 use itertools::Itertools;
 use ratatui::widgets::TableState;
 use std::time::SystemTime;

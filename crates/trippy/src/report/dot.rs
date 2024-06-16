@@ -1,5 +1,5 @@
+use crate::app::TraceInfo;
 use crate::backend::flows::FlowEntry;
-use crate::TraceInfo;
 use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
 use std::fmt::{Debug, Formatter};

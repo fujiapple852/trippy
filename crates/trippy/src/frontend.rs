@@ -1,7 +1,7 @@
+use crate::app::TraceInfo;
 use crate::config::AddressMode;
 use crate::frontend::binding::CTRL_C;
 use crate::geoip::GeoIpLookup;
-use crate::TraceInfo;
 pub use config::TuiConfig;
 use crossterm::event::KeyEventKind;
 use crossterm::{
