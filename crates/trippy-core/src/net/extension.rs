@@ -1,10 +1,10 @@
 use crate::error::TracerError;
-use crate::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
-use crate::packet::icmp_extension::extension_object::{ClassNum, ExtensionObjectPacket};
-use crate::packet::icmp_extension::extension_structure::ExtensionsPacket;
-use crate::packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
-use crate::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
 use crate::probe::{Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension};
+use trippy_packet::icmp_extension::extension_header::ExtensionHeaderPacket;
+use trippy_packet::icmp_extension::extension_object::{ClassNum, ExtensionObjectPacket};
+use trippy_packet::icmp_extension::extension_structure::ExtensionsPacket;
+use trippy_packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
+use trippy_packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
 
 /// The supported ICMP extension version number.
 const ICMP_EXTENSION_VERSION: u8 = 2;

@@ -2220,6 +2220,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "trippy-packet",
  "tun2",
  "widestring",
  "windows-sys 0.52.0",
@@ -2235,6 +2236,16 @@ dependencies = [
  "hickory-resolver",
  "itertools 0.13.0",
  "parking_lot",
+ "thiserror",
+]
+
+[[package]]
+name = "trippy-packet"
+version = "0.11.0-dev"
+dependencies = [
+ "anyhow",
+ "hex-literal",
+ "itertools 0.13.0",
  "thiserror",
 ]
 

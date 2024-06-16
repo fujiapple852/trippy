@@ -20,6 +20,15 @@ the crate you would use if you wish to provide the Trippy tracing functionality 
 cargo add trippy-core
 ```
 
+### `trippy-packet`
+
+A library crate which provides packet wire formats and packet parsing functionality. This crate is used by the Trippy
+application and is the crate you would use if you wish to provide packet parsing functionality in your own application.
+
+```shell
+cargo add trippy-packet
+```
+
 ### `trippy-dns`
 
 A library crate for performing forward and reverse lazy DNS resolution. This crate is designed to be used by the Trippy

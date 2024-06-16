@@ -1,5 +1,5 @@
-use crate::packet::buffer::Buffer;
-use crate::packet::error::{PacketError, PacketResult};
+use crate::buffer::Buffer;
+use crate::error::{PacketError, PacketResult};
 use std::fmt::{Debug, Formatter};
 
 /// The type of ICMP packet.
@@ -236,10 +236,10 @@ mod tests {
 }
 
 pub mod echo_request {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::fmt_payload;
-    use crate::packet::icmpv4::{IcmpCode, IcmpType};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::fmt_payload;
+    use crate::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -496,10 +496,10 @@ pub mod echo_request {
 }
 
 pub mod echo_reply {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::fmt_payload;
-    use crate::packet::icmpv4::{IcmpCode, IcmpType};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::fmt_payload;
+    use crate::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -756,11 +756,11 @@ pub mod echo_reply {
 }
 
 pub mod time_exceeded {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::fmt_payload;
-    use crate::packet::icmp_extension::extension_splitter::split;
-    use crate::packet::icmpv4::{IcmpCode, IcmpType};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::fmt_payload;
+    use crate::icmp_extension::extension_splitter::split;
+    use crate::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -1011,11 +1011,11 @@ pub mod time_exceeded {
 }
 
 pub mod destination_unreachable {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::fmt_payload;
-    use crate::packet::icmp_extension::extension_splitter::split;
-    use crate::packet::icmpv4::{IcmpCode, IcmpType};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::fmt_payload;
+    use crate::icmp_extension::extension_splitter::split;
+    use crate::icmpv4::{IcmpCode, IcmpType};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;

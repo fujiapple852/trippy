@@ -72,20 +72,19 @@ mod address {
     #[cfg(not(target_os = "linux"))]
     #[instrument(ret)]
     fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
-        use crate::packet;
         use socket2::Protocol;
-        let mut icmp_buf = [0_u8; packet::icmpv4::IcmpPacket::minimum_packet_size()];
-        let mut icmp = packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
-        icmp.set_icmp_type(packet::icmpv4::IcmpType::EchoRequest);
-        icmp.set_icmp_code(packet::icmpv4::IcmpCode(0));
+        let mut icmp_buf = [0_u8; trippy_packet::icmpv4::IcmpPacket::minimum_packet_size()];
+        let mut icmp = trippy_packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
+        icmp.set_icmp_type(trippy_packet::icmpv4::IcmpType::EchoRequest);
+        icmp.set_icmp_code(trippy_packet::icmpv4::IcmpCode(0));
         icmp.set_identifier(0);
         icmp.set_sequence(0);
-        icmp.set_checksum(packet::checksum::icmp_ipv4_checksum(icmp.packet()));
+        icmp.set_checksum(trippy_packet::checksum::icmp_ipv4_checksum(icmp.packet()));
         let mut ipv4_buf = [0_u8; TEST_PACKET_LENGTH as usize];
-        let mut ipv4 = packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
+        let mut ipv4 = trippy_packet::ipv4::Ipv4Packet::new(&mut ipv4_buf)?;
         ipv4.set_version(4);
         ipv4.set_header_length(5);
-        ipv4.set_protocol(packet::IpProtocol::Icmp);
+        ipv4.set_protocol(trippy_packet::IpProtocol::Icmp);
         ipv4.set_ttl(255);
         ipv4.set_source(src_addr);
         ipv4.set_destination(Ipv4Addr::LOCALHOST);

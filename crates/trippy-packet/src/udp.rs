@@ -1,6 +1,6 @@
-use crate::packet::buffer::Buffer;
-use crate::packet::error::{PacketError, PacketResult};
-use crate::packet::fmt_payload;
+use crate::buffer::Buffer;
+use crate::error::{PacketError, PacketResult};
+use crate::fmt_payload;
 use std::fmt::{Debug, Formatter};
 
 const SOURCE_PORT_OFFSET: usize = 0;

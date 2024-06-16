@@ -4,16 +4,6 @@ use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::platform;
 use crate::net::socket::{Socket, SocketError};
-use crate::packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
-use crate::packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
-use crate::packet::icmpv4::echo_reply::EchoReplyPacket;
-use crate::packet::icmpv4::echo_request::EchoRequestPacket;
-use crate::packet::icmpv4::time_exceeded::TimeExceededPacket;
-use crate::packet::icmpv4::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType};
-use crate::packet::ipv4::Ipv4Packet;
-use crate::packet::tcp::TcpPacket;
-use crate::packet::udp::UdpPacket;
-use crate::packet::IpProtocol;
 use crate::probe::{
     Extensions, IcmpPacketCode, Probe, ProbeResponse, ProbeResponseData, ProbeResponseSeq,
     ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp,
@@ -24,6 +14,16 @@ use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
 use tracing::instrument;
+use trippy_packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
+use trippy_packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
+use trippy_packet::icmpv4::echo_reply::EchoReplyPacket;
+use trippy_packet::icmpv4::echo_request::EchoRequestPacket;
+use trippy_packet::icmpv4::time_exceeded::TimeExceededPacket;
+use trippy_packet::icmpv4::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType};
+use trippy_packet::ipv4::Ipv4Packet;
+use trippy_packet::tcp::TcpPacket;
+use trippy_packet::udp::UdpPacket;
+use trippy_packet::IpProtocol;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();

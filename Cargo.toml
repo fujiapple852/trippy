@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/trippy", "crates/trippy-core", "crates/trippy-privilege", "crates/trippy-dns"]
+members = ["crates/trippy", "crates/trippy-core", "crates/trippy-packet", "crates/trippy-privilege", "crates/trippy-dns"]
 
 [workspace.package]
 version = "0.11.0-dev"
@@ -23,3 +23,4 @@ tracing = { version = "0.1.40" }
 derive_more = { version = "0.99.17", default-features = false, features = [ "mul", "add", "add_assign" ] }
 test-case = "3.3.1"
 parking_lot = "0.12.3"
+hex-literal = "0.4.1"

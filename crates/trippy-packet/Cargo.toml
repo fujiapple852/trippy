@@ -1,0 +1,22 @@
+[package]
+name = "trippy-packet"
+description = "Network packets for Trippy"
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords = ["traceroute", "ping", "icmp"]
+categories = ["network-programming"]
+
+[dependencies]
+itertools.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+hex-literal.workspace = true
+anyhow.workspace = true

@@ -64,9 +64,6 @@ mod probe;
 mod tracer;
 mod types;
 
-/// Packet wire formats.
-pub mod packet;
-
 pub use builder::Builder;
 pub use config::{
     defaults, ChannelConfig, ChannelConfigBuilder, Config, ConfigBuilder, IcmpExtensionParseMode,

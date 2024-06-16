@@ -3,16 +3,6 @@ use crate::error::{TraceResult, TracerError};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::socket::{Socket, SocketError};
-use crate::packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
-use crate::packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
-use crate::packet::icmpv6::echo_reply::EchoReplyPacket;
-use crate::packet::icmpv6::echo_request::EchoRequestPacket;
-use crate::packet::icmpv6::time_exceeded::TimeExceededPacket;
-use crate::packet::icmpv6::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType};
-use crate::packet::ipv6::Ipv6Packet;
-use crate::packet::tcp::TcpPacket;
-use crate::packet::udp::UdpPacket;
-use crate::packet::IpProtocol;
 use crate::probe::{
     Extensions, IcmpPacketCode, Probe, ProbeResponse, ProbeResponseData, ProbeResponseSeq,
     ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp,
@@ -23,6 +13,16 @@ use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
 use tracing::instrument;
+use trippy_packet::checksum::{icmp_ipv6_checksum, udp_ipv6_checksum};
+use trippy_packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
+use trippy_packet::icmpv6::echo_reply::EchoReplyPacket;
+use trippy_packet::icmpv6::echo_request::EchoRequestPacket;
+use trippy_packet::icmpv6::time_exceeded::TimeExceededPacket;
+use trippy_packet::icmpv6::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType};
+use trippy_packet::ipv6::Ipv6Packet;
+use trippy_packet::tcp::TcpPacket;
+use trippy_packet::udp::UdpPacket;
+use trippy_packet::IpProtocol;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv6Packet::minimum_packet_size();
