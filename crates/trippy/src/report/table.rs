@@ -1,5 +1,5 @@
+use crate::app::TraceInfo;
 use crate::backend::trace::Trace;
-use crate::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;

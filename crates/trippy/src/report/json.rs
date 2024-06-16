@@ -1,6 +1,6 @@
+use crate::app::TraceInfo;
 use crate::backend::trace::Trace;
 use crate::report::types::{Hop, Host, Info, Report};
-use crate::TraceInfo;
 use trippy_dns::Resolver;
 
 /// Generate a json report of trace data.

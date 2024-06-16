@@ -1,4 +1,4 @@
-use crate::TraceInfo;
+use crate::app::TraceInfo;
 
 /// Run a trace and report all flows observed.
 pub fn report(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {

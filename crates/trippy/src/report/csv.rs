@@ -1,6 +1,7 @@
+use crate::app::TraceInfo;
+use crate::backend;
 use crate::backend::trace::Trace;
 use crate::report::types::fixed_width;
-use crate::{backend, TraceInfo};
 use itertools::Itertools;
 use serde::Serialize;
 use std::net::IpAddr;
