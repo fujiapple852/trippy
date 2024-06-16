@@ -49,6 +49,7 @@ mod config;
 mod frontend;
 mod geoip;
 mod report;
+mod util;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
@@ -483,6 +484,7 @@ fn man_page() -> anyhow::Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::util::{insta, remove_whitespace};
     use test_case::test_case;
 
     #[test_case(&tui_theme_items(), "tui theme items match"; "tui theme items match")]
@@ -497,18 +499,5 @@ mod tests {
         insta(name, || {
             insta::assert_snapshot!(remove_whitespace(actual.to_string()));
         });
-    }
-
-    pub fn insta<F: FnOnce()>(name: &str, f: F) {
-        let mut settings = insta::Settings::new();
-        settings.set_snapshot_suffix(name.replace(' ', "_"));
-        settings.set_snapshot_path("../tests/resources/snapshots");
-        settings.set_omit_expression(true);
-        settings.bind(f);
-    }
-
-    pub fn remove_whitespace(mut s: String) -> String {
-        s.retain(|c| !c.is_whitespace());
-        s
     }
 }

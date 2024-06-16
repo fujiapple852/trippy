@@ -1094,7 +1094,7 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{insta, remove_whitespace};
+    use crate::util::{insta, remove_whitespace};
     use crossterm::event::KeyCode;
     use std::net::{Ipv4Addr, Ipv6Addr};
     use std::str::FromStr;
