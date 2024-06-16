@@ -1,9 +1,9 @@
-use crate::packet::error::PacketError;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::ErrorKind;
 use std::net::{IpAddr, SocketAddr};
 use thiserror::Error;
+use trippy_packet::error::PacketError;
 
 /// A tracer error result.
 pub type TraceResult<T> = Result<T, TracerError>;

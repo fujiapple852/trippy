@@ -1,7 +1,7 @@
 pub mod extension_structure {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::icmp_extension::extension_object::ExtensionObjectPacket;
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::icmp_extension::extension_object::ExtensionObjectPacket;
 
     /// Represents an ICMP `ExtensionsPacket` pseudo object.
     ///
@@ -104,8 +104,8 @@ pub mod extension_structure {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
-        use crate::packet::icmp_extension::extension_object::{
+        use crate::icmp_extension::extension_header::ExtensionHeaderPacket;
+        use crate::icmp_extension::extension_object::{
             ClassNum, ClassSubType, ExtensionObjectPacket,
         };
 
@@ -152,8 +152,8 @@ pub mod extension_structure {
 }
 
 pub mod extension_header {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
     use std::fmt::{Debug, Formatter};
 
     const VERSION_OFFSET: usize = 0;
@@ -286,9 +286,9 @@ pub mod extension_header {
 }
 
 pub mod extension_object {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::fmt_payload;
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::fmt_payload;
     use std::fmt::{Debug, Formatter};
 
     /// The ICMP Extension Object Class Num.
@@ -518,9 +518,9 @@ pub mod extension_object {
 }
 
 pub mod mpls_label_stack {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
-    use crate::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
+    use crate::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
 
     /// Represents an ICMP `MplsLabelStackPacket`.
     ///
@@ -633,8 +633,8 @@ pub mod mpls_label_stack {
 }
 
 pub mod mpls_label_stack_member {
-    use crate::packet::buffer::Buffer;
-    use crate::packet::error::{PacketError, PacketResult};
+    use crate::buffer::Buffer;
+    use crate::error::{PacketError, PacketResult};
     use std::fmt::{Debug, Formatter};
 
     const LABEL_OFFSET: usize = 0;
@@ -842,7 +842,7 @@ pub mod mpls_label_stack_member {
 }
 
 pub mod extension_splitter {
-    use crate::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
+    use crate::icmp_extension::extension_header::ExtensionHeaderPacket;
     const MIN_HEADER: usize = ExtensionHeaderPacket::minimum_packet_size();
 
     /// From rfc4884 (section 3) entitled "Summary of Changes to ICMP":
@@ -898,13 +898,13 @@ pub mod extension_splitter {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
-        use crate::packet::icmp_extension::extension_object::{
+        use crate::icmp_extension::extension_header::ExtensionHeaderPacket;
+        use crate::icmp_extension::extension_object::{
             ClassNum, ClassSubType, ExtensionObjectPacket,
         };
-        use crate::packet::icmp_extension::extension_structure::ExtensionsPacket;
-        use crate::packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
-        use crate::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
+        use crate::icmp_extension::extension_structure::ExtensionsPacket;
+        use crate::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
+        use crate::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
 
         #[test]
         fn test_split_empty_payload() {
@@ -959,10 +959,10 @@ pub mod extension_splitter {
 
         mod ipv4 {
             use super::*;
-            use crate::packet::icmpv4::echo_request::EchoRequestPacket;
-            use crate::packet::icmpv4::time_exceeded::TimeExceededPacket;
-            use crate::packet::icmpv4::{IcmpCode, IcmpType};
-            use crate::packet::ipv4::Ipv4Packet;
+            use crate::icmpv4::echo_request::EchoRequestPacket;
+            use crate::icmpv4::time_exceeded::TimeExceededPacket;
+            use crate::icmpv4::{IcmpCode, IcmpType};
+            use crate::ipv4::Ipv4Packet;
             use std::net::Ipv4Addr;
 
             // This ICMP TimeExceeded packet which contains single `MPLS` extension
@@ -1136,17 +1136,17 @@ pub mod extension_splitter {
         }
 
         mod ipv6 {
-            use crate::packet::icmp_extension::extension_header::ExtensionHeaderPacket;
-            use crate::packet::icmp_extension::extension_object::{
+            use crate::icmp_extension::extension_header::ExtensionHeaderPacket;
+            use crate::icmp_extension::extension_object::{
                 ClassNum, ClassSubType, ExtensionObjectPacket,
             };
-            use crate::packet::icmp_extension::extension_structure::ExtensionsPacket;
-            use crate::packet::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
-            use crate::packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
-            use crate::packet::icmpv6::echo_request::EchoRequestPacket;
-            use crate::packet::icmpv6::time_exceeded::TimeExceededPacket;
-            use crate::packet::icmpv6::{IcmpCode, IcmpType};
-            use crate::packet::ipv6::Ipv6Packet;
+            use crate::icmp_extension::extension_structure::ExtensionsPacket;
+            use crate::icmp_extension::mpls_label_stack::MplsLabelStackPacket;
+            use crate::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
+            use crate::icmpv6::echo_request::EchoRequestPacket;
+            use crate::icmpv6::time_exceeded::TimeExceededPacket;
+            use crate::icmpv6::{IcmpCode, IcmpType};
+            use crate::ipv6::Ipv6Packet;
 
             // Real IPv6 example with an rfc4884 length of 10 (10 * 8 = 80
             // octets).

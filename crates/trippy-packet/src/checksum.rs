@@ -4,7 +4,7 @@
 //!
 //! [`libpnet`]: https://github.com/libpnet/libpnet
 
-use crate::packet::IpProtocol;
+use crate::IpProtocol;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// Calculate the checksum for an `Ipv4` header.

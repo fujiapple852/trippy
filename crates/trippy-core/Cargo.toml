@@ -14,6 +14,7 @@ keywords = ["traceroute", "ping", "icmp"]
 categories = ["network-programming"]
 
 [dependencies]
+trippy-packet = { version = "0.11.0-dev", path = "../trippy-packet" }
 derive_more.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
@@ -44,7 +45,7 @@ anyhow.workspace = true
 serde.workspace = true
 test-case.workspace = true
 serde_yaml.workspace = true
-hex-literal = "0.4.1"
+hex-literal.workspace = true
 rand = "0.8.5"
 tokio = { version = "1.38.0", features = [ "full" ] }
 tokio-util = "0.7.11"
