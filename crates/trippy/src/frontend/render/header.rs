@@ -85,7 +85,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
-    let discovered = if app.tui_config.max_flows > 1 {
+    let discovered = if app.selected_tracer_data.max_flows() > 1 {
         let plural_flows = if app.tracer_data().flows().len() > 1 {
             "flows"
         } else {

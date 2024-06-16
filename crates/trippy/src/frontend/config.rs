@@ -26,10 +26,6 @@ pub struct TuiConfig {
     pub geoip_mode: GeoIpMode,
     /// The maximum number of addresses to show per hop.
     pub max_addrs: Option<u8>,
-    /// The maximum number of samples to record per hop.
-    pub max_samples: usize,
-    /// The maximum number of flows to display.
-    pub max_flows: usize,
     /// The Tui color theme.
     pub theme: Theme,
     /// The Tui keyboard bindings.
@@ -50,8 +46,6 @@ impl TuiConfig {
         icmp_extension_mode: IcmpExtensionMode,
         geoip_mode: GeoIpMode,
         max_addrs: Option<u8>,
-        max_samples: usize,
-        max_flows: usize,
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
         tui_columns: &TuiColumns,
@@ -66,8 +60,6 @@ impl TuiConfig {
             icmp_extension_mode,
             geoip_mode,
             max_addrs,
-            max_samples,
-            max_flows,
             theme: Theme::from(tui_theme),
             bindings: Bindings::from(*tui_bindings),
             tui_columns: Columns::from(tui_columns.clone()),

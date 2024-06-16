@@ -157,6 +157,8 @@ pub struct ConfigStrategy {
     #[serde(default)]
     #[serde(deserialize_with = "humantime_deser")]
     pub read_timeout: Option<Duration>,
+    pub max_samples: Option<usize>,
+    pub max_flows: Option<usize>,
 }
 
 impl Default for ConfigStrategy {
@@ -183,6 +185,8 @@ impl Default for ConfigStrategy {
             tos: Some(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE.is_enabled()),
             read_timeout: Some(defaults::DEFAULT_STRATEGY_READ_TIMEOUT),
+            max_samples: Some(defaults::DEFAULT_MAX_SAMPLES),
+            max_flows: Some(defaults::DEFAULT_MAX_FLOWS),
         }
     }
 }
@@ -226,8 +230,6 @@ impl Default for ConfigReport {
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConfigTui {
-    pub tui_max_samples: Option<usize>,
-    pub tui_max_flows: Option<usize>,
     pub tui_preserve_screen: Option<bool>,
     #[serde(default)]
     #[serde(deserialize_with = "humantime_deser")]
@@ -240,13 +242,15 @@ pub struct ConfigTui {
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
     pub tui_custom_columns: Option<String>,
+    #[serde(rename = "tui-max-samples")]
+    pub deprecated_tui_max_samples: Option<usize>,
+    #[serde(rename = "tui-max-flows")]
+    pub deprecated_tui_max_flows: Option<usize>,
 }
 
 impl Default for ConfigTui {
     fn default() -> Self {
         Self {
-            tui_max_samples: Some(super::constants::DEFAULT_TUI_MAX_SAMPLES),
-            tui_max_flows: Some(super::constants::DEFAULT_TUI_MAX_FLOWS),
             tui_preserve_screen: Some(super::constants::DEFAULT_TUI_PRESERVE_SCREEN),
             tui_refresh_rate: Some(super::constants::DEFAULT_TUI_REFRESH_RATE),
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
@@ -257,6 +261,8 @@ impl Default for ConfigTui {
             tui_geoip_mode: Some(super::constants::DEFAULT_TUI_GEOIP_MODE),
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),
             geoip_mmdb_file: None,
+            deprecated_tui_max_samples: None,
+            deprecated_tui_max_flows: None,
         }
     }
 }

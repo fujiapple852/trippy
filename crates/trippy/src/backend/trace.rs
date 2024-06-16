@@ -102,6 +102,16 @@ impl Trace {
         self.error = error;
     }
 
+    /// The maximum number of samples to record per hop.
+    pub fn max_samples(&self) -> usize {
+        self.max_samples
+    }
+
+    /// The maximum number of flows to record.
+    pub fn max_flows(&self) -> usize {
+        self.max_flows
+    }
+
     /// Update the tracing state from a `TracerRound`.
     pub(super) fn update_from_round(&mut self, round: &TracerRound<'_>) {
         let flow = Flow::from_hops(
