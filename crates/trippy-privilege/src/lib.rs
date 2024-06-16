@@ -37,7 +37,17 @@
 //! ```rust
 //! # fn main() -> anyhow::Result<()> {
 //! # use trippy_privilege::Privilege;
-//! Privilege::acquire_privileges()?;
+//! let privilege = Privilege::acquire_privileges()?;
+//! if privilege.has_privileges() {
+//!     println!("You have the required privileges for raw sockets");
+//! } else {
+//!     println!("You do not have the required privileges for raw sockets");
+//! }
+//! if privilege.needs_privileges() {
+//!     println!("You always need privileges to send ICMP packets.");
+//! } else {
+//!     println!("You do not always need privileges to send ICMP packets.");
+//! }
 //! # Ok(())
 //! # }
 //! ```
@@ -140,11 +150,11 @@ impl Privilege {
     /// Acquire privileges, if possible.
     ///
     /// Check if `CAP_NET_RAW` is in the permitted set and if so raise it to the effective set.
-    pub fn acquire_privileges() -> Result<()> {
+    pub fn acquire_privileges() -> Result<Self> {
         if caps::has_cap(None, caps::CapSet::Permitted, caps::Capability::CAP_NET_RAW)? {
             caps::raise(None, caps::CapSet::Effective, caps::Capability::CAP_NET_RAW)?;
         }
-        Ok(())
+        Self::discover()
     }
 
     #[cfg(target_os = "linux")]
@@ -175,8 +185,8 @@ impl Privilege {
     /// Acquire privileges, if possible.
     ///
     /// This is a no-op on non-Linux unix systems.
-    pub fn acquire_privileges() -> Result<()> {
-        Ok(())
+    pub fn acquire_privileges() -> Result<Self> {
+        Self::discover()
     }
 
     #[cfg(all(unix, not(target_os = "linux")))]
@@ -227,8 +237,8 @@ impl Privilege {
     /// Acquire privileges, if possible.
     ///
     /// This is a no-op on `Windows`.
-    pub fn acquire_privileges() -> Result<()> {
-        Ok(())
+    pub fn acquire_privileges() -> Result<Self> {
+        Self::discover()
     }
 
     #[cfg(windows)]

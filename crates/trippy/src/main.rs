@@ -32,8 +32,7 @@ mod util;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    Privilege::acquire_privileges()?;
-    let privilege = Privilege::discover()?;
+    let privilege = Privilege::acquire_privileges()?;
     let pid = u16::try_from(process::id() % u32::from(u16::MAX))?;
     match TrippyAction::from(args, &privilege, pid)? {
         TrippyAction::Trippy(cfg) => app::run_trippy(&cfg, pid)?,
