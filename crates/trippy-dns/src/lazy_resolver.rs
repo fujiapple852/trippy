@@ -15,6 +15,16 @@ pub struct Config {
     pub timeout: Duration,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            resolve_method: ResolveMethod::System,
+            addr_family: IpAddrFamily::Ipv4thenIpv6,
+            timeout: Duration::from_millis(5000),
+        }
+    }
+}
+
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ResolveMethod {
