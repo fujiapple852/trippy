@@ -20,7 +20,7 @@ itertools = "0.13.0"
 serde = { version = "1.0.201", default-features = false, features = ["derive"] }
 serde_yaml = "=0.9.33"
 tracing = { version = "0.1.40" }
-derive_more = { version = "0.99.17", default-features = false, features = [ "mul", "add", "add_assign" ] }
+derive_more = { version = "0.99.18", default-features = false, features = [ "mul", "add", "add_assign" ] }
 test-case = "3.3.1"
 parking_lot = "0.12.3"
 hex-literal = "0.4.1"
