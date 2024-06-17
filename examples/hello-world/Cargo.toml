@@ -6,5 +6,5 @@ edition = "2021"
 rust-version = "1.75"
 
 [dependencies]
-trippy = { version = "0.11.0-dev", path = "../../crates/trippy" }
+trippy = { version = "0.11.0-dev", path = "../../crates/trippy", default-features = false, features = [ "core" ] }
 anyhow = "1.0.86"

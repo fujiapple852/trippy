@@ -1,6 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["crates/trippy", "crates/trippy-core", "crates/trippy-packet", "crates/trippy-privilege", "crates/trippy-dns", "examples/*"]
+members = [
+    "crates/trippy",
+    "crates/trippy-tui",
+    "crates/trippy-core",
+    "crates/trippy-packet",
+    "crates/trippy-privilege",
+    "crates/trippy-dns",
+    "examples/*",
+]
 
 [workspace.package]
 version = "0.11.0-dev"
@@ -12,8 +20,11 @@ readme = "README.md"
 license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.75"
+keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
+categories = ["command-line-utilities", "network-programming"]
 
 [workspace.dependencies]
+trippy-tui = { version = "0.11.0-dev", path = "crates/trippy-tui" }
 trippy-core = { version = "0.11.0-dev", path = "crates/trippy-core" }
 trippy-privilege = { version = "0.11.0-dev", path = "crates/trippy-privilege" }
 trippy-dns = { version = "0.11.0-dev", path = "crates/trippy-dns" }
