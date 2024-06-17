@@ -48,7 +48,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("DNS lookup failed")]
-    LookupFailed(Box<dyn std::error::Error>),
+    LookupFailed(Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error("ASN origin query failed")]
     QueryAsnOriginFailed,
     #[error("ASN query failed")]
