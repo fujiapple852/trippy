@@ -10,51 +10,26 @@ readme.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
-categories = ["command-line-utilities", "network-programming"]
+keywords.workspace = true
+categories.workspace = true
 
 [[bin]]
-bench = false
-path = "src/main.rs"
 name = "trip"
+path = "src/main.rs"
+required-features = [ "tui" ]
+
+[features]
+default = [ "tui" ]
+tui = [ "trippy-tui", "anyhow" ]
+core = [ "trippy-core" ]
+privilege = [ "trippy-privilege" ]
+dns = [ "trippy-dns" ]
+packet = [ "trippy-packet" ]
 
 [dependencies]
-trippy-core.workspace = true
-trippy-privilege.workspace = true
-trippy-dns.workspace = true
-thiserror.workspace = true
-anyhow.workspace = true
-itertools.workspace = true
-tracing.workspace = true
-serde.workspace = true
-derive_more.workspace = true
-clap = { version = "4.4.0",  default-features = false, features = [ "cargo", "derive", "wrap_help", "usage", "unstable-styles", "color", "suggestions", "error-context" ] }
-clap_complete = "4.4.9"
-humantime = "2.1.0"
-ratatui = "0.27.0"
-crossterm = { version = "0.27.0",  default-features = false, features = [ "events", "windows" ] }
-chrono = { version = "0.4.38", default-features = false, features = [ "clock" ] }
-serde_json = { version = "1.0.117", default-features = false }
-comfy-table = { version = "7.1.0", default-features = false }
-strum = { version = "0.26.3", default-features = false, features = [ "std", "derive" ] }
-etcetera = "0.8.0"
-toml = { version = "0.8.14", default-features = false, features = [ "parse" ] }
-maxminddb = "0.24.0"
-tracing-subscriber = { version = "0.3.18", default-features = false, features = [ "json", "env-filter" ] }
-tracing-chrome = "0.7.2"
-petgraph = "0.6.5"
-csv = "1.3.0"
-serde_with = "3.8.1"
-encoding_rs_io = "0.1.7"
-clap_mangen = "0.2.20"
-
-[dev-dependencies]
-test-case.workspace = true
-serde_yaml.workspace = true
-insta = { version = "1.39.0", features = ["serde"] }
-pretty_assertions = "1.4.0"
-
-[package.metadata.generate-rpm]
-assets = [
-  { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
-]
+trippy-tui = { workspace = true, optional = true }
+trippy-core = { workspace = true, optional = true }
+trippy-privilege = { workspace = true, optional = true }
+trippy-dns = { workspace = true, optional = true }
+trippy-packet = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }

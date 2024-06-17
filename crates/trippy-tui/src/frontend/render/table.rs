@@ -564,7 +564,7 @@ fn format_details(
 ///
 /// Format as follows:
 ///
-/// ```
+/// ```text
 /// 172.217.24.78 [1 of 2]
 /// Host: hkg07s50-in-f14.1e100.net
 /// AS Name: AS15169 GOOGLE, US

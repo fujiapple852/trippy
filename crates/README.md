@@ -46,3 +46,11 @@ may also be useful for other applications.
 ```shell
 cargo add trippy-privilege
 ```
+
+### `trippy-tui`
+
+A library crate for the Trippy terminal user interface.
+
+```shell
+cargo add trippy-tui
+```
