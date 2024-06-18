@@ -55,7 +55,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun2 = { version = "2.0.0", features = [ "async" ] }
+tun2 = { version = "2.0.1", features = [ "async" ] }
 
 [features]
 # Enable simulation integration tests
