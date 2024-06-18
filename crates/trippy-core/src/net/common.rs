@@ -3,7 +3,8 @@ use crate::net::platform::in_progress_error;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
-/// Helper function to convert an `IoResult` to a `TraceResult` with special handling for `AddressNotAvailable`.
+/// Helper function to convert an `IoResult` to a `TraceResult` with special handling for
+/// `AddressNotAvailable`.
 pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
     match res {
         Ok(()) => Ok(()),

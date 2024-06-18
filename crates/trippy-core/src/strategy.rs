@@ -440,9 +440,9 @@ mod state {
     /// A sequence number can be skipped if, for example, the port for that sequence number cannot
     /// be bound as it is already in use.
     ///
-    /// To ensure each `ProbeState` is in the correct place in the buffer (i.e. the index into the buffer
-    /// is always `Probe.sequence - round_sequence`), when we skip a sequence we leave the
-    /// skipped `ProbeState` in-place and use the next slot for the next sequence.
+    /// To ensure each `ProbeState` is in the correct place in the buffer (i.e. the index into the
+    /// buffer is always `Probe.sequence - round_sequence`), when we skip a sequence we leave
+    /// the skipped `ProbeState` in-place and use the next slot for the next sequence.
     ///
     /// We cap the number of sequences that can potentially be skipped in a round to ensure that
     /// sequence number does not even need to wrap around during a round.
@@ -580,8 +580,8 @@ mod state {
 
         /// Re-issue the `Probe` with the next sequence number.
         ///
-        /// This will mark the `ProbeState` at the previous `sequence` as skipped and re-create it with
-        /// the previous `ttl` and the current `sequence`.
+        /// This will mark the `ProbeState` at the previous `sequence` as skipped and re-create it
+        /// with the previous `ttl` and the current `sequence`.
         ///
         /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method
         /// then afterward:
@@ -713,7 +713,8 @@ mod state {
             (Port(src_port), Port(dest_port), TraceId(0), Flags::empty())
         }
 
-        /// Mark the `ProbeState` at `sequence` completed as `TimeExceeded` and update the round state.
+        /// Mark the `ProbeState` at `sequence` completed as `TimeExceeded` and update the round
+        /// state.
         #[instrument(skip(self))]
         pub fn complete_probe_time_exceeded(
             &mut self,
@@ -734,7 +735,8 @@ mod state {
             );
         }
 
-        /// Mark the `ProbeState` at `sequence` completed as `Unreachable` and update the round state.
+        /// Mark the `ProbeState` at `sequence` completed as `Unreachable` and update the round
+        /// state.
         #[instrument(skip(self))]
         pub fn complete_probe_unreachable(
             &mut self,
@@ -773,7 +775,8 @@ mod state {
             );
         }
 
-        /// Mark the `ProbeState` at `sequence` completed as `NotApplicable` and update the round state.
+        /// Mark the `ProbeState` at `sequence` completed as `NotApplicable` and update the round
+        /// state.
         #[instrument(skip(self))]
         pub fn complete_probe_other(
             &mut self,
@@ -836,13 +839,13 @@ mod state {
             self.buffer[usize::from(sequence - self.round_sequence)] =
                 ProbeState::Complete(completed);
 
-            // If this `ProbeState` found the target then we set the `target_tll` if not already set,
-            // being careful to account for `Probes` being received out-of-order.
+            // If this `ProbeState` found the target then we set the `target_tll` if not already
+            // set, being careful to account for `Probes` being received out-of-order.
             //
-            // If this `ProbeState` did not find the target but has a ttl that is greater or equal to the
-            // target ttl (if known) then we reset the target ttl to None.  This is to
-            // support Equal Cost Multi-path Routing (ECMP) cases where the number of
-            // hops to the target will vary over the lifetime of the trace.
+            // If this `ProbeState` did not find the target but has a ttl that is greater or equal
+            // to the target ttl (if known) then we reset the target ttl to None.  This
+            // is to support Equal Cost Multi-path Routing (ECMP) cases where the number
+            // of hops to the target will vary over the lifetime of the trace.
             self.target_ttl = if is_target {
                 match self.target_ttl {
                     None => Some(ttl),

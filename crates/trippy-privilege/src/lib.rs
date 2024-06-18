@@ -137,8 +137,8 @@ impl Privilege {
 
     /// Does our platform always need privileges for `ICMP`?
     ///
-    /// Specifically, each platform requires privileges unless it supports the `IPPROTO_ICMP` socket type which _also_
-    /// allows the `IP_HDRINCL` socket option to be set.
+    /// Specifically, each platform requires privileges unless it supports the `IPPROTO_ICMP` socket
+    /// type which _also_ allows the `IP_HDRINCL` socket option to be set.
     #[must_use]
     pub fn needs_privileges(&self) -> bool {
         self.needs_privileges
@@ -212,8 +212,9 @@ impl Privilege {
     #[cfg(all(unix, not(target_os = "macos")))]
     /// Does the platform always require privileges?
     ///
-    /// Whilst Linux supports the `IPPROTO_ICMP` socket type, it does not allow using it with the `IP_HDRINCL` socket
-    /// option and is therefore not supported.  This may be supported in the future.
+    /// Whilst Linux supports the `IPPROTO_ICMP` socket type, it does not allow using it with the
+    /// `IP_HDRINCL` socket option and is therefore not supported.  This may be supported in the
+    /// future.
     ///
     /// `NetBSD`, `OpenBSD` and `FreeBSD` do not support `IPPROTO_ICMP`.
     fn check_needs_privileges() -> bool {

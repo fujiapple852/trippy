@@ -26,12 +26,13 @@ use ratatui::Frame;
 /// |                 |                  |
 ///  ------------------------------------
 ///
-/// Header - the title, configuration, destination, clock and keyboard controls
-/// Tab - a tab for each target being traced (shown if > 1 target requested, can't be used with flows)
-/// Flows - a navigable chart of individual trace flows (toggled on/off, can't be used with tabs)
-/// Hops - a table where each row represents a single hop (time-to-live) in the trace
-/// History - a graph of historic round-trip ping samples for the target host
-/// Frequency - a histogram of sample frequencies by round-trip time for the target host
+/// - Header: the title, configuration, destination, clock and keyboard controls
+/// - Tab: a tab for each target being traced (shown if > 1 target requested, can't be used with
+///   flows)
+/// - Flows: a navigable chart of individual trace flows (toggled on/off, can't be used with tabs)
+/// - Hops: a table where each row represents a single hop (time-to-live) in the trace
+/// - History: a graph of historic round-trip ping samples for the target host
+/// - Frequency: a histogram of sample frequencies by round-trip time for the target host
 ///
 /// On startup a splash screen is shown in place of the hops table, until the completion of the
 /// first round.

@@ -38,9 +38,9 @@
 //!
 //! ```rust
 //! # fn main() -> anyhow::Result<()> {
-//! use trippy_packet::icmpv4::echo_request::EchoRequestPacket;
-//! use trippy_packet::icmpv4::{IcmpPacket, IcmpType, IcmpCode};
 //! use trippy_packet::checksum::icmp_ipv4_checksum;
+//! use trippy_packet::icmpv4::echo_request::EchoRequestPacket;
+//! use trippy_packet::icmpv4::{IcmpCode, IcmpPacket, IcmpType};
 //!
 //! let mut buf = [0; IcmpPacket::minimum_packet_size()];
 //! let mut icmp = EchoRequestPacket::new(&mut buf)?;
