@@ -3,6 +3,10 @@ use std::net::IpAddr;
 use std::time::SystemTime;
 
 /// A tracing probe.
+///
+/// `ProbeState` represents the current state of a probe within the tracing process.
+/// It can be one of several states indicating whether the probe has been sent, skipped,
+/// is awaiting a response, or has completed with a response.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ProbeState {
     /// The probe has not been sent.
@@ -17,6 +21,10 @@ pub enum ProbeState {
 }
 
 /// A probe that was sent and is awaiting a response.
+///
+/// `Probe` contains information about a probe that has been sent out and is currently
+/// awaiting a response. It includes details such as the sequence number, trace identifier,
+/// source and destination ports, TTL, round number, and the time the probe was sent.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Probe {
     /// The sequence of the probe.
@@ -89,6 +97,11 @@ impl Probe {
 
 /// A probe that has been sent and a response has been received.
 ///
+/// `ProbeComplete` represents a probe for which a response has been received. It includes
+/// all the information from the original `Probe` as well as the host that responded, the time
+/// the response was received, the type of ICMP response packet received, and any ICMP response
+/// extensions.
+///
 /// Either an `EchoReply`, `DestinationUnreachable` or `TimeExceeded` has been received.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProbeComplete {
@@ -117,6 +130,10 @@ pub struct ProbeComplete {
 }
 
 /// The type of ICMP packet received.
+///
+/// `IcmpPacketType` enumerates the different types of ICMP packets that can be received in
+/// response to a probe. It includes `TimeExceeded`, `EchoReply`, `Unreachable`, and a special
+/// `NotApplicable` type for non-ICMP responses (e.g., for some UDP and TCP probes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IcmpPacketType {
     /// `TimeExceeded` packet.
@@ -130,10 +147,17 @@ pub enum IcmpPacketType {
 }
 
 /// The code of `TimeExceeded`, `EchoReply` and `Unreachable` ICMP packets.
+///
+/// `IcmpPacketCode` represents the code field of ICMP packets, providing additional information
+/// about the packet type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IcmpPacketCode(pub u8);
 
 /// The response to a probe.
+///
+/// `ProbeResponse` represents the different types of responses that can be received to a probe,
+/// including `TimeExceeded`, `DestinationUnreachable`, `EchoReply`, `TcpReply`, and `TcpRefused`.
+/// It encapsulates the response data and any relevant ICMP extensions.
 #[derive(Debug, Clone)]
 pub enum ProbeResponse {
     TimeExceeded(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
@@ -144,12 +168,18 @@ pub enum ProbeResponse {
 }
 
 /// The ICMP extensions for a probe response.
+///
+/// `Extensions` encapsulates the ICMP extensions that may be included in a probe response.
+/// It supports both known extensions (e.g., MPLS label stacks) and unknown extensions.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Extensions {
     pub extensions: Vec<Extension>,
 }
 
 /// A probe response extension.
+///
+/// `Extension` represents a probe response extension. It can be either a known extension type
+/// (e.g., `MplsLabelStack`) or an unknown extension type (`UnknownExtension`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
     Unknown(UnknownExtension),
@@ -163,12 +193,18 @@ impl Default for Extension {
 }
 
 /// The members of a MPLS probe response extension.
+///
+/// `MplsLabelStack` represents a MPLS label stack extension in a probe response. It contains
+/// a list of MPLS label stack members.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MplsLabelStack {
     pub members: Vec<MplsLabelStackMember>,
 }
 
 /// A member of a MPLS probe response extension.
+///
+/// `MplsLabelStackMember` represents a single member of a MPLS label stack extension. It includes
+/// the label, experimental bits (exp), bottom of stack (bos) flag, and time-to-live (ttl) value.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MplsLabelStackMember {
     pub label: u32,
@@ -178,6 +214,9 @@ pub struct MplsLabelStackMember {
 }
 
 /// An unknown ICMP extension.
+///
+/// `UnknownExtension` represents an unknown ICMP extension. It includes the class number,
+/// class subtype, and the raw bytes of the extension.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UnknownExtension {
     pub class_num: u8,
@@ -186,6 +225,10 @@ pub struct UnknownExtension {
 }
 
 /// The data in the probe response.
+///
+/// `ProbeResponseData` encapsulates the common data present in all types of probe responses,
+/// including the time the response was received, the IP address of the responder, and the
+/// sequence information specific to the type of probe response.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseData {
     /// Timestamp of the probe response.
@@ -214,6 +257,9 @@ pub enum ProbeResponseSeq {
 }
 
 /// The data in the response to an ICMP probe.
+///
+/// `ProbeResponseSeqIcmp` contains the identifier and sequence number of the ICMP response
+/// to a probe. It is used to validate the response matches the expected values.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqIcmp {
     /// The ICMP identifier.
@@ -232,6 +278,10 @@ impl ProbeResponseSeqIcmp {
 }
 
 /// The data in the response to a UDP probe.
+///
+/// `ProbeResponseSeqUdp` contains information specific to the response to a UDP probe,
+/// including the IPv4 identifier, destination address, source and destination ports,
+/// UDP checksum, payload length, and whether the response had the MAGIC payload prefix.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqUdp {
     /// The IPv4 identifier.
@@ -290,6 +340,10 @@ impl ProbeResponseSeqUdp {
 }
 
 /// The data in the response to an TCP probe.
+///
+/// `ProbeResponseSeqTcp` contains information specific to the response to a TCP probe,
+/// including the destination address, source and destination ports. It is used to validate
+/// the probe response matches the expected values.
 #[derive(Debug, Clone)]
 pub struct ProbeResponseSeqTcp {
     /// The destination IP address.

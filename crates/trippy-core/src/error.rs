@@ -6,9 +6,16 @@ use thiserror::Error;
 use trippy_packet::error::PacketError;
 
 /// A tracer error result.
+///
+/// This type is used across the crate to represent the result of operations that may fail.
+/// It encapsulates both successful outcomes and various error conditions specific to traceroute operations.
 pub type TraceResult<T> = Result<T, TracerError>;
 
 /// A tracer error.
+///
+/// Enumerates various error conditions that can occur during traceroute operations.
+/// It includes errors related to packet size, packet processing, network interface issues,
+/// configuration problems, IO errors, and more.
 #[derive(Error, Debug)]
 pub enum TracerError {
     #[error("invalid packet size: {0}")]
@@ -36,9 +43,14 @@ pub enum TracerError {
 }
 
 /// Custom IO error result.
+///
+/// Represents the result of IO operations within the traceroute process, encapsulating both success and error conditions.
 pub type IoResult<T> = Result<T, IoError>;
 
 /// Custom IO error.
+///
+/// Enumerates various IO error conditions that can occur during traceroute operations.
+/// It includes errors related to socket operations, such as binding, connecting, and sending data.
 #[derive(Error, Debug)]
 pub enum IoError {
     #[error("Bind error for {1}: {0}")]
@@ -69,6 +81,9 @@ impl IoError {
 }
 
 /// Io operation.
+///
+/// Enumerates various IO operations that can be performed during traceroute operations.
+/// It includes operations related to socket management, data transmission, and error handling.
 #[derive(Debug)]
 pub enum IoOperation {
     NewSocket,

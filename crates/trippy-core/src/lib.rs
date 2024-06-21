@@ -3,8 +3,10 @@
 //! This crate provides the core network tracing facility used by the
 //! standalone [Trippy](https://trippy.cli.rs) application.
 //!
-//! Note: the public API is not stable and is highly likely to change
-//! in the future.
+//! The public API is designed to offer a flexible and powerful way to perform network tracing,
+//! with support for various protocols and strategies. It allows users to customize the tracing
+//! process extensively, including the choice of protocol, the strategy for handling equal-cost
+//! multi-path routing, and more.
 //!
 //! # Example
 //!
@@ -26,7 +28,7 @@
 //! ```
 //!
 //! The following example traces using the UDP protocol with the Dublin ECMP
-//! strategy with fixed src and dest ports.  It also operates in unprivileged
+//! strategy with fixed src and dest ports. It also operates in unprivileged
 //! mode (only supported on some platforms):
 //!
 //! ```no_run

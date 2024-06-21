@@ -10,12 +10,13 @@ use std::net::IpAddr;
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
-/// Build a tracer.
+/// A builder for creating instances of `Tracer`.
 ///
-/// This is a convenience builder to simplify the creation of execution of a
-/// tracer.
+/// This builder provides a fluent API for configuring and constructing a `Tracer`.
 ///
 /// # Examples
+///
+/// Basic usage:
 ///
 /// ```no_run
 /// # fn main() -> anyhow::Result<()> {
@@ -97,7 +98,11 @@ impl Default for Builder {
 }
 
 impl Builder {
-    /// Build a tracer builder for a given target.
+    /// Initializes a new `Builder` for a given target address.
+    ///
+    /// # Arguments
+    ///
+    /// * `target_addr` - The target IP address for the traceroute.
     #[must_use]
     pub fn new(target_addr: IpAddr) -> Self {
         Self {
@@ -106,245 +111,279 @@ impl Builder {
         }
     }
 
-    /// Set the source address.
+    /// Sets the source address for the traceroute.
     ///
-    /// If not set then the source address will be discovered based on the
-    /// target address and the interface.
-    #[must_use]
-    pub fn source_addr(self, source_addr: Option<IpAddr>) -> Self {
-        Self {
-            source_addr,
-            ..self
-        }
-    }
-
-    /// Set the source interface.
+    /// # Arguments
     ///
-    /// If the source interface is provided it will be used to look up the IPv4
-    /// or IPv6 source address.
+    /// * `source_addr` - An optional source IP address. If not specified, the source address will be determined automatically.
+    #[must_use]
+    pub fn source_addr(mut self, source_addr: Option<IpAddr>) -> Self {
+        self.source_addr = source_addr;
+        self
+    }
+
+    /// Sets the network interface to use for the traceroute.
     ///
-    /// If not provided the source address will be determined by OS based on
-    /// the target IPv4 or IPv6 address.
-    #[must_use]
-    pub fn interface<S: Into<String>>(self, interface: Option<S>) -> Self {
-        Self {
-            interface: interface.map(Into::into),
-            ..self
-        }
-    }
-
-    /// Set the protocol.
-    #[must_use]
-    pub fn protocol(self, protocol: Protocol) -> Self {
-        Self { protocol, ..self }
-    }
-
-    /// Set the trace identifier.
+    /// # Arguments
     ///
-    /// If not set then 0 will be used as the trace identifier.
+    /// * `interface` - An optional name of the network interface.
     #[must_use]
-    pub fn trace_identifier(self, trace_id: u16) -> Self {
-        Self {
-            trace_identifier: TraceId(trace_id),
-            ..self
-        }
+    pub fn interface<S: Into<String>>(mut self, interface: Option<S>) -> Self {
+        self.interface = interface.map(Into::into);
+        self
     }
 
-    /// Set the privilege mode.
+    /// Sets the protocol to use for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `protocol` - The protocol to use.
     #[must_use]
-    pub fn privilege_mode(self, privilege_mode: PrivilegeMode) -> Self {
-        Self {
-            privilege_mode,
-            ..self
-        }
+    pub fn protocol(mut self, protocol: Protocol) -> Self {
+        self.protocol = protocol;
+        self
     }
 
-    /// Set the multipath strategy.
+    /// Sets the trace identifier.
+    ///
+    /// # Arguments
+    ///
+    /// * `trace_id` - The trace identifier.
     #[must_use]
-    pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
-        Self {
-            multipath_strategy,
-            ..self
-        }
+    pub fn trace_identifier(mut self, trace_id: u16) -> Self {
+        self.trace_identifier = TraceId(trace_id);
+        self
     }
 
-    /// Set the packet size.
+    /// Sets the privilege mode for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `privilege_mode` - The privilege mode.
     #[must_use]
-    pub fn packet_size(self, packet_size: u16) -> Self {
-        Self {
-            packet_size: PacketSize(packet_size),
-            ..self
-        }
+    pub fn privilege_mode(mut self, privilege_mode: PrivilegeMode) -> Self {
+        self.privilege_mode = privilege_mode;
+        self
     }
 
-    /// Set the payload pattern.
+    /// Sets the multipath strategy for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `multipath_strategy` - The multipath strategy.
     #[must_use]
-    pub fn payload_pattern(self, payload_pattern: u8) -> Self {
-        Self {
-            payload_pattern: PayloadPattern(payload_pattern),
-            ..self
-        }
+    pub fn multipath_strategy(mut self, multipath_strategy: MultipathStrategy) -> Self {
+        self.multipath_strategy = multipath_strategy;
+        self
     }
 
-    /// Set the type of service.
+    /// Sets the packet size for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `packet_size` - The packet size in bytes.
     #[must_use]
-    pub fn tos(self, tos: u8) -> Self {
-        Self {
-            tos: TypeOfService(tos),
-            ..self
-        }
+    pub fn packet_size(mut self, packet_size: u16) -> Self {
+        self.packet_size = PacketSize(packet_size);
+        self
     }
 
-    /// Set the ICMP extensions mode.
+    /// Sets the payload pattern for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `payload_pattern` - The payload pattern.
     #[must_use]
-    pub fn icmp_extension_parse_mode(
-        self,
-        icmp_extension_parse_mode: IcmpExtensionParseMode,
-    ) -> Self {
-        Self {
-            icmp_extension_parse_mode,
-            ..self
-        }
+    pub fn payload_pattern(mut self, payload_pattern: u8) -> Self {
+        self.payload_pattern = PayloadPattern(payload_pattern);
+        self
     }
 
-    /// Set the read timeout.
+    /// Sets the type of service for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `tos` - The type of service.
     #[must_use]
-    pub fn read_timeout(self, read_timeout: Duration) -> Self {
-        Self {
-            read_timeout,
-            ..self
-        }
+    pub fn tos(mut self, tos: u8) -> Self {
+        self.tos = TypeOfService(tos);
+        self
     }
 
-    /// Set the TCP connect timeout.
+    /// Sets the ICMP extension parse mode for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `icmp_extension_parse_mode` - The ICMP extension parse mode.
     #[must_use]
-    pub fn tcp_connect_timeout(self, tcp_connect_timeout: Duration) -> Self {
-        Self {
-            tcp_connect_timeout,
-            ..self
-        }
+    pub fn icmp_extension_parse_mode(mut self, icmp_extension_parse_mode: IcmpExtensionParseMode) -> Self {
+        self.icmp_extension_parse_mode = icmp_extension_parse_mode;
+        self
     }
 
-    /// Set the maximum number of rounds.
+    /// Sets the read timeout for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `read_timeout` - The read timeout.
     #[must_use]
-    pub fn max_rounds(self, max_rounds: Option<usize>) -> Self {
-        Self {
-            max_rounds: max_rounds
-                .and_then(|max_rounds| NonZeroUsize::new(max_rounds).map(MaxRounds)),
-            ..self
-        }
+    pub fn read_timeout(mut self, read_timeout: Duration) -> Self {
+        self.read_timeout = read_timeout;
+        self
     }
 
-    /// Set the first ttl.
+    /// Sets the TCP connect timeout for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `tcp_connect_timeout` - The TCP connect timeout.
     #[must_use]
-    pub fn first_ttl(self, first_ttl: u8) -> Self {
-        Self {
-            first_ttl: TimeToLive(first_ttl),
-            ..self
-        }
+    pub fn tcp_connect_timeout(mut self, tcp_connect_timeout: Duration) -> Self {
+        self.tcp_connect_timeout = tcp_connect_timeout;
+        self
     }
 
-    /// Set the maximum ttl.
+    /// Sets the maximum number of rounds for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_rounds` - The maximum number of rounds.
     #[must_use]
-    pub fn max_ttl(self, max_ttl: u8) -> Self {
-        Self {
-            max_ttl: TimeToLive(max_ttl),
-            ..self
-        }
+    pub fn max_rounds(mut self, max_rounds: Option<usize>) -> Self {
+        self.max_rounds = max_rounds
+            .and_then(|max_rounds| NonZeroUsize::new(max_rounds).map(MaxRounds));
+        self
     }
 
-    /// Set the grace duration.
+    /// Sets the first TTL for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `first_ttl` - The first TTL.
     #[must_use]
-    pub fn grace_duration(self, grace_duration: Duration) -> Self {
-        Self {
-            grace_duration,
-            ..self
-        }
+    pub fn first_ttl(mut self, first_ttl: u8) -> Self {
+        self.first_ttl = TimeToLive(first_ttl);
+        self
     }
 
-    /// Set the max inflight.
+    /// Sets the maximum TTL for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_ttl` - The maximum TTL.
     #[must_use]
-    pub fn max_inflight(self, max_inflight: u8) -> Self {
-        Self {
-            max_inflight: MaxInflight(max_inflight),
-            ..self
-        }
+    pub fn max_ttl(mut self, max_ttl: u8) -> Self {
+        self.max_ttl = TimeToLive(max_ttl);
+        self
     }
 
-    /// Set the initial sequence.
+    /// Sets the grace duration for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `grace_duration` - The grace duration.
     #[must_use]
-    pub fn initial_sequence(self, initial_sequence: u16) -> Self {
-        Self {
-            initial_sequence: Sequence(initial_sequence),
-            ..self
-        }
+    pub fn grace_duration(mut self, grace_duration: Duration) -> Self {
+        self.grace_duration = grace_duration;
+        self
     }
 
-    /// Set the port direction.
+    /// Sets the maximum number of inflight probes for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_inflight` - The maximum number of inflight probes.
     #[must_use]
-    pub fn port_direction(self, port_direction: PortDirection) -> Self {
-        Self {
-            port_direction,
-            ..self
-        }
+    pub fn max_inflight(mut self, max_inflight: u8) -> Self {
+        self.max_inflight = MaxInflight(max_inflight);
+        self
     }
 
-    /// Set the minimum round duration.
+    /// Sets the initial sequence number for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `initial_sequence` - The initial sequence number.
     #[must_use]
-    pub fn min_round_duration(self, min_round_duration: Duration) -> Self {
-        Self {
-            min_round_duration,
-            ..self
-        }
+    pub fn initial_sequence(mut self, initial_sequence: u16) -> Self {
+        self.initial_sequence = Sequence(initial_sequence);
+        self
     }
 
-    /// Set the maximum round duration.
+    /// Sets the port direction for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `port_direction` - The port direction.
     #[must_use]
-    pub fn max_round_duration(self, max_round_duration: Duration) -> Self {
-        Self {
-            max_round_duration,
-            ..self
-        }
+    pub fn port_direction(mut self, port_direction: PortDirection) -> Self {
+        self.port_direction = port_direction;
+        self
     }
 
-    /// Set the maximum number of samples to record.
+    /// Sets the minimum round duration for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `min_round_duration` - The minimum round duration.
     #[must_use]
-    pub fn max_samples(self, max_samples: usize) -> Self {
-        Self {
-            max_samples,
-            ..self
-        }
+    pub fn min_round_duration(mut self, min_round_duration: Duration) -> Self {
+        self.min_round_duration = min_round_duration;
+        self
     }
 
-    /// Set the maximum number of flows to record.
+    /// Sets the maximum round duration for the traceroute.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_round_duration` - The maximum round duration.
     #[must_use]
-    pub fn max_flows(self, max_flows: usize) -> Self {
-        Self { max_flows, ..self }
+    pub fn max_round_duration(mut self, max_round_duration: Duration) -> Self {
+        self.max_round_duration = max_round_duration;
+        self
     }
 
-    /// Drop privileges after connection is established.
+    /// Sets the maximum number of samples to record per hop.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_samples` - The maximum number of samples.
     #[must_use]
-    pub fn drop_privileges(self, drop_privileges: bool) -> Self {
-        Self {
-            drop_privileges,
-            ..self
-        }
+    pub fn max_samples(mut self, max_samples: usize) -> Self {
+        self.max_samples = max_samples;
+        self
     }
 
-    /// Build the `Tracer`.
+    /// Sets the maximum number of flows to record.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_flows` - The maximum number of flows.
+    #[must_use]
+    pub fn max_flows(mut self, max_flows: usize) -> Self {
+        self.max_flows = max_flows;
+        self
+    }
+
+    /// Specifies whether to drop privileges after establishing the network connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `drop_privileges` - Whether to drop privileges.
+    #[must_use]
+    pub fn drop_privileges(mut self, drop_privileges: bool) -> Self {
+        self.drop_privileges = drop_privileges;
+        self
+    }
+
+    /// Builds and returns a `Tracer` instance based on the configuration provided.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration is invalid.
     pub fn build(self) -> TraceResult<Tracer> {
-        match (self.protocol, self.port_direction) {
-            (Protocol::Udp, PortDirection::None) => {
-                return Err(TracerError::BadConfig(
-                    "port_direction may not be None for udp protocol".to_string(),
-                ));
-            }
-            (Protocol::Tcp, PortDirection::None) => {
-                return Err(TracerError::BadConfig(
-                    "port_direction may not be None for tcp protocol".to_string(),
-                ));
-            }
-            _ => (),
+        if let (Protocol::Udp, PortDirection::None) | (Protocol::Tcp, PortDirection::None) = (self.protocol, self.port_direction) {
+            return Err(TracerError::BadConfig("port_direction may not be None for udp or tcp protocol".to_string()));
         }
         if self.first_ttl.0 > MAX_TTL {
             return Err(TracerError::BadConfig(format!(

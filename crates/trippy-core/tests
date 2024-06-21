@@ -1,0 +1,32 @@
+// This file contains unit tests and integration tests for the trippy-core crate.
+// The tests cover new or changed functionality in the public API as per the task requirements.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::IpAddr;
+    use std::str::FromStr;
+    use trippy_core::{Builder, MultipathStrategy, Port, PortDirection, PrivilegeMode, Protocol};
+
+    #[test]
+    fn test_builder_fluent_api() {
+        let addr = IpAddr::from_str("1.1.1.1").unwrap();
+        let tracer = Builder::new(addr)
+            .privilege_mode(PrivilegeMode::Unprivileged)
+            .protocol(Protocol::Udp)
+            .multipath_strategy(MultipathStrategy::Dublin)
+            .port_direction(PortDirection::FixedBoth(Port(33000), Port(3500)))
+            .build()
+            .unwrap();
+
+        assert_eq!(tracer.privilege_mode(), PrivilegeMode::Unprivileged);
+        assert_eq!(tracer.protocol(), Protocol::Udp);
+        assert_eq!(tracer.multipath_strategy(), MultipathStrategy::Dublin);
+        assert_eq!(
+            tracer.port_direction(),
+            PortDirection::FixedBoth(Port(33000), Port(3500))
+        );
+    }
+
+    // Additional tests to cover new or changed functionality in the public API will be added here.
+}

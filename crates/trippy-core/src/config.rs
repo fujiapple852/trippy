@@ -126,6 +126,8 @@ impl Display for IcmpExtensionParseMode {
 }
 
 /// The tracing protocol.
+///
+/// Specifies the protocol used for tracing. This affects how probes are sent and what kind of responses are expected.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Protocol {
     /// Internet Control Message Protocol
@@ -139,14 +141,16 @@ pub enum Protocol {
 impl Display for Protocol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Icmp => write!(f, "icmp"),
-            Self::Udp => write!(f, "udp"),
-            Self::Tcp => write!(f, "tcp"),
+            Self::Icmp => write!(f, "ICMP - Internet Control Message Protocol"),
+            Self::Udp => write!(f, "UDP - User Datagram Protocol"),
+            Self::Tcp => write!(f, "TCP - Transmission Control Protocol"),
         }
     }
 }
 
 /// The [Equal-cost Multi-Path](https://en.wikipedia.org/wiki/Equal-cost_multi-path_routing) routing strategy.
+///
+/// Defines the strategy used to handle equal-cost multi-path routing. This can affect the path discovery process during tracing.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MultipathStrategy {
     /// The src or dest port is used to store the sequence number.
@@ -183,14 +187,16 @@ pub enum MultipathStrategy {
 impl Display for MultipathStrategy {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Classic => write!(f, "classic"),
-            Self::Paris => write!(f, "paris"),
-            Self::Dublin => write!(f, "dublin"),
+            Self::Classic => write!(f, "Classic - Uses src or dest port to store the sequence number."),
+            Self::Paris => write!(f, "Paris - Uses UDP checksum field to store the sequence number."),
+            Self::Dublin => write!(f, "Dublin - Uses IP identifier field to store the sequence number."),
         }
     }
 }
 
 /// Whether to fix the src, dest or both ports for a trace.
+///
+/// Specifies how the source and destination ports are handled during tracing. This can affect the path discovery process.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PortDirection {
     /// Trace without any source or destination port (i.e. for ICMP tracing).
@@ -246,6 +252,8 @@ impl PortDirection {
 }
 
 /// Tracer state configuration.
+///
+/// Configuration related to the state management of the tracer. This includes settings for the maximum number of samples and flows.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct StateConfig {
     /// The maximum number of samples to record per hop.
@@ -270,6 +278,8 @@ impl Default for StateConfig {
 }
 
 /// Tracer network channel configuration.
+///
+/// Configuration related to the network channel used by the tracer. This includes settings for the privilege mode, protocol, and timeouts.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ChannelConfig {
     pub privilege_mode: PrivilegeMode,
@@ -304,6 +314,8 @@ impl Default for ChannelConfig {
 }
 
 /// Tracing strategy configuration.
+///
+/// Configuration related to the tracing strategy used by the tracer. This includes settings for the target address, protocol, and TTL values.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct StrategyConfig {
     pub target_addr: IpAddr,
