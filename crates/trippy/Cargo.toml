@@ -36,7 +36,7 @@ crossterm = { version = "0.27.0",  default-features = false, features = [ "event
 chrono = { version = "0.4.38", default-features = false, features = [ "clock" ] }
 serde_json = { version = "1.0.117", default-features = false }
 comfy-table = { version = "7.1.0", default-features = false }
-strum = { version = "0.26.2", default-features = false, features = [ "std", "derive" ] }
+strum = { version = "0.26.3", default-features = false, features = [ "std", "derive" ] }
 etcetera = "0.8.0"
 toml = { version = "0.8.14", default-features = false, features = [ "parse" ] }
 maxminddb = "0.24.0"
