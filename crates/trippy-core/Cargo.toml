@@ -24,7 +24,7 @@ parking_lot.workspace = true
 indexmap = { version = "2.2.6", default-features = false, features = [ "std" ] }
 arrayvec = { version = "0.7.4", default-features = false }
 socket2 = { version = "0.5.7", features = [ "all" ] }
-bitflags = "2.5.0"
+bitflags = "2.6.0"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", default-features = false, features = [ "user", "poll", "net" ] }
