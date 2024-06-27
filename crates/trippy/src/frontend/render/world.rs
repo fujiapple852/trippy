@@ -17,7 +17,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .direction(Direction::Vertical)
         .constraints(MAP_LAYOUT)
         .split(rect);
-    let info_rect = chunks[1].inner(&Margin {
+    let info_rect = chunks[1].inner(Margin {
         vertical: 0,
         horizontal: 16,
     });
