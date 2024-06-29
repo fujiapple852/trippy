@@ -49,6 +49,9 @@ serde_yaml.workspace = true
 insta = { version = "1.39.0", features = ["serde"] }
 pretty_assertions = "1.4.0"
 
+[lints]
+workspace = true
+
 [package.metadata.generate-rpm]
 assets = [
   { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },

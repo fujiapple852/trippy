@@ -33,3 +33,6 @@ trippy-privilege = { workspace = true, optional = true }
 trippy-dns = { workspace = true, optional = true }
 trippy-packet = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
+
+[lints]
+workspace = true

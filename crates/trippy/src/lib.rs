@@ -1,4 +1,8 @@
-#![allow(rustdoc::broken_intra_doc_links, rustdoc::bare_urls)]
+#![allow(
+    rustdoc::broken_intra_doc_links,
+    rustdoc::bare_urls,
+    clippy::doc_markdown
+)]
 #![doc = include_str!("../../../README.md")]
 
 // Re-export the user facing libraries, so they may be used from trippy crate directly.

@@ -53,15 +53,7 @@
 //! # Ok(())
 //! # }
 //! ```
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
-#![allow(
-    clippy::missing_const_for_fn,
-    clippy::missing_errors_doc,
-    clippy::module_name_repetitions,
-    clippy::cast_possible_truncation,
-    clippy::use_self
-)]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 mod buffer;
 

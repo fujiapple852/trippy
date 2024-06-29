@@ -62,11 +62,13 @@ impl TunDevice {
     }
 
     #[cfg(target_os = "linux")]
+    #[allow(clippy::unnecessary_wraps)]
     fn create_route() -> anyhow::Result<()> {
         Ok(())
     }
 
     #[cfg(target_os = "windows")]
+    #[allow(clippy::unnecessary_wraps)]
     fn create_route() -> anyhow::Result<()> {
         // allow time for the routing table to reflect the tun device.
         std::thread::sleep(std::time::Duration::from_millis(10000));

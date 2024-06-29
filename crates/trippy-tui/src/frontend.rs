@@ -55,7 +55,7 @@ pub fn run_frontend(
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     trace_info: Vec<TraceInfo>,

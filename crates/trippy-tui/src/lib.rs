@@ -1,19 +1,4 @@
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
-#![allow(
-    clippy::module_name_repetitions,
-    clippy::redundant_field_names,
-    clippy::struct_field_names,
-    clippy::option_if_let_else,
-    clippy::missing_const_for_fn,
-    clippy::cast_precision_loss,
-    clippy::cast_sign_loss,
-    clippy::cast_possible_truncation,
-    clippy::redundant_pub_crate,
-    clippy::struct_excessive_bools,
-    clippy::cognitive_complexity,
-    clippy::option_option,
-    clippy::missing_errors_doc
-)]
+#![allow(clippy::struct_excessive_bools)]
 #![forbid(unsafe_code)]
 
 use crate::config::TrippyAction;
