@@ -54,18 +54,6 @@
 //! - [`Tracer::run_with`] - Run the tracer with a custom round handler.
 //! - [`Tracer::spawn`] - Run the tracer on a new thread.
 //! - [`Tracer::spawn_with`] - Run the tracer on a new thread with a custom round handler.
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
-#![allow(
-    clippy::module_name_repetitions,
-    clippy::struct_field_names,
-    clippy::use_self,
-    clippy::option_if_let_else,
-    clippy::missing_const_for_fn,
-    clippy::cast_possible_truncation,
-    clippy::missing_errors_doc,
-    clippy::cast_precision_loss
-)]
-#![deny(unsafe_code)]
 
 mod builder;
 mod config;

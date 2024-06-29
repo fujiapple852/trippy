@@ -63,3 +63,6 @@ tun2 = { version = "2.0.1", features = [ "async" ] }
 [features]
 # Enable simulation integration tests
 sim-tests = []
+
+[lints]
+workspace = true

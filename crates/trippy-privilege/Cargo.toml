@@ -31,3 +31,6 @@ paste = "1.0.15"
 
 [dev-dependencies]
 anyhow.workspace = true
+
+[lints]
+workspace = true

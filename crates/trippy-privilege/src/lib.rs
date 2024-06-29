@@ -81,9 +81,6 @@
 //! # Ok(())
 //! # }
 //! ```
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
-#![allow(clippy::missing_const_for_fn, clippy::missing_errors_doc)]
-#![deny(unsafe_code)]
 
 /// A privilege error result.
 pub type Result<T> = std::result::Result<T, Error>;

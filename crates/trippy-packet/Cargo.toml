@@ -20,3 +20,6 @@ thiserror.workspace = true
 [dev-dependencies]
 hex-literal.workspace = true
 anyhow.workspace = true
+
+[lints]
+workspace = true

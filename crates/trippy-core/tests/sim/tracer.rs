@@ -113,7 +113,7 @@ impl Tracer {
 
                     let hop_index = usize::from(complete.ttl.0 - 1);
                     let sim_hop = &self.sim.hops[hop_index];
-                    if let Response::NoResponse = sim_hop.resp {
+                    if matches!(sim_hop.resp, Response::NoResponse) {
                         error_result!(result, anyhow::anyhow!("expected Response::SingleHost"));
                     }
                     let expected_host = match sim_hop.resp {

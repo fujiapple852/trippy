@@ -21,6 +21,7 @@ use trippy_packet::IpProtocol;
 
 const READ_TIMEOUT: Duration = Duration::from_millis(10);
 
+#[allow(clippy::too_many_lines)]
 pub async fn run(
     tun: Arc<Mutex<TunDevice>>,
     sim: Arc<Simulation>,
@@ -32,7 +33,7 @@ pub async fn run(
         let bytes_read = {
             let tun = tun.clone();
             tokio::select!(
-                _ = token.cancelled() => {
+                () = token.cancelled() => {
                     handles.into_iter().for_each(|h| h.abort());
                     return Ok(())
                 },
@@ -108,7 +109,7 @@ pub async fn run(
                 addr: IpAddr::V4(addr),
                 rtt_ms,
             }) => (addr, rtt_ms),
-            _ => unimplemented!(),
+            Response::SingleHost(_) => unimplemented!(),
         };
 
         // decide what response to send
@@ -195,10 +196,9 @@ pub async fn run(
             let tun = tun.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(u64::from(reply_delay_ms))).await;
-                let mut tun = tun.lock().await;
                 let ipv4 = Ipv4Packet::new_view(&ipv4_buf).unwrap();
                 debug!("write: {:?}", ipv4);
-                tun.write(ipv4.packet()).await.expect("send");
+                tun.lock().await.write(ipv4.packet()).await.expect("send");
             })
         };
         handles.push(handle);
@@ -230,7 +230,7 @@ fn make_echo_reply_v4(
     buf: &mut [u8],
     icmp_identifier: u16,
     sequence: u16,
-) -> anyhow::Result<EchoReplyPacket> {
+) -> anyhow::Result<EchoReplyPacket<'_>> {
     let mut packet = EchoReplyPacket::new(buf)?;
     packet.set_icmp_type(IcmpType::EchoReply);
     packet.set_icmp_code(IcmpCode(0));
@@ -263,7 +263,7 @@ fn make_tcp_syn_ack<'a>(
     packet.set_destination(tcp_in.get_source());
     packet.set_sequence(0);
     packet.set_acknowledgement(tcp_in.get_sequence() + 1);
-    packet.set_flags(0b00010010);
+    packet.set_flags(0b0001_0010);
     packet.set_window_size(0xFFFF);
     packet.set_checksum(tcp_ipv4_checksum(
         packet.packet(),

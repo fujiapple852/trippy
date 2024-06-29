@@ -67,13 +67,6 @@
 //! # Ok(())
 //! # }
 //! ```
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
-#![allow(
-    clippy::module_name_repetitions,
-    clippy::missing_const_for_fn,
-    clippy::missing_errors_doc,
-    clippy::option_if_let_else
-)]
 #![forbid(unsafe_code)]
 
 mod lazy_resolver;
