@@ -31,7 +31,7 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
 macro_rules! sim {
     ($path:expr) => {{
         let yaml = include_str!(concat!("../resources/simulation/", $path));
-        serde_yaml::from_str(yaml)?
+        serde_yml::from_str(yaml)?
     }};
 }
 
