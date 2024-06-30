@@ -208,21 +208,21 @@ impl ResponseData {
 
 #[derive(Debug, Clone)]
 pub enum ResponseSeq {
-    Icmp(ProbeResponseSeqIcmp),
+    Icmp(ResponseSeqIcmp),
     Udp(ProbeResponseSeqUdp),
     Tcp(ProbeResponseSeqTcp),
 }
 
 /// The data in the response to an ICMP probe.
 #[derive(Debug, Clone)]
-pub struct ProbeResponseSeqIcmp {
+pub struct ResponseSeqIcmp {
     /// The ICMP identifier.
     pub identifier: u16,
     /// The ICMP sequence number.
     pub sequence: u16,
 }
 
-impl ProbeResponseSeqIcmp {
+impl ResponseSeqIcmp {
     pub const fn new(identifier: u16, sequence: u16) -> Self {
         Self {
             identifier,

@@ -5,8 +5,8 @@ use crate::net::common::process_result;
 use crate::net::platform;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp, Response, ResponseData, ResponseSeq,
+    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
+    ResponseData, ResponseSeq, ResponseSeqIcmp,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -403,7 +403,7 @@ fn extract_probe_resp(
                 let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
-                let resp_seq = ResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
+                let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq));
                 Some(Response::EchoReply(
                     ResponseData::new(recv, src, resp_seq),
                     IcmpPacketCode(icmp_code.0),
@@ -425,7 +425,7 @@ fn extract_probe_resp_seq(
             let echo_request = extract_echo_request(ipv4)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
-            Some(ResponseSeq::Icmp(ProbeResponseSeqIcmp::new(
+            Some(ResponseSeq::Icmp(ResponseSeqIcmp::new(
                 identifier, sequence,
             )))
         }
@@ -1043,7 +1043,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
@@ -1093,7 +1093,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
@@ -1142,7 +1142,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
