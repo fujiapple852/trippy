@@ -4,8 +4,8 @@ use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
-    ResponseData, ResponseSeq, ResponseSeqIcmp,
+    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqTcp, Response, ResponseData, ResponseSeq,
+    ResponseSeqIcmp, ResponseSeqUdp,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -396,7 +396,7 @@ fn extract_probe_resp_seq(
             } else {
                 udp_payload_len
             };
-            Some(ResponseSeq::Udp(ProbeResponseSeqUdp::new(
+            Some(ResponseSeq::Udp(ResponseSeqUdp::new(
                 0,
                 IpAddr::V6(ipv6.get_destination_address()),
                 src_port,
@@ -1171,7 +1171,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1233,7 +1233,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1301,7 +1301,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,

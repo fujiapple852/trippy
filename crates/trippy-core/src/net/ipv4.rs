@@ -5,8 +5,8 @@ use crate::net::common::process_result;
 use crate::net::platform;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
-    ResponseData, ResponseSeq, ResponseSeqIcmp,
+    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqTcp, Response, ResponseData, ResponseSeq,
+    ResponseSeqIcmp, ResponseSeqUdp,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -432,7 +432,7 @@ fn extract_probe_resp_seq(
         (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum, identifier, payload_length) =
                 extract_udp_packet(ipv4)?;
-            Some(ResponseSeq::Udp(ProbeResponseSeqUdp::new(
+            Some(ResponseSeq::Udp(ResponseSeqUdp::new(
                 identifier,
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
@@ -1187,7 +1187,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1245,7 +1245,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
