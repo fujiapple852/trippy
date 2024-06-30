@@ -16,23 +16,23 @@ categories.workspace = true
 [dependencies]
 trippy-packet.workspace = true
 trippy-privilege.workspace = true
-derive_more.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
+arrayvec.workspace = true
+bitflags.workspace = true
+derive_more = { workspace = true, default-features = false, features = [ "mul", "add", "add_assign" ] }
+indexmap = { workspace = true, default-features = false, features = [ "std" ] }
 itertools.workspace = true
 parking_lot.workspace = true
-indexmap = { version = "2.2.6", default-features = false, features = [ "std" ] }
-arrayvec = { version = "0.7.4", default-features = false }
-socket2 = { version = "0.5.7", features = [ "all" ] }
-bitflags = "2.6.0"
+socket2 = { workspace = true, features = [ "all" ] }
+thiserror.workspace = true
+tracing.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.29.0", default-features = false, features = [ "user", "poll", "net" ] }
+nix = { workspace = true, default-features = false, features = [ "user", "poll", "net" ] }
 
 [target.'cfg(windows)'.dependencies]
-paste = "1.0.15"
-widestring = "1.0.2"
-windows-sys = { version = "0.52.0", features = [
+paste.workspace = true
+widestring.workspace = true
+windows-sys = { workspace = true, features = [
     "Win32_Foundation",
     "Win32_Networking_WinSock",
     "Win32_System_IO",
@@ -45,20 +45,20 @@ windows-sys = { version = "0.52.0", features = [
 
 [dev-dependencies]
 anyhow.workspace = true
-serde.workspace = true
-test-case.workspace = true
-serde_yaml.workspace = true
 hex-literal.workspace = true
-rand = "0.8.5"
-tokio = { version = "1.38.0", features = [ "full" ] }
-tokio-util = "0.7.11"
-ipnetwork = "0.20.0"
-mockall = "0.12.1"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+ipnetwork.workspace = true
+mockall.workspace = true
+rand.workspace = true
+serde = { workspace = true, default-features = false, features = [ "derive" ] }
+serde_yaml.workspace = true
+test-case.workspace = true
+tokio-util.workspace = true
+tokio = { workspace = true, features = [ "full" ] }
+tracing-subscriber.workspace = true
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun2 = { version = "2.0.1", features = [ "async" ] }
+tun2 = { workspace = true, features = [ "async" ] }
 
 [features]
 # Enable simulation integration tests

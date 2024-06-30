@@ -14,12 +14,12 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-thiserror.workspace = true
+crossbeam.workspace = true
+dns-lookup.workspace = true
+hickory-resolver.workspace = true
 itertools.workspace = true
-crossbeam = "0.8.4"
-dns-lookup = "2.0.4"
-hickory-resolver = "0.24.1"
 parking_lot.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
