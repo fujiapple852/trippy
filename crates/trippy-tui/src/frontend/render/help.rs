@@ -12,11 +12,11 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
         .title(" Default Controls ")
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
-        .style(Style::default().bg(app.tui_config.theme.help_dialog_bg_color))
+        .style(Style::default().bg(app.tui_config.theme.help_dialog_bg))
         .border_type(BorderType::Double);
     let control_line: Vec<_> = HELP_LINES.iter().map(|&line| Line::from(line)).collect();
     let control = Paragraph::new(control_line)
-        .style(Style::default().fg(app.tui_config.theme.help_dialog_text_color))
+        .style(Style::default().fg(app.tui_config.theme.help_dialog_text))
         .block(block.clone())
         .alignment(Alignment::Left);
     let area = util::centered_rect(60, 60, f.size());

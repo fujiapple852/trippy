@@ -35,7 +35,7 @@ fn render_settings_tabs(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .map(|(title, _)| {
             Line::from(Span::styled(
                 *title,
-                Style::default().fg(app.tui_config.theme.settings_tab_text_color),
+                Style::default().fg(app.tui_config.theme.settings_tab_text),
             ))
         })
         .collect();
@@ -45,7 +45,7 @@ fn render_settings_tabs(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .title(" Settings ")
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
-                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg))
                 .border_type(BorderType::Double),
         )
         .select(app.settings_tab_selected)
@@ -63,11 +63,10 @@ fn render_settings_table(
     items: &[SettingsItem],
 ) {
     let header_cells = SETTINGS_TABLE_HEADER.iter().map(|h| {
-        Cell::from(*h)
-            .style(Style::default().fg(app.tui_config.theme.settings_table_header_text_color))
+        Cell::from(*h).style(Style::default().fg(app.tui_config.theme.settings_table_header_text))
     });
     let header = Row::new(header_cells)
-        .style(Style::default().bg(app.tui_config.theme.settings_table_header_bg_color))
+        .style(Style::default().bg(app.tui_config.theme.settings_table_header_bg))
         .height(1)
         .bottom_margin(0);
     let rows = items.iter().map(|item| {
@@ -75,7 +74,7 @@ fn render_settings_table(
             Cell::from(item.item.as_str()),
             Cell::from(item.value.as_str()),
         ])
-        .style(Style::default().fg(app.tui_config.theme.settings_table_row_text_color))
+        .style(Style::default().fg(app.tui_config.theme.settings_table_row_text))
     });
     let item_width = items
         .iter()
@@ -91,13 +90,13 @@ fn render_settings_table(
                 .title(format!(" {name} "))
                 .title_alignment(Alignment::Left)
                 .borders(Borders::ALL)
-                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg))
                 .border_type(BorderType::Plain),
         )
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         )
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
     f.render_stateful_widget(table, rect, &mut app.setting_table_state);
@@ -113,7 +112,7 @@ fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str)
                 .title(" Info ")
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
-                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg_color))
+                .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg))
                 .border_type(BorderType::Plain),
         )
         .alignment(Alignment::Left);
@@ -345,111 +344,108 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
 fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let theme = &app.tui_config.theme;
     vec![
-        SettingsItem::new("bg-color", theme::fmt_color(theme.bg_color)),
-        SettingsItem::new("border-color", theme::fmt_color(theme.border_color)),
-        SettingsItem::new("text-color", theme::fmt_color(theme.text_color)),
-        SettingsItem::new("tab-text-color", theme::fmt_color(theme.tab_text_color)),
+        SettingsItem::new("bg-color", theme::fmt_color(theme.bg)),
+        SettingsItem::new("border-color", theme::fmt_color(theme.border)),
+        SettingsItem::new("text-color", theme::fmt_color(theme.text)),
+        SettingsItem::new("tab-text-color", theme::fmt_color(theme.tab_text)),
         SettingsItem::new(
             "hops-table-header-bg-color",
-            theme::fmt_color(theme.hops_table_header_bg_color),
+            theme::fmt_color(theme.hops_table_header_bg),
         ),
         SettingsItem::new(
             "hops-table-header-text-color",
-            theme::fmt_color(theme.hops_table_header_text_color),
+            theme::fmt_color(theme.hops_table_header_text),
         ),
         SettingsItem::new(
             "hops-table-row-active-text-color",
-            theme::fmt_color(theme.hops_table_row_active_text_color),
+            theme::fmt_color(theme.hops_table_row_active_text),
         ),
         SettingsItem::new(
             "hops-table-row-inactive-text-color",
-            theme::fmt_color(theme.hops_table_row_inactive_text_color),
+            theme::fmt_color(theme.hops_table_row_inactive_text),
         ),
         SettingsItem::new(
             "hops-chart-selected-color",
-            theme::fmt_color(theme.hops_chart_selected_color),
+            theme::fmt_color(theme.hops_chart_selected),
         ),
         SettingsItem::new(
             "hops-chart-unselected-color",
-            theme::fmt_color(theme.hops_chart_unselected_color),
+            theme::fmt_color(theme.hops_chart_unselected),
         ),
         SettingsItem::new(
             "hops-chart-axis-color",
-            theme::fmt_color(theme.hops_chart_axis_color),
+            theme::fmt_color(theme.hops_chart_axis),
         ),
         SettingsItem::new(
             "frequency-chart-bar-color",
-            theme::fmt_color(theme.frequency_chart_bar_color),
+            theme::fmt_color(theme.frequency_chart_bar),
         ),
         SettingsItem::new(
             "frequency-chart-text-color",
-            theme::fmt_color(theme.frequency_chart_text_color),
+            theme::fmt_color(theme.frequency_chart_text),
         ),
         SettingsItem::new(
             "flows-chart-bar-selected-color",
-            theme::fmt_color(theme.flows_chart_bar_selected_color),
+            theme::fmt_color(theme.flows_chart_bar_selected),
         ),
         SettingsItem::new(
             "flows-chart-bar-unselected-color",
-            theme::fmt_color(theme.flows_chart_bar_unselected_color),
+            theme::fmt_color(theme.flows_chart_bar_unselected),
         ),
         SettingsItem::new(
             "flows-chart-text-current-color",
-            theme::fmt_color(theme.flows_chart_text_current_color),
+            theme::fmt_color(theme.flows_chart_text_current),
         ),
         SettingsItem::new(
             "flows-chart-text-non-current-color",
-            theme::fmt_color(theme.flows_chart_text_non_current_color),
+            theme::fmt_color(theme.flows_chart_text_non_current),
         ),
         SettingsItem::new(
             "samples-chart-color ",
-            theme::fmt_color(theme.samples_chart_color),
+            theme::fmt_color(theme.samples_chart),
         ),
         SettingsItem::new(
             "help-dialog-bg-color",
-            theme::fmt_color(theme.help_dialog_bg_color),
+            theme::fmt_color(theme.help_dialog_bg),
         ),
         SettingsItem::new(
             "help-dialog-text-color",
-            theme::fmt_color(theme.help_dialog_text_color),
+            theme::fmt_color(theme.help_dialog_text),
         ),
         SettingsItem::new(
             "settings-dialog-bg-color",
-            theme::fmt_color(theme.settings_dialog_bg_color),
+            theme::fmt_color(theme.settings_dialog_bg),
         ),
         SettingsItem::new(
             "settings-tab-text-color",
-            theme::fmt_color(theme.settings_tab_text_color),
+            theme::fmt_color(theme.settings_tab_text),
         ),
         SettingsItem::new(
             "settings-table-header-text-color",
-            theme::fmt_color(theme.settings_table_header_text_color),
+            theme::fmt_color(theme.settings_table_header_text),
         ),
         SettingsItem::new(
             "settings-table-header-bg-color",
-            theme::fmt_color(theme.settings_table_header_bg_color),
+            theme::fmt_color(theme.settings_table_header_bg),
         ),
         SettingsItem::new(
             "settings-table-row-text-color",
-            theme::fmt_color(theme.settings_table_row_text_color),
+            theme::fmt_color(theme.settings_table_row_text),
         ),
-        SettingsItem::new("map-world-color", theme::fmt_color(theme.map_world_color)),
-        SettingsItem::new("map-radius-color", theme::fmt_color(theme.map_radius_color)),
-        SettingsItem::new(
-            "map-selected-color",
-            theme::fmt_color(theme.map_selected_color),
-        ),
+        SettingsItem::new("map-world-color", theme::fmt_color(theme.map_world)),
+        SettingsItem::new("map-radius-color", theme::fmt_color(theme.map_radius)),
+        SettingsItem::new("map-selected-color", theme::fmt_color(theme.map_selected)),
         SettingsItem::new(
             "map-info-panel-border-color",
-            theme::fmt_color(theme.map_info_panel_border_color),
+            theme::fmt_color(theme.map_info_panel_border),
         ),
         SettingsItem::new(
             "map-info-panel-bg-color",
-            theme::fmt_color(theme.map_info_panel_bg_color),
+            theme::fmt_color(theme.map_info_panel_bg),
         ),
         SettingsItem::new(
             "map-info-panel-text-color",
-            theme::fmt_color(theme.map_info_panel_text_color),
+            theme::fmt_color(theme.map_info_panel_text),
         ),
     ]
 }

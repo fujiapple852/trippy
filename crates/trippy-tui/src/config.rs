@@ -1510,9 +1510,9 @@ mod tests {
     }
 
     #[test_case("trip example.com", Ok(cfg().tui_theme(TuiTheme::default()).build()); "default tui theme")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=red", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, ..Default::default() }).build()); "custom tui theme named color")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=010203", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color")]
-    #[test_case("trip example.com --tui-theme-colors bg-color=red,text-color=blue", Ok(cfg().tui_theme(TuiTheme { bg_color: TuiColor::Red, text_color: TuiColor::Blue, ..Default::default() }).build()); "custom tui theme multiple")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Red, ..Default::default() }).build()); "custom tui theme named color")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=010203", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color")]
+    #[test_case("trip example.com --tui-theme-colors bg-color=red,text-color=blue", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Red, text: TuiColor::Blue, ..Default::default() }).build()); "custom tui theme multiple")]
     #[test_case("trip example.com --tui-theme-colors bg-color=0", Err(anyhow!("error: invalid value 'bg-color=0' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: 0 For more information, try '--help'.")); "invalid tui theme truncated hex value")]
     #[test_case("trip example.com --tui-theme-colors bg-color=foo", Err(anyhow!("error: invalid value 'bg-color=foo' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: foo For more information, try '--help'. ")); "invalid tui theme invalid named color")]
     #[test_case("trip example.com --tui-theme-colors foo-color=red", Err(anyhow!("error: invalid value 'foo-color=red' for '--tui-theme-colors <TUI_THEME_COLORS>': Matching variant not found For more information, try '--help'.")); "invalid tui theme invalid item")]

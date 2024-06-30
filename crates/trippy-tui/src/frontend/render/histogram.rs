@@ -17,21 +17,21 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .title(format!("Frequency #{}", selected_hop.ttl()))
                 .style(
                     Style::default()
-                        .bg(app.tui_config.theme.bg_color)
-                        .fg(app.tui_config.theme.text_color),
+                        .bg(app.tui_config.theme.bg)
+                        .fg(app.tui_config.theme.text),
                 )
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(app.tui_config.theme.border_color)),
+                .border_style(Style::default().fg(app.tui_config.theme.border)),
         )
         .data(freq_data_ref.as_slice())
         .bar_width(4)
         .bar_gap(1)
-        .bar_style(Style::default().fg(app.tui_config.theme.frequency_chart_bar_color))
+        .bar_style(Style::default().fg(app.tui_config.theme.frequency_chart_bar))
         .value_style(
             Style::default()
-                .bg(app.tui_config.theme.frequency_chart_bar_color)
-                .fg(app.tui_config.theme.frequency_chart_text_color)
+                .bg(app.tui_config.theme.frequency_chart_bar)
+                .fg(app.tui_config.theme.frequency_chart_text)
                 .add_modifier(Modifier::BOLD),
         );
     f.render_widget(barchart, rect);

@@ -19,18 +19,18 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .title(format!("Samples #{}", selected_hop.ttl()))
                 .style(
                     Style::default()
-                        .bg(app.tui_config.theme.bg_color)
-                        .fg(app.tui_config.theme.text_color),
+                        .bg(app.tui_config.theme.bg)
+                        .fg(app.tui_config.theme.text),
                 )
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(app.tui_config.theme.border_color)),
+                .border_style(Style::default().fg(app.tui_config.theme.border)),
         )
         .data(&data)
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.samples_chart_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.samples_chart),
         );
     f.render_widget(history, rect);
 }

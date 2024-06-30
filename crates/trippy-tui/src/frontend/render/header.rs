@@ -19,11 +19,11 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .border_style(Style::default().fg(app.tui_config.theme.border))
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         );
     let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
     let clock_span = Line::from(Span::raw(now));
