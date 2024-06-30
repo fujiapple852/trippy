@@ -58,13 +58,13 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(app.tui_config.theme.border_color))
+                .border_style(Style::default().fg(app.tui_config.theme.border))
                 .title("Hops"),
         )
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         )
         .highlight_style(selected_style)
         .column_spacing(1);
@@ -74,10 +74,10 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
 /// Render the table header.
 fn render_table_header(theme: Theme, table_columns: &Columns) -> Row<'static> {
     let header_cells = table_columns.columns().map(|c| {
-        Cell::from(c.typ.to_string()).style(Style::default().fg(theme.hops_table_header_text_color))
+        Cell::from(c.typ.to_string()).style(Style::default().fg(theme.hops_table_header_text))
     });
     Row::new(header_cells)
-        .style(Style::default().bg(theme.hops_table_header_bg_color))
+        .style(Style::default().bg(theme.hops_table_header_bg))
         .height(1)
         .bottom_margin(0)
 }
@@ -113,9 +113,9 @@ fn render_table_row(
         })
         .collect();
     let row_color = if is_in_round {
-        config.theme.hops_table_row_active_text_color
+        config.theme.hops_table_row_active_text
     } else {
-        config.theme.hops_table_row_inactive_text_color
+        config.theme.hops_table_row_inactive_text
     };
     Row::new(cells)
         .height(row_height)

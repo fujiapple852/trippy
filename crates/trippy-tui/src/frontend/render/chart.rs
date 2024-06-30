@@ -41,9 +41,9 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .style(Style::default().fg({
                     match i {
                         i if i + 1 == selected_hop.ttl() as usize => {
-                            app.tui_config.theme.hops_chart_selected_color
+                            app.tui_config.theme.hops_chart_selected
                         }
-                        _ => app.tui_config.theme.hops_chart_unselected_color,
+                        _ => app.tui_config.theme.hops_chart_unselected,
                     }
                 }))
         })
@@ -61,7 +61,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                         .map(Span::from)
                         .collect(),
                 )
-                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis_color)),
+                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
         .y_axis(
             Axis::default()
@@ -77,19 +77,19 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                     .map(Span::from)
                     .collect(),
                 )
-                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis_color)),
+                .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
         .hidden_legend_constraints(constraints)
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         )
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(app.tui_config.theme.border_color))
+                .border_style(Style::default().fg(app.tui_config.theme.border))
                 .title("Chart"),
         );
     f.render_widget(chart, rect);

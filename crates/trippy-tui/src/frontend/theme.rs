@@ -7,111 +7,107 @@ pub struct Theme {
     /// The default background color.
     ///
     /// This may be overridden for specific components.
-    pub bg_color: Color,
+    pub bg: Color,
     /// The default color of borders.
     ///
     /// This may be overridden for specific components.
-    pub border_color: Color,
+    pub border: Color,
     /// The default color of text.
     ///
     /// This may be overridden for specific components.
-    pub text_color: Color,
+    pub text: Color,
     /// The color of the text in traces tabs.
-    pub tab_text_color: Color,
+    pub tab_text: Color,
     /// The background color of the hops table header.
-    pub hops_table_header_bg_color: Color,
+    pub hops_table_header_bg: Color,
     /// The color of text in the hops table header.
-    pub hops_table_header_text_color: Color,
+    pub hops_table_header_text: Color,
     /// The color of text of active rows in the hops table.
-    pub hops_table_row_active_text_color: Color,
+    pub hops_table_row_active_text: Color,
     /// The color of text of inactive rows in the hops table.
-    pub hops_table_row_inactive_text_color: Color,
+    pub hops_table_row_inactive_text: Color,
     /// The color of the selected series in the hops chart.
-    pub hops_chart_selected_color: Color,
+    pub hops_chart_selected: Color,
     /// The color of the unselected series in the hops chart.
-    pub hops_chart_unselected_color: Color,
+    pub hops_chart_unselected: Color,
     /// The color of the axis in the hops chart.
-    pub hops_chart_axis_color: Color,
+    pub hops_chart_axis: Color,
     /// The color of bars in the frequency chart.
-    pub frequency_chart_bar_color: Color,
+    pub frequency_chart_bar: Color,
     /// The color of text in the bars of the frequency chart.
-    pub frequency_chart_text_color: Color,
+    pub frequency_chart_text: Color,
     /// The color of the selected flow bar in the flows chart.
-    pub flows_chart_bar_selected_color: Color,
+    pub flows_chart_bar_selected: Color,
     /// The color of the unselected flow bar in the flows chart.
-    pub flows_chart_bar_unselected_color: Color,
+    pub flows_chart_bar_unselected: Color,
     /// The color of the current flow text in the flows chart.
-    pub flows_chart_text_current_color: Color,
+    pub flows_chart_text_current: Color,
     /// The color of the non-current flow text in the flows chart.
-    pub flows_chart_text_non_current_color: Color,
+    pub flows_chart_text_non_current: Color,
     /// The color of the samples chart.
-    pub samples_chart_color: Color,
+    pub samples_chart: Color,
     /// The background color of the help dialog.
-    pub help_dialog_bg_color: Color,
+    pub help_dialog_bg: Color,
     /// The color of the text in the help dialog.
-    pub help_dialog_text_color: Color,
+    pub help_dialog_text: Color,
     /// The background color of the settings dialog.
-    pub settings_dialog_bg_color: Color,
+    pub settings_dialog_bg: Color,
     /// The color of the text in settings dialog tabs.
-    pub settings_tab_text_color: Color,
+    pub settings_tab_text: Color,
     /// The color of text in the settings table header.
-    pub settings_table_header_text_color: Color,
+    pub settings_table_header_text: Color,
     /// The background color of the settings table header.
-    pub settings_table_header_bg_color: Color,
+    pub settings_table_header_bg: Color,
     /// The color of text of rows in the settings table.
-    pub settings_table_row_text_color: Color,
+    pub settings_table_row_text: Color,
     /// The color of the map world diagram.
-    pub map_world_color: Color,
+    pub map_world: Color,
     /// The color of the map accuracy radius circle.
-    pub map_radius_color: Color,
+    pub map_radius: Color,
     /// The color of the map selected item box.
-    pub map_selected_color: Color,
+    pub map_selected: Color,
     /// The color of border of the map info panel.
-    pub map_info_panel_border_color: Color,
+    pub map_info_panel_border: Color,
     /// The background color of the map info panel.
-    pub map_info_panel_bg_color: Color,
+    pub map_info_panel_bg: Color,
     /// The color of text in the map info panel.
-    pub map_info_panel_text_color: Color,
+    pub map_info_panel_text: Color,
 }
 
 impl From<TuiTheme> for Theme {
     fn from(value: TuiTheme) -> Self {
         Self {
-            bg_color: Color::from(value.bg_color),
-            border_color: Color::from(value.border_color),
-            text_color: Color::from(value.text_color),
-            tab_text_color: Color::from(value.tab_text_color),
-            hops_table_header_bg_color: Color::from(value.hops_table_header_bg_color),
-            hops_table_header_text_color: Color::from(value.hops_table_header_text_color),
-            hops_table_row_active_text_color: Color::from(value.hops_table_row_active_text_color),
-            hops_table_row_inactive_text_color: Color::from(
-                value.hops_table_row_inactive_text_color,
-            ),
-            hops_chart_selected_color: Color::from(value.hops_chart_selected_color),
-            hops_chart_unselected_color: Color::from(value.hops_chart_unselected_color),
-            hops_chart_axis_color: Color::from(value.hops_chart_axis_color),
-            frequency_chart_bar_color: Color::from(value.frequency_chart_bar_color),
-            frequency_chart_text_color: Color::from(value.frequency_chart_text_color),
-            flows_chart_bar_selected_color: Color::from(value.flows_chart_bar_selected_color),
-            flows_chart_bar_unselected_color: Color::from(value.flows_chart_bar_unselected_color),
-            flows_chart_text_current_color: Color::from(value.flows_chart_text_current_color),
-            flows_chart_text_non_current_color: Color::from(
-                value.flows_chart_text_non_current_color,
-            ),
-            samples_chart_color: Color::from(value.samples_chart_color),
-            help_dialog_bg_color: Color::from(value.help_dialog_bg_color),
-            help_dialog_text_color: Color::from(value.help_dialog_text_color),
-            settings_dialog_bg_color: Color::from(value.settings_dialog_bg_color),
-            settings_tab_text_color: Color::from(value.settings_tab_text_color),
-            settings_table_header_text_color: Color::from(value.settings_table_header_text_color),
-            settings_table_header_bg_color: Color::from(value.settings_table_header_bg_color),
-            settings_table_row_text_color: Color::from(value.settings_table_row_text_color),
-            map_world_color: Color::from(value.map_world_color),
-            map_radius_color: Color::from(value.map_radius_color),
-            map_selected_color: Color::from(value.map_selected_color),
-            map_info_panel_border_color: Color::from(value.map_info_panel_border_color),
-            map_info_panel_bg_color: Color::from(value.map_info_panel_bg_color),
-            map_info_panel_text_color: Color::from(value.map_info_panel_text_color),
+            bg: Color::from(value.bg),
+            border: Color::from(value.border),
+            text: Color::from(value.text),
+            tab_text: Color::from(value.tab_text),
+            hops_table_header_bg: Color::from(value.hops_table_header_bg),
+            hops_table_header_text: Color::from(value.hops_table_header_text),
+            hops_table_row_active_text: Color::from(value.hops_table_row_active_text),
+            hops_table_row_inactive_text: Color::from(value.hops_table_row_inactive_text),
+            hops_chart_selected: Color::from(value.hops_chart_selected),
+            hops_chart_unselected: Color::from(value.hops_chart_unselected),
+            hops_chart_axis: Color::from(value.hops_chart_axis),
+            frequency_chart_bar: Color::from(value.frequency_chart_bar),
+            frequency_chart_text: Color::from(value.frequency_chart_text),
+            flows_chart_bar_selected: Color::from(value.flows_chart_bar_selected),
+            flows_chart_bar_unselected: Color::from(value.flows_chart_bar_unselected),
+            flows_chart_text_current: Color::from(value.flows_chart_text_current),
+            flows_chart_text_non_current: Color::from(value.flows_chart_text_non_current),
+            samples_chart: Color::from(value.samples_chart),
+            help_dialog_bg: Color::from(value.help_dialog_bg),
+            help_dialog_text: Color::from(value.help_dialog_text),
+            settings_dialog_bg: Color::from(value.settings_dialog_bg),
+            settings_tab_text: Color::from(value.settings_tab_text),
+            settings_table_header_text: Color::from(value.settings_table_header_text),
+            settings_table_header_bg: Color::from(value.settings_table_header_bg),
+            settings_table_row_text: Color::from(value.settings_table_row_text),
+            map_world: Color::from(value.map_world),
+            map_radius: Color::from(value.map_radius),
+            map_selected: Color::from(value.map_selected),
+            map_info_panel_border: Color::from(value.map_info_panel_border),
+            map_info_panel_bg: Color::from(value.map_info_panel_bg),
+            map_info_panel_text: Color::from(value.map_info_panel_text),
         }
     }
 }

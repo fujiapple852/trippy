@@ -10,107 +10,107 @@ pub struct TuiTheme {
     /// The default background color.
     ///
     /// This may be overridden for specific components.
-    pub bg_color: TuiColor,
+    pub bg: TuiColor,
     /// The default color of borders.
     ///
     /// This may be overridden for specific components.
-    pub border_color: TuiColor,
+    pub border: TuiColor,
     /// The default color of text.
     ///
     /// This may be overridden for specific components.
-    pub text_color: TuiColor,
+    pub text: TuiColor,
     /// The color of the text in traces tabs.
-    pub tab_text_color: TuiColor,
+    pub tab_text: TuiColor,
     /// The background color of the hops table header.
-    pub hops_table_header_bg_color: TuiColor,
+    pub hops_table_header_bg: TuiColor,
     /// The color of text in the hops table header.
-    pub hops_table_header_text_color: TuiColor,
+    pub hops_table_header_text: TuiColor,
     /// The color of text of active rows in the hops table.
-    pub hops_table_row_active_text_color: TuiColor,
+    pub hops_table_row_active_text: TuiColor,
     /// The color of text of inactive rows in the hops table.
-    pub hops_table_row_inactive_text_color: TuiColor,
+    pub hops_table_row_inactive_text: TuiColor,
     /// The color of the selected series in the hops chart.
-    pub hops_chart_selected_color: TuiColor,
+    pub hops_chart_selected: TuiColor,
     /// The color of the unselected series in the hops chart.
-    pub hops_chart_unselected_color: TuiColor,
+    pub hops_chart_unselected: TuiColor,
     /// The color of the axis in the hops chart.
-    pub hops_chart_axis_color: TuiColor,
+    pub hops_chart_axis: TuiColor,
     /// The color of bars in the frequency chart.
-    pub frequency_chart_bar_color: TuiColor,
+    pub frequency_chart_bar: TuiColor,
     /// The color of text in the bars of the frequency chart.
-    pub frequency_chart_text_color: TuiColor,
+    pub frequency_chart_text: TuiColor,
     /// The color of the selected flow bar in the flows chart.
-    pub flows_chart_bar_selected_color: TuiColor,
+    pub flows_chart_bar_selected: TuiColor,
     /// The color of the unselected flow bar in the flows chart.
-    pub flows_chart_bar_unselected_color: TuiColor,
+    pub flows_chart_bar_unselected: TuiColor,
     /// The color of the current flow text in the flows chart.
-    pub flows_chart_text_current_color: TuiColor,
+    pub flows_chart_text_current: TuiColor,
     /// The color of the non-current flow text in the flows chart.
-    pub flows_chart_text_non_current_color: TuiColor,
+    pub flows_chart_text_non_current: TuiColor,
     /// The color of the samples chart.
-    pub samples_chart_color: TuiColor,
+    pub samples_chart: TuiColor,
     /// The background color of the help dialog.
-    pub help_dialog_bg_color: TuiColor,
+    pub help_dialog_bg: TuiColor,
     /// The color of the text in the help dialog.
-    pub help_dialog_text_color: TuiColor,
+    pub help_dialog_text: TuiColor,
     /// The background color of the settings dialog.
-    pub settings_dialog_bg_color: TuiColor,
+    pub settings_dialog_bg: TuiColor,
     /// The color of the text in settings dialog tabs.
-    pub settings_tab_text_color: TuiColor,
+    pub settings_tab_text: TuiColor,
     /// The color of text in the settings table header.
-    pub settings_table_header_text_color: TuiColor,
+    pub settings_table_header_text: TuiColor,
     /// The background color of the settings table header.
-    pub settings_table_header_bg_color: TuiColor,
+    pub settings_table_header_bg: TuiColor,
     /// The color of text of rows in the settings table.
-    pub settings_table_row_text_color: TuiColor,
+    pub settings_table_row_text: TuiColor,
     /// The color of the map world diagram.
-    pub map_world_color: TuiColor,
+    pub map_world: TuiColor,
     /// The color of the map accuracy radius circle.
-    pub map_radius_color: TuiColor,
+    pub map_radius: TuiColor,
     /// The color of the map selected item box.
-    pub map_selected_color: TuiColor,
+    pub map_selected: TuiColor,
     /// The color of border of the map info panel.
-    pub map_info_panel_border_color: TuiColor,
+    pub map_info_panel_border: TuiColor,
     /// The background color of the map info panel.
-    pub map_info_panel_bg_color: TuiColor,
+    pub map_info_panel_bg: TuiColor,
     /// The color of text in the map info panel.
-    pub map_info_panel_text_color: TuiColor,
+    pub map_info_panel_text: TuiColor,
 }
 
 impl Default for TuiTheme {
     fn default() -> Self {
         Self {
-            bg_color: TuiColor::Black,
-            border_color: TuiColor::Gray,
-            text_color: TuiColor::Gray,
-            tab_text_color: TuiColor::Green,
-            hops_table_header_bg_color: TuiColor::White,
-            hops_table_header_text_color: TuiColor::Black,
-            hops_table_row_active_text_color: TuiColor::Gray,
-            hops_table_row_inactive_text_color: TuiColor::DarkGray,
-            hops_chart_selected_color: TuiColor::Green,
-            hops_chart_unselected_color: TuiColor::Gray,
-            hops_chart_axis_color: TuiColor::DarkGray,
-            frequency_chart_bar_color: TuiColor::Green,
-            frequency_chart_text_color: TuiColor::Gray,
-            flows_chart_bar_selected_color: TuiColor::Green,
-            flows_chart_bar_unselected_color: TuiColor::DarkGray,
-            flows_chart_text_current_color: TuiColor::LightGreen,
-            flows_chart_text_non_current_color: TuiColor::White,
-            samples_chart_color: TuiColor::Yellow,
-            help_dialog_bg_color: TuiColor::Blue,
-            help_dialog_text_color: TuiColor::Gray,
-            settings_dialog_bg_color: TuiColor::Blue,
-            settings_tab_text_color: TuiColor::Green,
-            settings_table_header_text_color: TuiColor::Black,
-            settings_table_header_bg_color: TuiColor::White,
-            settings_table_row_text_color: TuiColor::Gray,
-            map_world_color: TuiColor::White,
-            map_radius_color: TuiColor::Yellow,
-            map_selected_color: TuiColor::Green,
-            map_info_panel_border_color: TuiColor::Gray,
-            map_info_panel_bg_color: TuiColor::Black,
-            map_info_panel_text_color: TuiColor::Gray,
+            bg: TuiColor::Black,
+            border: TuiColor::Gray,
+            text: TuiColor::Gray,
+            tab_text: TuiColor::Green,
+            hops_table_header_bg: TuiColor::White,
+            hops_table_header_text: TuiColor::Black,
+            hops_table_row_active_text: TuiColor::Gray,
+            hops_table_row_inactive_text: TuiColor::DarkGray,
+            hops_chart_selected: TuiColor::Green,
+            hops_chart_unselected: TuiColor::Gray,
+            hops_chart_axis: TuiColor::DarkGray,
+            frequency_chart_bar: TuiColor::Green,
+            frequency_chart_text: TuiColor::Gray,
+            flows_chart_bar_selected: TuiColor::Green,
+            flows_chart_bar_unselected: TuiColor::DarkGray,
+            flows_chart_text_current: TuiColor::LightGreen,
+            flows_chart_text_non_current: TuiColor::White,
+            samples_chart: TuiColor::Yellow,
+            help_dialog_bg: TuiColor::Blue,
+            help_dialog_text: TuiColor::Gray,
+            settings_dialog_bg: TuiColor::Blue,
+            settings_tab_text: TuiColor::Green,
+            settings_table_header_text: TuiColor::Black,
+            settings_table_header_bg: TuiColor::White,
+            settings_table_row_text: TuiColor::Gray,
+            map_world: TuiColor::White,
+            map_radius: TuiColor::Yellow,
+            map_selected: TuiColor::Green,
+            map_info_panel_border: TuiColor::Gray,
+            map_info_panel_bg: TuiColor::Black,
+            map_info_panel_text: TuiColor::Gray,
         }
     }
 }
@@ -120,130 +120,130 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
     fn from(value: (HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)) -> Self {
         let (color_map, cfg) = value;
         Self {
-            bg_color: *color_map
+            bg: *color_map
                 .get(&TuiThemeItem::BgColor)
                 .or(cfg.bg_color.as_ref())
-                .unwrap_or(&Self::default().bg_color),
-            border_color: *color_map
+                .unwrap_or(&Self::default().bg),
+            border: *color_map
                 .get(&TuiThemeItem::BorderColor)
                 .or(cfg.border_color.as_ref())
-                .unwrap_or(&Self::default().border_color),
-            text_color: *color_map
+                .unwrap_or(&Self::default().border),
+            text: *color_map
                 .get(&TuiThemeItem::TextColor)
                 .or(cfg.text_color.as_ref())
-                .unwrap_or(&Self::default().text_color),
-            tab_text_color: *color_map
+                .unwrap_or(&Self::default().text),
+            tab_text: *color_map
                 .get(&TuiThemeItem::TabTextColor)
                 .or(cfg.tab_text_color.as_ref())
-                .unwrap_or(&Self::default().tab_text_color),
-            hops_table_header_bg_color: *color_map
+                .unwrap_or(&Self::default().tab_text),
+            hops_table_header_bg: *color_map
                 .get(&TuiThemeItem::HopsTableHeaderBgColor)
                 .or(cfg.hops_table_header_bg_color.as_ref())
-                .unwrap_or(&Self::default().hops_table_header_bg_color),
-            hops_table_header_text_color: *color_map
+                .unwrap_or(&Self::default().hops_table_header_bg),
+            hops_table_header_text: *color_map
                 .get(&TuiThemeItem::HopsTableHeaderTextColor)
                 .or(cfg.hops_table_header_text_color.as_ref())
-                .unwrap_or(&Self::default().hops_table_header_text_color),
-            hops_table_row_active_text_color: *color_map
+                .unwrap_or(&Self::default().hops_table_header_text),
+            hops_table_row_active_text: *color_map
                 .get(&TuiThemeItem::HopsTableRowActiveTextColor)
                 .or(cfg.hops_table_row_active_text_color.as_ref())
-                .unwrap_or(&Self::default().hops_table_row_active_text_color),
-            hops_table_row_inactive_text_color: *color_map
+                .unwrap_or(&Self::default().hops_table_row_active_text),
+            hops_table_row_inactive_text: *color_map
                 .get(&TuiThemeItem::HopsTableRowInactiveTextColor)
                 .or(cfg.hops_table_row_inactive_text_color.as_ref())
-                .unwrap_or(&Self::default().hops_table_row_inactive_text_color),
-            hops_chart_selected_color: *color_map
+                .unwrap_or(&Self::default().hops_table_row_inactive_text),
+            hops_chart_selected: *color_map
                 .get(&TuiThemeItem::HopsChartSelectedColor)
                 .or(cfg.hops_chart_selected_color.as_ref())
-                .unwrap_or(&Self::default().hops_chart_selected_color),
-            hops_chart_unselected_color: *color_map
+                .unwrap_or(&Self::default().hops_chart_selected),
+            hops_chart_unselected: *color_map
                 .get(&TuiThemeItem::HopsChartUnselectedColor)
                 .or(cfg.hops_chart_unselected_color.as_ref())
-                .unwrap_or(&Self::default().hops_chart_unselected_color),
-            hops_chart_axis_color: *color_map
+                .unwrap_or(&Self::default().hops_chart_unselected),
+            hops_chart_axis: *color_map
                 .get(&TuiThemeItem::HopsChartAxisColor)
                 .or(cfg.hops_chart_axis_color.as_ref())
-                .unwrap_or(&Self::default().hops_chart_axis_color),
-            frequency_chart_bar_color: *color_map
+                .unwrap_or(&Self::default().hops_chart_axis),
+            frequency_chart_bar: *color_map
                 .get(&TuiThemeItem::FrequencyChartBarColor)
                 .or(cfg.frequency_chart_bar_color.as_ref())
-                .unwrap_or(&Self::default().frequency_chart_bar_color),
-            frequency_chart_text_color: *color_map
+                .unwrap_or(&Self::default().frequency_chart_bar),
+            frequency_chart_text: *color_map
                 .get(&TuiThemeItem::FrequencyChartTextColor)
                 .or(cfg.frequency_chart_text_color.as_ref())
-                .unwrap_or(&Self::default().frequency_chart_text_color),
-            flows_chart_bar_selected_color: *color_map
+                .unwrap_or(&Self::default().frequency_chart_text),
+            flows_chart_bar_selected: *color_map
                 .get(&TuiThemeItem::FlowsChartBarSelectedColor)
                 .or(cfg.flows_chart_bar_selected_color.as_ref())
-                .unwrap_or(&Self::default().flows_chart_bar_selected_color),
-            flows_chart_bar_unselected_color: *color_map
+                .unwrap_or(&Self::default().flows_chart_bar_selected),
+            flows_chart_bar_unselected: *color_map
                 .get(&TuiThemeItem::FlowsChartBarUnselectedColor)
                 .or(cfg.flows_chart_bar_unselected_color.as_ref())
-                .unwrap_or(&Self::default().flows_chart_bar_unselected_color),
-            flows_chart_text_current_color: *color_map
+                .unwrap_or(&Self::default().flows_chart_bar_unselected),
+            flows_chart_text_current: *color_map
                 .get(&TuiThemeItem::FlowsChartTextCurrentColor)
                 .or(cfg.flows_chart_text_current_color.as_ref())
-                .unwrap_or(&Self::default().flows_chart_text_current_color),
-            flows_chart_text_non_current_color: *color_map
+                .unwrap_or(&Self::default().flows_chart_text_current),
+            flows_chart_text_non_current: *color_map
                 .get(&TuiThemeItem::FlowsChartTextNonCurrentColor)
                 .or(cfg.flows_chart_text_non_current_color.as_ref())
-                .unwrap_or(&Self::default().flows_chart_text_non_current_color),
-            samples_chart_color: *color_map
+                .unwrap_or(&Self::default().flows_chart_text_non_current),
+            samples_chart: *color_map
                 .get(&TuiThemeItem::SamplesChartColor)
                 .or(cfg.samples_chart_color.as_ref())
-                .unwrap_or(&Self::default().samples_chart_color),
-            help_dialog_bg_color: *color_map
+                .unwrap_or(&Self::default().samples_chart),
+            help_dialog_bg: *color_map
                 .get(&TuiThemeItem::HelpDialogBgColor)
                 .or(cfg.help_dialog_bg_color.as_ref())
-                .unwrap_or(&Self::default().help_dialog_bg_color),
-            help_dialog_text_color: *color_map
+                .unwrap_or(&Self::default().help_dialog_bg),
+            help_dialog_text: *color_map
                 .get(&TuiThemeItem::HelpDialogTextColor)
                 .or(cfg.help_dialog_text_color.as_ref())
-                .unwrap_or(&Self::default().help_dialog_text_color),
-            settings_dialog_bg_color: *color_map
+                .unwrap_or(&Self::default().help_dialog_text),
+            settings_dialog_bg: *color_map
                 .get(&TuiThemeItem::SettingsDialogBgColor)
                 .or(cfg.settings_dialog_bg_color.as_ref())
-                .unwrap_or(&Self::default().settings_dialog_bg_color),
-            settings_tab_text_color: *color_map
+                .unwrap_or(&Self::default().settings_dialog_bg),
+            settings_tab_text: *color_map
                 .get(&TuiThemeItem::SettingsTabTextColor)
                 .or(cfg.settings_tab_text_color.as_ref())
-                .unwrap_or(&Self::default().settings_tab_text_color),
-            settings_table_header_text_color: *color_map
+                .unwrap_or(&Self::default().settings_tab_text),
+            settings_table_header_text: *color_map
                 .get(&TuiThemeItem::SettingsTableHeaderTextColor)
                 .or(cfg.settings_table_header_text_color.as_ref())
-                .unwrap_or(&Self::default().settings_table_header_text_color),
-            settings_table_header_bg_color: *color_map
+                .unwrap_or(&Self::default().settings_table_header_text),
+            settings_table_header_bg: *color_map
                 .get(&TuiThemeItem::SettingsTableHeaderBgColor)
                 .or(cfg.settings_table_header_bg_color.as_ref())
-                .unwrap_or(&Self::default().settings_table_header_bg_color),
-            settings_table_row_text_color: *color_map
+                .unwrap_or(&Self::default().settings_table_header_bg),
+            settings_table_row_text: *color_map
                 .get(&TuiThemeItem::SettingsTableRowTextColor)
                 .or(cfg.settings_table_row_text_color.as_ref())
-                .unwrap_or(&Self::default().settings_table_row_text_color),
-            map_world_color: *color_map
+                .unwrap_or(&Self::default().settings_table_row_text),
+            map_world: *color_map
                 .get(&TuiThemeItem::MapWorldColor)
                 .or(cfg.map_world_color.as_ref())
-                .unwrap_or(&Self::default().map_world_color),
-            map_radius_color: *color_map
+                .unwrap_or(&Self::default().map_world),
+            map_radius: *color_map
                 .get(&TuiThemeItem::MapRadiusColor)
                 .or(cfg.map_radius_color.as_ref())
-                .unwrap_or(&Self::default().map_radius_color),
-            map_selected_color: *color_map
+                .unwrap_or(&Self::default().map_radius),
+            map_selected: *color_map
                 .get(&TuiThemeItem::MapSelectedColor)
                 .or(cfg.map_selected_color.as_ref())
-                .unwrap_or(&Self::default().map_selected_color),
-            map_info_panel_border_color: *color_map
+                .unwrap_or(&Self::default().map_selected),
+            map_info_panel_border: *color_map
                 .get(&TuiThemeItem::MapInfoPanelBorderColor)
                 .or(cfg.map_info_panel_border_color.as_ref())
-                .unwrap_or(&Self::default().map_info_panel_border_color),
-            map_info_panel_bg_color: *color_map
+                .unwrap_or(&Self::default().map_info_panel_border),
+            map_info_panel_bg: *color_map
                 .get(&TuiThemeItem::MapInfoPanelBgColor)
                 .or(cfg.map_info_panel_bg_color.as_ref())
-                .unwrap_or(&Self::default().map_info_panel_bg_color),
-            map_info_panel_text_color: *color_map
+                .unwrap_or(&Self::default().map_info_panel_bg),
+            map_info_panel_text: *color_map
                 .get(&TuiThemeItem::MapInfoPanelTextColor)
                 .or(cfg.map_info_panel_text_color.as_ref())
-                .unwrap_or(&Self::default().map_info_panel_text_color),
+                .unwrap_or(&Self::default().map_info_panel_text),
         }
     }
 }

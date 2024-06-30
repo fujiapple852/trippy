@@ -29,20 +29,20 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
 fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[MapEntry]) {
     let theme = app.tui_config.theme;
     let map = Canvas::default()
-        .background_color(app.tui_config.theme.bg_color)
+        .background_color(app.tui_config.theme.bg)
         .block(
             Block::default()
                 .title("Map")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(app.tui_config.theme.border_color))
+                .border_style(Style::default().fg(app.tui_config.theme.border))
                 .style(
                     Style::default()
-                        .bg(app.tui_config.theme.bg_color)
-                        .fg(app.tui_config.theme.text_color),
+                        .bg(app.tui_config.theme.bg)
+                        .fg(app.tui_config.theme.text),
                 ),
         )
         .paint(|ctx| {
-            render_map_canvas_world(ctx, theme.map_world_color);
+            render_map_canvas_world(ctx, theme.map_world);
             ctx.layer();
             for entry in entries {
                 let any_show = entry
@@ -51,12 +51,12 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
                     .any(|hop| *hop > app.tui_config.privacy_max_ttl);
                 if !app.hide_private_hops || any_show {
                     render_map_canvas_pin(ctx, entry);
-                    render_map_canvas_radius(ctx, entry, theme.map_radius_color);
+                    render_map_canvas_radius(ctx, entry, theme.map_radius);
                     render_map_canvas_selected(
                         ctx,
                         entry,
                         app.selected_hop_or_target(),
-                        theme.map_selected_color,
+                        theme.map_selected,
                     );
                 }
             }
@@ -165,11 +165,11 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
                 .title(format!("Hop {}", selected_hop.ttl()))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(theme.map_info_panel_border_color))
+                .border_style(Style::default().fg(theme.map_info_panel_border))
                 .style(
                     Style::default()
-                        .bg(theme.map_info_panel_bg_color)
-                        .fg(theme.map_info_panel_text_color),
+                        .bg(theme.map_info_panel_bg)
+                        .fg(theme.map_info_panel_text),
                 ),
         )
         .alignment(Alignment::Left);

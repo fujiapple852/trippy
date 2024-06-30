@@ -12,11 +12,11 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .border_style(Style::default().fg(app.tui_config.theme.border))
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         );
     let titles: Vec<_> = app
         .trace_info
@@ -24,7 +24,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         .map(|trace| {
             Line::from(Span::styled(
                 &trace.target_hostname,
-                Style::default().fg(app.tui_config.theme.tab_text_color),
+                Style::default().fg(app.tui_config.theme.tab_text),
             ))
         })
         .collect();

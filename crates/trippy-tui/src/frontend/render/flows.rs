@@ -13,14 +13,14 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         .iter()
         .map(|(flow_id, count)| {
             let bar_color = if flow_id == &app.selected_flow {
-                app.tui_config.theme.flows_chart_bar_selected_color
+                app.tui_config.theme.flows_chart_bar_selected
             } else {
-                app.tui_config.theme.flows_chart_bar_unselected_color
+                app.tui_config.theme.flows_chart_bar_unselected
             };
             let label_color = if flow_id == &round_flow_id {
-                app.tui_config.theme.flows_chart_text_current_color
+                app.tui_config.theme.flows_chart_text_current
             } else {
-                app.tui_config.theme.flows_chart_text_non_current_color
+                app.tui_config.theme.flows_chart_text_non_current
             };
             Bar::default()
                 .label(Line::from(format!("{flow_id}")))
@@ -39,11 +39,11 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(app.tui_config.theme.border_color))
+        .border_style(Style::default().fg(app.tui_config.theme.border))
         .style(
             Style::default()
-                .bg(app.tui_config.theme.bg_color)
-                .fg(app.tui_config.theme.text_color),
+                .bg(app.tui_config.theme.bg)
+                .fg(app.tui_config.theme.text),
         );
     let group = BarGroup::default().bars(&data);
     let flow_counts = BarChart::default()

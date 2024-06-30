@@ -193,6 +193,7 @@ impl Default for ConfigStrategy {
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+#[allow(clippy::struct_field_names)]
 pub struct ConfigDns {
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
     pub dns_resolve_all: Option<bool>,
@@ -269,6 +270,7 @@ impl Default for ConfigTui {
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+#[allow(clippy::struct_field_names)]
 pub struct ConfigThemeColors {
     pub bg_color: Option<TuiColor>,
     pub border_color: Option<TuiColor>,
@@ -307,37 +309,37 @@ impl Default for ConfigThemeColors {
     fn default() -> Self {
         let theme = super::theme::TuiTheme::default();
         Self {
-            bg_color: Some(theme.bg_color),
-            border_color: Some(theme.border_color),
-            text_color: Some(theme.text_color),
-            tab_text_color: Some(theme.tab_text_color),
-            hops_table_header_bg_color: Some(theme.hops_table_header_bg_color),
-            hops_table_header_text_color: Some(theme.hops_table_header_text_color),
-            hops_table_row_active_text_color: Some(theme.hops_table_row_active_text_color),
-            hops_table_row_inactive_text_color: Some(theme.hops_table_row_inactive_text_color),
-            hops_chart_selected_color: Some(theme.hops_chart_selected_color),
-            hops_chart_unselected_color: Some(theme.hops_chart_unselected_color),
-            hops_chart_axis_color: Some(theme.hops_chart_axis_color),
-            frequency_chart_bar_color: Some(theme.frequency_chart_bar_color),
-            frequency_chart_text_color: Some(theme.frequency_chart_text_color),
-            flows_chart_bar_selected_color: Some(theme.flows_chart_bar_selected_color),
-            flows_chart_bar_unselected_color: Some(theme.flows_chart_bar_unselected_color),
-            flows_chart_text_current_color: Some(theme.flows_chart_text_current_color),
-            flows_chart_text_non_current_color: Some(theme.flows_chart_text_non_current_color),
-            samples_chart_color: Some(theme.samples_chart_color),
-            help_dialog_bg_color: Some(theme.help_dialog_bg_color),
-            help_dialog_text_color: Some(theme.help_dialog_text_color),
-            settings_dialog_bg_color: Some(theme.settings_dialog_bg_color),
-            settings_tab_text_color: Some(theme.settings_tab_text_color),
-            settings_table_header_text_color: Some(theme.settings_table_header_text_color),
-            settings_table_header_bg_color: Some(theme.settings_table_header_bg_color),
-            settings_table_row_text_color: Some(theme.settings_table_row_text_color),
-            map_world_color: Some(theme.map_world_color),
-            map_radius_color: Some(theme.map_radius_color),
-            map_selected_color: Some(theme.map_selected_color),
-            map_info_panel_border_color: Some(theme.map_info_panel_border_color),
-            map_info_panel_bg_color: Some(theme.map_info_panel_bg_color),
-            map_info_panel_text_color: Some(theme.map_info_panel_text_color),
+            bg_color: Some(theme.bg),
+            border_color: Some(theme.border),
+            text_color: Some(theme.text),
+            tab_text_color: Some(theme.tab_text),
+            hops_table_header_bg_color: Some(theme.hops_table_header_bg),
+            hops_table_header_text_color: Some(theme.hops_table_header_text),
+            hops_table_row_active_text_color: Some(theme.hops_table_row_active_text),
+            hops_table_row_inactive_text_color: Some(theme.hops_table_row_inactive_text),
+            hops_chart_selected_color: Some(theme.hops_chart_selected),
+            hops_chart_unselected_color: Some(theme.hops_chart_unselected),
+            hops_chart_axis_color: Some(theme.hops_chart_axis),
+            frequency_chart_bar_color: Some(theme.frequency_chart_bar),
+            frequency_chart_text_color: Some(theme.frequency_chart_text),
+            flows_chart_bar_selected_color: Some(theme.flows_chart_bar_selected),
+            flows_chart_bar_unselected_color: Some(theme.flows_chart_bar_unselected),
+            flows_chart_text_current_color: Some(theme.flows_chart_text_current),
+            flows_chart_text_non_current_color: Some(theme.flows_chart_text_non_current),
+            samples_chart_color: Some(theme.samples_chart),
+            help_dialog_bg_color: Some(theme.help_dialog_bg),
+            help_dialog_text_color: Some(theme.help_dialog_text),
+            settings_dialog_bg_color: Some(theme.settings_dialog_bg),
+            settings_tab_text_color: Some(theme.settings_tab_text),
+            settings_table_header_text_color: Some(theme.settings_table_header_text),
+            settings_table_header_bg_color: Some(theme.settings_table_header_bg),
+            settings_table_row_text_color: Some(theme.settings_table_row_text),
+            map_world_color: Some(theme.map_world),
+            map_radius_color: Some(theme.map_radius),
+            map_selected_color: Some(theme.map_selected),
+            map_info_panel_border_color: Some(theme.map_info_panel_border),
+            map_info_panel_bg_color: Some(theme.map_info_panel_bg),
+            map_info_panel_text_color: Some(theme.map_info_panel_text),
         }
     }
 }
