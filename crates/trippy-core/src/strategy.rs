@@ -3,8 +3,8 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp, Response, ProbeStatus,
+    ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
+    ResponseData, ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
 use crate::{MultipathStrategy, PortDirection, Protocol};
@@ -250,7 +250,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     /// dest address match the expected values.
     ///
     /// For ICMP probe responses no additional checks are required.
-    fn validate(&self, resp: &ProbeResponseData) -> bool {
+    fn validate(&self, resp: &ResponseData) -> bool {
         const fn validate_ports(
             port_direction: PortDirection,
             src_port: u16,
@@ -297,7 +297,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in
     /// a protocol specific way.
     #[instrument(skip(self))]
-    fn extract(&self, resp: &ProbeResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
+    fn extract(&self, resp: &ResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
         match resp.resp_seq {
             ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
                 identifier,
@@ -377,7 +377,7 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(move || {
                 Ok(Some(Response::DestinationUnreachable(
-                    ProbeResponseData::new(
+                    ResponseData::new(
                         SystemTime::now(),
                         target_addr,
                         ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
@@ -391,7 +391,7 @@ mod tests {
             .times(1)
             .in_sequence(&mut seq)
             .returning(move || {
-                Ok(Some(Response::TcpRefused(ProbeResponseData::new(
+                Ok(Some(Response::TcpRefused(ResponseData::new(
                     SystemTime::now(),
                     target_addr,
                     ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
