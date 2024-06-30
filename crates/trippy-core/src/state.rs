@@ -1,7 +1,7 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
-use crate::{Extensions, IcmpPacketType, ProbeState, Round, TimeToLive, TracerRound};
+use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, TimeToLive, TracerRound};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
@@ -126,8 +126,8 @@ impl TraceState {
                 .probes
                 .iter()
                 .filter_map(|probe| match probe {
-                    ProbeState::Awaited(_) => Some(None),
-                    ProbeState::Complete(completed) => Some(Some(completed.host)),
+                    ProbeStatus::Awaited(_) => Some(None),
+                    ProbeStatus::Complete(completed) => Some(Some(completed.host)),
                     _ => None,
                 })
                 .take(usize::from(round.largest_ttl.0)),
@@ -437,9 +437,9 @@ impl FlowState {
         }
     }
 
-    fn update_from_probe(&mut self, probe: &ProbeState) {
+    fn update_from_probe(&mut self, probe: &ProbeStatus) {
         match probe {
-            ProbeState::Complete(complete) => {
+            ProbeStatus::Complete(complete) => {
                 self.update_lowest_ttl(complete.ttl);
                 self.update_round(complete.round);
                 let index = usize::from(complete.ttl.0) - 1;
@@ -481,7 +481,7 @@ impl FlowState {
                 hop.last_sequence = complete.sequence.0;
                 hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
             }
-            ProbeState::Awaited(awaited) => {
+            ProbeStatus::Awaited(awaited) => {
                 self.update_lowest_ttl(awaited.ttl);
                 self.update_round(awaited.round);
                 let index = usize::from(awaited.ttl.0) - 1;
@@ -495,7 +495,7 @@ impl FlowState {
                 self.hops[index].last_dest_port = awaited.dest_port.0;
                 self.hops[index].last_sequence = awaited.sequence.0;
             }
-            ProbeState::NotSent | ProbeState::Skipped => {}
+            ProbeStatus::NotSent | ProbeStatus::Skipped => {}
         }
     }
 
@@ -519,7 +519,7 @@ impl FlowState {
 mod tests {
     use super::*;
     use crate::{
-        CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeState, Sequence,
+        CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeStatus, Sequence,
         TimeToLive, TraceId,
     };
     use anyhow::anyhow;
@@ -554,7 +554,7 @@ mod tests {
     #[derive(Deserialize, Debug)]
     #[serde(deny_unknown_fields)]
     #[serde(try_from = "String")]
-    struct ProbeData(ProbeState);
+    struct ProbeData(ProbeStatus);
 
     impl TryFrom<String> for ProbeData {
         type Error = anyhow::Error;
@@ -572,9 +572,9 @@ mod tests {
                 let sent = SystemTime::now();
                 let flags = Flags::empty();
                 let state = match state.as_str() {
-                    "n" => Ok(ProbeState::NotSent),
-                    "s" => Ok(ProbeState::Skipped),
-                    "a" => Ok(ProbeState::Awaited(Probe::new(
+                    "n" => Ok(ProbeStatus::NotSent),
+                    "s" => Ok(ProbeStatus::Skipped),
+                    "a" => Ok(ProbeStatus::Awaited(Probe::new(
                         sequence,
                         TraceId(0),
                         src_port,
@@ -589,7 +589,7 @@ mod tests {
                         let duration = Duration::from_millis(u64::from_str(values[2])?);
                         let received = sent.add(duration);
                         let icmp_packet_type = IcmpPacketType::NotApplicable;
-                        Ok(ProbeState::Complete(
+                        Ok(ProbeStatus::Complete(
                             Probe::new(
                                 sequence,
                                 TraceId(0),
@@ -620,7 +620,7 @@ mod tests {
     /// A helper struct so wwe may inject the round into the probes.
     struct ProbeRound(ProbeData, Round);
 
-    impl From<ProbeRound> for ProbeState {
+    impl From<ProbeRound> for ProbeStatus {
         fn from(value: ProbeRound) -> Self {
             let probe_data = value.0;
             let round = value.1;

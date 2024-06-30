@@ -79,7 +79,7 @@ pub use error::Error;
 pub use flows::{FlowEntry, FlowId};
 pub use probe::{
     Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
-    ProbeComplete, ProbeState, UnknownExtension,
+    ProbeComplete, ProbeStatus, UnknownExtension,
 };
 pub use state::{Hop, TraceState};
 pub use strategy::{CompletionReason, TracerRound, TracerStrategy};

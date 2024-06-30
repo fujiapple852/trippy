@@ -7,7 +7,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy_core::{
     defaults, Builder, CompletionReason, MultipathStrategy, PortDirection, PrivilegeMode,
-    ProbeState, Protocol, TimeToLive, TracerRound,
+    ProbeStatus, Protocol, TimeToLive, TracerRound,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -99,11 +99,11 @@ impl Tracer {
         for hop in round
             .probes
             .iter()
-            .filter(|p| matches!(p, ProbeState::Awaited(_) | ProbeState::Complete(_)))
+            .filter(|p| matches!(p, ProbeStatus::Awaited(_) | ProbeStatus::Complete(_)))
             .take(round.largest_ttl.0 as usize)
         {
             match hop {
-                ProbeState::Complete(complete) => {
+                ProbeStatus::Complete(complete) => {
                     info!(
                         "{} {} {}",
                         complete.round.0,
@@ -124,7 +124,7 @@ impl Tracer {
                     let expected_ttl = TimeToLive(self.sim.hops[hop_index].ttl);
                     assert_eq_result!(result, expected_ttl, complete.ttl);
                 }
-                ProbeState::Awaited(awaited) => {
+                ProbeStatus::Awaited(awaited) => {
                     info!("{} {} * * *", awaited.round.0, awaited.ttl.0);
 
                     let hop_index = usize::from(awaited.ttl.0 - 1);
