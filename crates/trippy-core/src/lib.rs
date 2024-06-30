@@ -85,6 +85,6 @@ pub use state::{Hop, TraceState};
 pub use strategy::{CompletionReason, Strategy, TracerRound};
 pub use tracer::Tracer;
 pub use types::{
-    Flags, MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, Round, Sequence, TimeToLive,
+    Flags, MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, RoundId, Sequence, TimeToLive,
     TraceId, TypeOfService,
 };
