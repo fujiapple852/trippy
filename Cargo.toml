@@ -65,7 +65,7 @@ rust-i18n = "3.1.2"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = { version = "3.11.0", default-features = false, features = ["macros"] }
-serde_yaml = "=0.9.33"
+serde_yml = "0.0.12"
 socket2 = "0.5.7"
 strum = { version = "0.26.3", default-features = false }
 sys-locale = "0.3.1"
