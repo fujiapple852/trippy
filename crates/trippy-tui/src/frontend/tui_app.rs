@@ -78,7 +78,7 @@ impl TuiApp {
         }
     }
 
-    pub fn tracer_data(&self) -> &TraceState {
+    pub const fn tracer_data(&self) -> &TraceState {
         &self.selected_tracer_data
     }
 

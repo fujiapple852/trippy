@@ -96,7 +96,7 @@ pub enum IpProtocol {
 
 impl IpProtocol {
     #[must_use]
-    pub fn id(self) -> u8 {
+    pub const fn id(self) -> u8 {
         match self {
             Self::Icmp => 1,
             Self::IcmpV6 => 58,
@@ -107,7 +107,7 @@ impl IpProtocol {
     }
 
     #[must_use]
-    pub fn new(value: u8) -> Self {
+    pub const fn new(value: u8) -> Self {
         Self::Other(value)
     }
 }

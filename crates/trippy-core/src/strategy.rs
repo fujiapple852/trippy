@@ -25,7 +25,7 @@ pub struct TracerRound<'a> {
 
 impl<'a> TracerRound<'a> {
     #[must_use]
-    pub fn new(
+    pub const fn new(
         probes: &'a [ProbeState],
         largest_ttl: TimeToLive,
         reason: CompletionReason,
@@ -251,7 +251,11 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     ///
     /// For ICMP probe responses no additional checks are required.
     fn validate(&self, resp: &ProbeResponseData) -> bool {
-        fn validate_ports(port_direction: PortDirection, src_port: u16, dest_port: u16) -> bool {
+        const fn validate_ports(
+            port_direction: PortDirection,
+            src_port: u16,
+            dest_port: u16,
+        ) -> bool {
             match port_direction {
                 PortDirection::FixedSrc(src) if src.0 == src_port => true,
                 PortDirection::FixedDest(dest) if dest.0 == dest_port => true,
@@ -545,7 +549,7 @@ mod state {
         }
 
         /// Are all rounds complete?
-        pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
+        pub const fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
             match max_rounds {
                 None => false,
                 Some(max_rounds) => self.round.0 > max_rounds.0.get() - 1,
@@ -621,7 +625,7 @@ mod state {
         }
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current ICMP probe.
-        fn probe_icmp_data(&self) -> (Port, Port, TraceId, Flags) {
+        const fn probe_icmp_data(&self) -> (Port, Port, TraceId, Flags) {
             (
                 Port(0),
                 Port(0),

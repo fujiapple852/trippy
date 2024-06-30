@@ -80,7 +80,7 @@ pub enum PrivilegeMode {
 
 impl PrivilegeMode {
     #[must_use]
-    pub fn is_unprivileged(self) -> bool {
+    pub const fn is_unprivileged(self) -> bool {
         match self {
             Self::Privileged => false,
             Self::Unprivileged => true,
@@ -108,7 +108,7 @@ pub enum IcmpExtensionParseMode {
 
 impl IcmpExtensionParseMode {
     #[must_use]
-    pub fn is_enabled(self) -> bool {
+    pub const fn is_enabled(self) -> bool {
         match self {
             Self::Disabled => false,
             Self::Enabled => true,
@@ -215,29 +215,29 @@ pub enum PortDirection {
 
 impl PortDirection {
     #[must_use]
-    pub fn new_fixed_src(src: u16) -> Self {
+    pub const fn new_fixed_src(src: u16) -> Self {
         Self::FixedSrc(Port(src))
     }
 
     #[must_use]
-    pub fn new_fixed_dest(dest: u16) -> Self {
+    pub const fn new_fixed_dest(dest: u16) -> Self {
         Self::FixedDest(Port(dest))
     }
 
     #[must_use]
-    pub fn new_fixed_both(src: u16, dest: u16) -> Self {
+    pub const fn new_fixed_both(src: u16, dest: u16) -> Self {
         Self::FixedBoth(Port(src), Port(dest))
     }
 
     #[must_use]
-    pub fn src(&self) -> Option<Port> {
+    pub const fn src(&self) -> Option<Port> {
         match *self {
             Self::FixedSrc(src) | Self::FixedBoth(src, _) => Some(src),
             _ => None,
         }
     }
     #[must_use]
-    pub fn dest(&self) -> Option<Port> {
+    pub const fn dest(&self) -> Option<Port> {
         match *self {
             Self::FixedDest(dest) | Self::FixedBoth(_, dest) => Some(dest),
             _ => None,

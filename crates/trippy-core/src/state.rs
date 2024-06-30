@@ -41,7 +41,7 @@ impl TraceState {
 
     /// Return the id of the default flow.
     #[must_use]
-    pub fn default_flow_id() -> FlowId {
+    pub const fn default_flow_id() -> FlowId {
         FlowId(0)
     }
 
@@ -88,7 +88,7 @@ impl TraceState {
 
     /// The `FlowId` for the current round.
     #[must_use]
-    pub fn round_flow_id(&self) -> FlowId {
+    pub const fn round_flow_id(&self) -> FlowId {
         self.round_flow_id
     }
 
@@ -109,13 +109,13 @@ impl TraceState {
 
     /// The maximum number of samples to record per hop.
     #[must_use]
-    pub fn max_samples(&self) -> usize {
+    pub const fn max_samples(&self) -> usize {
         self.state_config.max_samples
     }
 
     /// The maximum number of flows to record.
     #[must_use]
-    pub fn max_flows(&self) -> usize {
+    pub const fn max_flows(&self) -> usize {
         self.state_config.max_flows
     }
 
@@ -195,7 +195,7 @@ pub struct Hop {
 impl Hop {
     /// The time-to-live of this hop.
     #[must_use]
-    pub fn ttl(&self) -> u8 {
+    pub const fn ttl(&self) -> u8 {
         self.ttl
     }
 
@@ -216,13 +216,13 @@ impl Hop {
 
     /// The total number of probes sent.
     #[must_use]
-    pub fn total_sent(&self) -> usize {
+    pub const fn total_sent(&self) -> usize {
         self.total_sent
     }
 
     /// The total number of probes responses received.
     #[must_use]
-    pub fn total_recv(&self) -> usize {
+    pub const fn total_recv(&self) -> usize {
         self.total_recv
     }
 
@@ -289,37 +289,37 @@ impl Hop {
 
     /// The jitter average duration of all probes.
     #[must_use]
-    pub fn javg_ms(&self) -> f64 {
+    pub const fn javg_ms(&self) -> f64 {
         self.javg
     }
 
     /// The jitter interval of all probes.
     #[must_use]
-    pub fn jinta(&self) -> f64 {
+    pub const fn jinta(&self) -> f64 {
         self.jinta
     }
 
     /// The source port for last probe for this hop.
     #[must_use]
-    pub fn last_src_port(&self) -> u16 {
+    pub const fn last_src_port(&self) -> u16 {
         self.last_src_port
     }
 
     /// The destination port for last probe for this hop.
     #[must_use]
-    pub fn last_dest_port(&self) -> u16 {
+    pub const fn last_dest_port(&self) -> u16 {
         self.last_dest_port
     }
 
     /// The sequence number for the last probe for this hop.
     #[must_use]
-    pub fn last_sequence(&self) -> u16 {
+    pub const fn last_sequence(&self) -> u16 {
         self.last_sequence
     }
 
     /// The icmp packet type for the last probe for this hop.
     #[must_use]
-    pub fn last_icmp_packet_type(&self) -> Option<IcmpPacketType> {
+    pub const fn last_icmp_packet_type(&self) -> Option<IcmpPacketType> {
         self.last_icmp_packet_type
     }
 
@@ -330,7 +330,7 @@ impl Hop {
     }
 
     #[must_use]
-    pub fn extensions(&self) -> Option<&Extensions> {
+    pub const fn extensions(&self) -> Option<&Extensions> {
         self.extensions.as_ref()
     }
 }
@@ -404,11 +404,11 @@ impl FlowState {
         }
     }
 
-    fn is_target(&self, hop: &Hop) -> bool {
+    const fn is_target(&self, hop: &Hop) -> bool {
         self.highest_ttl == hop.ttl
     }
 
-    fn is_in_round(&self, hop: &Hop) -> bool {
+    const fn is_in_round(&self, hop: &Hop) -> bool {
         hop.ttl <= self.highest_ttl_for_round
     }
 
@@ -420,11 +420,11 @@ impl FlowState {
         }
     }
 
-    fn round(&self) -> Option<usize> {
+    const fn round(&self) -> Option<usize> {
         self.round
     }
 
-    fn round_count(&self) -> usize {
+    const fn round_count(&self) -> usize {
         self.round_count
     }
 

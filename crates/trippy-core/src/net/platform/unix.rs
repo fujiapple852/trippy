@@ -39,7 +39,7 @@ mod address {
     /// so we skip the check and return network byte order unconditionally.
     #[cfg(target_os = "linux")]
     #[allow(clippy::unnecessary_wraps)]
-    pub fn for_address(_src_addr: IpAddr) -> Result<Ipv4ByteOrder> {
+    pub const fn for_address(_src_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
 

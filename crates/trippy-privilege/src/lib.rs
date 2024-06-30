@@ -119,7 +119,7 @@ impl Privilege {
 
     /// Create a new Privilege instance.
     #[must_use]
-    pub fn new(has_privileges: bool, needs_privileges: bool) -> Self {
+    pub const fn new(has_privileges: bool, needs_privileges: bool) -> Self {
         Self {
             has_privileges,
             needs_privileges,
@@ -128,7 +128,7 @@ impl Privilege {
 
     /// Are we running with the privileges required for raw sockets?
     #[must_use]
-    pub fn has_privileges(&self) -> bool {
+    pub const fn has_privileges(&self) -> bool {
         self.has_privileges
     }
 
@@ -137,7 +137,7 @@ impl Privilege {
     /// Specifically, each platform requires privileges unless it supports the `IPPROTO_ICMP` socket
     /// type which _also_ allows the `IP_HDRINCL` socket option to be set.
     #[must_use]
-    pub fn needs_privileges(&self) -> bool {
+    pub const fn needs_privileges(&self) -> bool {
         self.needs_privileges
     }
 
@@ -200,7 +200,7 @@ impl Privilege {
     /// Drop all privileges.
     ///
     /// This is a no-op on non-Linux unix systems.
-    pub fn drop_privileges() -> Result<()> {
+    pub const fn drop_privileges() -> Result<()> {
         Ok(())
     }
 
@@ -214,7 +214,7 @@ impl Privilege {
     /// future.
     ///
     /// `NetBSD`, `OpenBSD` and `FreeBSD` do not support `IPPROTO_ICMP`.
-    fn check_needs_privileges() -> bool {
+    const fn check_needs_privileges() -> bool {
         true
     }
 
@@ -224,7 +224,7 @@ impl Privilege {
     /// Does the platform always require privileges?
     ///
     /// `macOS` supports both privileged and unprivileged modes.
-    fn check_needs_privileges() -> bool {
+    const fn check_needs_privileges() -> bool {
         false
     }
 
@@ -315,7 +315,7 @@ impl Privilege {
     /// Drop all capabilities.
     ///
     /// This is a no-op on `Windows`.
-    pub fn drop_privileges() -> Result<()> {
+    pub const fn drop_privileges() -> Result<()> {
         Ok(())
     }
 
@@ -323,7 +323,7 @@ impl Privilege {
     /// Does the platform always require privileges?
     ///
     /// Privileges are always required on `Windows`.
-    fn check_needs_privileges() -> bool {
+    const fn check_needs_privileges() -> bool {
         true
     }
 }

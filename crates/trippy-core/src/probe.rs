@@ -64,7 +64,7 @@ impl Probe {
 
     /// A response has been received and the probe is now complete.
     #[must_use]
-    pub fn complete(
+    pub const fn complete(
         self,
         host: IpAddr,
         received: SystemTime,
@@ -197,7 +197,7 @@ pub struct ProbeResponseData {
 }
 
 impl ProbeResponseData {
-    pub fn new(recv: SystemTime, addr: IpAddr, resp_seq: ProbeResponseSeq) -> Self {
+    pub const fn new(recv: SystemTime, addr: IpAddr, resp_seq: ProbeResponseSeq) -> Self {
         Self {
             recv,
             addr,
@@ -223,7 +223,7 @@ pub struct ProbeResponseSeqIcmp {
 }
 
 impl ProbeResponseSeqIcmp {
-    pub fn new(identifier: u16, sequence: u16) -> Self {
+    pub const fn new(identifier: u16, sequence: u16) -> Self {
         Self {
             identifier,
             sequence,
@@ -268,7 +268,7 @@ pub struct ProbeResponseSeqUdp {
 }
 
 impl ProbeResponseSeqUdp {
-    pub fn new(
+    pub const fn new(
         identifier: u16,
         dest_addr: IpAddr,
         src_port: u16,
@@ -307,7 +307,7 @@ pub struct ProbeResponseSeqTcp {
 }
 
 impl ProbeResponseSeqTcp {
-    pub fn new(dest_addr: IpAddr, src_port: u16, dest_port: u16) -> Self {
+    pub const fn new(dest_addr: IpAddr, src_port: u16, dest_port: u16) -> Self {
         Self {
             dest_addr,
             src_port,

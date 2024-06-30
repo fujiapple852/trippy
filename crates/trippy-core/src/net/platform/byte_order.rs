@@ -54,7 +54,7 @@ impl Ipv4ByteOrder {
 
     /// Adjust the IPv4 `total_length` header.
     #[must_use]
-    pub fn adjust_length(self, ipv4_total_length: u16) -> u16 {
+    pub const fn adjust_length(self, ipv4_total_length: u16) -> u16 {
         match self {
             #[cfg(all(unix, not(target_os = "linux"), not(target_os = "windows")))]
             Self::Host => ipv4_total_length.swap_bytes(),

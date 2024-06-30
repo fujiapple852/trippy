@@ -110,13 +110,13 @@ pub struct Column {
 }
 
 impl Column {
-    pub fn new_shown(typ: ColumnType) -> Self {
+    pub const fn new_shown(typ: ColumnType) -> Self {
         Self {
             typ,
             status: ColumnStatus::Shown,
         }
     }
-    pub fn new_hidden(typ: ColumnType) -> Self {
+    pub const fn new_hidden(typ: ColumnType) -> Self {
         Self {
             typ,
             status: ColumnStatus::Hidden,
@@ -267,7 +267,7 @@ impl Display for ColumnType {
 
 impl ColumnType {
     /// The width of the column.
-    pub(self) fn width(self) -> ColumnWidth {
+    pub(self) const fn width(self) -> ColumnWidth {
         #[allow(clippy::match_same_arms)]
         match self {
             Self::Ttl => ColumnWidth::Fixed(4),

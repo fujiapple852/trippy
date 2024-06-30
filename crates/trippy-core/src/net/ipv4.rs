@@ -333,13 +333,13 @@ fn make_ipv4_packet<'a>(
     Ok(ipv4)
 }
 
-fn icmp_payload_size(packet_size: usize) -> usize {
+const fn icmp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv4Packet::minimum_packet_size();
     let icmp_header_size = IcmpPacket::minimum_packet_size();
     packet_size - icmp_header_size - ip_header_size
 }
 
-fn udp_payload_size(packet_size: usize) -> usize {
+const fn udp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv4Packet::minimum_packet_size();
     let udp_header_size = UdpPacket::minimum_packet_size();
     packet_size - udp_header_size - ip_header_size
