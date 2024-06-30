@@ -29,16 +29,16 @@ trippy-core = { version = "0.11.0-dev", path = "crates/trippy-core" }
 trippy-privilege = { version = "0.11.0-dev", path = "crates/trippy-privilege" }
 trippy-dns = { version = "0.11.0-dev", path = "crates/trippy-dns" }
 trippy-packet = { version = "0.11.0-dev", path = "crates/trippy-packet" }
-thiserror = "1.0.60"
 anyhow = "1.0.83"
+derive_more = { version = "0.99.18", default-features = false, features = [ "mul", "add", "add_assign" ] }
+hex-literal = "0.4.1"
 itertools = "0.13.0"
+parking_lot = "0.12.3"
 serde = { version = "1.0.201", default-features = false, features = ["derive"] }
 serde_yaml = "=0.9.33"
-tracing = { version = "0.1.40" }
-derive_more = { version = "0.99.18", default-features = false, features = [ "mul", "add", "add_assign" ] }
 test-case = "3.3.1"
-parking_lot = "0.12.3"
-hex-literal = "0.4.1"
+thiserror = "1.0.60"
+tracing = { version = "0.1.40" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
