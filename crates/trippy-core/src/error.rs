@@ -3,7 +3,6 @@ use std::io;
 use std::io::ErrorKind;
 use std::net::{IpAddr, SocketAddr};
 use thiserror::Error;
-use trippy_packet::error::PacketError;
 
 /// A tracer error result.
 pub type TraceResult<T> = Result<T, TracerError>;
@@ -14,7 +13,7 @@ pub enum TracerError {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
     #[error("invalid packet: {0}")]
-    PacketError(#[from] PacketError),
+    PacketError(#[from] trippy_packet::error::Error),
     #[error("unknown interface: {0}")]
     UnknownInterface(String),
     #[error("invalid config: {0}")]

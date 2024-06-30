@@ -1,6 +1,6 @@
 pub mod extension_structure {
     use crate::buffer::Buffer;
-    use crate::error::{PacketError, PacketResult};
+    use crate::error::{Error, Result};
     use crate::icmp_extension::extension_object::ExtensionObjectPacket;
 
     /// Represents an ICMP `ExtensionsPacket` pseudo object.
@@ -13,13 +13,13 @@ pub mod extension_structure {
     }
 
     impl<'a> ExtensionsPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> PacketResult<ExtensionsPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionsPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionsPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -27,13 +27,13 @@ pub mod extension_structure {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> PacketResult<ExtensionsPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionsPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionsPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -153,7 +153,7 @@ pub mod extension_structure {
 
 pub mod extension_header {
     use crate::buffer::Buffer;
-    use crate::error::{PacketError, PacketResult};
+    use crate::error::{Error, Result};
     use std::fmt::{Debug, Formatter};
 
     const VERSION_OFFSET: usize = 0;
@@ -169,13 +169,13 @@ pub mod extension_header {
     }
 
     impl<'a> ExtensionHeaderPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> PacketResult<ExtensionHeaderPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionHeaderPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionHeaderPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -183,13 +183,13 @@ pub mod extension_header {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> PacketResult<ExtensionHeaderPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionHeaderPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionHeaderPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -287,7 +287,7 @@ pub mod extension_header {
 
 pub mod extension_object {
     use crate::buffer::Buffer;
-    use crate::error::{PacketError, PacketResult};
+    use crate::error::{Error, Result};
     use crate::fmt_payload;
     use std::fmt::{Debug, Formatter};
 
@@ -350,13 +350,13 @@ pub mod extension_object {
     }
 
     impl<'a> ExtensionObjectPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> PacketResult<ExtensionObjectPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionObjectPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionObjectPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -364,13 +364,13 @@ pub mod extension_object {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> PacketResult<ExtensionObjectPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionObjectPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("ExtensionObjectPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -519,7 +519,7 @@ pub mod extension_object {
 
 pub mod mpls_label_stack {
     use crate::buffer::Buffer;
-    use crate::error::{PacketError, PacketResult};
+    use crate::error::{Error, Result};
     use crate::icmp_extension::mpls_label_stack_member::MplsLabelStackMemberPacket;
 
     /// Represents an ICMP `MplsLabelStackPacket`.
@@ -532,13 +532,13 @@ pub mod mpls_label_stack {
     }
 
     impl<'a> MplsLabelStackPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> PacketResult<MplsLabelStackPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<MplsLabelStackPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("MplsLabelStackPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -546,13 +546,13 @@ pub mod mpls_label_stack {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> PacketResult<MplsLabelStackPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<MplsLabelStackPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("MplsLabelStackPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -634,7 +634,7 @@ pub mod mpls_label_stack {
 
 pub mod mpls_label_stack_member {
     use crate::buffer::Buffer;
-    use crate::error::{PacketError, PacketResult};
+    use crate::error::{Error, Result};
     use std::fmt::{Debug, Formatter};
 
     const LABEL_OFFSET: usize = 0;
@@ -652,13 +652,13 @@ pub mod mpls_label_stack_member {
     }
 
     impl<'a> MplsLabelStackMemberPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> PacketResult<MplsLabelStackMemberPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<MplsLabelStackMemberPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("MplsLabelStackMemberPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
@@ -666,13 +666,13 @@ pub mod mpls_label_stack_member {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> PacketResult<MplsLabelStackMemberPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<MplsLabelStackMemberPacket<'_>> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
                 })
             } else {
-                Err(PacketError::InsufficientPacketBuffer(
+                Err(Error::InsufficientPacketBuffer(
                     String::from("MplsLabelStackMemberPacket"),
                     Self::minimum_packet_size(),
                     packet.len(),
