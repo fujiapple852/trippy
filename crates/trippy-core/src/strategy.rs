@@ -423,7 +423,7 @@ mod state {
     use crate::constants::MAX_SEQUENCE_PER_ROUND;
     use crate::probe::{Extensions, IcmpPacketCode, IcmpPacketType, Probe, ProbeStatus};
     use crate::strategy::StrategyConfig;
-    use crate::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
+    use crate::types::{MaxRounds, Port, RoundId, Sequence, TimeToLive, TraceId};
     use crate::{Flags, MultipathStrategy, PortDirection, Protocol};
     use std::array::from_fn;
     use std::net::IpAddr;
@@ -469,7 +469,7 @@ mod state {
         /// The time-to-live for the _next_ `EchoRequest` packet to be sent.
         ttl: TimeToLive,
         /// The current round.
-        round: Round,
+        round: RoundId,
         /// The timestamp of when the current round started.
         round_start: SystemTime,
         /// Did we receive an `EchoReply` from the target host in this round?
@@ -493,7 +493,7 @@ mod state {
                 sequence: config.initial_sequence,
                 round_sequence: config.initial_sequence,
                 ttl: config.first_ttl,
-                round: Round(0),
+                round: RoundId(0),
                 round_start: SystemTime::now(),
                 target_found: false,
                 max_received_ttl: None,
@@ -888,7 +888,7 @@ mod state {
             self.received_time = None;
             self.round_start = SystemTime::now();
             self.max_received_ttl = None;
-            self.round += Round(1);
+            self.round += RoundId(1);
             self.ttl = first_ttl;
         }
 
@@ -931,7 +931,7 @@ mod state {
             let mut state = TracerState::new(cfg(Sequence(33000)));
 
             // Validate the initial TracerState
-            assert_eq!(state.round, Round(0));
+            assert_eq!(state.round, RoundId(0));
             assert_eq!(state.sequence, Sequence(33000));
             assert_eq!(state.round_sequence, Sequence(33000));
             assert_eq!(state.ttl, TimeToLive(1));
@@ -949,7 +949,7 @@ mod state {
             let probe_1 = state.next_probe(sent_1);
             assert_eq!(probe_1.sequence, Sequence(33000));
             assert_eq!(probe_1.ttl, TimeToLive(1));
-            assert_eq!(probe_1.round, Round(0));
+            assert_eq!(probe_1.round, RoundId(0));
             assert_eq!(probe_1.sent, sent_1);
 
             // Update the state of the probe 1 after receiving a TimeExceeded
@@ -968,7 +968,7 @@ mod state {
             let probe_1_fetch = state.probe_at(Sequence(33000)).try_into_complete().unwrap();
             assert_eq!(probe_1_fetch.sequence, Sequence(33000));
             assert_eq!(probe_1_fetch.ttl, TimeToLive(1));
-            assert_eq!(probe_1_fetch.round, Round(0));
+            assert_eq!(probe_1_fetch.round, RoundId(0));
             assert_eq!(probe_1_fetch.received, received_1);
             assert_eq!(probe_1_fetch.host, host);
             assert_eq!(probe_1_fetch.sent, sent_1);
@@ -978,7 +978,7 @@ mod state {
             );
 
             // Validate the TracerState after the update
-            assert_eq!(state.round, Round(0));
+            assert_eq!(state.round, RoundId(0));
             assert_eq!(state.sequence, Sequence(33001));
             assert_eq!(state.round_sequence, Sequence(33000));
             assert_eq!(state.ttl, TimeToLive(2));
@@ -999,7 +999,7 @@ mod state {
             state.advance_round(TimeToLive(1));
 
             // Validate the TracerState after the round update
-            assert_eq!(state.round, Round(1));
+            assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33001));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(1));
@@ -1013,7 +1013,7 @@ mod state {
             let probe_2 = state.next_probe(sent_2);
             assert_eq!(probe_2.sequence, Sequence(33001));
             assert_eq!(probe_2.ttl, TimeToLive(1));
-            assert_eq!(probe_2.round, Round(1));
+            assert_eq!(probe_2.round, RoundId(1));
             assert_eq!(probe_2.sent, sent_2);
 
             // Prepare probe 3 (round 1, sequence 33002, ttl 2) for sending
@@ -1021,7 +1021,7 @@ mod state {
             let probe_3 = state.next_probe(sent_3);
             assert_eq!(probe_3.sequence, Sequence(33002));
             assert_eq!(probe_3.ttl, TimeToLive(2));
-            assert_eq!(probe_3.round, Round(1));
+            assert_eq!(probe_3.round, RoundId(1));
             assert_eq!(probe_3.sent, sent_3);
 
             // Update the state of probe 2 after receiving a TimeExceeded
@@ -1038,7 +1038,7 @@ mod state {
             let probe_2_recv = state.probe_at(Sequence(33001));
 
             // Validate the TracerState after the update to probe 2
-            assert_eq!(state.round, Round(1));
+            assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33003));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(3));
@@ -1063,7 +1063,7 @@ mod state {
             let probe_3_recv = state.probe_at(Sequence(33002));
 
             // Validate the TracerState after the update to probe 3
-            assert_eq!(state.round, Round(1));
+            assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33003));
             assert_eq!(state.round_sequence, Sequence(33001));
             assert_eq!(state.ttl, TimeToLive(3));
@@ -1087,7 +1087,7 @@ mod state {
             // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
             let initial_sequence = Sequence(65278);
             let mut state = TracerState::new(cfg(initial_sequence));
-            assert_eq!(state.round, Round(0));
+            assert_eq!(state.round, RoundId(0));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
 
@@ -1116,7 +1116,7 @@ mod state {
 
             // Advance the round, which will wrap the sequence back to initial_sequence
             state.advance_round(TimeToLive(1));
-            assert_eq!(state.round, Round(1));
+            assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
 
@@ -1155,7 +1155,7 @@ mod state {
                 }
                 state.advance_round(TimeToLive(1));
             }
-            assert_eq!(state.round, Round(2000));
+            assert_eq!(state.round, RoundId(2000));
             assert_eq!(state.round_sequence, Sequence(57130));
             assert_eq!(state.sequence, Sequence(57130));
         }
@@ -1186,7 +1186,7 @@ mod state {
                 }
                 state.advance_round(TimeToLive(1));
             }
-            assert_eq!(state.round, Round(2000));
+            assert_eq!(state.round, RoundId(2000));
             assert_eq!(state.round_sequence, Sequence(41128));
             assert_eq!(state.sequence, Sequence(41128));
         }

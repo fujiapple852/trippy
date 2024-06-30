@@ -503,7 +503,7 @@ mod tests {
     use crate::error::IoResult;
     use crate::mocket_read;
     use crate::net::socket::MockSocket;
-    use crate::{Flags, Port, Round, TimeToLive};
+    use crate::{Flags, Port, RoundId, TimeToLive};
     use mockall::predicate;
     use std::str::FromStr;
     use std::sync::Mutex;
@@ -1596,7 +1596,7 @@ mod tests {
             Port(0),
             Port(0),
             TimeToLive(10),
-            Round(0),
+            RoundId(0),
             SystemTime::now(),
             Flags::empty(),
         )
@@ -1609,7 +1609,7 @@ mod tests {
             Port(src_port),
             Port(dest_port),
             TimeToLive(10),
-            Round(0),
+            RoundId(0),
             SystemTime::now(),
             Flags::empty(),
         )

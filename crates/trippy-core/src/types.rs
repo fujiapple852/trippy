@@ -4,7 +4,7 @@ use std::num::NonZeroUsize;
 
 /// `Round` newtype.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd, AddAssign)]
-pub struct Round(pub usize);
+pub struct RoundId(pub usize);
 
 /// `MaxRound` newtype.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]

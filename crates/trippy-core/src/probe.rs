@@ -1,4 +1,4 @@
-use crate::types::{Flags, Port, Round, Sequence, TimeToLive, TraceId};
+use crate::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 
@@ -30,7 +30,7 @@ pub struct Probe {
     /// The TTL of the probe.
     pub ttl: TimeToLive,
     /// Which round the probe belongs to.
-    pub round: Round,
+    pub round: RoundId,
     /// Timestamp when the probe was sent.
     pub sent: SystemTime,
     /// Probe flags.
@@ -46,7 +46,7 @@ impl Probe {
         src_port: Port,
         dest_port: Port,
         ttl: TimeToLive,
-        round: Round,
+        round: RoundId,
         sent: SystemTime,
         flags: Flags,
     ) -> Self {
@@ -103,7 +103,7 @@ pub struct ProbeComplete {
     /// The TTL of the probe.
     pub ttl: TimeToLive,
     /// Which round the probe belongs to.
-    pub round: Round,
+    pub round: RoundId,
     /// Timestamp when the probe was sent.
     pub sent: SystemTime,
     /// The host which responded to the probe.

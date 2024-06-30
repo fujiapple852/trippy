@@ -1,7 +1,7 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
-use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, TimeToLive, TracerRound};
+use crate::{Extensions, IcmpPacketType, ProbeStatus, RoundId, TimeToLive, TracerRound};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
@@ -499,7 +499,7 @@ impl FlowState {
         }
     }
 
-    fn update_round(&mut self, round: Round) {
+    fn update_round(&mut self, round: RoundId) {
         self.round = match self.round {
             None => Some(round.0),
             Some(r) => Some(r.max(round.0)),
@@ -568,7 +568,7 @@ mod tests {
                 let sequence = Sequence(u16::from_str(values[4])?);
                 let src_port = Port(u16::from_str(values[5])?);
                 let dest_port = Port(u16::from_str(values[6])?);
-                let round = Round(0); // note we inject this later, see ProbeRound
+                let round = RoundId(0); // note we inject this later, see ProbeRound
                 let sent = SystemTime::now();
                 let flags = Flags::empty();
                 let state = match state.as_str() {
@@ -618,7 +618,7 @@ mod tests {
     }
 
     /// A helper struct so wwe may inject the round into the probes.
-    struct ProbeRound(ProbeData, Round);
+    struct ProbeRound(ProbeData, RoundId);
 
     impl From<ProbeRound> for ProbeStatus {
         fn from(value: ProbeRound) -> Self {
@@ -684,7 +684,7 @@ mod tests {
             let probes = round
                 .probes
                 .into_iter()
-                .map(|p| ProbeRound(p, Round(i)))
+                .map(|p| ProbeRound(p, RoundId(i)))
                 .map(Into::into)
                 .collect::<Vec<_>>();
             let largest_ttl = TimeToLive(scenario.largest_ttl);
