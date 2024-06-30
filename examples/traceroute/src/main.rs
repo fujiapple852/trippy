@@ -4,7 +4,7 @@ use itertools::Itertools;
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::core::{Builder, Port, PortDirection, Protocol, State};
+use trippy::core::{Builder, PortDirection, Protocol, State};
 use trippy::dns::{Config, DnsResolver, Resolver};
 
 /// A toy clone of BSD4.3 (macOS) traceroute.
@@ -50,9 +50,9 @@ fn main() -> anyhow::Result<()> {
     let tos = args.tos.unwrap_or(0);
     let pausemecs = args.pausemsecs.unwrap_or(100);
     let port_direction = if args.evasion {
-        PortDirection::FixedDest(Port(port))
+        PortDirection::new_fixed_dest(port)
     } else {
-        PortDirection::FixedSrc(Port(port))
+        PortDirection::new_fixed_src(port)
     };
     let resolver = DnsResolver::start(Config::default())?;
     let addrs: Vec<_> = resolver
