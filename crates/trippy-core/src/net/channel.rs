@@ -2,7 +2,7 @@ use crate::config::{ChannelConfig, IcmpExtensionParseMode};
 use crate::error::{Error, Result};
 use crate::net::socket::Socket;
 use crate::net::{ipv4, ipv6, platform, Network};
-use crate::probe::{Probe, ProbeResponse};
+use crate::probe::{Probe, Response};
 use crate::types::{PacketSize, PayloadPattern, TypeOfService};
 use crate::{Port, PrivilegeMode, Protocol, Sequence};
 use arrayvec::ArrayVec;
@@ -84,7 +84,7 @@ impl<S: Socket> Network for Channel<S> {
         }
     }
     #[instrument(skip_all)]
-    fn recv_probe(&mut self) -> Result<Option<ProbeResponse>> {
+    fn recv_probe(&mut self) -> Result<Option<Response>> {
         let prob_response = match self.protocol {
             Protocol::Icmp | Protocol::Udp => self.recv_icmp_probe(),
             Protocol::Tcp => match self.recv_tcp_sockets()? {
@@ -184,7 +184,7 @@ impl<S: Socket> Channel<S> {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     #[instrument(skip(self))]
-    fn recv_icmp_probe(&mut self) -> Result<Option<ProbeResponse>> {
+    fn recv_icmp_probe(&mut self) -> Result<Option<Response>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
                 IpAddr::V4(_) => ipv4::recv_icmp_probe(
@@ -208,7 +208,7 @@ impl<S: Socket> Channel<S> {
     ///
     /// Any TCP socket which has not connected or failed after a timeout will be removed.
     #[instrument(skip(self))]
-    fn recv_tcp_sockets(&mut self) -> Result<Option<ProbeResponse>> {
+    fn recv_tcp_sockets(&mut self) -> Result<Option<Response>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
         let found_index = self

@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::probe::{Probe, ProbeResponse};
+use crate::probe::{Probe, Response};
 
 /// Common types and helper functions.
 mod common;
@@ -37,5 +37,5 @@ pub trait Network {
     /// Receive the next Icmp packet and return a `ProbeResponse`.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe(&mut self) -> Result<Option<ProbeResponse>>;
+    fn recv_probe(&mut self) -> Result<Option<Response>>;
 }

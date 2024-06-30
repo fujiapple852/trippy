@@ -3,8 +3,8 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp, ProbeStatus,
+    ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
+    ProbeResponseSeqUdp, Response, ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
 use crate::{MultipathStrategy, PortDirection, Protocol};
@@ -149,7 +149,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> Result<()> {
         let next = network.recv_probe()?;
         match next {
-            Some(ProbeResponse::TimeExceeded(data, icmp_code, extensions)) => {
+            Some(Response::TimeExceeded(data, icmp_code, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 let is_target = host == self.config.target_addr;
                 if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
@@ -158,19 +158,19 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                     );
                 }
             }
-            Some(ProbeResponse::DestinationUnreachable(data, icmp_code, extensions)) => {
+            Some(Response::DestinationUnreachable(data, icmp_code, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_unreachable(sequence, host, received, icmp_code, extensions);
                 }
             }
-            Some(ProbeResponse::EchoReply(data, icmp_code)) => {
+            Some(Response::EchoReply(data, icmp_code)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_echo_reply(sequence, host, received, icmp_code);
                 }
             }
-            Some(ProbeResponse::TcpReply(data) | ProbeResponse::TcpRefused(data)) => {
+            Some(Response::TcpReply(data) | Response::TcpRefused(data)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
                 if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
                     st.complete_probe_other(sequence, host, received);
@@ -376,7 +376,7 @@ mod tests {
             .times(1)
             .in_sequence(&mut seq)
             .returning(move || {
-                Ok(Some(ProbeResponse::DestinationUnreachable(
+                Ok(Some(Response::DestinationUnreachable(
                     ProbeResponseData::new(
                         SystemTime::now(),
                         target_addr,
@@ -391,7 +391,7 @@ mod tests {
             .times(1)
             .in_sequence(&mut seq)
             .returning(move || {
-                Ok(Some(ProbeResponse::TcpRefused(ProbeResponseData::new(
+                Ok(Some(Response::TcpRefused(ProbeResponseData::new(
                     SystemTime::now(),
                     target_addr,
                     ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
