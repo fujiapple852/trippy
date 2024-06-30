@@ -17,17 +17,17 @@ categories.workspace = true
 thiserror.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-caps = "0.5.5"
+caps.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.29.0", default-features = false, features = [ "user" ] }
+nix = { workspace = true, default-features = false, features = [ "user" ] }
 
 [target.'cfg(windows)'.dependencies]
-paste = "1.0.15"
-windows-sys = { version = "0.52.0", features = [
+windows-sys = { workspace = true, features = [
     "Win32_Foundation",
     "Win32_System_Threading",
 ] }
+paste.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
