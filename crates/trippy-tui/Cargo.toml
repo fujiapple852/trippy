@@ -55,7 +55,7 @@ tracing.workspace = true
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }
 pretty_assertions.workspace = true
-serde_yaml.workspace = true
+serde_yml.workspace = true
 test-case.workspace = true
 
 [lints]

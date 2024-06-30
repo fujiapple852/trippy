@@ -64,7 +64,7 @@ ratatui = "0.27.0"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = "3.8.1"
-serde_yaml = "=0.9.33"
+serde_yml = "0.0.10"
 socket2 = "0.5.7"
 strum = { version = "0.26.3", default-features = false }
 test-case = "3.3.1"

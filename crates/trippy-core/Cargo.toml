@@ -50,7 +50,7 @@ ipnetwork.workspace = true
 mockall.workspace = true
 rand.workspace = true
 serde = { workspace = true, default-features = false, features = [ "derive" ] }
-serde_yaml.workspace = true
+serde_yml.workspace = true
 test-case.workspace = true
 tokio-util.workspace = true
 tokio = { workspace = true, features = [ "full" ] }
