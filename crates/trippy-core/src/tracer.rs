@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::{
     Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
-    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, TimeToLive, TraceId,
-    TraceState, TypeOfService,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, State, TimeToLive,
+    TraceId, TypeOfService,
 };
 use std::fmt::Debug;
 use std::net::IpAddr;
@@ -268,7 +268,7 @@ impl Tracer {
 
     /// Take a snapshot of the tracer state.
     #[must_use]
-    pub fn snapshot(&self) -> TraceState {
+    pub fn snapshot(&self) -> State {
         self.inner.snapshot()
     }
 
@@ -405,7 +405,7 @@ mod inner {
     use crate::{
         Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
         PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence,
-        SourceAddr, Strategy, TimeToLive, TraceId, TraceState, TypeOfService,
+        SourceAddr, State, Strategy, TimeToLive, TraceId, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -442,7 +442,7 @@ mod inner {
         max_samples: usize,
         max_flows: usize,
         drop_privileges: bool,
-        state: RwLock<TraceState>,
+        state: RwLock<State>,
         src: OnceLock<IpAddr>,
     }
 
@@ -501,10 +501,7 @@ mod inner {
                 max_samples,
                 max_flows,
                 drop_privileges,
-                state: RwLock::new(TraceState::new(Self::make_state_config(
-                    max_flows,
-                    max_samples,
-                ))),
+                state: RwLock::new(State::new(Self::make_state_config(max_flows, max_samples))),
                 src: OnceLock::new(),
             }
         }
@@ -521,13 +518,13 @@ mod inner {
                 .map_err(|err| self.handle_error(err))
         }
 
-        pub(super) fn snapshot(&self) -> TraceState {
+        pub(super) fn snapshot(&self) -> State {
             self.state.read().clone()
         }
 
         pub(super) fn clear(&self) {
             *self.state.write() =
-                TraceState::new(Self::make_state_config(self.max_flows, self.max_samples));
+                State::new(Self::make_state_config(self.max_flows, self.max_samples));
         }
 
         pub(super) const fn max_flows(&self) -> usize {

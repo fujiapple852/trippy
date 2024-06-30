@@ -2,7 +2,7 @@ use crate::app::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
-use trippy_core::TraceState;
+use trippy_core::State;
 use trippy_dns::Resolver;
 
 /// Generate a markdown table report of trace data.
@@ -38,7 +38,7 @@ fn run_report_table<R: Resolver>(
         .load_preset(preset)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(columns);
-    for hop in trace.hops(TraceState::default_flow_id()) {
+    for hop in trace.hops(State::default_flow_id()) {
         let ttl = hop.ttl().to_string();
         let ips = hop.addrs().join("\n");
         let ip = if ips.is_empty() {

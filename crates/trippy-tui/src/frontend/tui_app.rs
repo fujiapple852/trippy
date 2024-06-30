@@ -7,11 +7,11 @@ use ratatui::widgets::TableState;
 use std::time::SystemTime;
 use trippy_core::FlowId;
 use trippy_core::Hop;
-use trippy_core::TraceState;
+use trippy_core::State;
 use trippy_dns::{DnsResolver, ResolveMethod};
 
 pub struct TuiApp {
-    pub selected_tracer_data: TraceState,
+    pub selected_tracer_data: State,
     pub trace_info: Vec<TraceInfo>,
     pub tui_config: TuiConfig,
     /// The state of the hop table.
@@ -54,7 +54,7 @@ impl TuiApp {
         trace_info: Vec<TraceInfo>,
     ) -> Self {
         Self {
-            selected_tracer_data: TraceState::default(),
+            selected_tracer_data: State::default(),
             trace_info,
             tui_config,
             table_state: TableState::default(),
@@ -62,7 +62,7 @@ impl TuiApp {
             trace_selected: 0,
             settings_tab_selected: 0,
             selected_hop_address: 0,
-            selected_flow: TraceState::default_flow_id(),
+            selected_flow: State::default_flow_id(),
             flow_counts: vec![],
             resolver,
             geoip_lookup,
@@ -78,7 +78,7 @@ impl TuiApp {
         }
     }
 
-    pub const fn tracer_data(&self) -> &TraceState {
+    pub const fn tracer_data(&self) -> &State {
         &self.selected_tracer_data
     }
 
