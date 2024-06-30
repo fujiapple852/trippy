@@ -179,6 +179,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
+  build-docker:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Build Docker image
+        run: docker build -t trippy-docker-image .
+
   cargo-deny:
     runs-on: ubuntu-22.04
     steps:
