@@ -22,7 +22,7 @@ pub struct Ipv6Packet<'a> {
 }
 
 impl<'a> Ipv6Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Result<Ipv6Packet<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> Result<Self> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Mutable(packet),
@@ -36,7 +36,7 @@ impl<'a> Ipv6Packet<'a> {
         }
     }
 
-    pub fn new_view(packet: &'a [u8]) -> Result<Ipv6Packet<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> Result<Self> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Immutable(packet),

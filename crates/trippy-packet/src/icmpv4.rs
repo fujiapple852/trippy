@@ -81,7 +81,7 @@ pub struct IcmpPacket<'a> {
 }
 
 impl<'a> IcmpPacket<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Result<IcmpPacket<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> Result<Self> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Mutable(packet),
@@ -95,7 +95,7 @@ impl<'a> IcmpPacket<'a> {
         }
     }
 
-    pub fn new_view(packet: &'a [u8]) -> Result<IcmpPacket<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> Result<Self> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Immutable(packet),
@@ -258,7 +258,7 @@ pub mod echo_request {
     }
 
     impl<'a> EchoRequestPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<EchoRequestPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -272,7 +272,7 @@ pub mod echo_request {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<EchoRequestPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -510,7 +510,7 @@ pub mod echo_reply {
     }
 
     impl<'a> EchoReplyPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<EchoReplyPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -524,7 +524,7 @@ pub mod echo_reply {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<EchoReplyPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -762,7 +762,7 @@ pub mod time_exceeded {
     }
 
     impl<'a> TimeExceededPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<TimeExceededPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -776,7 +776,7 @@ pub mod time_exceeded {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<TimeExceededPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -1010,7 +1010,7 @@ pub mod destination_unreachable {
     }
 
     impl<'a> DestinationUnreachablePacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<DestinationUnreachablePacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -1024,7 +1024,7 @@ pub mod destination_unreachable {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<DestinationUnreachablePacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
