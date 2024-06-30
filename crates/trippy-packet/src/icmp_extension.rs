@@ -13,7 +13,7 @@ pub mod extension_structure {
     }
 
     impl<'a> ExtensionsPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionsPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -27,7 +27,7 @@ pub mod extension_structure {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionsPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -169,7 +169,7 @@ pub mod extension_header {
     }
 
     impl<'a> ExtensionHeaderPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionHeaderPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -183,7 +183,7 @@ pub mod extension_header {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionHeaderPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -350,7 +350,7 @@ pub mod extension_object {
     }
 
     impl<'a> ExtensionObjectPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<ExtensionObjectPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -364,7 +364,7 @@ pub mod extension_object {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<ExtensionObjectPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -532,7 +532,7 @@ pub mod mpls_label_stack {
     }
 
     impl<'a> MplsLabelStackPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<MplsLabelStackPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -546,7 +546,7 @@ pub mod mpls_label_stack {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<MplsLabelStackPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
@@ -652,7 +652,7 @@ pub mod mpls_label_stack_member {
     }
 
     impl<'a> MplsLabelStackMemberPacket<'a> {
-        pub fn new(packet: &'a mut [u8]) -> Result<MplsLabelStackMemberPacket<'_>> {
+        pub fn new(packet: &'a mut [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Mutable(packet),
@@ -666,7 +666,7 @@ pub mod mpls_label_stack_member {
             }
         }
 
-        pub fn new_view(packet: &'a [u8]) -> Result<MplsLabelStackMemberPacket<'_>> {
+        pub fn new_view(packet: &'a [u8]) -> Result<Self> {
             if packet.len() >= Self::minimum_packet_size() {
                 Ok(Self {
                     buf: Buffer::Immutable(packet),
