@@ -82,7 +82,7 @@ pub use probe::{
     ProbeComplete, ProbeStatus, UnknownExtension,
 };
 pub use state::{Hop, TraceState};
-pub use strategy::{CompletionReason, Strategy, TracerRound};
+pub use strategy::{CompletionReason, Round, Strategy};
 pub use tracer::Tracer;
 pub use types::{
     Flags, MaxInflight, MaxRounds, PacketSize, PayloadPattern, Port, RoundId, Sequence, TimeToLive,
