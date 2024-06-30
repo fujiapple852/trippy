@@ -405,7 +405,7 @@ mod inner {
     use crate::{
         Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
         PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SourceAddr,
-        TimeToLive, TraceId, TraceState, TracerRound, TracerStrategy, TypeOfService,
+        Strategy, TimeToLive, TraceId, TraceState, TracerRound, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -647,7 +647,7 @@ mod inner {
                 Privilege::drop_privileges()?;
             }
             let strategy_config = self.make_strategy_config();
-            let strategy = TracerStrategy::new(&strategy_config, |round| {
+            let strategy = Strategy::new(&strategy_config, |round| {
                 self.handler(round);
                 func(round);
             });

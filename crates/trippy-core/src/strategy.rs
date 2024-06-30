@@ -49,12 +49,12 @@ pub enum CompletionReason {
 
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
-pub struct TracerStrategy<F> {
+pub struct Strategy<F> {
     config: StrategyConfig,
     publish: F,
 }
 
-impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
+impl<F: Fn(&TracerRound<'_>)> Strategy<F> {
     #[instrument(skip_all)]
     pub fn new(config: &StrategyConfig, publish: F) -> Self {
         tracing::debug!(?config);
@@ -406,7 +406,7 @@ mod tests {
             protocol: Protocol::Tcp,
             ..Default::default()
         };
-        let tracer = TracerStrategy::new(&config, |_| {});
+        let tracer = Strategy::new(&config, |_| {});
         let mut state = TracerState::new(config);
         tracer.send_request(&mut network, &mut state)?;
         tracer.recv_response(&mut network, &mut state)?;
