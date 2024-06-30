@@ -135,7 +135,7 @@ pub struct IcmpPacketCode(pub u8);
 
 /// The response to a probe.
 #[derive(Debug, Clone)]
-pub enum ProbeResponse {
+pub enum Response {
     TimeExceeded(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
     DestinationUnreachable(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
     EchoReply(ProbeResponseData, IcmpPacketCode),
