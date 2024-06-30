@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::{
     Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
-    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId,
-    TraceState, TracerRound, TypeOfService,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, TimeToLive, TraceId,
+    TraceState, TypeOfService,
 };
 use std::fmt::Debug;
 use std::net::IpAddr;
@@ -163,7 +163,7 @@ impl Tracer {
     /// # See Also
     ///
     /// - [`Tracer::run`] - Run the tracer without a custom round handler.
-    pub fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
+    pub fn run_with<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
         self.inner.run_with(func)
     }
 
@@ -254,7 +254,7 @@ impl Tracer {
     ///
     /// - [`Tracer::spawn`] - Spawn the tracer on a new thread without a
     /// custom round handler.
-    pub fn spawn_with<F: Fn(&TracerRound<'_>) + Send + 'static>(
+    pub fn spawn_with<F: Fn(&Round<'_>) + Send + 'static>(
         self,
         func: F,
     ) -> Result<(Self, JoinHandle<Result<()>>)> {
@@ -404,8 +404,8 @@ mod inner {
     use crate::net::{PlatformImpl, SocketImpl};
     use crate::{
         Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
-        PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SourceAddr,
-        Strategy, TimeToLive, TraceId, TraceState, TracerRound, TypeOfService,
+        PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence,
+        SourceAddr, Strategy, TimeToLive, TraceId, TraceState, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -516,7 +516,7 @@ mod inner {
         }
 
         #[instrument(skip_all)]
-        pub(super) fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
+        pub(super) fn run_with<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
             self.run_internal(func)
                 .map_err(|err| self.handle_error(err))
         }
@@ -627,7 +627,7 @@ mod inner {
         }
 
         #[instrument(skip_all)]
-        fn run_internal<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
+        fn run_internal<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
             // if we are given a source address, validate it otherwise
             // discover it based on the target address and interface.
             let source_addr = match self.source_addr {
@@ -655,7 +655,7 @@ mod inner {
             Ok(())
         }
 
-        fn handler(&self, round: &TracerRound<'_>) {
+        fn handler(&self, round: &Round<'_>) {
             self.state.write().update_from_round(round);
         }
 

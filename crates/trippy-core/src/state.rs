@@ -1,7 +1,7 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
-use crate::{Extensions, IcmpPacketType, ProbeStatus, RoundId, TimeToLive, TracerRound};
+use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, RoundId, TimeToLive};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
@@ -120,7 +120,7 @@ impl TraceState {
     }
 
     /// Update the tracing state from a `TracerRound`.
-    pub fn update_from_round(&mut self, round: &TracerRound<'_>) {
+    pub fn update_from_round(&mut self, round: &Round<'_>) {
         let flow = Flow::from_hops(
             round
                 .probes
@@ -140,7 +140,7 @@ impl TraceState {
         }
     }
 
-    fn update_trace_flow(&mut self, flow_id: FlowId, round: &TracerRound<'_>) {
+    fn update_trace_flow(&mut self, flow_id: FlowId, round: &Round<'_>) {
         let flow_trace = self
             .state
             .entry(flow_id)
@@ -428,7 +428,7 @@ impl FlowState {
         self.round_count
     }
 
-    fn update_from_round(&mut self, round: &TracerRound<'_>) {
+    fn update_from_round(&mut self, round: &Round<'_>) {
         self.round_count += 1;
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
         self.highest_ttl_for_round = round.largest_ttl.0;
@@ -688,8 +688,7 @@ mod tests {
                 .map(Into::into)
                 .collect::<Vec<_>>();
             let largest_ttl = TimeToLive(scenario.largest_ttl);
-            let tracer_round =
-                TracerRound::new(&probes, largest_ttl, CompletionReason::TargetFound);
+            let tracer_round = Round::new(&probes, largest_ttl, CompletionReason::TargetFound);
             trace.update_from_round(&tracer_round);
         }
         let actual_hops = trace.hops(TraceState::default_flow_id());

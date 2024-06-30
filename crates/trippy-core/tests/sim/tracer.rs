@@ -7,7 +7,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy_core::{
     defaults, Builder, CompletionReason, MultipathStrategy, PortDirection, PrivilegeMode,
-    ProbeStatus, Protocol, TimeToLive, TracerRound,
+    ProbeStatus, Protocol, Round, TimeToLive,
 };
 
 // The length of time to wait after the completion of the tracing before
@@ -93,7 +93,7 @@ impl Tracer {
         tracer_res.and(result.replace(Ok(())))
     }
 
-    fn validate_round(&self, round: &TracerRound<'_>, result: &RefCell<anyhow::Result<()>>) {
+    fn validate_round(&self, round: &Round<'_>, result: &RefCell<anyhow::Result<()>>) {
         assert_eq_result!(result, round.reason, CompletionReason::TargetFound);
         assert_eq_result!(result, TimeToLive(self.sim.latest_ttl()), round.largest_ttl);
         for hop in round

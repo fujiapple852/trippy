@@ -14,7 +14,7 @@ use tracing::instrument;
 
 /// The output from a round of tracing.
 #[derive(Debug, Clone)]
-pub struct TracerRound<'a> {
+pub struct Round<'a> {
     /// The state of all `ProbeState` that were sent in the round.
     pub probes: &'a [ProbeStatus],
     /// The largest time-to-live (ttl) for which we received a reply in the round.
@@ -23,7 +23,7 @@ pub struct TracerRound<'a> {
     pub reason: CompletionReason,
 }
 
-impl<'a> TracerRound<'a> {
+impl<'a> Round<'a> {
     #[must_use]
     pub const fn new(
         probes: &'a [ProbeStatus],
@@ -54,7 +54,7 @@ pub struct Strategy<F> {
     publish: F,
 }
 
-impl<F: Fn(&TracerRound<'_>)> Strategy<F> {
+impl<F: Fn(&Round<'_>)> Strategy<F> {
     #[instrument(skip_all)]
     pub fn new(config: &StrategyConfig, publish: F) -> Self {
         tracing::debug!(?config);
@@ -227,7 +227,7 @@ impl<F: Fn(&TracerRound<'_>)> Strategy<F> {
         } else {
             CompletionReason::RoundTimeLimitExceeded
         };
-        (self.publish)(&TracerRound::new(probes, largest_ttl, reason));
+        (self.publish)(&Round::new(probes, largest_ttl, reason));
     }
 
     /// Check if the `TraceId` matches the expected value for this tracer.
