@@ -16,15 +16,15 @@ categories.workspace = true
 [dependencies]
 trippy-packet.workspace = true
 trippy-privilege.workspace = true
+arrayvec = { version = "0.7.4", default-features = false }
+bitflags = "2.6.0"
 derive_more.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
+indexmap = { version = "2.2.6", default-features = false, features = [ "std" ] }
 itertools.workspace = true
 parking_lot.workspace = true
-indexmap = { version = "2.2.6", default-features = false, features = [ "std" ] }
-arrayvec = { version = "0.7.4", default-features = false }
 socket2 = { version = "0.5.7", features = [ "all" ] }
-bitflags = "2.6.0"
+thiserror.workspace = true
+tracing.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29.0", default-features = false, features = [ "user", "poll", "net" ] }
@@ -45,15 +45,15 @@ windows-sys = { version = "0.52.0", features = [
 
 [dev-dependencies]
 anyhow.workspace = true
-serde.workspace = true
-test-case.workspace = true
-serde_yaml.workspace = true
 hex-literal.workspace = true
-rand = "0.8.5"
-tokio = { version = "1.38.0", features = [ "full" ] }
-tokio-util = "0.7.11"
 ipnetwork = "0.20.0"
 mockall = "0.12.1"
+rand = "0.8.5"
+serde.workspace = true
+serde_yaml.workspace = true
+test-case.workspace = true
+tokio = { version = "1.38.0", features = [ "full" ] }
+tokio-util = "0.7.11"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 # see https://github.com/meh/rust-tun/pull/74
