@@ -210,7 +210,7 @@ impl ResponseData {
 pub enum ResponseSeq {
     Icmp(ResponseSeqIcmp),
     Udp(ResponseSeqUdp),
-    Tcp(ProbeResponseSeqTcp),
+    Tcp(ResponseSeqTcp),
 }
 
 /// The data in the response to an ICMP probe.
@@ -291,7 +291,7 @@ impl ResponseSeqUdp {
 
 /// The data in the response to an TCP probe.
 #[derive(Debug, Clone)]
-pub struct ProbeResponseSeqTcp {
+pub struct ResponseSeqTcp {
     /// The destination IP address.
     ///
     /// This is used to validate the probe response matches the expected values.
@@ -306,7 +306,7 @@ pub struct ProbeResponseSeqTcp {
     pub dest_port: u16,
 }
 
-impl ProbeResponseSeqTcp {
+impl ResponseSeqTcp {
     pub const fn new(dest_addr: IpAddr, src_port: u16, dest_port: u16) -> Self {
         Self {
             dest_addr,
