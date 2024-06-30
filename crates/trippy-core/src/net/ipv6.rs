@@ -296,13 +296,13 @@ fn make_echo_request_icmp_packet(
     Ok(icmp)
 }
 
-fn icmp_payload_size(packet_size: usize) -> usize {
+const fn icmp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv6Packet::minimum_packet_size();
     let icmp_header_size = IcmpPacket::minimum_packet_size();
     packet_size - icmp_header_size - ip_header_size
 }
 
-fn udp_payload_size(packet_size: usize) -> usize {
+const fn udp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv6Packet::minimum_packet_size();
     let udp_header_size = UdpPacket::minimum_packet_size();
     packet_size - udp_header_size - ip_header_size

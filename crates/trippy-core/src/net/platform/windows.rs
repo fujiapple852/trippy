@@ -260,25 +260,25 @@ impl SocketImpl {
     }
 
     #[allow(unsafe_code)]
-    fn new_wsa_data() -> WSADATA {
+    const fn new_wsa_data() -> WSADATA {
         // Safety: an all-zero value is valid for WSADATA.
         unsafe { zeroed::<WSADATA>() }
     }
 
     #[allow(unsafe_code)]
-    fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
+    const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
         // Safety: an all-zero value is valid for SOCKADDR_STORAGE.
         unsafe { zeroed::<SOCKADDR_STORAGE>() }
     }
 
     #[allow(unsafe_code)]
-    fn new_overlapped() -> OVERLAPPED {
+    const fn new_overlapped() -> OVERLAPPED {
         // Safety: an all-zero value is valid for OVERLAPPED.
         unsafe { zeroed::<OVERLAPPED>() }
     }
 
     #[allow(unsafe_code)]
-    fn new_icmp_error_info() -> ICMP_ERROR_INFO {
+    const fn new_icmp_error_info() -> ICMP_ERROR_INFO {
         // Safety: an all-zero value is valid for ICMP_ERROR_INFO.
         unsafe { zeroed::<ICMP_ERROR_INFO>() }
     }

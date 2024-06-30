@@ -129,7 +129,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     f.render_widget(left, rect);
 }
 
-fn render_target_family(target: IpAddr) -> &'static str {
+const fn render_target_family(target: IpAddr) -> &'static str {
     match target {
         IpAddr::V4(_) => "v4",
         IpAddr::V6(_) => "v6",

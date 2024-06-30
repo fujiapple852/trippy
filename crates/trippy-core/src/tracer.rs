@@ -530,19 +530,19 @@ mod inner {
                 TraceState::new(Self::make_state_config(self.max_flows, self.max_samples));
         }
 
-        pub(super) fn max_flows(&self) -> usize {
+        pub(super) const fn max_flows(&self) -> usize {
             self.max_flows
         }
 
-        pub(super) fn max_samples(&self) -> usize {
+        pub(super) const fn max_samples(&self) -> usize {
             self.max_samples
         }
 
-        pub(super) fn privilege_mode(&self) -> PrivilegeMode {
+        pub(super) const fn privilege_mode(&self) -> PrivilegeMode {
             self.privilege_mode
         }
 
-        pub(super) fn protocol(&self) -> Protocol {
+        pub(super) const fn protocol(&self) -> Protocol {
             self.protocol
         }
 
@@ -554,75 +554,75 @@ mod inner {
             self.src.get().copied()
         }
 
-        pub(super) fn target_addr(&self) -> IpAddr {
+        pub(super) const fn target_addr(&self) -> IpAddr {
             self.target_addr
         }
 
-        pub(super) fn packet_size(&self) -> PacketSize {
+        pub(super) const fn packet_size(&self) -> PacketSize {
             self.packet_size
         }
 
-        pub(super) fn payload_pattern(&self) -> PayloadPattern {
+        pub(super) const fn payload_pattern(&self) -> PayloadPattern {
             self.payload_pattern
         }
 
-        pub(super) fn initial_sequence(&self) -> Sequence {
+        pub(super) const fn initial_sequence(&self) -> Sequence {
             self.initial_sequence
         }
 
-        pub(super) fn tos(&self) -> TypeOfService {
+        pub(super) const fn tos(&self) -> TypeOfService {
             self.tos
         }
 
-        pub(super) fn icmp_extension_parse_mode(&self) -> IcmpExtensionParseMode {
+        pub(super) const fn icmp_extension_parse_mode(&self) -> IcmpExtensionParseMode {
             self.icmp_extension_parse_mode
         }
 
-        pub(super) fn read_timeout(&self) -> Duration {
+        pub(super) const fn read_timeout(&self) -> Duration {
             self.read_timeout
         }
 
-        pub(super) fn tcp_connect_timeout(&self) -> Duration {
+        pub(super) const fn tcp_connect_timeout(&self) -> Duration {
             self.tcp_connect_timeout
         }
 
-        pub(super) fn trace_identifier(&self) -> TraceId {
+        pub(super) const fn trace_identifier(&self) -> TraceId {
             self.trace_identifier
         }
 
-        pub(super) fn max_rounds(&self) -> Option<MaxRounds> {
+        pub(super) const fn max_rounds(&self) -> Option<MaxRounds> {
             self.max_rounds
         }
 
-        pub(super) fn first_ttl(&self) -> TimeToLive {
+        pub(super) const fn first_ttl(&self) -> TimeToLive {
             self.first_ttl
         }
 
-        pub(super) fn max_ttl(&self) -> TimeToLive {
+        pub(super) const fn max_ttl(&self) -> TimeToLive {
             self.max_ttl
         }
 
-        pub(super) fn grace_duration(&self) -> Duration {
+        pub(super) const fn grace_duration(&self) -> Duration {
             self.grace_duration
         }
 
-        pub(super) fn max_inflight(&self) -> MaxInflight {
+        pub(super) const fn max_inflight(&self) -> MaxInflight {
             self.max_inflight
         }
 
-        pub(super) fn multipath_strategy(&self) -> MultipathStrategy {
+        pub(super) const fn multipath_strategy(&self) -> MultipathStrategy {
             self.multipath_strategy
         }
 
-        pub(super) fn port_direction(&self) -> PortDirection {
+        pub(super) const fn port_direction(&self) -> PortDirection {
             self.port_direction
         }
 
-        pub(super) fn min_round_duration(&self) -> Duration {
+        pub(super) const fn min_round_duration(&self) -> Duration {
             self.min_round_duration
         }
 
-        pub(super) fn max_round_duration(&self) -> Duration {
+        pub(super) const fn max_round_duration(&self) -> Duration {
             self.max_round_duration
         }
 
@@ -664,14 +664,14 @@ mod inner {
             err
         }
 
-        fn make_state_config(max_flows: usize, max_samples: usize) -> StateConfig {
+        const fn make_state_config(max_flows: usize, max_samples: usize) -> StateConfig {
             StateConfig {
                 max_samples,
                 max_flows,
             }
         }
 
-        fn make_channel_config(&self, source_addr: IpAddr) -> ChannelConfig {
+        const fn make_channel_config(&self, source_addr: IpAddr) -> ChannelConfig {
             ChannelConfig {
                 privilege_mode: self.privilege_mode,
                 protocol: self.protocol,
@@ -687,7 +687,7 @@ mod inner {
             }
         }
 
-        fn make_strategy_config(&self) -> StrategyConfig {
+        const fn make_strategy_config(&self) -> StrategyConfig {
             StrategyConfig {
                 target_addr: self.target_addr,
                 protocol: self.protocol,

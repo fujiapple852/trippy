@@ -65,7 +65,7 @@ impl Display for IpAddrFamily {
 impl Config {
     /// Create a `Config`.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         resolve_method: ResolveMethod,
         addr_family: IpAddrFamily,
         timeout: Duration,
@@ -217,7 +217,7 @@ mod inner {
             })
         }
 
-        pub fn config(&self) -> &Config {
+        pub const fn config(&self) -> &Config {
             &self.config
         }
 

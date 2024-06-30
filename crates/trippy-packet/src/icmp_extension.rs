@@ -58,7 +58,7 @@ pub mod extension_structure {
 
         /// An iterator of Extension Objects contained within this `ExtensionsPacket`.
         #[must_use]
-        pub fn objects(&self) -> ExtensionObjectIter<'_> {
+        pub const fn objects(&self) -> ExtensionObjectIter<'_> {
             ExtensionObjectIter::new(&self.buf)
         }
     }
@@ -70,7 +70,7 @@ pub mod extension_structure {
 
     impl<'a> ExtensionObjectIter<'a> {
         #[must_use]
-        pub fn new(buf: &'a Buffer<'_>) -> Self {
+        pub const fn new(buf: &'a Buffer<'_>) -> Self {
             Self {
                 buf,
                 offset: ExtensionsPacket::minimum_packet_size(),
@@ -303,7 +303,7 @@ pub mod extension_object {
 
     impl ClassNum {
         #[must_use]
-        pub fn id(&self) -> u8 {
+        pub const fn id(&self) -> u8 {
             match self {
                 Self::MultiProtocolLabelSwitchingLabelStack => 1,
                 Self::InterfaceInformationObject => 2,
@@ -571,7 +571,7 @@ pub mod mpls_label_stack {
         }
 
         #[must_use]
-        pub fn members(&self) -> MplsLabelStackIter<'_> {
+        pub const fn members(&self) -> MplsLabelStackIter<'_> {
             MplsLabelStackIter::new(&self.buf)
         }
     }
@@ -584,7 +584,7 @@ pub mod mpls_label_stack {
 
     impl<'a> MplsLabelStackIter<'a> {
         #[must_use]
-        pub fn new(buf: &'a Buffer<'_>) -> Self {
+        pub const fn new(buf: &'a Buffer<'_>) -> Self {
             Self {
                 buf,
                 offset: 0,

@@ -14,7 +14,7 @@ pub enum IcmpType {
 
 impl IcmpType {
     #[must_use]
-    pub fn id(&self) -> u8 {
+    pub const fn id(&self) -> u8 {
         match self {
             Self::EchoRequest => 128,
             Self::EchoReply => 129,

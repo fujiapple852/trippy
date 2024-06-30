@@ -115,7 +115,7 @@ fn sum_be_words(data: &[u8], ignore_word: usize) -> u32 {
     sum
 }
 
-fn finalize_checksum(mut sum: u32) -> u16 {
+const fn finalize_checksum(mut sum: u32) -> u16 {
     while sum >> 16 != 0 {
         sum = (sum >> 16) + (sum & 0xFFFF);
     }

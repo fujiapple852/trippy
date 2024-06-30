@@ -38,7 +38,7 @@ pub struct FlowRegistry {
 
 impl FlowRegistry {
     /// Create a new `FlowRegistry`.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             flows: Vec::new(),
             next_flow_id: FlowId(1),

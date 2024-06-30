@@ -63,7 +63,7 @@ impl TunDevice {
 
     #[cfg(target_os = "linux")]
     #[allow(clippy::unnecessary_wraps)]
-    fn create_route() -> anyhow::Result<()> {
+    const fn create_route() -> anyhow::Result<()> {
         Ok(())
     }
 

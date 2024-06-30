@@ -253,7 +253,7 @@ struct TcpProbe<S: Socket> {
 }
 
 impl<S: Socket> TcpProbe<S> {
-    pub fn new(socket: S, src_port: Port, dest_port: Port, start: SystemTime) -> Self {
+    pub const fn new(socket: S, src_port: Port, dest_port: Port, start: SystemTime) -> Self {
         Self {
             socket,
             src_port,

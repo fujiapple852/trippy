@@ -280,14 +280,14 @@ pub struct TuiKeyBinding {
 }
 
 impl TuiKeyBinding {
-    pub fn new(code: KeyCode) -> Self {
+    pub const fn new(code: KeyCode) -> Self {
         Self {
             code,
             modifier: KeyModifiers::NONE,
         }
     }
 
-    pub fn new_with_modifier(code: KeyCode, modifier: KeyModifiers) -> Self {
+    pub const fn new_with_modifier(code: KeyCode, modifier: KeyModifiers) -> Self {
         Self { code, modifier }
     }
 }

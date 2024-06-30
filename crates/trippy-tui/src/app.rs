@@ -209,7 +209,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
 }
 
 /// Make the per-trace information.
-fn make_trace_info(tracer: Tracer, target: String) -> TraceInfo {
+const fn make_trace_info(tracer: Tracer, target: String) -> TraceInfo {
     TraceInfo::new(tracer, target)
 }
 
@@ -222,7 +222,7 @@ pub struct TraceInfo {
 
 impl TraceInfo {
     #[must_use]
-    pub fn new(data: Tracer, target_hostname: String) -> Self {
+    pub const fn new(data: Tracer, target_hostname: String) -> Self {
         Self {
             data,
             target_hostname,

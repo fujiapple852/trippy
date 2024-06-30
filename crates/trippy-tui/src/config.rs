@@ -339,7 +339,7 @@ impl TrippyConfig {
     /// The maximum number of flows allowed.
     ///
     /// This is restricted to 1 for the classic strategy.
-    pub fn max_flows(&self) -> usize {
+    pub const fn max_flows(&self) -> usize {
         match self.multipath_strategy {
             MultipathStrategy::Classic => 1,
             _ => self.max_flows,
@@ -758,7 +758,7 @@ impl Default for TrippyConfig {
     }
 }
 
-fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
+const fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMethod {
     match dns_resolve_method {
         DnsResolveMethodConfig::System => ResolveMethod::System,
         DnsResolveMethodConfig::Resolv => ResolveMethod::Resolv,
@@ -767,7 +767,7 @@ fn dns_resolve_method(dns_resolve_method: DnsResolveMethodConfig) -> ResolveMeth
     }
 }
 
-fn dns_resolve_family(dns_resolve_family: AddressFamilyConfig) -> IpAddrFamily {
+const fn dns_resolve_family(dns_resolve_family: AddressFamilyConfig) -> IpAddrFamily {
     match dns_resolve_family {
         AddressFamilyConfig::Ipv4 => IpAddrFamily::Ipv4Only,
         AddressFamilyConfig::Ipv6 => IpAddrFamily::Ipv6Only,
@@ -790,7 +790,7 @@ fn cfg_layer_opt<T>(fst: Option<T>, snd: Option<T>) -> Option<T> {
     }
 }
 
-fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
+const fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> bool {
     match (fst, snd) {
         (true, _) => true,
         (false, Some(val)) => val,
@@ -1730,7 +1730,7 @@ mod tests {
         ])
     }
 
-    fn dummy_platform() -> Privilege {
+    const fn dummy_platform() -> Privilege {
         Privilege::new(true, false)
     }
 

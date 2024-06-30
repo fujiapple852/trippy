@@ -54,7 +54,7 @@ impl GeoIpCity {
         )
     }
 
-    pub fn coordinates(&self) -> Option<(f64, f64, u16)> {
+    pub const fn coordinates(&self) -> Option<(f64, f64, u16)> {
         match (self.latitude, self.longitude, self.accuracy_radius) {
             (Some(lat), Some(long), Some(radius)) => Some((lat, long, radius)),
             _ => None,
