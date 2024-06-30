@@ -4,7 +4,7 @@ use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
     ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp, ProbeState,
+    ProbeResponseSeqUdp, ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
 use crate::{MultipathStrategy, PortDirection, Protocol};
@@ -16,7 +16,7 @@ use tracing::instrument;
 #[derive(Debug, Clone)]
 pub struct TracerRound<'a> {
     /// The state of all `ProbeState` that were sent in the round.
-    pub probes: &'a [ProbeState],
+    pub probes: &'a [ProbeStatus],
     /// The largest time-to-live (ttl) for which we received a reply in the round.
     pub largest_ttl: TimeToLive,
     /// Indicates what triggered the completion of the tracing round.
@@ -26,7 +26,7 @@ pub struct TracerRound<'a> {
 impl<'a> TracerRound<'a> {
     #[must_use]
     pub const fn new(
-        probes: &'a [ProbeState],
+        probes: &'a [ProbeStatus],
         largest_ttl: TimeToLive,
         reason: CompletionReason,
     ) -> Self {
@@ -421,7 +421,7 @@ mod tests {
 /// the `TracerState` struct.
 mod state {
     use crate::constants::MAX_SEQUENCE_PER_ROUND;
-    use crate::probe::{Extensions, IcmpPacketCode, IcmpPacketType, Probe, ProbeState};
+    use crate::probe::{Extensions, IcmpPacketCode, IcmpPacketType, Probe, ProbeStatus};
     use crate::strategy::StrategyConfig;
     use crate::types::{MaxRounds, Port, Round, Sequence, TimeToLive, TraceId};
     use crate::{Flags, MultipathStrategy, PortDirection, Protocol};
@@ -461,7 +461,7 @@ mod state {
         /// Tracer configuration.
         config: StrategyConfig,
         /// The state of all `ProbeState` requests and responses.
-        buffer: [ProbeState; BUFFER_SIZE as usize],
+        buffer: [ProbeStatus; BUFFER_SIZE as usize],
         /// An increasing sequence number for every `EchoRequest`.
         sequence: Sequence,
         /// The starting sequence number of the current round.
@@ -489,7 +489,7 @@ mod state {
         pub fn new(config: StrategyConfig) -> Self {
             Self {
                 config,
-                buffer: from_fn(|_| ProbeState::default()),
+                buffer: from_fn(|_| ProbeStatus::default()),
                 sequence: config.initial_sequence,
                 round_sequence: config.initial_sequence,
                 ttl: config.first_ttl,
@@ -503,13 +503,13 @@ mod state {
         }
 
         /// Get a slice of `ProbeState` for the current round.
-        pub fn probes(&self) -> &[ProbeState] {
+        pub fn probes(&self) -> &[ProbeStatus] {
             let round_size = self.sequence - self.round_sequence;
             &self.buffer[..round_size.0 as usize]
         }
 
         /// Get the `ProbeState` for `sequence`
-        pub fn probe_at(&self, sequence: Sequence) -> ProbeState {
+        pub fn probe_at(&self, sequence: Sequence) -> ProbeStatus {
             self.buffer[usize::from(sequence - self.round_sequence)].clone()
         }
 
@@ -574,7 +574,7 @@ mod state {
                 flags,
             );
             let probe_index = usize::from(self.sequence - self.round_sequence);
-            self.buffer[probe_index] = ProbeState::Awaited(probe.clone());
+            self.buffer[probe_index] = ProbeStatus::Awaited(probe.clone());
             debug_assert!(self.ttl < TimeToLive(u8::MAX));
             self.ttl += TimeToLive(1);
             debug_assert!(self.sequence < Sequence(u16::MAX));
@@ -594,7 +594,7 @@ mod state {
         #[instrument(skip(self))]
         pub fn reissue_probe(&mut self, sent: SystemTime) -> Probe {
             let probe_index = usize::from(self.sequence - self.round_sequence);
-            self.buffer[probe_index - 1] = ProbeState::Skipped;
+            self.buffer[probe_index - 1] = ProbeStatus::Skipped;
             let (src_port, dest_port, identifier, flags) = self.probe_data();
             let probe = Probe::new(
                 self.sequence,
@@ -606,7 +606,7 @@ mod state {
                 sent,
                 flags,
             );
-            self.buffer[probe_index] = ProbeState::Awaited(probe.clone());
+            self.buffer[probe_index] = ProbeStatus::Awaited(probe.clone());
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
@@ -824,10 +824,10 @@ mod state {
             // Retrieve and update the `ProbeState` at `sequence`.
             let probe = self.probe_at(sequence);
             let awaited = match probe {
-                ProbeState::Awaited(awaited) => awaited,
+                ProbeStatus::Awaited(awaited) => awaited,
                 // there is a valid scenario for TCP where a probe is already
                 // `Complete`, see `test_tcp_dest_unreachable_and_refused`.
-                ProbeState::Complete(_) => {
+                ProbeStatus::Complete(_) => {
                     return;
                 }
                 _ => {
@@ -841,7 +841,7 @@ mod state {
             let completed = awaited.complete(host, received, icmp_packet_type, extensions);
             let ttl = completed.ttl;
             self.buffer[usize::from(sequence - self.round_sequence)] =
-                ProbeState::Complete(completed);
+                ProbeStatus::Complete(completed);
 
             // If this `ProbeState` found the target then we set the `target_tll` if not already
             // set, being careful to account for `Probes` being received out-of-order.
@@ -942,7 +942,7 @@ mod state {
 
             // The initial state of the probe before sending
             let prob_init = state.probe_at(Sequence(33000));
-            assert_eq!(ProbeState::NotSent, prob_init);
+            assert_eq!(ProbeStatus::NotSent, prob_init);
 
             // Prepare probe 1 (round 0, sequence 33000, ttl 1) for sending
             let sent_1 = SystemTime::now();
@@ -991,7 +991,7 @@ mod state {
             {
                 let mut probe_iter = state.probes().iter();
                 let probe_next1 = probe_iter.next().unwrap();
-                assert_eq!(ProbeState::Complete(probe_1_fetch), probe_next1.clone());
+                assert_eq!(ProbeStatus::Complete(probe_1_fetch), probe_next1.clone());
                 assert_eq!(None, probe_iter.next());
             }
 
@@ -1053,7 +1053,7 @@ mod state {
                 let probe_next1 = probe_iter.next().unwrap();
                 assert_eq!(&probe_2_recv, probe_next1);
                 let probe_next2 = probe_iter.next().unwrap();
-                assert_eq!(ProbeState::Awaited(probe_3), probe_next2.clone());
+                assert_eq!(ProbeStatus::Awaited(probe_3), probe_next2.clone());
             }
 
             // Update the state of probe 3 after receiving a EchoReply
@@ -1111,7 +1111,7 @@ mod state {
                     Sequence(65278)
                 );
                 iter.take(BUFFER_SIZE as usize - 1)
-                    .for_each(|p| assert!(matches!(p, ProbeState::NotSent)));
+                    .for_each(|p| assert!(matches!(p, ProbeStatus::NotSent)));
             }
 
             // Advance the round, which will wrap the sequence back to initial_sequence
@@ -1140,7 +1140,7 @@ mod state {
                     Sequence(65278)
                 );
                 iter.take(BUFFER_SIZE as usize - 1)
-                    .for_each(|p| assert!(matches!(p, ProbeState::NotSent)));
+                    .for_each(|p| assert!(matches!(p, ProbeStatus::NotSent)));
             }
         }
 

@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 /// A tracing probe.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum ProbeState {
+pub enum ProbeStatus {
     /// The probe has not been sent.
     #[default]
     NotSent,
@@ -317,7 +317,7 @@ impl ProbeResponseSeqTcp {
 }
 
 #[cfg(test)]
-impl ProbeState {
+impl ProbeStatus {
     #[must_use]
     pub fn try_into_awaited(self) -> Option<Probe> {
         if let Self::Awaited(awaited) = self {
