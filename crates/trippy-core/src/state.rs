@@ -10,7 +10,7 @@ use std::time::Duration;
 
 /// The state of a trace.
 #[derive(Debug, Clone, Default)]
-pub struct TraceState {
+pub struct State {
     state_config: StateConfig,
     /// The flow id for the current round.
     round_flow_id: FlowId,
@@ -22,7 +22,7 @@ pub struct TraceState {
     error: Option<String>,
 }
 
-impl TraceState {
+impl State {
     /// Create a new `Trace`.
     #[must_use]
     pub fn new(state_config: StateConfig) -> Self {
@@ -676,7 +676,7 @@ mod tests {
     #[test_case(file!("ipv4_4probes_all_status.yaml"))]
     #[test_case(file!("ipv4_4probes_0latency.yaml"))]
     fn test_scenario(scenario: Scenario) {
-        let mut trace = TraceState::new(StateConfig {
+        let mut trace = State::new(StateConfig {
             max_flows: 1,
             ..StateConfig::default()
         });
@@ -691,7 +691,7 @@ mod tests {
             let tracer_round = Round::new(&probes, largest_ttl, CompletionReason::TargetFound);
             trace.update_from_round(&tracer_round);
         }
-        let actual_hops = trace.hops(TraceState::default_flow_id());
+        let actual_hops = trace.hops(State::default_flow_id());
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
             assert_eq!(actual.ttl(), expected.ttl);

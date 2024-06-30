@@ -2,7 +2,7 @@ use crate::frontend::render::{bsod, chart, splash, table, world};
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::Rect;
 use ratatui::Frame;
-use trippy_core::TraceState;
+use trippy_core::State;
 
 /// Render the body.
 ///
@@ -11,11 +11,7 @@ use trippy_core::TraceState;
 pub fn render(f: &mut Frame<'_>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
         bsod::render(f, rec, err);
-    } else if app
-        .tracer_data()
-        .hops(TraceState::default_flow_id())
-        .is_empty()
-    {
+    } else if app.tracer_data().hops(State::default_flow_id()).is_empty() {
         splash::render(f, app, rec);
     } else if app.show_chart {
         chart::render(f, app, rec);
