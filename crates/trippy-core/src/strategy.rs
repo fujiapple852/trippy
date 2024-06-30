@@ -3,7 +3,7 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response, ResponseData, ResponseSeq, ResponseSeqIcmp,
+    ProbeResponseSeqTcp, Response, ResponseData, ResponseSeq, ResponseSeqIcmp, ResponseSeqUdp,
     ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
@@ -267,7 +267,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
         }
         match resp.resp_seq {
             ResponseSeq::Icmp(_) => true,
-            ResponseSeq::Udp(ProbeResponseSeqUdp {
+            ResponseSeq::Udp(ResponseSeqUdp {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -308,7 +308,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                 resp.recv,
                 resp.addr,
             ),
-            ResponseSeq::Udp(ProbeResponseSeqUdp {
+            ResponseSeq::Udp(ResponseSeqUdp {
                 identifier,
                 src_port,
                 dest_port,

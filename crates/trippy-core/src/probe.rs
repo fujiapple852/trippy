@@ -209,7 +209,7 @@ impl ResponseData {
 #[derive(Debug, Clone)]
 pub enum ResponseSeq {
     Icmp(ResponseSeqIcmp),
-    Udp(ProbeResponseSeqUdp),
+    Udp(ResponseSeqUdp),
     Tcp(ProbeResponseSeqTcp),
 }
 
@@ -233,7 +233,7 @@ impl ResponseSeqIcmp {
 
 /// The data in the response to a UDP probe.
 #[derive(Debug, Clone)]
-pub struct ProbeResponseSeqUdp {
+pub struct ResponseSeqUdp {
     /// The IPv4 identifier.
     ///
     /// This will be the sequence number for IPv4/Dublin.
@@ -267,7 +267,7 @@ pub struct ProbeResponseSeqUdp {
     pub has_magic: bool,
 }
 
-impl ProbeResponseSeqUdp {
+impl ResponseSeqUdp {
     pub const fn new(
         identifier: u16,
         dest_addr: IpAddr,
