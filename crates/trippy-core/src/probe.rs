@@ -136,11 +136,11 @@ pub struct IcmpPacketCode(pub u8);
 /// The response to a probe.
 #[derive(Debug, Clone)]
 pub enum Response {
-    TimeExceeded(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
-    DestinationUnreachable(ProbeResponseData, IcmpPacketCode, Option<Extensions>),
-    EchoReply(ProbeResponseData, IcmpPacketCode),
-    TcpReply(ProbeResponseData),
-    TcpRefused(ProbeResponseData),
+    TimeExceeded(ResponseData, IcmpPacketCode, Option<Extensions>),
+    DestinationUnreachable(ResponseData, IcmpPacketCode, Option<Extensions>),
+    EchoReply(ResponseData, IcmpPacketCode),
+    TcpReply(ResponseData),
+    TcpRefused(ResponseData),
 }
 
 /// The ICMP extensions for a probe response.
@@ -187,7 +187,7 @@ pub struct UnknownExtension {
 
 /// The data in the probe response.
 #[derive(Debug, Clone)]
-pub struct ProbeResponseData {
+pub struct ResponseData {
     /// Timestamp of the probe response.
     pub recv: SystemTime,
     /// The `IpAddr` that responded to the probe.
@@ -196,7 +196,7 @@ pub struct ProbeResponseData {
     pub resp_seq: ProbeResponseSeq,
 }
 
-impl ProbeResponseData {
+impl ResponseData {
     pub const fn new(recv: SystemTime, addr: IpAddr, resp_seq: ProbeResponseSeq) -> Self {
         Self {
             recv,

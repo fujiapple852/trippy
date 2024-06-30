@@ -4,8 +4,8 @@ use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp,
-    ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
+    Extensions, IcmpPacketCode, Probe, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
+    ProbeResponseSeqUdp, Response, ResponseData,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -227,7 +227,7 @@ pub fn recv_tcp_socket<S: Socket>(
         None => {
             let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
             tcp_socket.shutdown()?;
-            return Ok(Some(Response::TcpReply(ProbeResponseData::new(
+            return Ok(Some(Response::TcpReply(ResponseData::new(
                 SystemTime::now(),
                 addr,
                 resp_seq,
@@ -235,7 +235,7 @@ pub fn recv_tcp_socket<S: Socket>(
         }
         Some(err) => match err {
             SocketError::ConnectionRefused => {
-                return Ok(Some(Response::TcpRefused(ProbeResponseData::new(
+                return Ok(Some(Response::TcpRefused(ResponseData::new(
                     SystemTime::now(),
                     dest_addr,
                     resp_seq,
@@ -244,7 +244,7 @@ pub fn recv_tcp_socket<S: Socket>(
             SocketError::HostUnreachable => {
                 let error_addr = tcp_socket.icmp_error_info()?;
                 return Ok(Some(Response::TimeExceeded(
-                    ProbeResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                    ResponseData::new(SystemTime::now(), error_addr, resp_seq),
                     IcmpPacketCode(1),
                     None,
                 )));
@@ -335,7 +335,7 @@ fn extract_probe_resp(
                 };
                 extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                     Response::TimeExceeded(
-                        ProbeResponseData::new(recv, ip, resp_seq),
+                        ResponseData::new(recv, ip, resp_seq),
                         IcmpPacketCode(icmp_code.0),
                         extension,
                     )
@@ -355,7 +355,7 @@ fn extract_probe_resp(
             };
             extract_probe_resp_seq(&nested_ipv6, protocol)?.map(|resp_seq| {
                 Response::DestinationUnreachable(
-                    ProbeResponseData::new(recv, ip, resp_seq),
+                    ResponseData::new(recv, ip, resp_seq),
                     IcmpPacketCode(icmp_code.0),
                     extension,
                 )
@@ -368,7 +368,7 @@ fn extract_probe_resp(
                 let seq = packet.get_sequence();
                 let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
                 Some(Response::EchoReply(
-                    ProbeResponseData::new(recv, ip, resp_seq),
+                    ResponseData::new(recv, ip, resp_seq),
                     IcmpPacketCode(icmp_code.0),
                 ))
             }
@@ -1016,7 +1016,7 @@ mod tests {
         .unwrap();
 
         let Response::EchoReply(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
@@ -1067,7 +1067,7 @@ mod tests {
         .unwrap();
 
         let Response::TimeExceeded(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
@@ -1120,7 +1120,7 @@ mod tests {
         .unwrap();
 
         let Response::DestinationUnreachable(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
@@ -1169,7 +1169,7 @@ mod tests {
             recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
 
         let Response::TimeExceeded(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
@@ -1231,7 +1231,7 @@ mod tests {
             recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
 
         let Response::DestinationUnreachable(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
@@ -1299,7 +1299,7 @@ mod tests {
             recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
 
         let Response::TimeExceeded(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
@@ -1361,7 +1361,7 @@ mod tests {
             recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
 
         let Response::TimeExceeded(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
@@ -1415,7 +1415,7 @@ mod tests {
             recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
 
         let Response::DestinationUnreachable(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
@@ -1551,7 +1551,7 @@ mod tests {
 
         let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(456), dest_addr)?.unwrap();
 
-        let Response::TcpReply(ProbeResponseData {
+        let Response::TcpReply(ResponseData {
             addr,
             resp_seq:
                 ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
@@ -1582,7 +1582,7 @@ mod tests {
 
         let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
 
-        let Response::TcpRefused(ProbeResponseData {
+        let Response::TcpRefused(ResponseData {
             addr,
             resp_seq:
                 ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
@@ -1618,7 +1618,7 @@ mod tests {
         let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
 
         let Response::TimeExceeded(
-            ProbeResponseData {
+            ResponseData {
                 addr,
                 resp_seq:
                     ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
