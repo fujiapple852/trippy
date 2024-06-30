@@ -81,14 +81,14 @@ impl Config {
 /// A cheaply cloneable, non-blocking, caching, forward and reverse DNS resolver.
 #[derive(Clone)]
 pub struct DnsResolver {
-    inner: Rc<inner::DnsResolverInner>,
+    inner: Rc<inner::DnsResolver>,
 }
 
 impl DnsResolver {
     /// Create and start a new `DnsResolver`.
     pub fn start(config: Config) -> std::io::Result<Self> {
         Ok(Self {
-            inner: Rc::new(inner::DnsResolverInner::start(config)?),
+            inner: Rc::new(inner::DnsResolver::start(config)?),
         })
     }
 
@@ -168,14 +168,14 @@ mod inner {
     }
 
     /// Resolver implementation.
-    pub struct DnsResolverInner {
+    pub struct DnsResolver {
         config: Config,
         provider: DnsProvider,
         tx: Sender<DnsResolveRequest>,
         addr_cache: Cache,
     }
 
-    impl DnsResolverInner {
+    impl DnsResolver {
         pub fn start(config: Config) -> std::io::Result<Self> {
             let (tx, rx) = bounded(RESOLVER_MAX_QUEUE_SIZE);
             let addr_cache = Arc::new(RwLock::new(HashMap::new()));
