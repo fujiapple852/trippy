@@ -403,9 +403,9 @@ mod inner {
     use crate::error::Result;
     use crate::net::{PlatformImpl, SocketImpl};
     use crate::{
-        Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
-        PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SourceAddr, TimeToLive,
-        TraceId, TraceState, TracerChannel, TracerRound, TracerStrategy, TypeOfService,
+        Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
+        PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SourceAddr,
+        TimeToLive, TraceId, TraceState, TracerRound, TracerStrategy, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -642,7 +642,7 @@ mod inner {
                 .set(source_addr)
                 .map_err(|_| Error::Other(String::from("failed to set source_addr")))?;
             let channel_config = self.make_channel_config(source_addr);
-            let channel = TracerChannel::<SocketImpl>::connect(&channel_config)?;
+            let channel = Channel::<SocketImpl>::connect(&channel_config)?;
             if self.drop_privileges {
                 Privilege::drop_privileges()?;
             }

@@ -17,7 +17,7 @@ pub const MAX_PACKET_SIZE: usize = 1024;
 const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `Probe` packets.
-pub struct TracerChannel<S: Socket> {
+pub struct Channel<S: Socket> {
     privilege_mode: PrivilegeMode,
     protocol: Protocol,
     src_addr: IpAddr,
@@ -35,7 +35,7 @@ pub struct TracerChannel<S: Socket> {
     tcp_probes: ArrayVec<TcpProbe<S>, MAX_TCP_PROBES>,
 }
 
-impl<S: Socket> TracerChannel<S> {
+impl<S: Socket> Channel<S> {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
@@ -74,7 +74,7 @@ impl<S: Socket> TracerChannel<S> {
     }
 }
 
-impl<S: Socket> Network for TracerChannel<S> {
+impl<S: Socket> Network for Channel<S> {
     #[instrument(skip(self))]
     fn send_probe(&mut self, probe: Probe) -> Result<()> {
         match self.protocol {
@@ -99,7 +99,7 @@ impl<S: Socket> Network for TracerChannel<S> {
     }
 }
 
-impl<S: Socket> TracerChannel<S> {
+impl<S: Socket> Channel<S> {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all)]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> Result<()> {

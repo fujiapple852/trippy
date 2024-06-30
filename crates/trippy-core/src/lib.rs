@@ -67,7 +67,7 @@ mod strategy;
 mod tracer;
 mod types;
 
-use net::channel::TracerChannel;
+use net::channel::Channel;
 use net::source::SourceAddr;
 
 pub use builder::Builder;
