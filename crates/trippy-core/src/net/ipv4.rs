@@ -5,8 +5,8 @@ use crate::net::common::process_result;
 use crate::net::platform;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
-    ProbeResponseSeqUdp, Response, ResponseData,
+    Extensions, IcmpPacketCode, Probe, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
+    ProbeResponseSeqUdp, Response, ResponseData, ResponseSeq,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -231,8 +231,7 @@ pub fn recv_tcp_socket<S: Socket>(
     dest_port: Port,
     dest_addr: IpAddr,
 ) -> Result<Option<Response>> {
-    let resp_seq =
-        ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
+    let resp_seq = ResponseSeq::Tcp(ProbeResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
     match tcp_socket.take_error()? {
         None => {
             let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
@@ -404,7 +403,7 @@ fn extract_probe_resp(
                 let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                 let id = packet.get_identifier();
                 let seq = packet.get_sequence();
-                let resp_seq = ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
+                let resp_seq = ResponseSeq::Icmp(ProbeResponseSeqIcmp::new(id, seq));
                 Some(Response::EchoReply(
                     ResponseData::new(recv, src, resp_seq),
                     IcmpPacketCode(icmp_code.0),
@@ -420,20 +419,20 @@ fn extract_probe_resp(
 fn extract_probe_resp_seq(
     ipv4: &Ipv4Packet<'_>,
     protocol: Protocol,
-) -> Result<Option<ProbeResponseSeq>> {
+) -> Result<Option<ResponseSeq>> {
     Ok(match (protocol, ipv4.get_protocol()) {
         (Protocol::Icmp, IpProtocol::Icmp) => {
             let echo_request = extract_echo_request(ipv4)?;
             let identifier = echo_request.get_identifier();
             let sequence = echo_request.get_sequence();
-            Some(ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp::new(
+            Some(ResponseSeq::Icmp(ProbeResponseSeqIcmp::new(
                 identifier, sequence,
             )))
         }
         (Protocol::Udp, IpProtocol::Udp) => {
             let (src_port, dest_port, checksum, identifier, payload_length) =
                 extract_udp_packet(ipv4)?;
-            Some(ProbeResponseSeq::Udp(ProbeResponseSeqUdp::new(
+            Some(ResponseSeq::Udp(ProbeResponseSeqUdp::new(
                 identifier,
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
@@ -445,7 +444,7 @@ fn extract_probe_resp_seq(
         }
         (Protocol::Tcp, IpProtocol::Tcp) => {
             let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
-            Some(ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(
+            Some(ResponseSeq::Tcp(ProbeResponseSeqTcp::new(
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
                 dest_port,
@@ -1044,7 +1043,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
@@ -1094,7 +1093,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
@@ -1143,7 +1142,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+                    ResponseSeq::Icmp(ProbeResponseSeqIcmp {
                         identifier,
                         sequence,
                     }),
@@ -1188,7 +1187,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ProbeResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1246,7 +1245,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+                    ResponseSeq::Udp(ProbeResponseSeqUdp {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1303,7 +1302,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    ResponseSeq::Tcp(ProbeResponseSeqTcp {
                         dest_addr,
                         src_port,
                         dest_port,
@@ -1355,7 +1354,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    ResponseSeq::Tcp(ProbeResponseSeqTcp {
                         dest_addr,
                         src_port,
                         dest_port,
@@ -1478,7 +1477,7 @@ mod tests {
         let Response::TcpReply(ResponseData {
             addr,
             resp_seq:
-                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                ResponseSeq::Tcp(ProbeResponseSeqTcp {
                     dest_addr,
                     src_port,
                     dest_port,
@@ -1509,7 +1508,7 @@ mod tests {
         let Response::TcpRefused(ResponseData {
             addr,
             resp_seq:
-                ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                ResponseSeq::Tcp(ProbeResponseSeqTcp {
                     dest_addr,
                     src_port,
                     dest_port,
@@ -1545,7 +1544,7 @@ mod tests {
             ResponseData {
                 addr,
                 resp_seq:
-                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+                    ResponseSeq::Tcp(ProbeResponseSeqTcp {
                         dest_addr,
                         src_port,
                         dest_port,
