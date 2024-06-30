@@ -1,5 +1,5 @@
 use crate::config::IcmpExtensionParseMode;
-use crate::error::{TraceResult, TracerError};
+use crate::error::{Error, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::platform;
@@ -59,12 +59,12 @@ pub fn dispatch_icmp_probe<S: Socket>(
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> TraceResult<()> {
+) -> Result<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(TracerError::InvalidPacketSize(packet_size));
+        return Err(Error::InvalidPacketSize(packet_size));
     }
     let echo_request = make_echo_request_icmp_packet(
         &mut icmp_buf,
@@ -99,10 +99,10 @@ pub fn dispatch_udp_probe<S: Socket>(
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> TraceResult<()> {
+) -> Result<()> {
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(TracerError::InvalidPacketSize(packet_size));
+        return Err(Error::InvalidPacketSize(packet_size));
     }
     let payload_size = udp_payload_size(packet_size);
     let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
@@ -133,7 +133,7 @@ fn dispatch_udp_probe_raw<S: Socket>(
     dest_addr: Ipv4Addr,
     payload: &[u8],
     ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> TraceResult<()> {
+) -> Result<()> {
     let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let payload_paris = probe.sequence.0.to_be_bytes();
@@ -178,7 +178,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     payload: &[u8],
-) -> TraceResult<()> {
+) -> Result<()> {
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
     let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
     let mut socket = S::new_udp_send_socket_ipv4(false)?;
@@ -194,7 +194,7 @@ pub fn dispatch_tcp_probe<S: Socket>(
     src_addr: Ipv4Addr,
     dest_addr: Ipv4Addr,
     tos: TypeOfService,
-) -> TraceResult<S> {
+) -> Result<S> {
     let mut socket = S::new_stream_socket_ipv4()?;
     let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
     process_result(local_addr, socket.bind(local_addr))?;
@@ -210,7 +210,7 @@ pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: Protocol,
     icmp_extension_mode: IcmpExtensionParseMode,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
@@ -219,7 +219,7 @@ pub fn recv_icmp_probe<S: Socket>(
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
-            _ => Err(TracerError::IoError(err)),
+            _ => Err(Error::IoError(err)),
         },
     }
 }
@@ -230,15 +230,12 @@ pub fn recv_tcp_socket<S: Socket>(
     src_port: Port,
     dest_port: Port,
     dest_addr: IpAddr,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let resp_seq =
         ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket
-                .peer_addr()?
-                .ok_or(TracerError::MissingAddr)?
-                .ip();
+            let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -275,7 +272,7 @@ fn make_echo_request_icmp_packet(
     sequence: Sequence,
     payload_size: usize,
     payload_pattern: PayloadPattern,
-) -> TraceResult<EchoRequestPacket<'_>> {
+) -> Result<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
     let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
@@ -296,7 +293,7 @@ fn make_udp_packet<'a>(
     src_port: u16,
     dest_port: u16,
     payload: &'_ [u8],
-) -> TraceResult<UdpPacket<'a>> {
+) -> Result<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
     let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
@@ -318,7 +315,7 @@ fn make_ipv4_packet<'a>(
     ttl: u8,
     identification: u16,
     payload: &[u8],
-) -> TraceResult<Ipv4Packet<'a>> {
+) -> Result<Ipv4Packet<'a>> {
     let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
     let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
     let ipv4_flags_and_fragment_offset_header = ipv4_byte_order.adjust_length(DONT_FRAGMENT);
@@ -353,7 +350,7 @@ fn extract_probe_resp(
     protocol: Protocol,
     icmp_extension_mode: IcmpExtensionParseMode,
     ipv4: &Ipv4Packet<'_>,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let recv = SystemTime::now();
     let src = IpAddr::V4(ipv4.get_source());
     let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
@@ -423,7 +420,7 @@ fn extract_probe_resp(
 fn extract_probe_resp_seq(
     ipv4: &Ipv4Packet<'_>,
     protocol: Protocol,
-) -> TraceResult<Option<ProbeResponseSeq>> {
+) -> Result<Option<ProbeResponseSeq>> {
     Ok(match (protocol, ipv4.get_protocol()) {
         (Protocol::Icmp, IpProtocol::Icmp) => {
             let echo_request = extract_echo_request(ipv4)?;
@@ -459,13 +456,13 @@ fn extract_probe_resp_seq(
 }
 
 #[instrument]
-fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> TraceResult<EchoRequestPacket<'a>> {
+fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> Result<EchoRequestPacket<'a>> {
     Ok(EchoRequestPacket::new_view(ipv4.payload())?)
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
 #[instrument]
-fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16, u16)> {
+fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16, u16, u16, u16)> {
     let nested = UdpPacket::new_view(ipv4.payload())?;
     Ok((
         nested.get_source(),
@@ -488,7 +485,7 @@ fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16, u16, u16,
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a
 /// complete TCP packet header.
 #[instrument]
-fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> TraceResult<(u16, u16)> {
+fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16)> {
     let nested_tcp = ipv4.payload();
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
@@ -611,7 +608,7 @@ mod tests {
             ipv4_byte_order,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -634,7 +631,7 @@ mod tests {
             ipv4_byte_order,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -944,7 +941,7 @@ mod tests {
             ipv4_byte_order,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -969,7 +966,7 @@ mod tests {
             ipv4_byte_order,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 

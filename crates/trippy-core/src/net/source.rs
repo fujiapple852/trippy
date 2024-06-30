@@ -1,5 +1,5 @@
-use crate::error::TraceResult;
-use crate::error::TracerError::InvalidSourceAddr;
+use crate::error::Error::InvalidSourceAddr;
+use crate::error::Result;
 use crate::net::platform::Platform;
 use crate::net::socket::Socket;
 use crate::types::Port;
@@ -18,7 +18,7 @@ impl SourceAddr {
         target_addr: IpAddr,
         port_direction: PortDirection,
         interface: Option<&str>,
-    ) -> TraceResult<IpAddr> {
+    ) -> Result<IpAddr> {
         let port = port_direction.dest().unwrap_or(DISCOVERY_PORT).0;
         match interface.as_ref() {
             Some(interface) => P::lookup_interface_addr(target_addr, interface),
@@ -27,7 +27,7 @@ impl SourceAddr {
     }
 
     /// Validate that we can bind to the source `IpAddr`.
-    pub fn validate<S: Socket>(source_addr: IpAddr) -> TraceResult<IpAddr> {
+    pub fn validate<S: Socket>(source_addr: IpAddr) -> Result<IpAddr> {
         let mut socket = match source_addr {
             IpAddr::V4(_) => S::new_udp_dgram_socket_ipv4(),
             IpAddr::V6(_) => S::new_udp_dgram_socket_ipv6(),
@@ -46,11 +46,10 @@ impl SourceAddr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::{IoError, TracerError};
+    use crate::error::{Error, IoError};
     use crate::net::platform::MockPlatform;
     use crate::net::socket::MockSocket;
     use mockall::predicate;
-    use std::io::Error;
     use std::str::FromStr;
     use std::sync::Mutex;
 
@@ -211,11 +210,11 @@ mod tests {
                 .expect_bind()
                 .with(predicate::eq(expected_bind_addr))
                 .times(1)
-                .returning(|addr| Err(IoError::Bind(Error::last_os_error(), addr)));
+                .returning(|addr| Err(IoError::Bind(std::io::Error::last_os_error(), addr)));
             Ok(mocket)
         });
 
         let err = SourceAddr::validate::<MockSocket>(addr).unwrap_err();
-        assert!(matches!(err, TracerError::InvalidSourceAddr(_)));
+        assert!(matches!(err, Error::InvalidSourceAddr(_)));
     }
 }

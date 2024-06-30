@@ -5,11 +5,11 @@ use std::net::{IpAddr, SocketAddr};
 use thiserror::Error;
 
 /// A tracer error result.
-pub type TraceResult<T> = Result<T, TracerError>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// A tracer error.
 #[derive(Error, Debug)]
-pub enum TracerError {
+pub enum Error {
     #[error("invalid packet size: {0}")]
     InvalidPacketSize(usize),
     #[error("invalid packet: {0}")]
@@ -35,7 +35,7 @@ pub enum TracerError {
 }
 
 /// Custom IO error result.
-pub type IoResult<T> = Result<T, IoError>;
+pub type IoResult<T> = std::result::Result<T, IoError>;
 
 /// Custom IO error.
 #[derive(Error, Debug)]

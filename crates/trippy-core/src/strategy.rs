@@ -1,6 +1,6 @@
 use self::state::TracerState;
 use crate::config::StrategyConfig;
-use crate::error::{TraceResult, TracerError};
+use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
     ProbeResponse, ProbeResponseData, ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp,
@@ -66,7 +66,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
 
     /// Run a continuous trace and publish results.
     #[instrument(skip(self, network))]
-    pub fn run<N: Network>(self, mut network: N) -> TraceResult<()> {
+    pub fn run<N: Network>(self, mut network: N) -> Result<()> {
         let mut state = TracerState::new(self.config);
         while !state.finished(self.config.max_rounds) {
             self.send_request(&mut network, &mut state)?;
@@ -88,7 +88,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     ///     otherwise:
     ///       - the number of unknown-in-flight probes is lower than the maximum allowed
     #[instrument(skip(self, network, st))]
-    fn send_request<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
+    fn send_request<N: Network>(&self, network: &mut N, st: &mut TracerState) -> Result<()> {
         let can_send_ttl = if let Some(target_ttl) = st.target_ttl() {
             st.ttl() <= target_ttl
         } else {
@@ -106,15 +106,15 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                     let mut probe = if st.round_has_capacity() {
                         st.next_probe(sent)
                     } else {
-                        return Err(TracerError::InsufficientCapacity);
+                        return Err(Error::InsufficientCapacity);
                     };
                     while let Err(err) = network.send_probe(probe) {
                         match err {
-                            TracerError::AddressNotAvailable(_) => {
+                            Error::AddressNotAvailable(_) => {
                                 if st.round_has_capacity() {
                                     probe = st.reissue_probe(SystemTime::now());
                                 } else {
-                                    return Err(TracerError::InsufficientCapacity);
+                                    return Err(Error::InsufficientCapacity);
                                 }
                             }
                             other => return Err(other),
@@ -146,7 +146,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     /// time-to-live that was sent in the round as the algorithm will send `EchoRequest` with
     /// larger time-to-live values before the `EchoReply` is received.
     #[instrument(skip(self, network, st))]
-    fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> TraceResult<()> {
+    fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> Result<()> {
         let next = network.recv_probe()?;
         match next {
             Some(ProbeResponse::TimeExceeded(data, icmp_code, extensions)) => {

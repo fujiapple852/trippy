@@ -75,7 +75,7 @@ pub use config::{
     defaults, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
 };
 pub use constants::MAX_TTL;
-pub use error::TracerError;
+pub use error::Error;
 pub use flows::{FlowEntry, FlowId};
 pub use probe::{
     Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,

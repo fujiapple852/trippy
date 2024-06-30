@@ -1,5 +1,5 @@
 use crate::config::{ChannelConfig, IcmpExtensionParseMode};
-use crate::error::{TraceResult, TracerError};
+use crate::error::{Error, Result};
 use crate::net::socket::Socket;
 use crate::net::{ipv4, ipv6, platform, Network};
 use crate::probe::{Probe, ProbeResponse};
@@ -40,12 +40,10 @@ impl<S: Socket> TracerChannel<S> {
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
     #[instrument(skip_all)]
-    pub fn connect(config: &ChannelConfig) -> TraceResult<Self> {
+    pub fn connect(config: &ChannelConfig) -> Result<Self> {
         tracing::debug!(?config);
         if usize::from(config.packet_size.0) > MAX_PACKET_SIZE {
-            return Err(TracerError::InvalidPacketSize(usize::from(
-                config.packet_size.0,
-            )));
+            return Err(Error::InvalidPacketSize(usize::from(config.packet_size.0)));
         }
         let raw = config.privilege_mode == PrivilegeMode::Privileged;
         platform::startup()?;
@@ -78,7 +76,7 @@ impl<S: Socket> TracerChannel<S> {
 
 impl<S: Socket> Network for TracerChannel<S> {
     #[instrument(skip(self))]
-    fn send_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn send_probe(&mut self, probe: Probe) -> Result<()> {
         match self.protocol {
             Protocol::Icmp => self.dispatch_icmp_probe(probe),
             Protocol::Udp => self.dispatch_udp_probe(probe),
@@ -86,7 +84,7 @@ impl<S: Socket> Network for TracerChannel<S> {
         }
     }
     #[instrument(skip_all)]
-    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_probe(&mut self) -> Result<Option<ProbeResponse>> {
         let prob_response = match self.protocol {
             Protocol::Icmp | Protocol::Udp => self.recv_icmp_probe(),
             Protocol::Tcp => match self.recv_tcp_sockets()? {
@@ -104,7 +102,7 @@ impl<S: Socket> Network for TracerChannel<S> {
 impl<S: Socket> TracerChannel<S> {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all)]
-    fn dispatch_icmp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn dispatch_icmp_probe(&mut self, probe: Probe) -> Result<()> {
         match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
                 ipv4::dispatch_icmp_probe(
@@ -133,7 +131,7 @@ impl<S: Socket> TracerChannel<S> {
 
     /// Dispatch a UDP probe.
     #[instrument(skip_all)]
-    fn dispatch_udp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn dispatch_udp_probe(&mut self, probe: Probe) -> Result<()> {
         match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
                 ipv4::dispatch_udp_probe(
@@ -165,7 +163,7 @@ impl<S: Socket> TracerChannel<S> {
 
     /// Dispatch a TCP probe.
     #[instrument(skip_all)]
-    fn dispatch_tcp_probe(&mut self, probe: Probe) -> TraceResult<()> {
+    fn dispatch_tcp_probe(&mut self, probe: Probe) -> Result<()> {
         let socket = match (self.src_addr, self.dest_addr) {
             (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
                 ipv4::dispatch_tcp_probe(&probe, src_addr, dest_addr, self.tos)
@@ -186,7 +184,7 @@ impl<S: Socket> TracerChannel<S> {
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     #[instrument(skip(self))]
-    fn recv_icmp_probe(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_icmp_probe(&mut self) -> Result<Option<ProbeResponse>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match self.dest_addr {
                 IpAddr::V4(_) => ipv4::recv_icmp_probe(
@@ -210,7 +208,7 @@ impl<S: Socket> TracerChannel<S> {
     ///
     /// Any TCP socket which has not connected or failed after a timeout will be removed.
     #[instrument(skip(self))]
-    fn recv_tcp_sockets(&mut self) -> TraceResult<Option<ProbeResponse>> {
+    fn recv_tcp_sockets(&mut self) -> Result<Option<ProbeResponse>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
         let found_index = self
@@ -267,7 +265,7 @@ impl<S: Socket> TcpProbe<S> {
 
 /// Make a socket for sending raw `ICMP` packets.
 #[instrument]
-fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
+fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(_) => S::new_icmp_send_socket_ipv4(raw),
         IpAddr::V6(_) => S::new_icmp_send_socket_ipv6(raw),
@@ -276,7 +274,7 @@ fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
 
 /// Make a socket for sending `UDP` packets.
 #[instrument]
-fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
+fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(_) => S::new_udp_send_socket_ipv4(raw),
         IpAddr::V6(_) => S::new_udp_send_socket_ipv6(raw),
@@ -285,7 +283,7 @@ fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
 
 /// Make a socket for receiving raw `ICMP` packets.
 #[instrument]
-fn make_recv_socket<S: Socket>(addr: IpAddr, raw: bool) -> TraceResult<S> {
+fn make_recv_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(ipv4addr) => S::new_recv_socket_ipv4(ipv4addr, raw),
         IpAddr::V6(ipv6addr) => S::new_recv_socket_ipv6(ipv6addr, raw),

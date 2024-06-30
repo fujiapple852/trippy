@@ -1,11 +1,11 @@
-use crate::error::{IoResult, TraceResult, TracerError};
+use crate::error::{Error, IoResult, Result};
 use crate::net::platform::in_progress_error;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
 /// Helper function to convert an `IoResult` to a `TraceResult` with special handling for
 /// `AddressNotAvailable`.
-pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
+pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> Result<()> {
     match res {
         Ok(()) => Ok(()),
         Err(err) => {
@@ -14,9 +14,9 @@ pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> TraceResult<()> {
             } else {
                 match err.kind() {
                     ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                        Err(TracerError::AddressNotAvailable(addr))
+                        Err(Error::AddressNotAvailable(addr))
                     }
-                    _ => Err(TracerError::IoError(err)),
+                    _ => Err(Error::IoError(err)),
                 }
             }
         }
@@ -45,7 +45,7 @@ mod tests {
         let res = Err(IoError::Connect(io_error, ADDR));
         let trace_res = process_result(ADDR, res);
         let trace_io_error = trace_res.unwrap_err();
-        assert!(matches!(trace_io_error, TracerError::IoError(_)));
+        assert!(matches!(trace_io_error, Error::IoError(_)));
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod tests {
         ));
         let trace_res = process_result(ADDR, res);
         let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, TracerError::AddressNotAvailable(ADDR)));
+        assert!(matches!(trace_err, Error::AddressNotAvailable(ADDR)));
     }
 
     #[test]
@@ -67,7 +67,7 @@ mod tests {
         ));
         let trace_res = process_result(ADDR, res);
         let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, TracerError::AddressNotAvailable(ADDR)));
+        assert!(matches!(trace_err, Error::AddressNotAvailable(ADDR)));
     }
 
     #[test]
