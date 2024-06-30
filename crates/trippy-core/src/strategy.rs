@@ -3,8 +3,8 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response, ResponseData,
-    ResponseSeq, ProbeStatus,
+    ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response, ResponseData, ResponseSeq, ResponseSeqIcmp,
+    ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
 use crate::{MultipathStrategy, PortDirection, Protocol};
@@ -299,7 +299,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     #[instrument(skip(self))]
     fn extract(&self, resp: &ResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
         match resp.resp_seq {
-            ResponseSeq::Icmp(ProbeResponseSeqIcmp {
+            ResponseSeq::Icmp(ResponseSeqIcmp {
                 identifier,
                 sequence,
             }) => (
