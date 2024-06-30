@@ -3,8 +3,8 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeResponseSeq, ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response,
-    ResponseData, ProbeStatus,
+    ProbeResponseSeqIcmp, ProbeResponseSeqTcp, ProbeResponseSeqUdp, Response, ResponseData,
+    ResponseSeq, ProbeStatus,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
 use crate::{MultipathStrategy, PortDirection, Protocol};
@@ -266,8 +266,8 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
             }
         }
         match resp.resp_seq {
-            ProbeResponseSeq::Icmp(_) => true,
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+            ResponseSeq::Icmp(_) => true,
+            ResponseSeq::Udp(ProbeResponseSeqUdp {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -282,7 +282,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                 };
                 check_dest_addr && check_ports && check_magic
             }
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+            ResponseSeq::Tcp(ProbeResponseSeqTcp {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -299,7 +299,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
     #[instrument(skip(self))]
     fn extract(&self, resp: &ResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
         match resp.resp_seq {
-            ProbeResponseSeq::Icmp(ProbeResponseSeqIcmp {
+            ResponseSeq::Icmp(ProbeResponseSeqIcmp {
                 identifier,
                 sequence,
             }) => (
@@ -308,7 +308,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                 resp.recv,
                 resp.addr,
             ),
-            ProbeResponseSeq::Udp(ProbeResponseSeqUdp {
+            ResponseSeq::Udp(ProbeResponseSeqUdp {
                 identifier,
                 src_port,
                 dest_port,
@@ -331,7 +331,7 @@ impl<F: Fn(&TracerRound<'_>)> TracerStrategy<F> {
                 };
                 (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
             }
-            ProbeResponseSeq::Tcp(ProbeResponseSeqTcp {
+            ResponseSeq::Tcp(ProbeResponseSeqTcp {
                 src_port,
                 dest_port,
                 ..
@@ -380,7 +380,7 @@ mod tests {
                     ResponseData::new(
                         SystemTime::now(),
                         target_addr,
-                        ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
+                        ResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
                     ),
                     IcmpPacketCode(1),
                     None,
@@ -394,7 +394,7 @@ mod tests {
                 Ok(Some(Response::TcpRefused(ResponseData::new(
                     SystemTime::now(),
                     target_addr,
-                    ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
+                    ResponseSeq::Tcp(ProbeResponseSeqTcp::new(target_addr, sequence, 80)),
                 ))))
             });
 

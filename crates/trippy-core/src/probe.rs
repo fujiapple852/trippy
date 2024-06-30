@@ -193,11 +193,11 @@ pub struct ResponseData {
     /// The `IpAddr` that responded to the probe.
     pub addr: IpAddr,
     /// Information about the sequence number of the probe response.
-    pub resp_seq: ProbeResponseSeq,
+    pub resp_seq: ResponseSeq,
 }
 
 impl ResponseData {
-    pub const fn new(recv: SystemTime, addr: IpAddr, resp_seq: ProbeResponseSeq) -> Self {
+    pub const fn new(recv: SystemTime, addr: IpAddr, resp_seq: ResponseSeq) -> Self {
         Self {
             recv,
             addr,
@@ -207,7 +207,7 @@ impl ResponseData {
 }
 
 #[derive(Debug, Clone)]
-pub enum ProbeResponseSeq {
+pub enum ResponseSeq {
     Icmp(ProbeResponseSeqIcmp),
     Udp(ProbeResponseSeqUdp),
     Tcp(ProbeResponseSeqTcp),
