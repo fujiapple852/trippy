@@ -1,5 +1,5 @@
 use crate::buffer::Buffer;
-use crate::error::{PacketError, PacketResult};
+use crate::error::{Error, Result};
 use crate::fmt_payload;
 use std::fmt::{Debug, Formatter};
 
@@ -17,13 +17,13 @@ pub struct UdpPacket<'a> {
 }
 
 impl<'a> UdpPacket<'a> {
-    pub fn new(packet: &mut [u8]) -> PacketResult<UdpPacket<'_>> {
+    pub fn new(packet: &mut [u8]) -> Result<UdpPacket<'_>> {
         if packet.len() >= UdpPacket::minimum_packet_size() {
             Ok(UdpPacket {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            Err(PacketError::InsufficientPacketBuffer(
+            Err(Error::InsufficientPacketBuffer(
                 String::from("UdpPacket"),
                 Self::minimum_packet_size(),
                 packet.len(),
@@ -31,13 +31,13 @@ impl<'a> UdpPacket<'a> {
         }
     }
 
-    pub fn new_view(packet: &[u8]) -> PacketResult<UdpPacket<'_>> {
+    pub fn new_view(packet: &[u8]) -> Result<UdpPacket<'_>> {
         if packet.len() >= UdpPacket::minimum_packet_size() {
             Ok(UdpPacket {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            Err(PacketError::InsufficientPacketBuffer(
+            Err(Error::InsufficientPacketBuffer(
                 String::from("UdpPacket"),
                 Self::minimum_packet_size(),
                 packet.len(),
@@ -208,7 +208,7 @@ mod tests {
         let mut buf = [0_u8; SIZE - 1];
         let err = UdpPacket::new(&mut buf).unwrap_err();
         assert_eq!(
-            PacketError::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
+            Error::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
             err
         );
     }
@@ -219,7 +219,7 @@ mod tests {
         let buf = [0_u8; SIZE - 1];
         let err = UdpPacket::new_view(&buf).unwrap_err();
         assert_eq!(
-            PacketError::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
+            Error::InsufficientPacketBuffer(String::from("UdpPacket"), SIZE, SIZE - 1),
             err
         );
     }

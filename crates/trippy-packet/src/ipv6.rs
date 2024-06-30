@@ -1,5 +1,5 @@
 use crate::buffer::Buffer;
-use crate::error::{PacketError, PacketResult};
+use crate::error::{Error, Result};
 use crate::{fmt_payload, IpProtocol};
 use std::fmt::{Debug, Formatter};
 use std::net::Ipv6Addr;
@@ -22,13 +22,13 @@ pub struct Ipv6Packet<'a> {
 }
 
 impl<'a> Ipv6Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> PacketResult<Ipv6Packet<'_>> {
+    pub fn new(packet: &'a mut [u8]) -> Result<Ipv6Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Mutable(packet),
             })
         } else {
-            Err(PacketError::InsufficientPacketBuffer(
+            Err(Error::InsufficientPacketBuffer(
                 String::from("Ipv6Packet"),
                 Self::minimum_packet_size(),
                 packet.len(),
@@ -36,13 +36,13 @@ impl<'a> Ipv6Packet<'a> {
         }
     }
 
-    pub fn new_view(packet: &'a [u8]) -> PacketResult<Ipv6Packet<'_>> {
+    pub fn new_view(packet: &'a [u8]) -> Result<Ipv6Packet<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(Self {
                 buf: Buffer::Immutable(packet),
             })
         } else {
-            Err(PacketError::InsufficientPacketBuffer(
+            Err(Error::InsufficientPacketBuffer(
                 String::from("Ipv6Packet"),
                 Self::minimum_packet_size(),
                 packet.len(),
@@ -377,7 +377,7 @@ mod tests {
         let mut buf = [0_u8; SIZE - 1];
         let err = Ipv6Packet::new(&mut buf).unwrap_err();
         assert_eq!(
-            PacketError::InsufficientPacketBuffer(String::from("Ipv6Packet"), SIZE, SIZE - 1),
+            Error::InsufficientPacketBuffer(String::from("Ipv6Packet"), SIZE, SIZE - 1),
             err
         );
     }
@@ -388,7 +388,7 @@ mod tests {
         let buf = [0_u8; SIZE - 1];
         let err = Ipv6Packet::new_view(&buf).unwrap_err();
         assert_eq!(
-            PacketError::InsufficientPacketBuffer(String::from("Ipv6Packet"), SIZE, SIZE - 1),
+            Error::InsufficientPacketBuffer(String::from("Ipv6Packet"), SIZE, SIZE - 1),
             err
         );
     }
