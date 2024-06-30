@@ -1,4 +1,4 @@
-use crate::error::TraceResult;
+use crate::error::Result;
 use crate::net::platform::{Platform, PlatformImpl};
 use std::net::IpAddr;
 
@@ -48,7 +48,7 @@ impl Ipv4ByteOrder {
     /// Try        Host (BE)    Wire (BE)   Order (if succeeds)
     /// normal     12 34        12 34       `Ipv4ByteOrder::Host`
     /// swapped    34 12        34 12       `Ipv4ByteOrder::Network`
-    pub fn for_address(addr: IpAddr) -> TraceResult<Self> {
+    pub fn for_address(addr: IpAddr) -> Result<Self> {
         PlatformImpl::byte_order_for_address(addr)
     }
 

@@ -1,4 +1,4 @@
-use crate::error::TracerError;
+use crate::error::Error;
 use crate::probe::{Extension, Extensions, MplsLabelStack, MplsLabelStackMember, UnknownExtension};
 use trippy_packet::icmp_extension::extension_header::ExtensionHeaderPacket;
 use trippy_packet::icmp_extension::extension_object::{ClassNum, ExtensionObjectPacket};
@@ -10,7 +10,7 @@ use trippy_packet::icmp_extension::mpls_label_stack_member::MplsLabelStackMember
 const ICMP_EXTENSION_VERSION: u8 = 2;
 
 impl TryFrom<&[u8]> for Extensions {
-    type Error = TracerError;
+    type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         Self::try_from(ExtensionsPacket::new_view(value)?)
@@ -18,7 +18,7 @@ impl TryFrom<&[u8]> for Extensions {
 }
 
 impl TryFrom<ExtensionsPacket<'_>> for Extensions {
-    type Error = TracerError;
+    type Error = Error;
 
     fn try_from(value: ExtensionsPacket<'_>) -> Result<Self, Self::Error> {
         let header = ExtensionHeaderPacket::new_view(value.header())?;

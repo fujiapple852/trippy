@@ -1,4 +1,4 @@
-use crate::error::TraceResult;
+use crate::error::Result;
 use crate::probe::{Probe, ProbeResponse};
 
 /// Common types and helper functions.
@@ -32,10 +32,10 @@ pub use platform::{PlatformImpl, SocketImpl};
 #[cfg_attr(test, mockall::automock)]
 pub trait Network {
     /// Send a `Probe`.
-    fn send_probe(&mut self, probe: Probe) -> TraceResult<()>;
+    fn send_probe(&mut self, probe: Probe) -> Result<()>;
 
     /// Receive the next Icmp packet and return a `ProbeResponse`.
     ///
     /// Returns `None` if the read times out or the packet read is not one of the types expected.
-    fn recv_probe(&mut self) -> TraceResult<Option<ProbeResponse>>;
+    fn recv_probe(&mut self) -> Result<Option<ProbeResponse>>;
 }

@@ -1,5 +1,5 @@
 use crate::config::IcmpExtensionParseMode;
-use crate::error::{TraceResult, TracerError};
+use crate::error::{Error, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::socket::{Socket, SocketError};
@@ -55,11 +55,11 @@ pub fn dispatch_icmp_probe<S: Socket>(
     dest_addr: Ipv6Addr,
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
-) -> TraceResult<()> {
+) -> Result<()> {
     let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(TracerError::InvalidPacketSize(packet_size));
+        return Err(Error::InvalidPacketSize(packet_size));
     }
     let echo_request = make_echo_request_icmp_packet(
         &mut icmp_buf,
@@ -87,10 +87,10 @@ pub fn dispatch_udp_probe<S: Socket>(
     packet_size: PacketSize,
     payload_pattern: PayloadPattern,
     initial_sequence: Sequence,
-) -> TraceResult<()> {
+) -> Result<()> {
     let packet_size = usize::from(packet_size.0);
     if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(TracerError::InvalidPacketSize(packet_size));
+        return Err(Error::InvalidPacketSize(packet_size));
     }
     let payload_size = udp_payload_size(packet_size);
     let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
@@ -119,7 +119,7 @@ fn dispatch_udp_probe_raw<S: Socket>(
     payload: &[u8],
     payload_pattern: PayloadPattern,
     initial_sequence: Sequence,
-) -> TraceResult<()> {
+) -> Result<()> {
     let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
     let mut dublin_payload = [payload_pattern.0; MAX_UDP_PAYLOAD_BUF];
     let payload_paris = probe.sequence.0.to_be_bytes();
@@ -161,7 +161,7 @@ fn dispatch_udp_probe_non_raw<S: Socket>(
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
     payload: &[u8],
-) -> TraceResult<()> {
+) -> Result<()> {
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
     let remote_addr = SocketAddr::new(IpAddr::V6(dest_addr), probe.dest_port.0);
     let mut socket = S::new_udp_send_socket_ipv6(false)?;
@@ -176,7 +176,7 @@ pub fn dispatch_tcp_probe<S: Socket>(
     probe: &Probe,
     src_addr: Ipv6Addr,
     dest_addr: Ipv6Addr,
-) -> TraceResult<S> {
+) -> Result<S> {
     let mut socket = S::new_stream_socket_ipv6()?;
     let local_addr = SocketAddr::new(IpAddr::V6(src_addr), probe.src_port.0);
     process_result(local_addr, socket.bind(local_addr))?;
@@ -191,12 +191,12 @@ pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: Protocol,
     icmp_extension_mode: IcmpExtensionParseMode,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.recv_from(&mut buf) {
         Ok((bytes_read, addr)) => {
             let icmp_v6 = IcmpPacket::new_view(&buf[..bytes_read])?;
-            let src_addr = match addr.as_ref().ok_or(TracerError::MissingAddr)? {
+            let src_addr = match addr.as_ref().ok_or(Error::MissingAddr)? {
                 SocketAddr::V6(addr) => addr.ip(),
                 SocketAddr::V4(_) => panic!(),
             };
@@ -209,7 +209,7 @@ pub fn recv_icmp_probe<S: Socket>(
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
-            _ => Err(TracerError::IoError(err)),
+            _ => Err(Error::IoError(err)),
         },
     }
 }
@@ -220,15 +220,12 @@ pub fn recv_tcp_socket<S: Socket>(
     src_port: Port,
     dest_port: Port,
     dest_addr: IpAddr,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let resp_seq =
         ProbeResponseSeq::Tcp(ProbeResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
     match tcp_socket.take_error()? {
         None => {
-            let addr = tcp_socket
-                .peer_addr()?
-                .ok_or(TracerError::MissingAddr)?
-                .ip();
+            let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
             tcp_socket.shutdown()?;
             return Ok(Some(ProbeResponse::TcpReply(ProbeResponseData::new(
                 SystemTime::now(),
@@ -266,7 +263,7 @@ fn make_udp_packet<'a>(
     src_port: u16,
     dest_port: u16,
     payload: &'_ [u8],
-) -> TraceResult<UdpPacket<'a>> {
+) -> Result<UdpPacket<'a>> {
     let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
     let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
     udp.set_source(src_port);
@@ -286,7 +283,7 @@ fn make_echo_request_icmp_packet(
     sequence: Sequence,
     payload_size: usize,
     payload_pattern: PayloadPattern,
-) -> TraceResult<EchoRequestPacket<'_>> {
+) -> Result<EchoRequestPacket<'_>> {
     let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
     let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
     let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
@@ -316,7 +313,7 @@ fn extract_probe_resp(
     icmp_extension_mode: IcmpExtensionParseMode,
     icmp_v6: &IcmpPacket<'_>,
     src: Ipv6Addr,
-) -> TraceResult<Option<ProbeResponse>> {
+) -> Result<Option<ProbeResponse>> {
     let recv = SystemTime::now();
     let ip = IpAddr::V6(src);
     let icmp_type = icmp_v6.get_icmp_type();
@@ -384,7 +381,7 @@ fn extract_probe_resp(
 fn extract_probe_resp_seq(
     ipv6: &Ipv6Packet<'_>,
     protocol: Protocol,
-) -> TraceResult<Option<ProbeResponseSeq>> {
+) -> Result<Option<ProbeResponseSeq>> {
     Ok(match (protocol, ipv6.get_next_header()) {
         (Protocol::Icmp, IpProtocol::IcmpV6) => {
             let (identifier, sequence) = extract_echo_request(ipv6)?;
@@ -422,7 +419,7 @@ fn extract_probe_resp_seq(
     })
 }
 
-fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
+fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> Result<(u16, u16)> {
     let echo_request_packet = EchoRequestPacket::new_view(ipv6.payload())?;
     Ok((
         echo_request_packet.get_identifier(),
@@ -430,7 +427,7 @@ fn extract_echo_request(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
     ))
 }
 
-fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16, u16)> {
+fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> Result<(u16, u16, u16, u16)> {
     let udp_packet = UdpPacket::new_view(ipv6.payload())?;
     Ok((
         udp_packet.get_source(),
@@ -459,12 +456,12 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16, u16, u16)
 ///
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
-fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> TraceResult<(u16, u16)> {
+fn extract_tcp_packet(ipv6: &Ipv6Packet<'_>) -> Result<(u16, u16)> {
     let tcp_packet = TcpPacket::new_view(ipv6.payload())?;
     Ok((tcp_packet.get_source(), tcp_packet.get_destination()))
 }
 
-fn udp_payload_has_magic_prefix(ipv6: &Ipv6Packet<'_>) -> TraceResult<bool> {
+fn udp_payload_has_magic_prefix(ipv6: &Ipv6Packet<'_>) -> Result<bool> {
     let udp_packet = UdpPacket::new_view(ipv6.payload())?;
     Ok(udp_packet.payload().starts_with(MAGIC))
 }
@@ -577,7 +574,7 @@ mod tests {
             payload_pattern,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -598,7 +595,7 @@ mod tests {
             payload_pattern,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -925,7 +922,7 @@ mod tests {
             initial_sequence,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 
@@ -950,7 +947,7 @@ mod tests {
             initial_sequence,
         )
         .unwrap_err();
-        assert!(matches!(err, TracerError::InvalidPacketSize(_)));
+        assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
 

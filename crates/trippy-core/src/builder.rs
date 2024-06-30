@@ -1,9 +1,9 @@
 use crate::config::{ChannelConfig, StateConfig, StrategyConfig};
 use crate::constants::MAX_INITIAL_SEQUENCE;
-use crate::error::TraceResult;
+use crate::error::Result;
 use crate::{
-    IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId, Tracer, TracerError,
+    Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId, Tracer,
     TypeOfService, MAX_TTL,
 };
 use std::net::IpAddr;
@@ -332,34 +332,34 @@ impl Builder {
     }
 
     /// Build the `Tracer`.
-    pub fn build(self) -> TraceResult<Tracer> {
+    pub fn build(self) -> Result<Tracer> {
         match (self.protocol, self.port_direction) {
             (Protocol::Udp, PortDirection::None) => {
-                return Err(TracerError::BadConfig(
+                return Err(Error::BadConfig(
                     "port_direction may not be None for udp protocol".to_string(),
                 ));
             }
             (Protocol::Tcp, PortDirection::None) => {
-                return Err(TracerError::BadConfig(
+                return Err(Error::BadConfig(
                     "port_direction may not be None for tcp protocol".to_string(),
                 ));
             }
             _ => (),
         }
         if self.first_ttl.0 > MAX_TTL {
-            return Err(TracerError::BadConfig(format!(
+            return Err(Error::BadConfig(format!(
                 "first_ttl {} > {MAX_TTL}",
                 self.first_ttl.0
             )));
         }
         if self.max_ttl.0 > MAX_TTL {
-            return Err(TracerError::BadConfig(format!(
+            return Err(Error::BadConfig(format!(
                 "max_ttl {} > {MAX_TTL}",
                 self.max_ttl.0
             )));
         }
         if self.initial_sequence.0 > MAX_INITIAL_SEQUENCE {
-            return Err(TracerError::BadConfig(format!(
+            return Err(Error::BadConfig(format!(
                 "initial_sequence {} > {MAX_INITIAL_SEQUENCE}",
                 self.initial_sequence.0
             )));
@@ -544,6 +544,6 @@ mod tests {
             .initial_sequence(u16::MAX)
             .build()
             .unwrap_err();
-        assert!(matches!(err, TracerError::BadConfig(s) if s == "initial_sequence 65535 > 64511"));
+        assert!(matches!(err, Error::BadConfig(s) if s == "initial_sequence 65535 > 64511"));
     }
 }

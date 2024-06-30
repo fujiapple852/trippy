@@ -1,23 +1,23 @@
-use crate::error::TraceResult;
+use crate::error::Result;
 use crate::net::platform::{Ipv4ByteOrder, Platform};
 use std::net::IpAddr;
 
 pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
-    fn byte_order_for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+    fn byte_order_for_address(addr: IpAddr) -> Result<Ipv4ByteOrder> {
         address::for_address(addr)
     }
-    fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+    fn lookup_interface_addr(addr: IpAddr, name: &str) -> Result<IpAddr> {
         address::lookup_interface_addr(addr, name)
     }
-    fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+    fn discover_local_addr(target_addr: IpAddr, port: u16) -> Result<IpAddr> {
         address::discover_local_addr(target_addr, port)
     }
 }
 
 mod address {
-    use crate::error::{TraceResult, TracerError};
+    use crate::error::{Error, Result};
     use crate::net::platform::Ipv4ByteOrder;
     use crate::net::socket::Socket;
     use crate::net::SocketImpl;
@@ -39,20 +39,20 @@ mod address {
     /// so we skip the check and return network byte order unconditionally.
     #[cfg(target_os = "linux")]
     #[allow(clippy::unnecessary_wraps)]
-    pub fn for_address(_src_addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+    pub fn for_address(_src_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
 
     #[cfg(not(target_os = "linux"))]
     #[instrument(ret)]
-    pub fn for_address(addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+    pub fn for_address(addr: IpAddr) -> Result<Ipv4ByteOrder> {
         let addr = match addr {
             IpAddr::V4(addr) => addr,
             IpAddr::V6(_) => return Ok(Ipv4ByteOrder::Network),
         };
         match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
             Ok(()) => Ok(Ipv4ByteOrder::Network),
-            Err(TracerError::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
+            Err(Error::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
                 match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
                     Ok(()) => Ok(Ipv4ByteOrder::Host),
                     Err(err) => Err(err),
@@ -71,7 +71,7 @@ mod address {
     /// it will fallback to creating an `IPPROTO_RAW` socket.
     #[cfg(not(target_os = "linux"))]
     #[instrument(ret)]
-    fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> TraceResult<()> {
+    fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> Result<()> {
         use socket2::Protocol;
         let mut icmp_buf = [0_u8; trippy_packet::icmpv4::IcmpPacket::minimum_packet_size()];
         let mut icmp = trippy_packet::icmpv4::echo_request::EchoRequestPacket::new(&mut icmp_buf)?;
@@ -98,7 +98,7 @@ mod address {
         Ok(())
     }
 
-    pub fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+    pub fn lookup_interface_addr(addr: IpAddr, name: &str) -> Result<IpAddr> {
         match addr {
             IpAddr::V4(_) => lookup_interface_addr_ipv4(name),
             IpAddr::V6(_) => lookup_interface_addr_ipv6(name),
@@ -106,9 +106,9 @@ mod address {
     }
 
     #[instrument(ret)]
-    fn lookup_interface_addr_ipv4(name: &str) -> TraceResult<IpAddr> {
+    fn lookup_interface_addr_ipv4(name: &str) -> Result<IpAddr> {
         nix::ifaddrs::getifaddrs()
-            .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
+            .map_err(|_| Error::UnknownInterface(name.to_string()))?
             .find_map(|ia| {
                 ia.address.and_then(|addr| match addr.family() {
                     Some(AddressFamily::Inet) if ia.interface_name == name => addr
@@ -117,13 +117,13 @@ mod address {
                     _ => None,
                 })
             })
-            .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+            .ok_or_else(|| Error::UnknownInterface(name.to_string()))
     }
 
     #[instrument(ret)]
-    fn lookup_interface_addr_ipv6(name: &str) -> TraceResult<IpAddr> {
+    fn lookup_interface_addr_ipv6(name: &str) -> Result<IpAddr> {
         nix::ifaddrs::getifaddrs()
-            .map_err(|_| TracerError::UnknownInterface(name.to_string()))?
+            .map_err(|_| Error::UnknownInterface(name.to_string()))?
             .find_map(|ia| {
                 ia.address.and_then(|addr| match addr.family() {
                     Some(AddressFamily::Inet6) if ia.interface_name == name => addr
@@ -132,24 +132,24 @@ mod address {
                     _ => None,
                 })
             })
-            .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+            .ok_or_else(|| Error::UnknownInterface(name.to_string()))
     }
 
     // Note that no packets are transmitted by this method.
     #[instrument(ret)]
-    pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> TraceResult<IpAddr> {
+    pub fn discover_local_addr(target_addr: IpAddr, port: u16) -> Result<IpAddr> {
         let mut socket = match target_addr {
             IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
             IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
         }?;
         socket.connect(SocketAddr::new(target_addr, port))?;
-        Ok(socket.local_addr()?.ok_or(TracerError::MissingAddr)?.ip())
+        Ok(socket.local_addr()?.ok_or(Error::MissingAddr)?.ip())
     }
 }
 
 mod socket {
     use crate::error::{IoError, IoOperation};
-    use crate::error::{IoResult, TraceResult};
+    use crate::error::{IoResult, Result};
     use crate::net::socket::{Socket, SocketError};
     use itertools::Itertools;
     use nix::{
@@ -168,7 +168,7 @@ mod socket {
 
     #[allow(clippy::unnecessary_wraps)]
     #[instrument]
-    pub fn startup() -> TraceResult<()> {
+    pub fn startup() -> Result<()> {
         Ok(())
     }
 

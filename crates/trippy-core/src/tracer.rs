@@ -1,8 +1,8 @@
-use crate::error::TraceResult;
+use crate::error::Result;
 use crate::{
-    IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize, PayloadPattern,
-    PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId, TraceState, TracerError,
-    TracerRound, TypeOfService,
+    Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId,
+    TraceState, TracerRound, TypeOfService,
 };
 use std::fmt::Debug;
 use std::net::IpAddr;
@@ -124,7 +124,7 @@ impl Tracer {
     /// - [`Tracer::run_with`] - Run the tracer with a custom round handler.
     /// - [`Tracer::spawn`] - Spawn the tracer on a new thread without a
     /// custom round handler.
-    pub fn run(&self) -> TraceResult<()> {
+    pub fn run(&self) -> Result<()> {
         self.inner.run()
     }
 
@@ -163,7 +163,7 @@ impl Tracer {
     /// # See Also
     ///
     /// - [`Tracer::run`] - Run the tracer without a custom round handler.
-    pub fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> TraceResult<()> {
+    pub fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
         self.inner.run_with(func)
     }
 
@@ -205,12 +205,12 @@ impl Tracer {
     /// # See Also
     ///
     /// - [`Tracer::run`] - Run the tracer on the current thread.
-    pub fn spawn(self) -> TraceResult<(Self, JoinHandle<TraceResult<()>>)> {
+    pub fn spawn(self) -> Result<(Self, JoinHandle<Result<()>>)> {
         let tracer = self.clone();
         let handle = thread::Builder::new()
             .name(format!("tracer-{}", self.trace_identifier().0))
             .spawn(move || tracer.run())
-            .map_err(|err| TracerError::Other(err.to_string()))?;
+            .map_err(|err| Error::Other(err.to_string()))?;
         Ok((self, handle))
     }
 
@@ -257,12 +257,12 @@ impl Tracer {
     pub fn spawn_with<F: Fn(&TracerRound<'_>) + Send + 'static>(
         self,
         func: F,
-    ) -> TraceResult<(Self, JoinHandle<TraceResult<()>>)> {
+    ) -> Result<(Self, JoinHandle<Result<()>>)> {
         let tracer = self.clone();
         let handle = thread::Builder::new()
             .name(format!("tracer-{}", self.trace_identifier().0))
             .spawn(move || tracer.run_with(func))
-            .map_err(|err| TracerError::Other(err.to_string()))?;
+            .map_err(|err| Error::Other(err.to_string()))?;
         Ok((self, handle))
     }
 
@@ -400,13 +400,12 @@ impl Tracer {
 
 mod inner {
     use crate::config::{ChannelConfig, StateConfig, StrategyConfig};
-    use crate::error::TraceResult;
+    use crate::error::Result;
     use crate::net::{PlatformImpl, SocketImpl};
     use crate::{
-        IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
+        Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
         PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SourceAddr, TimeToLive,
-        TraceId, TraceState, TracerChannel, TracerError, TracerRound, TracerStrategy,
-        TypeOfService,
+        TraceId, TraceState, TracerChannel, TracerRound, TracerStrategy, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -511,13 +510,13 @@ mod inner {
         }
 
         #[instrument(skip_all)]
-        pub(super) fn run(&self) -> TraceResult<()> {
+        pub(super) fn run(&self) -> Result<()> {
             self.run_internal(|_| ())
                 .map_err(|err| self.handle_error(err))
         }
 
         #[instrument(skip_all)]
-        pub(super) fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> TraceResult<()> {
+        pub(super) fn run_with<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
             self.run_internal(func)
                 .map_err(|err| self.handle_error(err))
         }
@@ -628,7 +627,7 @@ mod inner {
         }
 
         #[instrument(skip_all)]
-        fn run_internal<F: Fn(&TracerRound<'_>)>(&self, func: F) -> TraceResult<()> {
+        fn run_internal<F: Fn(&TracerRound<'_>)>(&self, func: F) -> Result<()> {
             // if we are given a source address, validate it otherwise
             // discover it based on the target address and interface.
             let source_addr = match self.source_addr {
@@ -641,7 +640,7 @@ mod inner {
             };
             self.src
                 .set(source_addr)
-                .map_err(|_| TracerError::Other(String::from("failed to set source_addr")))?;
+                .map_err(|_| Error::Other(String::from("failed to set source_addr")))?;
             let channel_config = self.make_channel_config(source_addr);
             let channel = TracerChannel::<SocketImpl>::connect(&channel_config)?;
             if self.drop_privileges {
@@ -660,7 +659,7 @@ mod inner {
             self.state.write().update_from_round(round);
         }
 
-        fn handle_error(&self, err: TracerError) -> TracerError {
+        fn handle_error(&self, err: Error) -> Error {
             self.state.write().set_error(Some(err.to_string()));
             err
         }

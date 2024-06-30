@@ -1,5 +1,5 @@
 use super::byte_order::Ipv4ByteOrder;
-use crate::error::{IoError, IoOperation, IoResult, TraceResult, TracerError};
+use crate::error::{Error, IoError, IoOperation, IoResult, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::platform::windows::adapter::Adapters;
 use crate::net::platform::Platform;
@@ -7,7 +7,7 @@ use crate::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::ffi::c_void;
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error as StdIoError, ErrorKind, Result as StdIoResult};
 use std::mem::{size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::os::windows::prelude::AsRawSocket;
@@ -35,7 +35,7 @@ macro_rules! syscall {
         #[allow(unsafe_code)]
         let res = unsafe { windows_sys::Win32::Networking::WinSock::$fn($($arg, )*) };
         if $err_fn(res) {
-            Err(Error::last_os_error())
+            Err(StdIoError::last_os_error())
         } else {
             Ok(res)
         }
@@ -66,29 +66,29 @@ pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
     #[allow(clippy::unnecessary_wraps)]
-    fn byte_order_for_address(_addr: IpAddr) -> TraceResult<Ipv4ByteOrder> {
+    fn byte_order_for_address(_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
 
-    fn lookup_interface_addr(addr: IpAddr, name: &str) -> TraceResult<IpAddr> {
+    fn lookup_interface_addr(addr: IpAddr, name: &str) -> Result<IpAddr> {
         match addr {
             IpAddr::V4(_) => lookup_interface_addr(&Adapters::ipv4()?, name),
             IpAddr::V6(_) => lookup_interface_addr(&Adapters::ipv6()?, name),
         }
     }
 
-    fn discover_local_addr(target_addr: IpAddr, _port: u16) -> TraceResult<IpAddr> {
+    fn discover_local_addr(target_addr: IpAddr, _port: u16) -> Result<IpAddr> {
         routing_interface_query(target_addr)
     }
 }
 
 #[instrument]
-pub fn startup() -> TraceResult<()> {
-    SocketImpl::startup().map_err(TracerError::IoError)
+pub fn startup() -> Result<()> {
+    SocketImpl::startup().map_err(Error::IoError)
 }
 
-pub fn in_progress_error() -> Error {
-    Error::from_raw_os_error(WSAEINPROGRESS)
+pub fn in_progress_error() -> StdIoError {
+    StdIoError::from_raw_os_error(WSAEINPROGRESS)
 }
 
 /// `WinSock` version 2.2
@@ -144,7 +144,7 @@ impl SocketImpl {
             return Ok(false);
         } else if rc == WAIT_FAILED {
             return Err(IoError::Other(
-                Error::last_os_error(),
+                StdIoError::last_os_error(),
                 IoOperation::WaitForSingleObject,
             ));
         }
@@ -159,7 +159,7 @@ impl SocketImpl {
     }
 
     #[instrument(skip(self, optval))]
-    fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> Result<T> {
+    fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> StdIoResult<T> {
         let mut optlen = size_of::<T>() as i32;
         syscall!(
             getsockopt(
@@ -175,7 +175,7 @@ impl SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> Result<()> {
+    fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> StdIoResult<()> {
         let bytes = optval.to_ne_bytes();
         let optval = addr_of!(bytes).cast();
         syscall!(
@@ -192,7 +192,7 @@ impl SocketImpl {
     }
 
     #[instrument(skip(self))]
-    fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> Result<()> {
+    fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> StdIoResult<()> {
         self.setsockopt_u32(level, optname, u32::from(optval))
     }
 
@@ -213,7 +213,8 @@ impl SocketImpl {
     #[instrument(skip(self))]
     fn post_recv_from(&mut self) -> IoResult<()> {
         fn is_err(res: i32) -> bool {
-            res == SOCKET_ERROR && Error::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
+            res == SOCKET_ERROR
+                && StdIoError::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
         }
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
@@ -400,7 +401,7 @@ impl Socket for SocketImpl {
             .bind(&SockAddr::from(addr))
             .map_err(|e| {
                 if e.kind() == ErrorKind::PermissionDenied {
-                    Error::from_raw_os_error(WSAEADDRNOTAVAIL)
+                    StdIoError::from_raw_os_error(WSAEADDRNOTAVAIL)
                 } else {
                     e
                 }
@@ -548,7 +549,9 @@ impl Socket for SocketImpl {
             Ok(0) => Ok(None),
             Ok(errno) if errno == WSAEHOSTUNREACH => Ok(Some(SocketError::HostUnreachable)),
             Ok(errno) if errno == WSAECONNREFUSED => Ok(Some(SocketError::ConnectionRefused)),
-            Ok(errno) => Ok(Some(SocketError::Other(Error::from_raw_os_error(errno)))),
+            Ok(errno) => Ok(Some(SocketError::Other(StdIoError::from_raw_os_error(
+                errno,
+            )))),
             Err(e) => Err(e),
         }
         .map_err(|err| IoError::Other(err, IoOperation::TakeError))
@@ -573,7 +576,7 @@ impl Socket for SocketImpl {
                 src_addr.Ipv6.sin6_addr.u.Byte
             }))),
             _ => Err(IoError::Other(
-                Error::from(ErrorKind::AddrNotAvailable),
+                StdIoError::from(ErrorKind::AddrNotAvailable),
                 IoOperation::TcpIcmpErrorInfo,
             )),
         }
@@ -594,7 +597,7 @@ impl Socket for SocketImpl {
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
 #[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
 #[instrument]
-fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
+fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
     let socket = match target {
@@ -622,11 +625,11 @@ fn routing_interface_query(target: IpAddr) -> TraceResult<IpAddr> {
     // TBD We choose the first one arbitrarily.
     let sockaddr = src.cast::<SOCKADDR_STORAGE>();
     sockaddrptr_to_ipaddr(sockaddr)
-        .map_err(|err| TracerError::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
+        .map_err(|err| Error::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
 }
 
 #[allow(unsafe_code)]
-fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> Result<IpAddr> {
+fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr> {
     // Safety: TODO
     match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().unwrap() }) {
         Err(e) => Err(e),
@@ -638,7 +641,7 @@ fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> Result<IpAddr> {
 }
 
 #[allow(unsafe_code)]
-fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
+fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr> {
     let ptr = sockaddr as *const SOCKADDR_STORAGE;
     let af = sockaddr.ss_family;
     if af == AF_INET {
@@ -669,7 +672,7 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> Result<SocketAddr> {
             scope_id,
         )))
     } else {
-        Err(Error::new(
+        Err(StdIoError::new(
             ErrorKind::Unsupported,
             format!("Unsupported address family: {af:?}"),
         ))
@@ -721,7 +724,7 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
 }
 
 #[instrument(skip(adapters), ret)]
-fn lookup_interface_addr(adapters: &Adapters, name: &str) -> TraceResult<IpAddr> {
+fn lookup_interface_addr(adapters: &Adapters, name: &str) -> Result<IpAddr> {
     adapters
         .iter()
         .find_map(|addr| {
@@ -731,13 +734,13 @@ fn lookup_interface_addr(adapters: &Adapters, name: &str) -> TraceResult<IpAddr>
                 None
             }
         })
-        .ok_or_else(|| TracerError::UnknownInterface(name.to_string()))
+        .ok_or_else(|| Error::UnknownInterface(name.to_string()))
 }
 
 mod adapter {
-    use crate::error::{TraceResult, TracerError};
+    use crate::error::{Error, Result};
     use crate::net::platform::windows::sockaddrptr_to_ipaddr;
-    use std::io::Error;
+    use std::io::Error as StdIoError;
     use std::marker::PhantomData;
     use std::net::IpAddr;
     use std::ptr::null_mut;
@@ -756,12 +759,12 @@ mod adapter {
 
     impl Adapters {
         /// Retrieve IPv4 adapter details.
-        pub fn ipv4() -> TraceResult<Self> {
+        pub fn ipv4() -> Result<Self> {
             Self::retrieve_addresses(AF_INET)
         }
 
         /// Retrieve IPv6 adapter details.
-        pub fn ipv6() -> TraceResult<Self> {
+        pub fn ipv6() -> Result<Self> {
             Self::retrieve_addresses(AF_INET6)
         }
 
@@ -781,7 +784,7 @@ mod adapter {
             | IpHelper::GAA_FLAG_SKIP_MULTICAST
             | IpHelper::GAA_FLAG_SKIP_DNS_SERVER;
 
-        fn retrieve_addresses(family: ADDRESS_FAMILY) -> TraceResult<Self> {
+        fn retrieve_addresses(family: ADDRESS_FAMILY) -> Result<Self> {
             let mut buf_len = Self::INITIAL_BUFFER_SIZE;
             let mut buf: Vec<u8>;
             for _ in 0..Self::MAX_ATTEMPTS {
@@ -797,14 +800,14 @@ mod adapter {
                     continue;
                 }
                 if res != NO_ERROR {
-                    return Err(TracerError::UnknownInterface(format!(
+                    return Err(Error::UnknownInterface(format!(
                         "GetAdaptersAddresses returned error: {}",
-                        Error::from_raw_os_error(res.try_into().unwrap())
+                        StdIoError::from_raw_os_error(res.try_into().unwrap())
                     )));
                 }
                 return Ok(Self { buf });
             }
-            Err(TracerError::UnknownInterface(format!(
+            Err(Error::UnknownInterface(format!(
                 "GetAdaptersAddresses did not success after {} attempts",
                 Self::MAX_ATTEMPTS
             )))
