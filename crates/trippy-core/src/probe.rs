@@ -2,30 +2,50 @@ use crate::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 
-/// A tracing probe.
+/// A network tracing probe.
+///
+/// A `Probe` is a packet sent across the network to trace the path to a target host.
+/// It contains information such as sequence number, trace identifier, ports, and TTL.
+///
+/// A probe is always in one of the following states:
+///
+/// - `NotSent` - The probe has not been sent.
+/// - `Skipped` - The probe was skipped.
+/// - `Awaited` - The probe has been sent and is awaiting a response.
+/// - `Complete` - The probe has been sent and a response has been received.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ProbeStatus {
     /// The probe has not been sent.
     #[default]
     NotSent,
     /// The probe was skipped.
+    ///
+    /// A probe may be skipped if, for TCP, it could not be bound to a local
+    /// port.  When a probe is skipped, it will be marked as `Skipped` and a
+    /// new probe will be sent with the same TTL next available sequence number.
     Skipped,
     /// The probe has been sent and is awaiting a response.
+    ///
+    /// If no response is received within the timeout, the probe will remain
+    /// in this state indefinitely.
     Awaited(Probe),
     /// The probe has been sent and a response has been received.
     Complete(ProbeComplete),
 }
 
-/// A probe that was sent and is awaiting a response.
+/// An incomplete network tracing probe.
+///
+/// A `Probe` is a packet sent across the network to trace the path to a target host.
+/// It contains information such as sequence number, trace identifier, ports, and TTL.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Probe {
     /// The sequence of the probe.
     pub sequence: Sequence,
     /// The trace identifier.
     pub identifier: TraceId,
-    /// The source port (UDP/TCP only)
+    /// The source port (UDP/TCP only).
     pub src_port: Port,
-    /// The destination port (UDP/TCP only)
+    /// The destination port (UDP/TCP only).
     pub dest_port: Port,
     /// The TTL of the probe.
     pub ttl: TimeToLive,
@@ -38,9 +58,10 @@ pub struct Probe {
 }
 
 impl Probe {
+    /// Create a new probe.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
-    pub const fn new(
+    pub(crate) const fn new(
         sequence: Sequence,
         identifier: TraceId,
         src_port: Port,
@@ -64,7 +85,7 @@ impl Probe {
 
     /// A response has been received and the probe is now complete.
     #[must_use]
-    pub const fn complete(
+    pub(crate) const fn complete(
         self,
         host: IpAddr,
         received: SystemTime,
@@ -87,9 +108,17 @@ impl Probe {
     }
 }
 
-/// A probe that has been sent and a response has been received.
+/// A complete network tracing probe.
 ///
-/// Either an `EchoReply`, `DestinationUnreachable` or `TimeExceeded` has been received.
+/// A probe is considered complete when one of the following responses has been
+/// received:
+///
+/// - `TimeExceeded` - an ICMP packet indicating the TTL has expired.
+/// - `EchoReply` - an ICMP packet indicating the probe has reached the target host.
+/// - `DestinationUnreachable` - an ICMP packet indicating the probe could not
+/// reach the target host.
+/// - `NotApplicable` - a non-ICMP response (i.e. for some `UDP` & `TCP`
+/// probes).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProbeComplete {
     /// The sequence of the probe.
