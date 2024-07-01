@@ -51,6 +51,12 @@ impl State {
         self.state[&flow_id].hops()
     }
 
+    /// Information about each hop for the combined flow.
+    #[must_use]
+    pub fn combined_hops(&self) -> &[Hop] {
+        self.state[&Self::default_flow_id()].hops()
+    }
+
     /// Is a given `Hop` the target hop for a given flow?
     ///
     /// A `Hop` is considered to be the target if it has the highest `ttl` value observed.
@@ -691,7 +697,7 @@ mod tests {
             let tracer_round = Round::new(&probes, largest_ttl, CompletionReason::TargetFound);
             trace.update_from_round(&tracer_round);
         }
-        let actual_hops = trace.hops(State::default_flow_id());
+        let actual_hops = trace.combined_hops();
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
             assert_eq!(actual.ttl(), expected.ttl);
