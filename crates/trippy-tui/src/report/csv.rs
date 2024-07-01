@@ -3,7 +3,6 @@ use crate::report::types::fixed_width;
 use itertools::Itertools;
 use serde::Serialize;
 use std::net::IpAddr;
-use trippy_core::State;
 use trippy_dns::Resolver;
 
 /// Generate a CSV report of trace data.
@@ -14,7 +13,7 @@ pub fn report<R: Resolver>(
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
     let mut writer = csv::Writer::from_writer(std::io::stdout());
-    for hop in trace.hops(State::default_flow_id()) {
+    for hop in trace.hops() {
         let row = CsvRow::new(
             &info.target_hostname,
             info.data.target_addr(),

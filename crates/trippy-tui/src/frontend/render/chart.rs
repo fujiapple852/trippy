@@ -12,7 +12,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let samples = app.selected_tracer_data.max_samples() / app.zoom_factor;
     let series_data = app
         .selected_tracer_data
-        .hops(app.selected_flow)
+        .hops_for_flow(app.selected_flow)
         .iter()
         .map(|hop| {
             hop.samples()

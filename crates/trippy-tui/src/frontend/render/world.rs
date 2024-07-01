@@ -192,7 +192,7 @@ struct MapEntry {
 /// Each entry represent a single `GeoIp` location, which may be associated with multiple hops.
 fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
-    for hop in app.tracer_data().hops(app.selected_flow) {
+    for hop in app.tracer_data().hops_for_flow(app.selected_flow) {
         for addr in hop.addrs() {
             if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {

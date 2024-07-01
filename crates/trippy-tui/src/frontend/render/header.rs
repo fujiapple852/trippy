@@ -93,14 +93,14 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         };
         format!(
             ", discovered {} hops and {} unique {}",
-            app.tracer_data().hops(app.selected_flow).len(),
+            app.tracer_data().hops_for_flow(app.selected_flow).len(),
             app.tracer_data().flows().len(),
             plural_flows
         )
     } else {
         format!(
             ", discovered {} hops",
-            app.tracer_data().hops(app.selected_flow).len()
+            app.tracer_data().hops_for_flow(app.selected_flow).len()
         )
     };
     let left_line = vec![

@@ -4,7 +4,7 @@ use itertools::Itertools;
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use trippy::core::{Builder, PortDirection, Protocol, State};
+use trippy::core::{Builder, PortDirection, Protocol};
 use trippy::dns::{Config, DnsResolver, Resolver};
 
 /// A toy clone of BSD4.3 (macOS) traceroute.
@@ -94,7 +94,7 @@ fn main() -> anyhow::Result<()> {
     if let Some(err) = snapshot.error() {
         return Err(anyhow!("error: {}", err));
     }
-    for hop in snapshot.hops(State::default_flow_id()) {
+    for hop in snapshot.hops() {
         let ttl = hop.ttl();
         let samples: String = hop
             .samples()
