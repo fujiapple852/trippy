@@ -277,121 +277,145 @@ impl Tracer {
         self.inner.clear();
     }
 
+    /// The maximum number of flows to record.
     #[must_use]
     pub fn max_flows(&self) -> usize {
         self.inner.max_flows()
     }
 
+    /// The maximum number of samples to record.
     #[must_use]
     pub fn max_samples(&self) -> usize {
         self.inner.max_samples()
     }
 
+    /// The privilege mode of the tracer.
     #[must_use]
     pub fn privilege_mode(&self) -> PrivilegeMode {
         self.inner.privilege_mode()
     }
 
+    /// The protocol of the tracer.
     #[must_use]
     pub fn protocol(&self) -> Protocol {
         self.inner.protocol()
     }
 
+    /// The interface to use for the tracer.
     #[must_use]
     pub fn interface(&self) -> Option<&str> {
         self.inner.interface()
     }
 
+    /// The source address of the tracer.
     #[must_use]
     pub fn source_addr(&self) -> Option<IpAddr> {
         self.inner.source_addr()
     }
 
+    /// The target address of the tracer.
     #[must_use]
     pub fn target_addr(&self) -> IpAddr {
         self.inner.target_addr()
     }
 
+    /// The packet size of the tracer.
     #[must_use]
     pub fn packet_size(&self) -> PacketSize {
         self.inner.packet_size()
     }
 
+    /// The payload pattern of the tracer.
     #[must_use]
     pub fn payload_pattern(&self) -> PayloadPattern {
         self.inner.payload_pattern()
     }
 
+    /// The initial sequence number of the tracer.
     #[must_use]
     pub fn initial_sequence(&self) -> Sequence {
         self.inner.initial_sequence()
     }
 
+    /// The type of service of the tracer.
     #[must_use]
     pub fn tos(&self) -> TypeOfService {
         self.inner.tos()
     }
 
+    /// The ICMP extension parse mode of the tracer.
     #[must_use]
     pub fn icmp_extension_parse_mode(&self) -> IcmpExtensionParseMode {
         self.inner.icmp_extension_parse_mode()
     }
 
+    /// The read timeout of the tracer.
     #[must_use]
     pub fn read_timeout(&self) -> Duration {
         self.inner.read_timeout()
     }
 
+    /// The TCP connect timeout of the tracer.
     #[must_use]
     pub fn tcp_connect_timeout(&self) -> Duration {
         self.inner.tcp_connect_timeout()
     }
 
+    /// The trace identifier of the tracer.
     #[must_use]
     pub fn trace_identifier(&self) -> TraceId {
         self.inner.trace_identifier()
     }
 
+    /// The maximum number of rounds of the tracer.
     #[must_use]
     pub fn max_rounds(&self) -> Option<MaxRounds> {
         self.inner.max_rounds()
     }
 
+    /// The first time-to-live value of the tracer.
     #[must_use]
     pub fn first_ttl(&self) -> TimeToLive {
         self.inner.first_ttl()
     }
 
+    /// The maximum time-to-live value of the tracer.
     #[must_use]
     pub fn max_ttl(&self) -> TimeToLive {
         self.inner.max_ttl()
     }
 
+    /// The grace duration of the tracer.
     #[must_use]
     pub fn grace_duration(&self) -> Duration {
         self.inner.grace_duration()
     }
 
+    /// The maximum number of inflight probes of the tracer.
     #[must_use]
     pub fn max_inflight(&self) -> MaxInflight {
         self.inner.max_inflight()
     }
 
+    /// The multipath strategy of the tracer.
     #[must_use]
     pub fn multipath_strategy(&self) -> MultipathStrategy {
         self.inner.multipath_strategy()
     }
 
+    /// The port direction of the tracer.
     #[must_use]
     pub fn port_direction(&self) -> PortDirection {
         self.inner.port_direction()
     }
 
+    /// The minimum round duration of the tracer.
     #[must_use]
     pub fn min_round_duration(&self) -> Duration {
         self.inner.min_round_duration()
     }
 
+    /// The maximum round duration of the tracer.
     #[must_use]
     pub fn max_round_duration(&self) -> Duration {
         self.inner.max_round_duration()
