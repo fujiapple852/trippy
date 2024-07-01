@@ -47,9 +47,15 @@ impl State {
         FlowId(0)
     }
 
+    /// Information about each hop for the combined default flow.
+    #[must_use]
+    pub fn hops(&self) -> &[Hop] {
+        self.state[&Self::default_flow_id()].hops()
+    }
+
     /// Information about each hop for a given flow.
     #[must_use]
-    pub fn hops(&self, flow_id: FlowId) -> &[Hop] {
+    pub fn hops_for_flow(&self, flow_id: FlowId) -> &[Hop] {
         self.state[&flow_id].hops()
     }
 
@@ -788,7 +794,7 @@ mod tests {
             let tracer_round = Round::new(&probes, largest_ttl, CompletionReason::TargetFound);
             trace.update_from_round(&tracer_round);
         }
-        let actual_hops = trace.hops(State::default_flow_id());
+        let actual_hops = trace.hops();
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
             assert_eq!(actual.ttl(), expected.ttl);

@@ -42,16 +42,20 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let widths = config.tui_columns.constraints(rect);
     let header = render_table_header(app.tui_config.theme, &config.tui_columns);
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let rows = app.tracer_data().hops(app.selected_flow).iter().map(|hop| {
-        render_table_row(
-            app,
-            hop,
-            &app.resolver,
-            &app.geoip_lookup,
-            &app.tui_config,
-            &config.tui_columns,
-        )
-    });
+    let rows = app
+        .tracer_data()
+        .hops_for_flow(app.selected_flow)
+        .iter()
+        .map(|hop| {
+            render_table_row(
+                app,
+                hop,
+                &app.resolver,
+                &app.geoip_lookup,
+                &app.tui_config,
+                &config.tui_columns,
+            )
+        });
     let table = Table::new(rows, widths.as_slice())
         .header(header)
         .block(

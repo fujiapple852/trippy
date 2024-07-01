@@ -2,7 +2,6 @@ use crate::app::TraceInfo;
 use crate::report::types::Hop;
 use anyhow::anyhow;
 use std::thread::sleep;
-use trippy_core::State;
 use trippy_dns::Resolver;
 
 /// Display a continuous stream of trace data.
@@ -17,7 +16,7 @@ pub fn report<R: Resolver>(info: &TraceInfo, resolver: &R) -> anyhow::Result<()>
         if let Some(err) = trace_data.error() {
             return Err(anyhow!("error: {}", err));
         }
-        for hop in trace_data.hops(State::default_flow_id()) {
+        for hop in trace_data.hops() {
             let hop = Hop::from((hop, resolver));
             let ttl = hop.ttl;
             let addrs = hop.hosts.to_string();

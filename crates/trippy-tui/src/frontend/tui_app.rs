@@ -93,14 +93,14 @@ impl TuiApp {
     pub fn selected_hop_or_target(&self) -> &Hop {
         self.table_state.selected().map_or_else(
             || self.tracer_data().target_hop(self.selected_flow),
-            |s| &self.tracer_data().hops(self.selected_flow)[s],
+            |s| &self.tracer_data().hops_for_flow(self.selected_flow)[s],
         )
     }
 
     pub fn selected_hop(&self) -> Option<&Hop> {
         self.table_state
             .selected()
-            .map(|s| &self.tracer_data().hops(self.selected_flow)[s])
+            .map(|s| &self.tracer_data().hops_for_flow(self.selected_flow)[s])
     }
 
     pub fn tracer_config(&self) -> &TraceInfo {
@@ -108,7 +108,7 @@ impl TuiApp {
     }
 
     pub fn clamp_selected_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(self.selected_flow).len();
+        let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
         if let Some(selected) = self.table_state.selected() {
             if selected > hop_count - 1 {
                 self.table_state.select(Some(hop_count - 1));
@@ -141,7 +141,7 @@ impl TuiApp {
     }
 
     pub fn next_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(self.selected_flow).len();
+        let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -161,7 +161,7 @@ impl TuiApp {
     }
 
     pub fn previous_hop(&mut self) {
-        let hop_count = self.tracer_data().hops(self.selected_flow).len();
+        let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
         if hop_count == 0 {
             return;
         }
@@ -434,7 +434,7 @@ impl TuiApp {
     /// The maximum number of hosts per hop for the currently selected trace.
     pub fn max_hosts(&self) -> Option<u8> {
         self.selected_tracer_data
-            .hops(self.selected_flow)
+            .hops_for_flow(self.selected_flow)
             .iter()
             .map(|h| h.addrs().count())
             .max()
