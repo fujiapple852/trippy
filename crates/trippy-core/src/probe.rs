@@ -2,21 +2,39 @@ use crate::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 
-/// A tracing probe.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum ProbeStatus {
-    /// The probe has not been sent.
-    #[default]
-    NotSent,
-    /// The probe was skipped.
-    Skipped,
-    /// The probe has been sent and is awaiting a response.
-    Awaited(Probe),
-    /// The probe has been sent and a response has been received.
-    Complete(ProbeComplete),
-}
-
-/// A probe that was sent and is awaiting a response.
+/// Represents a network tracing probe.
+///
+/// A `Probe` is a packet sent across the network to trace the path to a target host.
+/// It contains information such as sequence number, trace identifier, ports, and TTL.
+///
+/// # Examples
+///
+/// Creating a probe:
+///
+/// ```
+/// use trippy_core::probe::Probe;
+/// use trippy_core::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
+/// use std::time::SystemTime;
+///
+/// let probe = Probe::new(
+///     Sequence(1),
+///     TraceId(2),
+///     Port(33434),
+///     Port(33435),
+///     TimeToLive(64),
+///     RoundId(1),
+///     SystemTime::now(),
+///     Flags::empty(),
+/// );
+/// ```
+///
+/// # Errors
+///
+/// This struct does not directly return errors, but errors may occur when sending or receiving probes.
+///
+/// # Panics
+///
+/// This struct does not panic under normal operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Probe {
     /// The sequence of the probe.
@@ -87,9 +105,49 @@ impl Probe {
     }
 }
 
-/// A probe that has been sent and a response has been received.
+/// Represents the completion of a probe with a response.
 ///
-/// Either an `EchoReply`, `DestinationUnreachable` or `TimeExceeded` has been received.
+/// `ProbeComplete` is created when a probe sent across the network receives a response.
+/// It contains additional information about the response such as the responding host,
+/// the time the response was received, and any ICMP extensions.
+///
+/// # Examples
+///
+/// Creating a completed probe:
+///
+/// ```
+/// use trippy_core::probe::{Probe, ProbeComplete, IcmpPacketType};
+/// use trippy_core::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
+/// use std::net::IpAddr;
+/// use std::str::FromStr;
+/// use std::time::SystemTime;
+///
+/// let probe = Probe::new(
+///     Sequence(1),
+///     TraceId(2),
+///     Port(33434),
+///     Port(33435),
+///     TimeToLive(64),
+///     RoundId(1),
+///     SystemTime::now(),
+///     Flags::empty(),
+/// );
+///
+/// let completed_probe = probe.complete(
+///     IpAddr::from_str("192.0.2.1").unwrap(),
+///     SystemTime::now(),
+///     IcmpPacketType::EchoReply,
+///     None,
+/// );
+/// ```
+///
+/// # Errors
+///
+/// This struct does not directly return errors, but errors may occur when processing probe responses.
+///
+/// # Panics
+///
+/// This struct does not panic under normal operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProbeComplete {
     /// The sequence of the probe.

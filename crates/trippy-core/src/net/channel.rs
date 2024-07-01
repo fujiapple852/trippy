@@ -17,6 +17,32 @@ pub const MAX_PACKET_SIZE: usize = 1024;
 const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `Probe` packets.
+///
+/// The `Channel` struct is responsible for managing the network communication for sending probes
+/// and receiving responses. It abstracts over the underlying network protocol (ICMP, UDP, TCP)
+/// and provides a unified interface for probe dispatch and response collection.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```no_run
+/// use trippy_core::config::ChannelConfig;
+/// use trippy_core::net::channel::Channel;
+/// use trippy_core::net::socket::SocketImpl;
+///
+/// let config = ChannelConfig::default();
+/// let mut channel: Channel<SocketImpl> = Channel::connect(&config).unwrap();
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if the channel fails to connect due to an invalid configuration
+/// or underlying network issue.
+///
+/// # Panics
+///
+/// This function will panic if it fails to perform network operations required for setting up the channel.
 pub struct Channel<S: Socket> {
     privilege_mode: PrivilegeMode,
     protocol: Protocol,
