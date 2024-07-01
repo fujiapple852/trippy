@@ -98,6 +98,20 @@ impl Default for Builder {
 
 impl Builder {
     /// Build a tracer builder for a given target.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = std::net::IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn new(target_addr: IpAddr) -> Self {
         Self {
@@ -110,6 +124,20 @@ impl Builder {
     ///
     /// If not set then the source address will be discovered based on the
     /// target address and the interface.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let source_addr = IpAddr::from([192, 168, 1, 1]);
+    /// let tracer = Builder::new(addr).source_addr(Some(source_addr)).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn source_addr(self, source_addr: Option<IpAddr>) -> Self {
         Self {
@@ -125,6 +153,19 @@ impl Builder {
     ///
     /// If not provided the source address will be determined by OS based on
     /// the target IPv4 or IPv6 address.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).interface(Some("eth0")).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn interface<S: Into<String>>(self, interface: Option<S>) -> Self {
         Self {
@@ -134,6 +175,19 @@ impl Builder {
     }
 
     /// Set the protocol.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::{Builder, Protocol};
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).protocol(Protocol::Udp).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn protocol(self, protocol: Protocol) -> Self {
         Self { protocol, ..self }
@@ -142,6 +196,17 @@ impl Builder {
     /// Set the trace identifier.
     ///
     /// If not set then 0 will be used as the trace identifier.
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).trace_identifier(12345).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn trace_identifier(self, trace_id: u16) -> Self {
         Self {
@@ -151,6 +216,21 @@ impl Builder {
     }
 
     /// Set the privilege mode.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::{Builder, PrivilegeMode};
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .privilege_mode(PrivilegeMode::Unprivileged)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn privilege_mode(self, privilege_mode: PrivilegeMode) -> Self {
         Self {
@@ -160,6 +240,21 @@ impl Builder {
     }
 
     /// Set the multipath strategy.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::{Builder, MultipathStrategy};
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .multipath_strategy(MultipathStrategy::Paris)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn multipath_strategy(self, multipath_strategy: MultipathStrategy) -> Self {
         Self {
@@ -169,6 +264,19 @@ impl Builder {
     }
 
     /// Set the packet size.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).packet_size(128).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn packet_size(self, packet_size: u16) -> Self {
         Self {
@@ -178,6 +286,19 @@ impl Builder {
     }
 
     /// Set the payload pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).payload_pattern(0xff).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn payload_pattern(self, payload_pattern: u8) -> Self {
         Self {
@@ -187,6 +308,19 @@ impl Builder {
     }
 
     /// Set the type of service.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).tos(0x1a).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn tos(self, tos: u8) -> Self {
         Self {
@@ -196,6 +330,21 @@ impl Builder {
     }
 
     /// Set the ICMP extensions mode.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::{Builder, IcmpExtensionParseMode};
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .icmp_extension_parse_mode(IcmpExtensionParseMode::Enabled)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn icmp_extension_parse_mode(
         self,
@@ -208,6 +357,22 @@ impl Builder {
     }
 
     /// Set the read timeout.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use std::time::Duration;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .read_timeout(Duration::from_millis(50))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn read_timeout(self, read_timeout: Duration) -> Self {
         Self {
@@ -217,6 +382,22 @@ impl Builder {
     }
 
     /// Set the TCP connect timeout.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use std::time::Duration;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .tcp_connect_timeout(Duration::from_millis(100))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn tcp_connect_timeout(self, tcp_connect_timeout: Duration) -> Self {
         Self {
@@ -226,6 +407,22 @@ impl Builder {
     }
 
     /// Set the maximum number of rounds.
+    ///
+    /// If set to `None` then the tracer will run indefinitely, otherwise it
+    /// will stop after the given number of rounds.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).max_rounds(Some(10)).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_rounds(self, max_rounds: Option<usize>) -> Self {
         Self {
@@ -236,6 +433,19 @@ impl Builder {
     }
 
     /// Set the first ttl.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).first_ttl(2).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn first_ttl(self, first_ttl: u8) -> Self {
         Self {
@@ -245,6 +455,19 @@ impl Builder {
     }
 
     /// Set the maximum ttl.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).max_ttl(16).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_ttl(self, max_ttl: u8) -> Self {
         Self {
@@ -254,6 +477,22 @@ impl Builder {
     }
 
     /// Set the grace duration.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use std::time::Duration;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .grace_duration(Duration::from_millis(100))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn grace_duration(self, grace_duration: Duration) -> Self {
         Self {
@@ -262,7 +501,20 @@ impl Builder {
         }
     }
 
-    /// Set the max inflight.
+    /// Set the max number of probes in flight at any given time.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).max_inflight(22).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_inflight(self, max_inflight: u8) -> Self {
         Self {
@@ -271,7 +523,20 @@ impl Builder {
         }
     }
 
-    /// Set the initial sequence.
+    /// Set the initial sequence number.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).initial_sequence(35000).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn initial_sequence(self, initial_sequence: u16) -> Self {
         Self {
@@ -281,6 +546,21 @@ impl Builder {
     }
 
     /// Set the port direction.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::{Builder, Port, PortDirection};
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .port_direction(PortDirection::FixedDest(Port(8080)))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn port_direction(self, port_direction: PortDirection) -> Self {
         Self {
@@ -290,6 +570,22 @@ impl Builder {
     }
 
     /// Set the minimum round duration.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use std::time::Duration;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .min_round_duration(Duration::from_millis(500))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn min_round_duration(self, min_round_duration: Duration) -> Self {
         Self {
@@ -299,6 +595,22 @@ impl Builder {
     }
 
     /// Set the maximum round duration.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use std::time::Duration;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .max_round_duration(Duration::from_millis(1500))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_round_duration(self, max_round_duration: Duration) -> Self {
         Self {
@@ -308,6 +620,19 @@ impl Builder {
     }
 
     /// Set the maximum number of samples to record.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).max_samples(256).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_samples(self, max_samples: usize) -> Self {
         Self {
@@ -317,12 +642,38 @@ impl Builder {
     }
 
     /// Set the maximum number of flows to record.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).max_flows(64).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn max_flows(self, max_flows: usize) -> Self {
         Self { max_flows, ..self }
     }
 
     /// Drop privileges after connection is established.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).drop_privileges(true).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn drop_privileges(self, drop_privileges: bool) -> Self {
         Self {
@@ -332,6 +683,23 @@ impl Builder {
     }
 
     /// Build the `Tracer`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use std::net::IpAddr;
+    /// use trippy_core::Builder;
+    ///
+    /// let addr = IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr).build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function will return `Error::BadConfig` if the configuration is invalid.
     pub fn build(self) -> Result<Tracer> {
         match (self.protocol, self.port_direction) {
             (Protocol::Udp, PortDirection::None) => {
