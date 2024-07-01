@@ -445,7 +445,7 @@ fn format_extensions_full(extensions: &Extensions) -> Option<String> {
 
 /// Format a list all known and unknown extensions with full details.
 ///
-/// `mpls(label=48320, ttl=1, exp=0, bos=1), mpls(label=...), unknown(class=1, sub=1, object=0b c8 c1 01), ...`
+/// `mpls(label=48320, ttl=1, exp=0, bos=1), unknown(class=1, sub=1, object=0b c8 c1 01), ...`
 fn format_extensions_all(extensions: &Extensions) -> String {
     extensions
         .extensions
