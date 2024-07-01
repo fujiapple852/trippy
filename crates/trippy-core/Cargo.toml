@@ -54,7 +54,7 @@ serde_yaml.workspace = true
 test-case.workspace = true
 tokio-util.workspace = true
 tokio = { workspace = true, features = [ "full" ] }
-tracing-subscriber.workspace = true
+tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "fmt" ] }
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
