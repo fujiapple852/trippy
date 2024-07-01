@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use test_case::test_case;
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 /// The maximum number of attempts for each test.
@@ -62,6 +62,11 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     let runtime = runtime().lock().unwrap();
     let simulation = Arc::new(simulation);
     let name = simulation.name.clone();
+    if !trippy_privilege::Privilege::discover()?.has_privileges() {
+        // Skip if the current test as the user cannot create a tun device.
+        warn!("skipping test {}: insufficient privileges", name);
+        return Ok(());
+    }
     for attempt in 1..=MAX_ATTEMPTS {
         info!("start simulating {} [attempt #{}]", name, attempt);
         if let Err(err) = runtime.block_on(run_simulation(simulation.clone())) {
