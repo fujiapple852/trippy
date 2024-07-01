@@ -11,10 +11,11 @@ use std::time::Duration;
 /// The state of a trace.
 #[derive(Debug, Clone, Default)]
 pub struct State {
+    /// The configuration for the state.
     state_config: StateConfig,
     /// The flow id for the current round.
     round_flow_id: FlowId,
-    /// Tracing data per registered flow id.
+    /// Tracing state per registered flow id.
     state: HashMap<FlowId, FlowState>,
     /// Flow registry.
     registry: FlowRegistry,
@@ -23,7 +24,7 @@ pub struct State {
 }
 
 impl State {
-    /// Create a new `Trace`.
+    /// Create a new `State`.
     #[must_use]
     pub fn new(state_config: StateConfig) -> Self {
         Self {
@@ -98,6 +99,7 @@ impl State {
         self.registry.flows()
     }
 
+    /// The error message for the trace, if any.
     #[must_use]
     pub fn error(&self) -> Option<&str> {
         self.error.as_deref()
