@@ -14,6 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   page ([#85](https://github.com/fujiapple852/trippy/issues/85))
 - Added support for last icmp packet type (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
 - Added support for last icmp packet code (`C`) column ([#1109](https://github.com/fujiapple852/trippy/issues/1109))
+- Added settings dialog tab hotkeys ([#1217](https://github.com/fujiapple852/trippy/issues/1217))
 
 ### Changed
 
