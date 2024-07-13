@@ -182,6 +182,8 @@ pub enum ColumnType {
     LastIcmpPacketType,
     /// The icmp packet code for the last probe for this hop.
     LastIcmpPacketCode,
+    /// The NAT detection status for the last probe for this hop.
+    LastNatStatus,
 }
 
 impl From<ColumnType> for char {
@@ -207,6 +209,7 @@ impl From<ColumnType> for char {
             ColumnType::LastSeq => 'Q',
             ColumnType::LastIcmpPacketType => 'T',
             ColumnType::LastIcmpPacketCode => 'C',
+            ColumnType::LastNatStatus => 'N',
         }
     }
 }
@@ -234,6 +237,7 @@ impl From<TuiColumn> for Column {
             TuiColumn::LastSeq => Self::new_shown(ColumnType::LastSeq),
             TuiColumn::LastIcmpPacketType => Self::new_shown(ColumnType::LastIcmpPacketType),
             TuiColumn::LastIcmpPacketCode => Self::new_shown(ColumnType::LastIcmpPacketCode),
+            TuiColumn::LastNatStatus => Self::new_shown(ColumnType::LastNatStatus),
         }
     }
 }
@@ -261,6 +265,7 @@ impl Display for ColumnType {
             Self::LastSeq => write!(f, "Seq"),
             Self::LastIcmpPacketType => write!(f, "Type"),
             Self::LastIcmpPacketCode => write!(f, "Code"),
+            Self::LastNatStatus => write!(f, "Nat"),
         }
     }
 }
@@ -290,6 +295,7 @@ impl ColumnType {
             Self::LastSeq => ColumnWidth::Fixed(7),
             Self::LastIcmpPacketType => ColumnWidth::Fixed(7),
             Self::LastIcmpPacketCode => ColumnWidth::Fixed(7),
+            Self::LastNatStatus => ColumnWidth::Fixed(7),
         }
     }
 }
@@ -348,6 +354,7 @@ mod tests {
                 Column::new_hidden(ColumnType::LastSeq),
                 Column::new_hidden(ColumnType::LastIcmpPacketType),
                 Column::new_hidden(ColumnType::LastIcmpPacketCode),
+                Column::new_hidden(ColumnType::LastNatStatus),
             ])
         );
     }
