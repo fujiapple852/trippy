@@ -46,6 +46,6 @@ const HELP_LINES: [&str; 22] = [
     "+ & -            - zoom chart in and out",
     "z                - toggle AS information (if available)",
     "h or ?           - toggle help",
-    "s                - toggle settings",
+    "s                - toggle settings (jump to tab with 1-7 keys)",
     "q                - quit",
 ];

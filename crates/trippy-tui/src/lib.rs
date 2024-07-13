@@ -1,4 +1,8 @@
-#![allow(clippy::struct_excessive_bools, clippy::cast_sign_loss)]
+#![allow(
+    clippy::struct_excessive_bools,
+    clippy::cast_sign_loss,
+    clippy::struct_field_names
+)]
 #![forbid(unsafe_code)]
 
 use crate::config::TrippyAction;

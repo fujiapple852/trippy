@@ -301,6 +301,34 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("toggle-help", format!("{}", binds.toggle_help)),
         SettingsItem::new("toggle-help-alt", format!("{}", binds.toggle_help_alt)),
         SettingsItem::new("toggle-settings", format!("{}", binds.toggle_settings)),
+        SettingsItem::new(
+            "toggle-settings-tui",
+            format!("{}", binds.toggle_settings_tui),
+        ),
+        SettingsItem::new(
+            "toggle-settings-trace",
+            format!("{}", binds.toggle_settings_trace),
+        ),
+        SettingsItem::new(
+            "toggle-settings-dns",
+            format!("{}", binds.toggle_settings_dns),
+        ),
+        SettingsItem::new(
+            "toggle-settings-geoip",
+            format!("{}", binds.toggle_settings_geoip),
+        ),
+        SettingsItem::new(
+            "toggle-settings-bindings",
+            format!("{}", binds.toggle_settings_bindings),
+        ),
+        SettingsItem::new(
+            "toggle-settings-theme",
+            format!("{}", binds.toggle_settings_theme),
+        ),
+        SettingsItem::new(
+            "toggle-settings-columns",
+            format!("{}", binds.toggle_settings_columns),
+        ),
         SettingsItem::new("next-hop", format!("{}", binds.next_hop)),
         SettingsItem::new("previous-hop", format!("{}", binds.previous_hop)),
         SettingsItem::new("next-trace", format!("{}", binds.next_trace)),
@@ -467,7 +495,7 @@ pub const SETTINGS_TABS: [(&str, usize); 7] = [
     ("Trace", 17),
     ("Dns", 4),
     ("GeoIp", 1),
-    ("Bindings", 29),
+    ("Bindings", 36),
     ("Theme", 31),
     ("Columns", 0),
 ];
