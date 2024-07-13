@@ -11,8 +11,8 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::rc::Rc;
-use trippy_core::Hop;
 use trippy_core::{Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension};
+use trippy_core::{Hop, NatStatus};
 use trippy_dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 
 /// Render the table of data about the hops.
@@ -163,11 +163,20 @@ fn new_cell(
         ColumnType::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
         ColumnType::LastIcmpPacketType => render_icmp_packet_type_cell(hop.last_icmp_packet_type()),
         ColumnType::LastIcmpPacketCode => render_icmp_packet_code_cell(hop.last_icmp_packet_type()),
+        ColumnType::LastNatStatus => render_nat_cell(hop.last_nat_status()),
     }
 }
 
 fn render_usize_cell(value: usize) -> Cell<'static> {
     Cell::from(format!("{value}"))
+}
+
+fn render_nat_cell(value: NatStatus) -> Cell<'static> {
+    Cell::from(match value {
+        NatStatus::NotApplicable => "n/a",
+        NatStatus::NotDetected => "No",
+        NatStatus::Detected => "Yes",
+    })
 }
 
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
@@ -336,12 +345,19 @@ fn format_address(
     } else {
         None
     };
+    let nat = match hop.last_nat_status() {
+        NatStatus::Detected => Some("NAT"),
+        _ => None,
+    };
     let mut address = addr_fmt;
     if let Some(geo) = geo_fmt.as_deref() {
         address.push_str(&format!(" [{geo}]"));
     }
     if let Some(exp) = exp_fmt {
         address.push_str(&format!(" [{exp}]"));
+    }
+    if let Some(nat) = nat {
+        address.push_str(&format!(" [{nat}]"));
     }
     if let Some(freq) = freq_fmt {
         address.push_str(&format!(" [{freq}]"));
@@ -521,9 +537,10 @@ fn format_details(
         dns.lazy_reverse_lookup(*addr)
     };
     let ext = hop.extensions();
+    let nat = hop.last_nat_status();
     match dns_entry {
         DnsEntry::Pending(addr) => {
-            fmt_details_line(addr, index, count, None, None, geoip, ext, config)
+            fmt_details_line(addr, index, count, None, None, geoip, ext, nat, config)
         }
         DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => fmt_details_line(
             addr,
@@ -533,6 +550,7 @@ fn format_details(
             Some(asinfo),
             geoip,
             ext,
+            nat,
             config,
         ),
         DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => fmt_details_line(
@@ -543,14 +561,31 @@ fn format_details(
             Some(asinfo),
             geoip,
             ext,
+            nat,
             config,
         ),
-        DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => {
-            fmt_details_line(addr, index, count, Some(hosts), None, geoip, ext, config)
-        }
-        DnsEntry::NotFound(Unresolved::Normal(addr)) => {
-            fmt_details_line(addr, index, count, Some(vec![]), None, geoip, ext, config)
-        }
+        DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => fmt_details_line(
+            addr,
+            index,
+            count,
+            Some(hosts),
+            None,
+            geoip,
+            ext,
+            nat,
+            config,
+        ),
+        DnsEntry::NotFound(Unresolved::Normal(addr)) => fmt_details_line(
+            addr,
+            index,
+            count,
+            Some(vec![]),
+            None,
+            geoip,
+            ext,
+            nat,
+            config,
+        ),
         DnsEntry::Failed(ip) => {
             format!("Failed: {ip}")
         }
@@ -582,9 +617,10 @@ fn fmt_details_line(
     asinfo: Option<AsInfo>,
     geoip: Option<Rc<GeoIpCity>>,
     extensions: Option<&Extensions>,
+    nat: NatStatus,
     config: &TuiConfig,
 ) -> String {
-    let as_formatted = match (config.lookup_as_info, asinfo) {
+    let as_fmt = match (config.lookup_as_info, asinfo) {
         (false, _) => "AS Name: <not enabled>\nAS Info: <not enabled>".to_string(),
         (true, None) => "AS Name: <awaited>\nAS Info: <awaited>".to_string(),
         (true, Some(info)) if info.asn.is_empty() => {
@@ -604,7 +640,7 @@ fn fmt_details_line(
     } else {
         "Host: <awaited>".to_string()
     };
-    let geoip_formatted = if let Some(geo) = geoip {
+    let geoip_fmt = if let Some(geo) = geoip {
         let (lat, long, radius) = geo.coordinates().unwrap_or_default();
         format!(
             "Geo: {}\nPos: {}, {} (~{}km)",
@@ -616,10 +652,16 @@ fn fmt_details_line(
     } else {
         "Geo: <not found>\nPos: <not found>".to_string()
     };
-    let ext_formatted = if let Some(extensions) = extensions {
+    let ext_fmt = if let Some(extensions) = extensions {
         format!("Ext: [{}]", format_extensions_all(extensions))
     } else {
         "Ext: <none>".to_string()
     };
-    format!("{addr} [{index} of {count}]\n{hosts_rendered}\n{as_formatted}\n{geoip_formatted}\n{ext_formatted}")
+    let nat_fmt = match nat {
+        NatStatus::Detected => " [NAT]",
+        _ => "",
+    };
+    format!(
+        "{addr}{nat_fmt} [{index} of {count}]\n{hosts_rendered}\n{as_fmt}\n{geoip_fmt}\n{ext_fmt}"
+    )
 }
