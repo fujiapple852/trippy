@@ -1,6 +1,7 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
+use crate::types::Checksum;
 use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, RoundId, TimeToLive};
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -186,6 +187,8 @@ pub struct Hop {
     last_sequence: u16,
     /// The icmp packet type for the last probe for this hop.
     last_icmp_packet_type: Option<IcmpPacketType>,
+    /// The NAT detection status for the last probe for this hop.
+    last_nat_status: NatStatus,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
     /// The ICMP extensions for this hop.
@@ -325,6 +328,12 @@ impl Hop {
         self.last_icmp_packet_type
     }
 
+    /// The NAT detection status for the last probe for this hop.
+    #[must_use]
+    pub const fn last_nat_status(&self) -> NatStatus {
+        self.last_nat_status
+    }
+
     /// The last N samples.
     #[must_use]
     pub fn samples(&self) -> &[Duration] {
@@ -360,8 +369,20 @@ impl Default for Hop {
             m2: 0f64,
             samples: Vec::default(),
             extensions: None,
+            last_nat_status: NatStatus::NotApplicable,
         }
     }
+}
+
+/// The state of a NAT detection for a `Hop`.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum NatStatus {
+    /// NAT detection was not applicable.
+    NotApplicable,
+    /// NAT was not detected at this hop.
+    NotDetected,
+    /// NAT was detected at this hop.
+    Detected,
 }
 
 /// Data for a single trace flow.
@@ -434,12 +455,13 @@ impl FlowState {
         self.round_count += 1;
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
         self.highest_ttl_for_round = round.largest_ttl.0;
+        let mut prev_hop_checksum = None;
         for probe in round.probes {
-            self.update_from_probe(probe);
+            self.update_from_probe(probe, &mut prev_hop_checksum);
         }
     }
 
-    fn update_from_probe(&mut self, probe: &ProbeStatus) {
+    fn update_from_probe(&mut self, probe: &ProbeStatus, prev_hop_checksum: &mut Option<u16>) {
         match probe {
             ProbeStatus::Complete(complete) => {
                 self.update_lowest_ttl(complete.ttl);
@@ -482,6 +504,14 @@ impl FlowState {
                 hop.last_dest_port = complete.dest_port.0;
                 hop.last_sequence = complete.sequence.0;
                 hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
+
+                if let (Some(expected), Some(actual)) =
+                    (complete.expected_udp_checksum, complete.actual_udp_checksum)
+                {
+                    let (nat_status, checksum) = nat_status(expected, actual, *prev_hop_checksum);
+                    hop.last_nat_status = nat_status;
+                    *prev_hop_checksum = Some(checksum);
+                }
             }
             ProbeStatus::Awaited(awaited) => {
                 self.update_lowest_ttl(awaited.ttl);
@@ -517,9 +547,41 @@ impl FlowState {
     }
 }
 
+/// Determine the NAT detection status.
+///
+/// Returns a tuple of the NAT detection status and the checksum to use for the next hop.
+const fn nat_status(
+    expected: Checksum,
+    actual: Checksum,
+    prev_hop_checksum: Option<u16>,
+) -> (NatStatus, u16) {
+    if let Some(prev_hop_checksum) = prev_hop_checksum {
+        // If the actual checksum matches the checksum of the previous probe
+        // then we can assume NAT has not occurred.  Note that it is perfectly
+        // valid for the expected checksum to differ from the actual checksum
+        // in this case as the NAT'ed checksum "carries forward" throughout the
+        // remainder of the hops on the path.
+        if prev_hop_checksum == actual.0 {
+            (NatStatus::NotDetected, prev_hop_checksum)
+        } else {
+            (NatStatus::Detected, actual.0)
+        }
+    } else {
+        // If we have no prior checksum (i.e. this is the first probe that
+        // responded) and the expected and actual checksums do not match then
+        // we can assume NAT has occurred.
+        if expected.0 == actual.0 {
+            (NatStatus::NotDetected, actual.0)
+        } else {
+            (NatStatus::Detected, actual.0)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::Checksum;
     use crate::{
         CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeStatus, Sequence,
         TimeToLive, TraceId,
@@ -531,6 +593,15 @@ mod tests {
     use std::str::FromStr;
     use std::time::SystemTime;
     use test_case::test_case;
+
+    #[test_case(123, 123, None => (NatStatus::NotDetected, 123); "first hop matching checksum")]
+    #[test_case(123, 321, None => (NatStatus::Detected, 321); "first hop non-matching checksum")]
+    #[test_case(123, 123, Some(123) => (NatStatus::NotDetected, 123); "non-first hop matching checksum match previous")]
+    #[test_case(999, 999, Some(321) => (NatStatus::Detected, 999); "non-first hop matching checksum not match previous")]
+    #[test_case(777, 888, Some(321) => (NatStatus::Detected, 888); "non-first hop non-matching checksum not match previous")]
+    const fn test_nat(expected: u16, actual: u16, prev: Option<u16>) -> (NatStatus, u16) {
+        nat_status(Checksum(expected), Checksum(actual), prev)
+    }
 
     /// A test scenario.
     #[derive(Deserialize, Debug)]
@@ -562,9 +633,9 @@ mod tests {
         type Error = anyhow::Error;
 
         fn try_from(value: String) -> Result<Self, Self::Error> {
-            // format: {ttl} {status} {duration} {host} {sequence} {src_port} {dest_port}
+            // format: {ttl} {status} {duration} {host} {sequence} {src_port} {dest_port} {checksum}
             let values = value.split_ascii_whitespace().collect::<Vec<_>>();
-            if values.len() == 7 {
+            if values.len() == 9 {
                 let ttl = TimeToLive(u8::from_str(values[0])?);
                 let state = values[1].to_ascii_lowercase();
                 let sequence = Sequence(u16::from_str(values[4])?);
@@ -590,6 +661,8 @@ mod tests {
                         let host = IpAddr::from_str(values[3])?;
                         let duration = Duration::from_millis(u64::from_str(values[2])?);
                         let received = sent.add(duration);
+                        let expected_udp_checksum = Some(Checksum(u16::from_str(values[7])?));
+                        let actual_udp_checksum = Some(Checksum(u16::from_str(values[8])?));
                         let icmp_packet_type = IcmpPacketType::NotApplicable;
                         Ok(ProbeStatus::Complete(
                             Probe::new(
@@ -606,6 +679,8 @@ mod tests {
                                 host,
                                 received,
                                 icmp_packet_type,
+                                expected_udp_checksum,
+                                actual_udp_checksum,
                                 None,
                             ),
                         ))
@@ -619,7 +694,7 @@ mod tests {
         }
     }
 
-    /// A helper struct so wwe may inject the round into the probes.
+    /// A helper struct so we may inject the round into the probes.
     struct ProbeRound(ProbeData, RoundId);
 
     impl From<ProbeRound> for ProbeStatus {
@@ -664,6 +739,25 @@ mod tests {
         last_src: u16,
         last_dest: u16,
         last_sequence: u16,
+        last_nat_status: NatStatusWrapper,
+    }
+
+    /// A wrapper struct over `NatStatus` to allow deserialization.
+    #[derive(Deserialize, Debug, Clone)]
+    #[serde(try_from = "String")]
+    struct NatStatusWrapper(NatStatus);
+
+    impl TryFrom<String> for NatStatusWrapper {
+        type Error = anyhow::Error;
+
+        fn try_from(value: String) -> Result<Self, Self::Error> {
+            match value.to_ascii_lowercase().as_str() {
+                "none" => Ok(Self(NatStatus::NotApplicable)),
+                "nat" => Ok(Self(NatStatus::Detected)),
+                "no_nat" => Ok(Self(NatStatus::NotDetected)),
+                _ => Err(anyhow!("unknown nat status")),
+            }
+        }
     }
 
     macro_rules! file {
@@ -677,6 +771,7 @@ mod tests {
     #[test_case(file!("ipv4_3probes_3hops_completed.yaml"))]
     #[test_case(file!("ipv4_4probes_all_status.yaml"))]
     #[test_case(file!("ipv4_4probes_0latency.yaml"))]
+    #[test_case(file!("ipv4_nat.yaml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,
@@ -716,6 +811,7 @@ mod tests {
             assert_eq!(actual.last_src_port(), expected.last_src);
             assert_eq!(actual.last_dest_port(), expected.last_dest);
             assert_eq!(actual.last_sequence(), expected.last_sequence);
+            assert_eq!(actual.last_nat_status(), expected.last_nat_status.0);
             assert_eq!(
                 Some(
                     actual

@@ -210,12 +210,18 @@ pub fn recv_icmp_probe<S: Socket>(
     recv_socket: &mut S,
     protocol: Protocol,
     icmp_extension_mode: IcmpExtensionParseMode,
+    payload_pattern: PayloadPattern,
 ) -> Result<Option<Response>> {
     let mut buf = [0_u8; MAX_PACKET_SIZE];
     match recv_socket.read(&mut buf) {
         Ok(bytes_read) => {
             let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
-            Ok(extract_probe_resp(protocol, icmp_extension_mode, &ipv4)?)
+            Ok(extract_probe_resp(
+                protocol,
+                icmp_extension_mode,
+                payload_pattern,
+                &ipv4,
+            )?)
         }
         Err(err) => match err.kind() {
             ErrorKind::WouldBlock => Ok(None),
@@ -303,6 +309,28 @@ fn make_udp_packet<'a>(
     Ok(udp)
 }
 
+/// Calculate the expected checksum for a UDP packet.
+pub fn calc_udp_checksum(
+    src_addr: Ipv4Addr,
+    dest_addr: Ipv4Addr,
+    src_port: Port,
+    dest_port: Port,
+    payload_size: u16,
+    payload_pattern: PayloadPattern,
+) -> Result<u16> {
+    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..usize::from(payload_size)];
+    let udp = make_udp_packet(
+        &mut udp_buf,
+        src_addr,
+        dest_addr,
+        src_port.0,
+        dest_port.0,
+        payload,
+    )?;
+    Ok(udp.get_checksum())
+}
+
 /// Create an `Ipv4Packet`.
 #[allow(clippy::too_many_arguments)]
 fn make_ipv4_packet<'a>(
@@ -348,6 +376,7 @@ const fn udp_payload_size(packet_size: usize) -> usize {
 fn extract_probe_resp(
     protocol: Protocol,
     icmp_extension_mode: IcmpExtensionParseMode,
+    payload_pattern: PayloadPattern,
     ipv4: &Ipv4Packet<'_>,
 ) -> Result<Option<Response>> {
     let recv = SystemTime::now();
@@ -370,7 +399,7 @@ fn extract_probe_resp(
                         (ipv4, None)
                     }
                 };
-                extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
+                extract_probe_resp_seq(&nested_ipv4, protocol, payload_pattern)?.map(|resp_seq| {
                     Response::TimeExceeded(
                         ResponseData::new(recv, src, resp_seq),
                         IcmpPacketCode(icmp_code.0),
@@ -390,7 +419,7 @@ fn extract_probe_resp(
                 }
                 IcmpExtensionParseMode::Disabled => None,
             };
-            extract_probe_resp_seq(&nested_ipv4, protocol)?.map(|resp_seq| {
+            extract_probe_resp_seq(&nested_ipv4, protocol, payload_pattern)?.map(|resp_seq| {
                 Response::DestinationUnreachable(
                     ResponseData::new(recv, src, resp_seq),
                     IcmpPacketCode(icmp_code.0),
@@ -419,6 +448,7 @@ fn extract_probe_resp(
 fn extract_probe_resp_seq(
     ipv4: &Ipv4Packet<'_>,
     protocol: Protocol,
+    payload_pattern: PayloadPattern,
 ) -> Result<Option<ResponseSeq>> {
     Ok(match (protocol, ipv4.get_protocol()) {
         (Protocol::Icmp, IpProtocol::Icmp) => {
@@ -430,14 +460,23 @@ fn extract_probe_resp_seq(
             )))
         }
         (Protocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port, checksum, identifier, payload_length) =
+            let (src_port, dest_port, actual_checksum, identifier, payload_length) =
                 extract_udp_packet(ipv4)?;
+            let expected_checksum = calc_udp_checksum(
+                ipv4.get_source(),
+                ipv4.get_destination(),
+                Port(src_port),
+                Port(dest_port),
+                payload_length,
+                payload_pattern,
+            )?;
             Some(ResponseSeq::Udp(ResponseSeqUdp::new(
                 identifier,
                 IpAddr::V4(ipv4.get_destination()),
                 src_port,
                 dest_port,
-                checksum,
+                expected_checksum,
+                actual_checksum,
                 payload_length,
                 false,
             )))
@@ -1036,6 +1075,7 @@ mod tests {
             &mut mocket,
             Protocol::Icmp,
             IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
         )?
         .unwrap();
 
@@ -1086,6 +1126,7 @@ mod tests {
             &mut mocket,
             Protocol::Icmp,
             IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
         )?
         .unwrap();
 
@@ -1135,6 +1176,7 @@ mod tests {
             &mut mocket,
             Protocol::Icmp,
             IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
         )?
         .unwrap();
 
@@ -1180,8 +1222,13 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp =
-            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
+        )?
+        .unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1192,7 +1239,8 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
-                        checksum,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
                         payload_len,
                         has_magic,
                     }),
@@ -1212,7 +1260,8 @@ mod tests {
         );
         assert_eq!(31829, src_port);
         assert_eq!(33030, dest_port);
-        assert_eq!(58571, checksum);
+        assert_eq!(58571, expected_udp_checksum);
+        assert_eq!(58571, actual_udp_checksum);
         assert_eq!(56, payload_len);
         assert!(!has_magic);
         assert_eq!(IcmpPacketCode(0), icmp_code);
@@ -1238,8 +1287,13 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp =
-            recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Disabled)?.unwrap();
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
+        )?
+        .unwrap();
 
         let Response::DestinationUnreachable(
             ResponseData {
@@ -1250,7 +1304,8 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
-                        checksum,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
                         payload_len,
                         has_magic,
                     }),
@@ -1270,7 +1325,8 @@ mod tests {
         );
         assert_eq!(32779, src_port);
         assert_eq!(33010, dest_port);
-        assert_eq!(10913, checksum);
+        assert_eq!(10913, expected_udp_checksum);
+        assert_eq!(10913, actual_udp_checksum);
         assert_eq!(56, payload_len);
         assert!(!has_magic);
         assert_eq!(IcmpPacketCode(10), icmp_code);
@@ -1295,8 +1351,13 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp =
-            recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Tcp,
+            IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
+        )?
+        .unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1347,8 +1408,13 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp =
-            recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Disabled)?.unwrap();
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Tcp,
+            IcmpExtensionParseMode::Disabled,
+            PayloadPattern(0x00),
+        )?
+        .unwrap();
 
         let Response::DestinationUnreachable(
             ResponseData {
@@ -1397,11 +1463,26 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Tcp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
         Ok(())
     }
@@ -1424,11 +1505,26 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Tcp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
         Ok(())
     }
@@ -1450,11 +1546,26 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Tcp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Tcp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Icmp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Icmp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
         Ok(())
     }
@@ -1584,7 +1695,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(&mut mocket, Protocol::Udp, IcmpExtensionParseMode::Enabled)?;
+        let resp = recv_icmp_probe(
+            &mut mocket,
+            Protocol::Udp,
+            IcmpExtensionParseMode::Enabled,
+            PayloadPattern(0x00),
+        )?;
         assert!(resp.is_none());
         Ok(())
     }

@@ -389,7 +389,7 @@ fn extract_probe_resp_seq(
             )))
         }
         (Protocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port, checksum, udp_payload_len) = extract_udp_packet(ipv6)?;
+            let (src_port, dest_port, actual_checksum, udp_payload_len) = extract_udp_packet(ipv6)?;
             let has_magic = udp_payload_has_magic_prefix(ipv6)?;
             let payload_len = if has_magic {
                 udp_payload_len - MAGIC.len() as u16
@@ -401,7 +401,8 @@ fn extract_probe_resp_seq(
                 IpAddr::V6(ipv6.get_destination_address()),
                 src_port,
                 dest_port,
-                checksum,
+                actual_checksum,
+                actual_checksum,
                 payload_len,
                 has_magic,
             )))
@@ -1176,7 +1177,8 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
-                        checksum,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
                         payload_len,
                         has_magic,
                     }),
@@ -1196,7 +1198,8 @@ mod tests {
         );
         assert_eq!(22694, src_port);
         assert_eq!(33029, dest_port);
-        assert_eq!(53489, checksum);
+        assert_eq!(53489, expected_udp_checksum);
+        assert_eq!(53489, actual_udp_checksum);
         assert_eq!(36, payload_len);
         assert!(!has_magic);
         assert_eq!(IcmpPacketCode(0), icmp_code);
@@ -1238,7 +1241,8 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
-                        checksum,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
                         payload_len,
                         has_magic,
                     }),
@@ -1258,7 +1262,8 @@ mod tests {
         );
         assert_eq!(26477, src_port);
         assert_eq!(33118, dest_port);
-        assert_eq!(37906, checksum);
+        assert_eq!(37906, expected_udp_checksum);
+        assert_eq!(37906, actual_udp_checksum);
         assert_eq!(36, payload_len);
         assert!(!has_magic);
         assert_eq!(IcmpPacketCode(0), icmp_code);
@@ -1306,7 +1311,8 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
-                        checksum,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
                         payload_len,
                         has_magic,
                     }),
@@ -1326,7 +1332,8 @@ mod tests {
         );
         assert_eq!(33000, src_port);
         assert_eq!(5000, dest_port);
-        assert_eq!(39490, checksum);
+        assert_eq!(39490, expected_udp_checksum);
+        assert_eq!(39490, actual_udp_checksum);
         assert_eq!(5, payload_len);
         assert!(has_magic);
         assert_eq!(IcmpPacketCode(0), icmp_code);

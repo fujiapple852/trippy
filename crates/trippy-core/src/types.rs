@@ -42,6 +42,10 @@ pub struct TypeOfService(pub u8);
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Port(pub u16);
 
+/// Checksum newtype.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Checksum(pub u16);
+
 bitflags! {
     /// Probe flags.
     #[derive(Debug, Clone, PartialEq, Eq)]
