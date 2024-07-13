@@ -1,4 +1,4 @@
 ---
 source: crates/trippy-tui/src/print.rs
 ---
-TUIbindingcommands:toggle-help,toggle-help-alt,toggle-settings,next-hop,previous-hop,next-trace,previous-trace,next-hop-address,previous-hop-address,address-mode-ip,address-mode-host,address-mode-both,toggle-freeze,toggle-chart,toggle-map,toggle-flows,toggle-privacy,expand-hosts,expand-hosts-max,contract-hosts,contract-hosts-min,chart-zoom-in,chart-zoom-out,clear-trace-data,clear-dns-cache,clear-selection,toggle-as-info,toggle-hop-details,quit
+TUIbindingcommands:toggle-help,toggle-help-alt,toggle-settings,toggle-settings-tui,toggle-settings-trace,toggle-settings-dns,toggle-settings-geoip,toggle-settings-bindings,toggle-settings-theme,toggle-settings-columns,next-hop,previous-hop,next-trace,previous-trace,next-hop-address,previous-hop-address,address-mode-ip,address-mode-host,address-mode-both,toggle-freeze,toggle-chart,toggle-map,toggle-flows,toggle-privacy,expand-hosts,expand-hosts-max,contract-hosts,contract-hosts-min,chart-zoom-in,chart-zoom-out,clear-trace-data,clear-dns-cache,clear-selection,toggle-as-info,toggle-hop-details,quit

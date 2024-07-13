@@ -89,6 +89,20 @@ fn run_app<B: Backend>(
                             || bindings.quit.check(key)
                         {
                             app.toggle_settings();
+                        } else if bindings.toggle_settings_tui.check(key) {
+                            app.show_settings_columns(0);
+                        } else if bindings.toggle_settings_trace.check(key) {
+                            app.show_settings_columns(1);
+                        } else if bindings.toggle_settings_dns.check(key) {
+                            app.show_settings_columns(2);
+                        } else if bindings.toggle_settings_geoip.check(key) {
+                            app.show_settings_columns(3);
+                        } else if bindings.toggle_settings_bindings.check(key) {
+                            app.show_settings_columns(4);
+                        } else if bindings.toggle_settings_theme.check(key) {
+                            app.show_settings_columns(5);
+                        } else if bindings.toggle_settings_columns.check(key) {
+                            app.show_settings_columns(6);
                         } else if bindings.previous_trace.check(key) {
                             app.previous_settings_tab();
                         } else if bindings.next_trace.check(key) {
@@ -109,6 +123,20 @@ fn run_app<B: Backend>(
                         app.toggle_help();
                     } else if bindings.toggle_settings.check(key) {
                         app.toggle_settings();
+                    } else if bindings.toggle_settings_tui.check(key) {
+                        app.show_settings_columns(0);
+                    } else if bindings.toggle_settings_trace.check(key) {
+                        app.show_settings_columns(1);
+                    } else if bindings.toggle_settings_dns.check(key) {
+                        app.show_settings_columns(2);
+                    } else if bindings.toggle_settings_geoip.check(key) {
+                        app.show_settings_columns(3);
+                    } else if bindings.toggle_settings_bindings.check(key) {
+                        app.show_settings_columns(4);
+                    } else if bindings.toggle_settings_theme.check(key) {
+                        app.show_settings_columns(5);
+                    } else if bindings.toggle_settings_columns.check(key) {
+                        app.show_settings_columns(6);
                     } else if bindings.next_hop.check(key) {
                         app.next_hop();
                     } else if bindings.previous_hop.check(key) {

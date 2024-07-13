@@ -334,6 +334,14 @@ impl TuiApp {
         self.show_settings = !self.show_settings;
     }
 
+    pub fn show_settings_columns(&mut self, column_index: usize) {
+        self.show_settings = true;
+        if self.settings_tab_selected != column_index {
+            self.settings_tab_selected = column_index;
+            self.setting_table_state.select(Some(0));
+        }
+    }
+
     pub fn toggle_hop_details(&mut self) {
         if self.show_hop_details {
             self.tui_config.max_addrs = None;

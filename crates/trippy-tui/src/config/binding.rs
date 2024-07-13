@@ -13,6 +13,13 @@ pub struct TuiBindings {
     pub toggle_help: TuiKeyBinding,
     pub toggle_help_alt: TuiKeyBinding,
     pub toggle_settings: TuiKeyBinding,
+    pub toggle_settings_tui: TuiKeyBinding,
+    pub toggle_settings_trace: TuiKeyBinding,
+    pub toggle_settings_dns: TuiKeyBinding,
+    pub toggle_settings_geoip: TuiKeyBinding,
+    pub toggle_settings_bindings: TuiKeyBinding,
+    pub toggle_settings_theme: TuiKeyBinding,
+    pub toggle_settings_columns: TuiKeyBinding,
     pub previous_hop: TuiKeyBinding,
     pub next_hop: TuiKeyBinding,
     pub previous_trace: TuiKeyBinding,
@@ -47,6 +54,13 @@ impl Default for TuiBindings {
             toggle_help: TuiKeyBinding::new(KeyCode::Char('h')),
             toggle_help_alt: TuiKeyBinding::new(KeyCode::Char('?')),
             toggle_settings: TuiKeyBinding::new(KeyCode::Char('s')),
+            toggle_settings_tui: TuiKeyBinding::new(KeyCode::Char('1')),
+            toggle_settings_trace: TuiKeyBinding::new(KeyCode::Char('2')),
+            toggle_settings_dns: TuiKeyBinding::new(KeyCode::Char('3')),
+            toggle_settings_geoip: TuiKeyBinding::new(KeyCode::Char('4')),
+            toggle_settings_bindings: TuiKeyBinding::new(KeyCode::Char('5')),
+            toggle_settings_theme: TuiKeyBinding::new(KeyCode::Char('6')),
+            toggle_settings_columns: TuiKeyBinding::new(KeyCode::Char('7')),
             previous_hop: TuiKeyBinding::new(KeyCode::Up),
             next_hop: TuiKeyBinding::new(KeyCode::Down),
             previous_trace: TuiKeyBinding::new(KeyCode::Left),
@@ -95,6 +109,16 @@ impl TuiBindings {
             (self.toggle_help, TuiCommandItem::ToggleHelp),
             (self.toggle_help_alt, TuiCommandItem::ToggleHelpAlt),
             (self.toggle_settings, TuiCommandItem::ToggleSettings),
+            (self.toggle_settings_tui, TuiCommandItem::ToggleSettings),
+            (self.toggle_settings_trace, TuiCommandItem::ToggleSettings),
+            (self.toggle_settings_dns, TuiCommandItem::ToggleSettings),
+            (self.toggle_settings_geoip, TuiCommandItem::ToggleSettings),
+            (
+                self.toggle_settings_bindings,
+                TuiCommandItem::ToggleSettings,
+            ),
+            (self.toggle_settings_theme, TuiCommandItem::ToggleSettings),
+            (self.toggle_settings_columns, TuiCommandItem::ToggleSettings),
             (self.previous_hop, TuiCommandItem::PreviousHop),
             (self.next_hop, TuiCommandItem::NextHop),
             (self.previous_trace, TuiCommandItem::PreviousTrace),
@@ -163,6 +187,34 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&TuiCommandItem::ToggleSettings)
                 .or(cfg.toggle_settings.as_ref())
                 .unwrap_or(&Self::default().toggle_settings),
+            toggle_settings_tui: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsTui)
+                .or(cfg.toggle_settings_tui.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_tui),
+            toggle_settings_trace: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsTrace)
+                .or(cfg.toggle_settings_trace.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_trace),
+            toggle_settings_dns: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsDns)
+                .or(cfg.toggle_settings_dns.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_dns),
+            toggle_settings_geoip: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsGeoip)
+                .or(cfg.toggle_settings_geoip.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_geoip),
+            toggle_settings_bindings: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsBindings)
+                .or(cfg.toggle_settings_bindings.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_bindings),
+            toggle_settings_theme: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsTheme)
+                .or(cfg.toggle_settings_theme.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_theme),
+            toggle_settings_columns: *cmd_items
+                .get(&TuiCommandItem::ToggleSettingsColumns)
+                .or(cfg.toggle_settings_columns.as_ref())
+                .unwrap_or(&Self::default().toggle_settings_columns),
             previous_hop: *cmd_items
                 .get(&TuiCommandItem::PreviousHop)
                 .or(cfg.previous_hop.as_ref())
@@ -496,6 +548,20 @@ pub enum TuiCommandItem {
     ToggleHelpAlt,
     /// Toggle the settings dialog.
     ToggleSettings,
+    /// Toggle the TUI settings dialog tab.
+    ToggleSettingsTui,
+    /// Toggle the trace settings dialog tab.
+    ToggleSettingsTrace,
+    /// Toggle the DNS settings dialog tab.
+    ToggleSettingsDns,
+    /// Toggle the Geoip settings dialog tab.
+    ToggleSettingsGeoip,
+    /// Toggle the bindings settings dialog tab.
+    ToggleSettingsBindings,
+    /// Toggle the theme settings dialog tab.
+    ToggleSettingsTheme,
+    /// Toggle the columns settings dialog tab.
+    ToggleSettingsColumns,
     /// Move down to the next hop.
     NextHop,
     /// Move up to the previous hop.
