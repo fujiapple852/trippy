@@ -81,7 +81,7 @@ pub use probe::{
     Extension, Extensions, IcmpPacketType, MplsLabelStack, MplsLabelStackMember, Probe,
     ProbeComplete, ProbeStatus, UnknownExtension,
 };
-pub use state::{Hop, State};
+pub use state::{Hop, NatStatus, State};
 pub use strategy::{CompletionReason, Round, Strategy};
 pub use tracer::Tracer;
 pub use types::{

@@ -1,4 +1,4 @@
-use crate::types::{Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
+use crate::types::{Checksum, Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 
@@ -90,6 +90,8 @@ impl Probe {
         host: IpAddr,
         received: SystemTime,
         icmp_packet_type: IcmpPacketType,
+        expected_udp_checksum: Option<Checksum>,
+        actual_udp_checksum: Option<Checksum>,
         extensions: Option<Extensions>,
     ) -> ProbeComplete {
         ProbeComplete {
@@ -103,6 +105,8 @@ impl Probe {
             host,
             received,
             icmp_packet_type,
+            expected_udp_checksum,
+            actual_udp_checksum,
             extensions,
         }
     }
@@ -141,6 +145,10 @@ pub struct ProbeComplete {
     pub received: SystemTime,
     /// The type of ICMP response packet received for the probe.
     pub icmp_packet_type: IcmpPacketType,
+    /// The expected UDP checksum of the original datagram.
+    pub expected_udp_checksum: Option<Checksum>,
+    /// The actual UDP checksum of the original datagram.
+    pub actual_udp_checksum: Option<Checksum>,
     /// The ICMP response extensions.
     pub extensions: Option<Extensions>,
 }
@@ -292,10 +300,15 @@ pub struct ResponseSeqUdp {
     ///
     /// This is used to validate the probe response matches the expected values.
     pub dest_port: u16,
-    /// The UDP checksum.
+    /// The expected UDP checksum.
+    ///
+    /// This is calculated based on the data from the probe response and should
+    /// match the checksum that in the probe that was sent.
+    pub expected_udp_checksum: u16,
+    /// The actual UDP checksum.
     ///
     /// This will contain the sequence number for IPv4 and IPv6 Paris.
-    pub checksum: u16,
+    pub actual_udp_checksum: u16,
     /// The length of the UDP payload.
     ///
     /// This payload length will be the sequence number (offset from the
@@ -310,12 +323,14 @@ pub struct ResponseSeqUdp {
 }
 
 impl ResponseSeqUdp {
+    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         identifier: u16,
         dest_addr: IpAddr,
         src_port: u16,
         dest_port: u16,
-        checksum: u16,
+        expected_udp_checksum: u16,
+        actual_udp_checksum: u16,
         payload_len: u16,
         has_magic: bool,
     ) -> Self {
@@ -324,7 +339,8 @@ impl ResponseSeqUdp {
             dest_addr,
             src_port,
             dest_port,
-            checksum,
+            expected_udp_checksum,
+            actual_udp_checksum,
             payload_len,
             has_magic,
         }

@@ -191,6 +191,7 @@ impl<S: Socket> Channel<S> {
                     &mut self.recv_socket,
                     self.protocol,
                     self.icmp_extension_mode,
+                    self.payload_pattern,
                 ),
                 IpAddr::V6(_) => ipv6::recv_icmp_probe(
                     &mut self.recv_socket,

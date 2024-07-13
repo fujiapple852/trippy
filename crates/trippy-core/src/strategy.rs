@@ -6,7 +6,7 @@ use crate::probe::{
     ProbeStatus, Response, ResponseData, ResponseSeq, ResponseSeqIcmp, ResponseSeqTcp,
     ResponseSeqUdp,
 };
-use crate::types::{Sequence, TimeToLive, TraceId};
+use crate::types::{Checksum, Sequence, TimeToLive, TraceId};
 use crate::{Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Protocol};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -279,6 +279,8 @@ struct StrategyResponse {
     icmp_packet_type: IcmpPacketType,
     trace_id: TraceId,
     sequence: Sequence,
+    expected_udp_checksum: Option<Checksum>,
+    actual_udp_checksum: Option<Checksum>,
     received: SystemTime,
     addr: IpAddr,
     is_target: bool,
@@ -295,6 +297,8 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::TimeExceeded(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    expected_udp_checksum: resp_seq.expected_udp_checksum,
+                    actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target,
@@ -308,6 +312,8 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::Unreachable(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    expected_udp_checksum: resp_seq.expected_udp_checksum,
+                    actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target,
@@ -320,6 +326,8 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::EchoReply(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    expected_udp_checksum: resp_seq.expected_udp_checksum,
+                    actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target: true,
@@ -332,6 +340,8 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::NotApplicable,
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    expected_udp_checksum: resp_seq.expected_udp_checksum,
+                    actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target: true,
@@ -347,6 +357,8 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
 struct StrategyResponseSeq {
     trace_id: TraceId,
     sequence: Sequence,
+    expected_udp_checksum: Option<Checksum>,
+    actual_udp_checksum: Option<Checksum>,
 }
 
 impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
@@ -358,12 +370,15 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
             }) => Self {
                 trace_id: TraceId(identifier),
                 sequence: Sequence(sequence),
+                expected_udp_checksum: None,
+                actual_udp_checksum: None,
             },
             ResponseSeq::Udp(ResponseSeqUdp {
                 identifier,
                 src_port,
                 dest_port,
-                checksum,
+                expected_udp_checksum,
+                actual_udp_checksum,
                 payload_len,
                 ..
             }) => {
@@ -374,15 +389,27 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 ) {
                     (MultipathStrategy::Classic, PortDirection::FixedDest(_), _) => src_port,
                     (MultipathStrategy::Classic, _, _) => dest_port,
-                    (MultipathStrategy::Paris, _, _) => checksum,
+                    (MultipathStrategy::Paris, _, _) => actual_udp_checksum,
                     (MultipathStrategy::Dublin, _, IpAddr::V4(_)) => identifier,
                     (MultipathStrategy::Dublin, _, IpAddr::V6(_)) => {
                         config.initial_sequence.0 + payload_len
                     }
                 };
+
+                let (expected_udp_checksum, actual_udp_checksum) =
+                    match (config.multipath_strategy, config.target_addr) {
+                        (MultipathStrategy::Dublin, IpAddr::V4(_)) => (
+                            Some(Checksum(expected_udp_checksum)),
+                            Some(Checksum(actual_udp_checksum)),
+                        ),
+                        _ => (None, None),
+                    };
+
                 Self {
                     trace_id: TraceId(0),
                     sequence: Sequence(sequence),
+                    expected_udp_checksum,
+                    actual_udp_checksum,
                 }
             }
             ResponseSeq::Tcp(ResponseSeqTcp {
@@ -397,6 +424,8 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 Self {
                     trace_id: TraceId(0),
                     sequence: Sequence(sequence),
+                    expected_udp_checksum: None,
+                    actual_udp_checksum: None,
                 }
             }
         }
@@ -567,7 +596,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 33434,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
@@ -588,7 +618,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
             dest_port: 5000,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
@@ -610,7 +641,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
-            checksum: 33434,
+            expected_udp_checksum: 33434,
+            actual_udp_checksum: 33434,
             payload_len: 0,
             has_magic: false,
         });
@@ -632,7 +664,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
@@ -655,7 +688,8 @@ mod tests {
             dest_addr: IpAddr::V6("::1".parse().unwrap()),
             src_port: 5000,
             dest_port: 35000,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 55,
             has_magic: true,
         });
@@ -676,7 +710,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
             dest_port: 80,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
@@ -697,7 +732,8 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 33434,
-            checksum: 0,
+            expected_udp_checksum: 0,
+            actual_udp_checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
@@ -1111,8 +1147,14 @@ mod state {
                     return;
                 }
             };
-            let completed =
-                awaited.complete(resp.addr, resp.received, resp.icmp_packet_type, resp.exts);
+            let completed = awaited.complete(
+                resp.addr,
+                resp.received,
+                resp.icmp_packet_type,
+                resp.expected_udp_checksum,
+                resp.actual_udp_checksum,
+                resp.exts,
+            );
             let ttl = completed.ttl;
             self.buffer[usize::from(resp.sequence - self.round_sequence)] =
                 ProbeStatus::Complete(completed);
@@ -1233,6 +1275,8 @@ mod state {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33434),
+                expected_udp_checksum: None,
+                actual_udp_checksum: None,
                 received: received_1,
                 addr: host,
                 is_target: false,
@@ -1306,6 +1350,8 @@ mod state {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33435),
+                expected_udp_checksum: None,
+                actual_udp_checksum: None,
                 received: received_2,
                 addr: host,
                 is_target: false,
@@ -1339,6 +1385,8 @@ mod state {
                 icmp_packet_type: IcmpPacketType::EchoReply(IcmpPacketCode(0)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33436),
+                expected_udp_checksum: None,
+                actual_udp_checksum: None,
                 received: received_3,
                 addr: host,
                 is_target: true,
