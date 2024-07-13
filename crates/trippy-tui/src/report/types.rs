@@ -2,6 +2,7 @@ use itertools::Itertools;
 use serde::{Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
+use trippy_core::NatStatus;
 use trippy_dns::Resolver;
 
 #[derive(Serialize)]
@@ -42,6 +43,7 @@ pub struct Hop {
     pub jmax: f64,
     #[serde(serialize_with = "fixed_width")]
     pub jinta: f64,
+    pub nat: Option<bool>,
 }
 
 impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
@@ -64,6 +66,11 @@ impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
             javg: value.javg_ms(),
             jmax: value.jmax_ms().unwrap_or_default(),
             jinta: value.jinta(),
+            nat: match value.last_nat_status() {
+                NatStatus::NotApplicable => None,
+                NatStatus::NotDetected => Some(false),
+                NatStatus::Detected => Some(true),
+            },
         }
     }
 }
