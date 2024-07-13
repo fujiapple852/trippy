@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for last icmp packet code (`C`) column ([#1109](https://github.com/fujiapple852/trippy/issues/1109))
 - Added settings dialog tab hotkeys ([#1217](https://github.com/fujiapple852/trippy/issues/1217))
 - Added NAT detection for `IPv4/udp/dublin` ([#1104](https://github.com/fujiapple852/trippy/issues/1104))
+- Added support for NAT detection (`N`) column ([#1219](https://github.com/fujiapple852/trippy/issues/1219))
 
 ### Changed
 
