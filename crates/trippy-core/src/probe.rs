@@ -172,6 +172,19 @@ pub enum Response {
     TcpRefused(ResponseData),
 }
 
+impl Response {
+    /// The data in the probe response.
+    pub const fn data(&self) -> &ResponseData {
+        match self {
+            Self::TimeExceeded(data, _, _)
+            | Self::DestinationUnreachable(data, _, _)
+            | Self::EchoReply(data, _)
+            | Self::TcpReply(data)
+            | Self::TcpRefused(data) => data,
+        }
+    }
+}
+
 /// The ICMP extensions for a probe response.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Extensions {
