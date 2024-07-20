@@ -412,6 +412,300 @@ mod tests {
     use std::net::Ipv4Addr;
     use std::num::NonZeroUsize;
 
+    #[test]
+    fn test_time_exceeded_target_response() {
+        let config = StrategyConfig {
+            target_addr: IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
+            ..Default::default()
+        };
+        let now = SystemTime::now();
+        let resp_data = Response::TimeExceeded(response_data(now), IcmpPacketCode(1), None);
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(
+            resp.icmp_packet_type,
+            IcmpPacketType::TimeExceeded(IcmpPacketCode(1))
+        );
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, true);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_time_exceeded_not_target_response() {
+        let config = StrategyConfig {
+            target_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            ..Default::default()
+        };
+        let now = SystemTime::now();
+        let resp_data = Response::TimeExceeded(response_data(now), IcmpPacketCode(1), None);
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(
+            resp.icmp_packet_type,
+            IcmpPacketType::TimeExceeded(IcmpPacketCode(1))
+        );
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, false);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_destination_unreachable_target_response() {
+        let config = StrategyConfig {
+            target_addr: IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
+            ..Default::default()
+        };
+        let now = SystemTime::now();
+        let resp_data =
+            Response::DestinationUnreachable(response_data(now), IcmpPacketCode(10), None);
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(
+            resp.icmp_packet_type,
+            IcmpPacketType::Unreachable(IcmpPacketCode(10))
+        );
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, true);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_destination_unreachable_not_target_response() {
+        let config = StrategyConfig::default();
+        let now = SystemTime::now();
+        let resp_data =
+            Response::DestinationUnreachable(response_data(now), IcmpPacketCode(10), None);
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(
+            resp.icmp_packet_type,
+            IcmpPacketType::Unreachable(IcmpPacketCode(10))
+        );
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, false);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_echo_reply_response() {
+        let config = StrategyConfig::default();
+        let now = SystemTime::now();
+        let resp_data = Response::EchoReply(response_data(now), IcmpPacketCode(99));
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(
+            resp.icmp_packet_type,
+            IcmpPacketType::EchoReply(IcmpPacketCode(99))
+        );
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, true);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_tcp_reply_response() {
+        let config = StrategyConfig::default();
+        let now = SystemTime::now();
+        let resp_data = Response::TcpReply(response_data(now));
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(resp.icmp_packet_type, IcmpPacketType::NotApplicable);
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, true);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_tcp_refused_response() {
+        let config = StrategyConfig::default();
+        let now = SystemTime::now();
+        let resp_data = Response::TcpRefused(response_data(now));
+        let resp = StrategyResponse::from((resp_data, &config));
+        assert_eq!(resp.icmp_packet_type, IcmpPacketType::NotApplicable);
+        assert_eq!(resp.trace_id, TraceId(0));
+        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.received, now);
+        assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
+        assert_eq!(resp.is_target, true);
+        assert!(resp.exts.is_none());
+    }
+
+    #[test]
+    fn test_icmp_response() {
+        let config = StrategyConfig::default();
+        let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp {
+            identifier: 1234,
+            sequence: 33000,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(1234));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_udp_classic_fixed_src_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Udp,
+            port_direction: PortDirection::FixedSrc(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 0,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 5000,
+            dest_port: 33000,
+            checksum: 0,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_udp_classic_fixed_dest_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Udp,
+            port_direction: PortDirection::FixedDest(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 0,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 33000,
+            dest_port: 5000,
+            checksum: 0,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_udp_paris_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Udp,
+            multipath_strategy: MultipathStrategy::Paris,
+            port_direction: PortDirection::FixedSrc(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 33000,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 5000,
+            dest_port: 35000,
+            checksum: 33000,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_udp_dublin_ipv4_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Udp,
+            multipath_strategy: MultipathStrategy::Dublin,
+            port_direction: PortDirection::FixedSrc(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 33000,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 5000,
+            dest_port: 35000,
+            checksum: 0,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_udp_dublin_ipv6_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Udp,
+            target_addr: IpAddr::V6("::1".parse().unwrap()),
+            multipath_strategy: MultipathStrategy::Dublin,
+            port_direction: PortDirection::FixedSrc(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 0,
+            dest_addr: IpAddr::V6("::1".parse().unwrap()),
+            src_port: 5000,
+            dest_port: 35000,
+            checksum: 0,
+            payload_len: 55,
+            has_magic: true,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33055));
+    }
+
+    #[test]
+    fn test_tcp_fixed_dest_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Tcp,
+            port_direction: PortDirection::FixedDest(Port(80)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 0,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 33000,
+            dest_port: 80,
+            checksum: 0,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
+    #[test]
+    fn test_tcp_fixed_src_response() {
+        let config = StrategyConfig {
+            protocol: Protocol::Tcp,
+            port_direction: PortDirection::FixedSrc(Port(5000)),
+            ..Default::default()
+        };
+        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+            identifier: 0,
+            dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            src_port: 5000,
+            dest_port: 33000,
+            checksum: 0,
+            payload_len: 0,
+            has_magic: false,
+        });
+        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        assert_eq!(strategy_resp.trace_id, TraceId(0));
+        assert_eq!(strategy_resp.sequence, Sequence(33000));
+    }
+
     // The network can return both `DestinationUnreachable` and `TcpRefused`
     // for the same sequence number.  This can occur for the target hop for
     // TCP protocol as the network layer check for ICMP responses such as
@@ -469,6 +763,17 @@ mod tests {
         tracer.recv_response(&mut network, &mut state)?;
         tracer.recv_response(&mut network, &mut state)?;
         Ok(())
+    }
+
+    const fn response_data(now: SystemTime) -> ResponseData {
+        ResponseData::new(
+            now,
+            IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
+            ResponseSeq::Icmp(ResponseSeqIcmp {
+                identifier: 0,
+                sequence: 33000,
+            }),
+        )
     }
 }
 
