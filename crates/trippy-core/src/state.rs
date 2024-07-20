@@ -407,7 +407,7 @@ impl FlowState {
     }
 
     const fn is_target(&self, hop: &Hop) -> bool {
-        self.highest_ttl == hop.ttl
+        self.highest_ttl_for_round == hop.ttl
     }
 
     const fn is_in_round(&self, hop: &Hop) -> bool {
@@ -415,8 +415,8 @@ impl FlowState {
     }
 
     fn target_hop(&self) -> &Hop {
-        if self.highest_ttl > 0 {
-            &self.hops[usize::from(self.highest_ttl) - 1]
+        if self.highest_ttl_for_round > 0 {
+            &self.hops[usize::from(self.highest_ttl_for_round) - 1]
         } else {
             &self.hops[0]
         }
