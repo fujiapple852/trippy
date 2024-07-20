@@ -160,8 +160,9 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
             }
             Some(Response::DestinationUnreachable(data, icmp_code, extensions)) => {
                 let (trace_id, sequence, received, host) = self.extract(&data);
+                let is_target = host == self.config.target_addr;
                 if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
-                    st.complete_probe_unreachable(sequence, host, received, icmp_code, extensions);
+                    st.complete_probe_unreachable(sequence, host, received, is_target, icmp_code, extensions);
                 }
             }
             Some(Response::EchoReply(data, icmp_code)) => {
@@ -747,6 +748,7 @@ mod state {
             sequence: Sequence,
             host: IpAddr,
             received: SystemTime,
+            is_target: bool,
             icmp_code: IcmpPacketCode,
             extensions: Option<Extensions>,
         ) {
@@ -755,7 +757,7 @@ mod state {
                 IcmpPacketType::Unreachable(icmp_code),
                 host,
                 received,
-                true,
+                is_target,
                 extensions,
             );
         }
