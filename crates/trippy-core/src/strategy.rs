@@ -7,7 +7,7 @@ use crate::probe::{
     ResponseSeqUdp,
 };
 use crate::types::{Sequence, TimeToLive, TraceId};
-use crate::{MultipathStrategy, PortDirection, Protocol};
+use crate::{Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Protocol};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -15,7 +15,7 @@ use tracing::instrument;
 /// The output from a round of tracing.
 #[derive(Debug, Clone)]
 pub struct Round<'a> {
-    /// The state of all `ProbeState` that were sent in the round.
+    /// The state of all `ProbeStatus` that were sent in the round.
     pub probes: &'a [ProbeStatus],
     /// The largest time-to-live (ttl) for which we received a reply in the round.
     pub largest_ttl: TimeToLive,
@@ -78,7 +78,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
 
     /// Send the next probe if required.
     ///
-    /// Send a `ProbeState` for the next time-to-live (ttl) if all the following are true:
+    /// Send a `ProbeStatus` for the next time-to-live (ttl) if all the following are true:
     ///
     /// 1 - the target host has not been found
     /// 2 - the next ttl is not greater than the maximum allowed ttl
@@ -130,7 +130,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
     ///
     /// We allow multiple probes to be in-flight at any time, and we cannot guarantee that responses
     /// will be received in-order.  We therefore maintain a buffer which holds details of each
-    /// `ProbeState` which is indexed by the offset of the sequence number from the sequence number
+    /// `ProbeStatus` which is indexed by the offset of the sequence number from the sequence number
     /// at the beginning of the round.  The sequence number is set in the outgoing `ICMP`
     /// `EchoRequest` (or `UDP` / `TCP`) packet and returned in both the `TimeExceeded` and
     /// `EchoReply` responses.
@@ -148,36 +148,13 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
     #[instrument(skip(self, network, st))]
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> Result<()> {
         let next = network.recv_probe()?;
-        match next {
-            Some(Response::TimeExceeded(data, icmp_code, extensions)) => {
-                let (trace_id, sequence, received, host) = self.extract(&data);
-                let is_target = host == self.config.target_addr;
-                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
-                    st.complete_probe_time_exceeded(
-                        sequence, host, received, is_target, icmp_code, extensions,
-                    );
+        if let Some(resp) = next {
+            if self.validate(resp.data()) {
+                let resp = StrategyResponse::from((resp, &self.config));
+                if self.check_trace_id(resp.trace_id) && st.in_round(resp.sequence) {
+                    st.complete_probe(resp);
                 }
             }
-            Some(Response::DestinationUnreachable(data, icmp_code, extensions)) => {
-                let (trace_id, sequence, received, host) = self.extract(&data);
-                let is_target = host == self.config.target_addr;
-                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
-                    st.complete_probe_unreachable(sequence, host, received, is_target, icmp_code, extensions);
-                }
-            }
-            Some(Response::EchoReply(data, icmp_code)) => {
-                let (trace_id, sequence, received, host) = self.extract(&data);
-                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
-                    st.complete_probe_echo_reply(sequence, host, received, icmp_code);
-                }
-            }
-            Some(Response::TcpReply(data) | Response::TcpRefused(data)) => {
-                let (trace_id, sequence, received, host) = self.extract(&data);
-                if self.check_trace_id(trace_id) && st.in_round(sequence) && self.validate(&data) {
-                    st.complete_probe_other(sequence, host, received);
-                }
-            }
-            None => {}
         }
         Ok(())
     }
@@ -205,10 +182,10 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
         }
     }
 
-    /// Publish details of all `ProbeState` in the completed round.
+    /// Publish details of all `ProbeStatus` in the completed round.
     ///
     /// If the round completed without receiving an `EchoReply` from the target host then we also
-    /// publish the next `ProbeState` which is assumed to represent the TTL of the target host.
+    /// publish the next `ProbeStatus` which is assumed to represent the TTL of the target host.
     #[instrument(skip(self, state))]
     fn publish_trace(&self, state: &TracerState) {
         let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
@@ -294,21 +271,94 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
             }
         }
     }
+}
 
-    /// Extract the `TraceId`, `Sequence`, `SystemTime` and `IpAddr` from the `ProbeResponseData` in
-    /// a protocol specific way.
-    #[instrument(skip(self))]
-    fn extract(&self, resp: &ResponseData) -> (TraceId, Sequence, SystemTime, IpAddr) {
-        match resp.resp_seq {
+/// Derived response based on strategy config.
+#[derive(Debug)]
+struct StrategyResponse {
+    icmp_packet_type: IcmpPacketType,
+    trace_id: TraceId,
+    sequence: Sequence,
+    received: SystemTime,
+    addr: IpAddr,
+    is_target: bool,
+    exts: Option<Extensions>,
+}
+
+impl From<(Response, &StrategyConfig)> for StrategyResponse {
+    fn from((resp, config): (Response, &StrategyConfig)) -> Self {
+        match resp {
+            Response::TimeExceeded(data, code, exts) => {
+                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let is_target = data.addr == config.target_addr;
+                Self {
+                    icmp_packet_type: IcmpPacketType::TimeExceeded(code),
+                    trace_id: resp_seq.trace_id,
+                    sequence: resp_seq.sequence,
+                    received: data.recv,
+                    addr: data.addr,
+                    is_target,
+                    exts,
+                }
+            }
+            Response::DestinationUnreachable(data, code, exts) => {
+                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let is_target = data.addr == config.target_addr;
+                Self {
+                    icmp_packet_type: IcmpPacketType::Unreachable(code),
+                    trace_id: resp_seq.trace_id,
+                    sequence: resp_seq.sequence,
+                    received: data.recv,
+                    addr: data.addr,
+                    is_target,
+                    exts,
+                }
+            }
+            Response::EchoReply(data, code) => {
+                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                Self {
+                    icmp_packet_type: IcmpPacketType::EchoReply(code),
+                    trace_id: resp_seq.trace_id,
+                    sequence: resp_seq.sequence,
+                    received: data.recv,
+                    addr: data.addr,
+                    is_target: true,
+                    exts: None,
+                }
+            }
+            Response::TcpReply(data) | Response::TcpRefused(data) => {
+                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                Self {
+                    icmp_packet_type: IcmpPacketType::NotApplicable,
+                    trace_id: resp_seq.trace_id,
+                    sequence: resp_seq.sequence,
+                    received: data.recv,
+                    addr: data.addr,
+                    is_target: true,
+                    exts: None,
+                }
+            }
+        }
+    }
+}
+
+/// Derived response sequence based on strategy config.
+#[derive(Debug)]
+struct StrategyResponseSeq {
+    trace_id: TraceId,
+    sequence: Sequence,
+}
+
+impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
+    fn from((resp_seq, config): (ResponseSeq, &StrategyConfig)) -> Self {
+        match resp_seq {
             ResponseSeq::Icmp(ResponseSeqIcmp {
                 identifier,
                 sequence,
-            }) => (
-                TraceId(identifier),
-                Sequence(sequence),
-                resp.recv,
-                resp.addr,
-            ),
+            }) => Self {
+                trace_id: TraceId(identifier),
+                sequence: Sequence(sequence),
+            },
             ResponseSeq::Udp(ResponseSeqUdp {
                 identifier,
                 src_port,
@@ -318,30 +368,36 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                 ..
             }) => {
                 let sequence = match (
-                    self.config.multipath_strategy,
-                    self.config.port_direction,
-                    self.config.target_addr,
+                    config.multipath_strategy,
+                    config.port_direction,
+                    config.target_addr,
                 ) {
                     (MultipathStrategy::Classic, PortDirection::FixedDest(_), _) => src_port,
                     (MultipathStrategy::Classic, _, _) => dest_port,
                     (MultipathStrategy::Paris, _, _) => checksum,
                     (MultipathStrategy::Dublin, _, IpAddr::V4(_)) => identifier,
                     (MultipathStrategy::Dublin, _, IpAddr::V6(_)) => {
-                        self.config.initial_sequence.0 + payload_len
+                        config.initial_sequence.0 + payload_len
                     }
                 };
-                (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
+                Self {
+                    trace_id: TraceId(0),
+                    sequence: Sequence(sequence),
+                }
             }
             ResponseSeq::Tcp(ResponseSeqTcp {
                 src_port,
                 dest_port,
                 ..
             }) => {
-                let sequence = match self.config.port_direction {
+                let sequence = match config.port_direction {
                     PortDirection::FixedSrc(_) => dest_port,
                     _ => src_port,
                 };
-                (TraceId(0), Sequence(sequence), resp.recv, resp.addr)
+                Self {
+                    trace_id: TraceId(0),
+                    sequence: Sequence(sequence),
+                }
             }
         }
     }
@@ -422,8 +478,8 @@ mod tests {
 /// the `TracerState` struct.
 mod state {
     use crate::constants::MAX_SEQUENCE_PER_ROUND;
-    use crate::probe::{Extensions, IcmpPacketCode, IcmpPacketType, Probe, ProbeStatus};
-    use crate::strategy::StrategyConfig;
+    use crate::probe::{Probe, ProbeStatus};
+    use crate::strategy::{StrategyConfig, StrategyResponse};
     use crate::types::{MaxRounds, Port, RoundId, Sequence, TimeToLive, TraceId};
     use crate::{Flags, MultipathStrategy, PortDirection, Protocol};
     use std::array::from_fn;
@@ -431,7 +487,7 @@ mod state {
     use std::time::SystemTime;
     use tracing::instrument;
 
-    /// The maximum number of `ProbeState` entries in the buffer.
+    /// The maximum number of `ProbeStatus` entries in the buffer.
     ///
     /// This is larger than maximum number of time-to-live (TTL) we can support to allow for skipped
     /// sequences.
@@ -445,9 +501,9 @@ mod state {
     /// A sequence number can be skipped if, for example, the port for that sequence number cannot
     /// be bound as it is already in use.
     ///
-    /// To ensure each `ProbeState` is in the correct place in the buffer (i.e. the index into the
+    /// To ensure each `ProbeStatus` is in the correct place in the buffer (i.e. the index into the
     /// buffer is always `Probe.sequence - round_sequence`), when we skip a sequence we leave
-    /// the skipped `ProbeState` in-place and use the next slot for the next sequence.
+    /// the skipped `ProbeStatus` in-place and use the next slot for the next sequence.
     ///
     /// We cap the number of sequences that can potentially be skipped in a round to ensure that
     /// sequence number does not even need to wrap around during a round.
@@ -461,7 +517,7 @@ mod state {
     pub struct TracerState {
         /// Tracer configuration.
         config: StrategyConfig,
-        /// The state of all `ProbeState` requests and responses.
+        /// The state of all `ProbeStatus` requests and responses.
         buffer: [ProbeStatus; BUFFER_SIZE as usize],
         /// An increasing sequence number for every `EchoRequest`.
         sequence: Sequence,
@@ -503,13 +559,13 @@ mod state {
             }
         }
 
-        /// Get a slice of `ProbeState` for the current round.
+        /// Get a slice of `ProbeStatus` for the current round.
         pub fn probes(&self) -> &[ProbeStatus] {
             let round_size = self.sequence - self.round_sequence;
             &self.buffer[..round_size.0 as usize]
         }
 
-        /// Get the `ProbeState` for `sequence`
+        /// Get the `ProbeStatus` for `sequence`
         pub fn probe_at(&self, sequence: Sequence) -> ProbeStatus {
             self.buffer[usize::from(sequence - self.round_sequence)].clone()
         }
@@ -585,13 +641,13 @@ mod state {
 
         /// Re-issue the `Probe` with the next sequence number.
         ///
-        /// This will mark the `ProbeState` at the previous `sequence` as skipped and re-create it
+        /// This will mark the `ProbeStatus` at the previous `sequence` as skipped and re-create it
         /// with the previous `ttl` and the current `sequence`.
         ///
         /// For example, if the sequence is `4` and the `ttl` is `5` prior to calling this method
         /// then afterward:
-        /// - The `ProbeState` at sequence `3` will be set to `Skipped` state
-        /// - A new `ProbeState` will be created at sequence `4` with a `ttl` of `5`
+        /// - The `ProbeStatus` at sequence `3` will be set to `Skipped` state
+        /// - A new `ProbeStatus` will be created at sequence `4` with a `ttl` of `5`
         #[instrument(skip(self))]
         pub fn reissue_probe(&mut self, sent: SystemTime) -> Probe {
             let probe_index = usize::from(self.sequence - self.round_sequence);
@@ -718,93 +774,11 @@ mod state {
             (Port(src_port), Port(dest_port), TraceId(0), Flags::empty())
         }
 
-        /// Mark the `ProbeState` at `sequence` completed as `TimeExceeded` and update the round
-        /// state.
-        #[instrument(skip(self))]
-        pub fn complete_probe_time_exceeded(
-            &mut self,
-            sequence: Sequence,
-            host: IpAddr,
-            received: SystemTime,
-            is_target: bool,
-            icmp_code: IcmpPacketCode,
-            extensions: Option<Extensions>,
-        ) {
-            self.complete_probe(
-                sequence,
-                IcmpPacketType::TimeExceeded(icmp_code),
-                host,
-                received,
-                is_target,
-                extensions,
-            );
-        }
-
-        /// Mark the `ProbeState` at `sequence` completed as `Unreachable` and update the round
-        /// state.
-        #[instrument(skip(self))]
-        pub fn complete_probe_unreachable(
-            &mut self,
-            sequence: Sequence,
-            host: IpAddr,
-            received: SystemTime,
-            is_target: bool,
-            icmp_code: IcmpPacketCode,
-            extensions: Option<Extensions>,
-        ) {
-            self.complete_probe(
-                sequence,
-                IcmpPacketType::Unreachable(icmp_code),
-                host,
-                received,
-                is_target,
-                extensions,
-            );
-        }
-
-        /// Mark the `ProbeState` at `sequence` completed as `EchoReply` and update the round state.
-        #[instrument(skip(self))]
-        pub fn complete_probe_echo_reply(
-            &mut self,
-            sequence: Sequence,
-            host: IpAddr,
-            received: SystemTime,
-            icmp_code: IcmpPacketCode,
-        ) {
-            self.complete_probe(
-                sequence,
-                IcmpPacketType::EchoReply(icmp_code),
-                host,
-                received,
-                true,
-                None,
-            );
-        }
-
-        /// Mark the `ProbeState` at `sequence` completed as `NotApplicable` and update the round
-        /// state.
-        #[instrument(skip(self))]
-        pub fn complete_probe_other(
-            &mut self,
-            sequence: Sequence,
-            host: IpAddr,
-            received: SystemTime,
-        ) {
-            self.complete_probe(
-                sequence,
-                IcmpPacketType::NotApplicable,
-                host,
-                received,
-                true,
-                None,
-            );
-        }
-
-        /// Update the state of a `ProbeState` and the trace.
+        /// Update the state of a `ProbeStatus` and the trace.
         ///
         /// We want to update:
         ///
-        /// - the `target_ttl` to be the time-to-live of the `ProbeState` request from the target
+        /// - the `target_ttl` to be the time-to-live of the `ProbeStatus` request from the target
         /// - the `max_received_ttl` we have observed this round
         /// - the latest packet `received_time` in this round
         /// - whether the target has been found in this round
@@ -814,17 +788,9 @@ mod state {
         /// from the target host with differing time-to-live values and so must ensure we
         /// use the time-to-live with the lowest sequence number.
         #[instrument(skip(self))]
-        fn complete_probe(
-            &mut self,
-            sequence: Sequence,
-            icmp_packet_type: IcmpPacketType,
-            host: IpAddr,
-            received: SystemTime,
-            is_target: bool,
-            extensions: Option<Extensions>,
-        ) {
-            // Retrieve and update the `ProbeState` at `sequence`.
-            let probe = self.probe_at(sequence);
+        pub fn complete_probe(&mut self, resp: StrategyResponse) {
+            // Retrieve and update the `ProbeStatus` at `sequence`.
+            let probe = self.probe_at(resp.sequence);
             let awaited = match probe {
                 ProbeStatus::Awaited(awaited) => awaited,
                 // there is a valid scenario for TCP where a probe is already
@@ -840,19 +806,20 @@ mod state {
                     return;
                 }
             };
-            let completed = awaited.complete(host, received, icmp_packet_type, extensions);
+            let completed =
+                awaited.complete(resp.addr, resp.received, resp.icmp_packet_type, resp.exts);
             let ttl = completed.ttl;
-            self.buffer[usize::from(sequence - self.round_sequence)] =
+            self.buffer[usize::from(resp.sequence - self.round_sequence)] =
                 ProbeStatus::Complete(completed);
 
-            // If this `ProbeState` found the target then we set the `target_tll` if not already
+            // If this `ProbeStatus` found the target then we set the `target_tll` if not already
             // set, being careful to account for `Probes` being received out-of-order.
             //
-            // If this `ProbeState` did not find the target but has a ttl that is greater or equal
+            // If this `ProbeStatus` did not find the target but has a ttl that is greater or equal
             // to the target ttl (if known) then we reset the target ttl to None.  This
             // is to support Equal Cost Multi-path Routing (ECMP) cases where the number
             // of hops to the target will vary over the lifetime of the trace.
-            self.target_ttl = if is_target {
+            self.target_ttl = if resp.is_target {
                 match self.target_ttl {
                     None => Some(ttl),
                     Some(target_ttl) if ttl < target_ttl => Some(ttl),
@@ -871,8 +838,8 @@ mod state {
                 Some(max_received_ttl) => Some(max_received_ttl.max(ttl)),
             };
 
-            self.received_time = Some(received);
-            self.target_found |= is_target;
+            self.received_time = Some(resp.received);
+            self.target_found |= resp.is_target;
         }
 
         /// Advance to the next round.
@@ -917,7 +884,7 @@ mod state {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::probe::IcmpPacketType;
+        use crate::probe::{IcmpPacketCode, IcmpPacketType};
         use crate::types::MaxInflight;
         use rand::Rng;
         use std::net::{IpAddr, Ipv4Addr};
@@ -957,14 +924,15 @@ mod state {
             // Update the state of the probe 1 after receiving a TimeExceeded
             let received_1 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            state.complete_probe_time_exceeded(
-                Sequence(33000),
-                host,
-                received_1,
-                false,
-                IcmpPacketCode(1),
-                None,
-            );
+            state.complete_probe(StrategyResponse {
+                icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
+                trace_id: TraceId(0),
+                sequence: Sequence(33000),
+                received: received_1,
+                addr: host,
+                is_target: false,
+                exts: None,
+            });
 
             // Validate the state of the probe 1 after the update
             let probe_1_fetch = state.probe_at(Sequence(33000)).try_into_complete().unwrap();
@@ -1029,14 +997,15 @@ mod state {
             // Update the state of probe 2 after receiving a TimeExceeded
             let received_2 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            state.complete_probe_time_exceeded(
-                Sequence(33001),
-                host,
-                received_2,
-                false,
-                IcmpPacketCode(1),
-                None,
-            );
+            state.complete_probe(StrategyResponse {
+                icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
+                trace_id: TraceId(0),
+                sequence: Sequence(33001),
+                received: received_2,
+                addr: host,
+                is_target: false,
+                exts: None,
+            });
             let probe_2_recv = state.probe_at(Sequence(33001));
 
             // Validate the TracerState after the update to probe 2
@@ -1061,7 +1030,15 @@ mod state {
             // Update the state of probe 3 after receiving a EchoReply
             let received_3 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
-            state.complete_probe_echo_reply(Sequence(33002), host, received_3, IcmpPacketCode(0));
+            state.complete_probe(StrategyResponse {
+                icmp_packet_type: IcmpPacketType::EchoReply(IcmpPacketCode(0)),
+                trace_id: TraceId(0),
+                sequence: Sequence(33002),
+                received: received_3,
+                addr: host,
+                is_target: true,
+                exts: None,
+            });
             let probe_3_recv = state.probe_at(Sequence(33002));
 
             // Validate the TracerState after the update to probe 3
