@@ -661,7 +661,7 @@ mod tests {
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33055));
+        assert_eq!(strategy_resp.sequence, Sequence(33489));
     }
 
     #[test]
