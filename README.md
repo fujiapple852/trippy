@@ -560,7 +560,7 @@ Options:
           target has responded [default: 100ms]
 
       --initial-sequence <INITIAL_SEQUENCE>
-          The initial sequence number [default: 33000]
+          The initial sequence number [default: 33434]
 
   -R, --multipath-strategy <MULTIPATH_STRATEGY>
           The Equal-cost Multi-Path routing strategy (UDP only) [default:
