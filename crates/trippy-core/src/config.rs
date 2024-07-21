@@ -48,7 +48,7 @@ pub mod defaults {
     pub const DEFAULT_STRATEGY_MAX_ROUND_DURATION: Duration = Duration::from_millis(1000);
 
     /// The default value for `initial-sequence`.
-    pub const DEFAULT_STRATEGY_INITIAL_SEQUENCE: u16 = 33000;
+    pub const DEFAULT_STRATEGY_INITIAL_SEQUENCE: u16 = 33434;
 
     /// The default value for `tos`.
     pub const DEFAULT_STRATEGY_TOS: u8 = 0;

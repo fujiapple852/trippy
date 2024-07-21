@@ -116,7 +116,7 @@ pub struct Args {
     #[arg(short = 'g', long, value_parser = parse_duration)]
     pub grace_duration: Option<Duration>,
 
-    /// The initial sequence number [default: 33000]
+    /// The initial sequence number [default: 33434]
     #[arg(long)]
     pub initial_sequence: Option<u16>,
 

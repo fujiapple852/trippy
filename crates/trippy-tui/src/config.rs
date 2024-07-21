@@ -1232,14 +1232,14 @@ mod tests {
     #[test_case("trip example.com --tcp --source-port 3333", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedSrc(Port(3333))).build()); "tcp protocol custom src port")]
     #[test_case("trip example.com --tcp --target-port 7777", Ok(cfg().protocol(Protocol::Tcp).port_direction(PortDirection::FixedDest(Port(7777))).build()); "tcp protocol custom target port")]
     #[test_case("trip example.com --udp --multipath-strategy paris", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol paris strategy default ports")]
-    #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol paris strategy custom src port")]
+    #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33434", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedSrc(Port(33434))).build()); "udp protocol paris strategy custom src port")]
     #[test_case("trip example.com --udp --multipath-strategy paris --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol paris strategy custom target port")]
-    #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol paris strategy custom both ports")]
+    #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33434 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedBoth(Port(33434), Port(5000))).build()); "udp protocol paris strategy custom both ports")]
     #[test_case("trip example.com --udp --multipath-strategy dublin", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol dublin strategy default ports")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(33000))).build()); "udp protocol dublin strategy custom src port")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(33434))).build()); "udp protocol dublin strategy custom src port")]
     #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33000 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedBoth(Port(33000), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
-    #[test_case("trip example.com --udp --source-port 33000 --target-port 5000", Err(anyhow!("only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)")); "udp protocol custom both ports with invalid strategy")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedBoth(Port(33434), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
+    #[test_case("trip example.com --udp --source-port 33434 --target-port 5000", Err(anyhow!("only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)")); "udp protocol custom both ports with invalid strategy")]
     fn test_ports(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1308,7 +1308,7 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
-    #[test_case("trip example.com", Ok(cfg().initial_sequence(33000).build()); "default initial sequence")]
+    #[test_case("trip example.com", Ok(cfg().initial_sequence(33434).build()); "default initial sequence")]
     #[test_case("trip example.com --initial-sequence 5000", Ok(cfg().initial_sequence(5000).build()); "custom initial sequence")]
     #[test_case("trip example.com --initial-sequence foo", Err(anyhow!("error: invalid value 'foo' for '--initial-sequence <INITIAL_SEQUENCE>': invalid digit found in string For more information, try '--help'. ")); "invalid format initial sequence")]
     #[test_case("trip example.com --initial-sequence 100000", Err(anyhow!("error: invalid value '100000' for '--initial-sequence <INITIAL_SEQUENCE>': 100000 is not in 0..=65535 For more information, try '--help'.")); "invalid high initial sequence")]
