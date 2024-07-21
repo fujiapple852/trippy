@@ -26,6 +26,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `DestinationUnreachable` incorrectly assumed to come from target
+  host ([#1225](https://github.com/fujiapple852/trippy/issues/1225))
+
 ## [0.10.0] - 2024-03-31
 
 ### Added
