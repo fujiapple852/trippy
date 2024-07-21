@@ -1,7 +1,7 @@
 name: IPv4/UDP classic with a fixed dest port
 target: 10.0.0.103
 protocol: Udp
-port_direction: !FixedDest 33000
+port_direction: !FixedDest 33434
 multipath_strategy: Classic
 hops:
   - ttl: 1

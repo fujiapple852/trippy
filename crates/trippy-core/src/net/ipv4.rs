@@ -522,7 +522,7 @@ mod tests {
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 00 00 40 00 0a 01 00 00 01 02 03 04
-            05 06 07 08 08 00 72 45 04 d2 80 e8
+            05 06 07 08 08 00 70 93 04 d2 82 9a
             "
         );
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
@@ -560,7 +560,7 @@ mod tests {
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 30 00 00 40 00 0a 01 00 00 01 02 03 04
-            05 06 07 08 08 00 72 45 04 d2 80 e8 ff ff ff ff
+            05 06 07 08 08 00 70 93 04 d2 82 9a ff ff ff ff
             ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
             "
         );
@@ -732,7 +732,7 @@ mod tests {
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1e 04 d2 40 00 0a 11 00 00 01 02 03 04
-            05 06 07 08 00 7b 01 c8 00 0a 80 e8 6c 9b
+            05 06 07 08 00 7b 01 c8 00 0a 82 9a 6a e9
             "
         );
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
@@ -763,9 +763,9 @@ mod tests {
     #[test]
     fn test_dispatch_udp_probe_dublin_privileged() -> anyhow::Result<()> {
         let probe = Probe {
-            // note: this is always set for UDP/Dublin but is ano-op for IPv4
+            // note: this is always set for UDP/Dublin but is a no-op for IPv4
             flags: Flags::DUBLIN_IPV6_PAYLOAD_LENGTH,
-            identifier: TraceId(33000),
+            identifier: TraceId(33434),
             ..make_udp_probe(123, 456)
         };
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
@@ -776,7 +776,7 @@ mod tests {
         let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
-            45 00 00 1c 80 e8 40 00 0a 11 00 00 01 02 03 04
+            45 00 00 1c 82 9a 40 00 0a 11 00 00 01 02 03 04
             05 06 07 08 00 7b 01 c8 00 08 ed 87
             "
         );
@@ -1472,7 +1472,7 @@ mod tests {
             .returning(move || Ok(Some(expected_peer_addr)));
         mocket.expect_shutdown().times(1).returning(|| Ok(()));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(456), dest_addr)?.unwrap();
+        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(456), dest_addr)?.unwrap();
 
         let Response::TcpReply(ResponseData {
             addr,
@@ -1488,7 +1488,7 @@ mod tests {
             panic!("expected TcpReply")
         };
         assert_eq!(dest_addr, addr);
-        assert_eq!(33000, src_port);
+        assert_eq!(33434, src_port);
         assert_eq!(456, dest_port);
         Ok(())
     }
@@ -1503,7 +1503,7 @@ mod tests {
             .times(1)
             .returning(|| Ok(Some(SocketError::ConnectionRefused)));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(80), dest_addr)?.unwrap();
 
         let Response::TcpRefused(ResponseData {
             addr,
@@ -1519,7 +1519,7 @@ mod tests {
             panic!("expected TcpRefused")
         };
         assert_eq!(dest_addr, addr);
-        assert_eq!(33000, src_port);
+        assert_eq!(33434, src_port);
         assert_eq!(80, dest_port);
         Ok(())
     }
@@ -1538,7 +1538,7 @@ mod tests {
             .times(1)
             .returning(move || Ok(dest_addr));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33000), Port(80), dest_addr)?.unwrap();
+        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(80), dest_addr)?.unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1558,7 +1558,7 @@ mod tests {
             panic!("expected TimeExceeded")
         };
         assert_eq!(dest_addr, addr);
-        assert_eq!(33000, src_port);
+        assert_eq!(33434, src_port);
         assert_eq!(80, dest_port);
         assert_eq!(IcmpPacketCode(1), icmp_code);
         assert_eq!(None, extensions);
@@ -1591,7 +1591,7 @@ mod tests {
 
     fn make_icmp_probe() -> Probe {
         Probe::new(
-            Sequence(33000),
+            Sequence(33434),
             TraceId(1234),
             Port(0),
             Port(0),
@@ -1604,7 +1604,7 @@ mod tests {
 
     fn make_udp_probe(src_port: u16, dest_port: u16) -> Probe {
         Probe::new(
-            Sequence(33000),
+            Sequence(33434),
             TraceId(1234),
             Port(src_port),
             Port(dest_port),

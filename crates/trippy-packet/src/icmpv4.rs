@@ -453,13 +453,13 @@ pub mod echo_request {
 
         #[test]
         fn test_view() {
-            let buf = [0x08, 0x00, 0x16, 0x7c, 0x60, 0x9b, 0x80, 0xe8];
+            let buf = [0x08, 0x00, 0x16, 0x7c, 0x60, 0x9b, 0x82, 0x9a];
             let packet = EchoRequestPacket::new_view(&buf).unwrap();
             assert_eq!(IcmpType::EchoRequest, packet.get_icmp_type());
             assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(5756, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
-            assert_eq!(33000, packet.get_sequence());
+            assert_eq!(33434, packet.get_sequence());
             assert!(packet.payload().is_empty());
         }
 

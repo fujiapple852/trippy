@@ -26,7 +26,7 @@ use std::time::Duration;
 ///     .privilege_mode(PrivilegeMode::Unprivileged)
 ///     .protocol(Protocol::Udp)
 ///     .multipath_strategy(MultipathStrategy::Dublin)
-///     .port_direction(PortDirection::FixedBoth(Port(33000), Port(3500)))
+///     .port_direction(PortDirection::FixedBoth(Port(33434), Port(3500)))
 ///     .build()?;
 /// # Ok(())
 /// # }

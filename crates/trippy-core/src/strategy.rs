@@ -426,7 +426,7 @@ mod tests {
             IcmpPacketType::TimeExceeded(IcmpPacketCode(1))
         );
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, true);
@@ -447,7 +447,7 @@ mod tests {
             IcmpPacketType::TimeExceeded(IcmpPacketCode(1))
         );
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, false);
@@ -469,7 +469,7 @@ mod tests {
             IcmpPacketType::Unreachable(IcmpPacketCode(10))
         );
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, true);
@@ -488,7 +488,7 @@ mod tests {
             IcmpPacketType::Unreachable(IcmpPacketCode(10))
         );
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, false);
@@ -506,7 +506,7 @@ mod tests {
             IcmpPacketType::EchoReply(IcmpPacketCode(99))
         );
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, true);
@@ -521,7 +521,7 @@ mod tests {
         let resp = StrategyResponse::from((resp_data, &config));
         assert_eq!(resp.icmp_packet_type, IcmpPacketType::NotApplicable);
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, true);
@@ -536,7 +536,7 @@ mod tests {
         let resp = StrategyResponse::from((resp_data, &config));
         assert_eq!(resp.icmp_packet_type, IcmpPacketType::NotApplicable);
         assert_eq!(resp.trace_id, TraceId(0));
-        assert_eq!(resp.sequence, Sequence(33000));
+        assert_eq!(resp.sequence, Sequence(33434));
         assert_eq!(resp.received, now);
         assert_eq!(resp.addr, IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)));
         assert_eq!(resp.is_target, true);
@@ -548,11 +548,11 @@ mod tests {
         let config = StrategyConfig::default();
         let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp {
             identifier: 1234,
-            sequence: 33000,
+            sequence: 33434,
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(1234));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -566,14 +566,14 @@ mod tests {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
-            dest_port: 33000,
+            dest_port: 33434,
             checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -586,7 +586,7 @@ mod tests {
         let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
-            src_port: 33000,
+            src_port: 33434,
             dest_port: 5000,
             checksum: 0,
             payload_len: 0,
@@ -594,7 +594,7 @@ mod tests {
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -606,17 +606,17 @@ mod tests {
             ..Default::default()
         };
         let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
-            identifier: 33000,
+            identifier: 33434,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
-            checksum: 33000,
+            checksum: 33434,
             payload_len: 0,
             has_magic: false,
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -628,7 +628,7 @@ mod tests {
             ..Default::default()
         };
         let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
-            identifier: 33000,
+            identifier: 33434,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
@@ -638,7 +638,7 @@ mod tests {
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -674,7 +674,7 @@ mod tests {
         let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
-            src_port: 33000,
+            src_port: 33434,
             dest_port: 80,
             checksum: 0,
             payload_len: 0,
@@ -682,7 +682,7 @@ mod tests {
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     #[test]
@@ -696,14 +696,14 @@ mod tests {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
-            dest_port: 33000,
+            dest_port: 33434,
             checksum: 0,
             payload_len: 0,
             has_magic: false,
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
-        assert_eq!(strategy_resp.sequence, Sequence(33000));
+        assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
 
     // The network can return both `DestinationUnreachable` and `TcpRefused`
@@ -711,12 +711,12 @@ mod tests {
     // TCP protocol as the network layer check for ICMP responses such as
     // `DestinationUnreachable` and also synthesizes a `TcpRefused` response.
     //
-    // This test simulates sending 1 TCP probe (seq=33000) and receiving two
+    // This test simulates sending 1 TCP probe (seq=33434) and receiving two
     // responses for that probe, a `DestinationUnreachable` followed by a
     // `TcpRefused`.
     #[test]
     fn test_tcp_dest_unreachable_and_refused() -> anyhow::Result<()> {
-        let sequence = 33000;
+        let sequence = 33434;
         let target_addr = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1));
 
         let mut network = MockNetwork::new();
@@ -771,7 +771,7 @@ mod tests {
             IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
             ResponseSeq::Icmp(ResponseSeqIcmp {
                 identifier: 0,
-                sequence: 33000,
+                sequence: 33434,
             }),
         )
     }
@@ -1202,12 +1202,12 @@ mod state {
         )]
         #[test]
         fn test_state() {
-            let mut state = TracerState::new(cfg(Sequence(33000)));
+            let mut state = TracerState::new(cfg(Sequence(33434)));
 
             // Validate the initial TracerState
             assert_eq!(state.round, RoundId(0));
-            assert_eq!(state.sequence, Sequence(33000));
-            assert_eq!(state.round_sequence, Sequence(33000));
+            assert_eq!(state.sequence, Sequence(33434));
+            assert_eq!(state.round_sequence, Sequence(33434));
             assert_eq!(state.ttl, TimeToLive(1));
             assert_eq!(state.max_received_ttl, None);
             assert_eq!(state.received_time, None);
@@ -1215,13 +1215,13 @@ mod state {
             assert_eq!(state.target_found, false);
 
             // The initial state of the probe before sending
-            let prob_init = state.probe_at(Sequence(33000));
+            let prob_init = state.probe_at(Sequence(33434));
             assert_eq!(ProbeStatus::NotSent, prob_init);
 
-            // Prepare probe 1 (round 0, sequence 33000, ttl 1) for sending
+            // Prepare probe 1 (round 0, sequence 33434, ttl 1) for sending
             let sent_1 = SystemTime::now();
             let probe_1 = state.next_probe(sent_1);
-            assert_eq!(probe_1.sequence, Sequence(33000));
+            assert_eq!(probe_1.sequence, Sequence(33434));
             assert_eq!(probe_1.ttl, TimeToLive(1));
             assert_eq!(probe_1.round, RoundId(0));
             assert_eq!(probe_1.sent, sent_1);
@@ -1232,7 +1232,7 @@ mod state {
             state.complete_probe(StrategyResponse {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
-                sequence: Sequence(33000),
+                sequence: Sequence(33434),
                 received: received_1,
                 addr: host,
                 is_target: false,
@@ -1240,8 +1240,8 @@ mod state {
             });
 
             // Validate the state of the probe 1 after the update
-            let probe_1_fetch = state.probe_at(Sequence(33000)).try_into_complete().unwrap();
-            assert_eq!(probe_1_fetch.sequence, Sequence(33000));
+            let probe_1_fetch = state.probe_at(Sequence(33434)).try_into_complete().unwrap();
+            assert_eq!(probe_1_fetch.sequence, Sequence(33434));
             assert_eq!(probe_1_fetch.ttl, TimeToLive(1));
             assert_eq!(probe_1_fetch.round, RoundId(0));
             assert_eq!(probe_1_fetch.received, received_1);
@@ -1254,8 +1254,8 @@ mod state {
 
             // Validate the TracerState after the update
             assert_eq!(state.round, RoundId(0));
-            assert_eq!(state.sequence, Sequence(33001));
-            assert_eq!(state.round_sequence, Sequence(33000));
+            assert_eq!(state.sequence, Sequence(33435));
+            assert_eq!(state.round_sequence, Sequence(33434));
             assert_eq!(state.ttl, TimeToLive(2));
             assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
             assert_eq!(state.received_time, Some(received_1));
@@ -1275,8 +1275,8 @@ mod state {
 
             // Validate the TracerState after the round update
             assert_eq!(state.round, RoundId(1));
-            assert_eq!(state.sequence, Sequence(33001));
-            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.sequence, Sequence(33435));
+            assert_eq!(state.round_sequence, Sequence(33435));
             assert_eq!(state.ttl, TimeToLive(1));
             assert_eq!(state.max_received_ttl, None);
             assert_eq!(state.received_time, None);
@@ -1286,7 +1286,7 @@ mod state {
             // Prepare probe 2 (round 1, sequence 33001, ttl 1) for sending
             let sent_2 = SystemTime::now();
             let probe_2 = state.next_probe(sent_2);
-            assert_eq!(probe_2.sequence, Sequence(33001));
+            assert_eq!(probe_2.sequence, Sequence(33435));
             assert_eq!(probe_2.ttl, TimeToLive(1));
             assert_eq!(probe_2.round, RoundId(1));
             assert_eq!(probe_2.sent, sent_2);
@@ -1294,7 +1294,7 @@ mod state {
             // Prepare probe 3 (round 1, sequence 33002, ttl 2) for sending
             let sent_3 = SystemTime::now();
             let probe_3 = state.next_probe(sent_3);
-            assert_eq!(probe_3.sequence, Sequence(33002));
+            assert_eq!(probe_3.sequence, Sequence(33436));
             assert_eq!(probe_3.ttl, TimeToLive(2));
             assert_eq!(probe_3.round, RoundId(1));
             assert_eq!(probe_3.sent, sent_3);
@@ -1305,18 +1305,18 @@ mod state {
             state.complete_probe(StrategyResponse {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
-                sequence: Sequence(33001),
+                sequence: Sequence(33435),
                 received: received_2,
                 addr: host,
                 is_target: false,
                 exts: None,
             });
-            let probe_2_recv = state.probe_at(Sequence(33001));
+            let probe_2_recv = state.probe_at(Sequence(33435));
 
             // Validate the TracerState after the update to probe 2
             assert_eq!(state.round, RoundId(1));
-            assert_eq!(state.sequence, Sequence(33003));
-            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.sequence, Sequence(33437));
+            assert_eq!(state.round_sequence, Sequence(33435));
             assert_eq!(state.ttl, TimeToLive(3));
             assert_eq!(state.max_received_ttl, Some(TimeToLive(1)));
             assert_eq!(state.received_time, Some(received_2));
@@ -1338,18 +1338,18 @@ mod state {
             state.complete_probe(StrategyResponse {
                 icmp_packet_type: IcmpPacketType::EchoReply(IcmpPacketCode(0)),
                 trace_id: TraceId(0),
-                sequence: Sequence(33002),
+                sequence: Sequence(33436),
                 received: received_3,
                 addr: host,
                 is_target: true,
                 exts: None,
             });
-            let probe_3_recv = state.probe_at(Sequence(33002));
+            let probe_3_recv = state.probe_at(Sequence(33436));
 
             // Validate the TracerState after the update to probe 3
             assert_eq!(state.round, RoundId(1));
-            assert_eq!(state.sequence, Sequence(33003));
-            assert_eq!(state.round_sequence, Sequence(33001));
+            assert_eq!(state.sequence, Sequence(33437));
+            assert_eq!(state.round_sequence, Sequence(33435));
             assert_eq!(state.ttl, TimeToLive(3));
             assert_eq!(state.max_received_ttl, Some(TimeToLive(2)));
             assert_eq!(state.received_time, Some(received_3));
@@ -1432,7 +1432,7 @@ mod state {
         fn test_sequence_wrap2() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(cfg(Sequence(33000)));
+            let mut state = TracerState::new(cfg(Sequence(33434)));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     let _probe = state.next_probe(SystemTime::now());
@@ -1440,15 +1440,15 @@ mod state {
                 state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, RoundId(2000));
-            assert_eq!(state.round_sequence, Sequence(57130));
-            assert_eq!(state.sequence, Sequence(57130));
+            assert_eq!(state.round_sequence, Sequence(33434));
+            assert_eq!(state.sequence, Sequence(33434));
         }
 
         #[test]
         fn test_sequence_wrap3() {
             let total_rounds = 2000;
             let max_probe_per_round = 20;
-            let mut state = TracerState::new(cfg(Sequence(33000)));
+            let mut state = TracerState::new(cfg(Sequence(33434)));
             let mut rng = rand::thread_rng();
             for _ in 0..total_rounds {
                 for _ in 0..rng.gen_range(0..max_probe_per_round) {
@@ -1462,7 +1462,7 @@ mod state {
         fn test_sequence_wrap_with_skip() {
             let total_rounds = 2000;
             let max_probe_per_round = 254;
-            let mut state = TracerState::new(cfg(Sequence(33000)));
+            let mut state = TracerState::new(cfg(Sequence(33434)));
             for _ in 0..total_rounds {
                 for _ in 0..max_probe_per_round {
                     _ = state.next_probe(SystemTime::now());
@@ -1471,16 +1471,16 @@ mod state {
                 state.advance_round(TimeToLive(1));
             }
             assert_eq!(state.round, RoundId(2000));
-            assert_eq!(state.round_sequence, Sequence(41128));
-            assert_eq!(state.sequence, Sequence(41128));
+            assert_eq!(state.round_sequence, Sequence(57310));
+            assert_eq!(state.sequence, Sequence(57310));
         }
 
         #[test]
         fn test_in_round() {
-            let state = TracerState::new(cfg(Sequence(33000)));
-            assert!(state.in_round(Sequence(33000)));
-            assert!(state.in_round(Sequence(33511)));
-            assert!(!state.in_round(Sequence(33512)));
+            let state = TracerState::new(cfg(Sequence(33434)));
+            assert!(state.in_round(Sequence(33434)));
+            assert!(state.in_round(Sequence(33945)));
+            assert!(!state.in_round(Sequence(33946)));
         }
 
         #[test]
