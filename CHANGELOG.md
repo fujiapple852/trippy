@@ -23,6 +23,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [BREAKING CHANGE] `tui-max-[samples|flows]` renamed
   as `max-[samples|flows]` ([#1187](https://github.com/fujiapple852/trippy/issues/1187))
 - Trippy public API ([#1192](https://github.com/fujiapple852/trippy/issues/1192))
+- [BREAKING CHANGE] Changed initial sequence to be `33434` ([#1203](https://github.com/fujiapple852/trippy/issues/1203))
 
 ### Fixed
 
