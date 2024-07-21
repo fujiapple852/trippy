@@ -7,7 +7,7 @@ use std::time::Duration;
 /// The default value for `mode`.
 pub const DEFAULT_MODE: Mode = Mode::Tui;
 
-/// The default value for `all_resolved_ips`.
+/// The default value for `dns-resolve-all`.
 pub const DEFAULT_DNS_RESOLVE_ALL: bool = false;
 
 /// The default value for `log-format`.
