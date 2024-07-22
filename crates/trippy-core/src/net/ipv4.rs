@@ -50,314 +50,400 @@ const MIN_PACKET_SIZE_UDP: usize =
 /// 0100 0000 0000 0000
 const DONT_FRAGMENT: u16 = 0x4000;
 
-#[instrument(skip(icmp_send_socket, probe))]
-pub fn dispatch_icmp_probe<S: Socket>(
-    icmp_send_socket: &mut S,
-    probe: Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> Result<()> {
-    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-    let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
-    let packet_size = usize::from(packet_size.0);
-    if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(Error::InvalidPacketSize(packet_size));
-    }
-    let echo_request = make_echo_request_icmp_packet(
-        &mut icmp_buf,
-        probe.identifier,
-        probe.sequence,
-        icmp_payload_size(packet_size),
-        payload_pattern,
-    )?;
-    let ipv4 = make_ipv4_packet(
-        &mut ipv4_buf,
-        ipv4_byte_order,
-        IpProtocol::Icmp,
-        src_addr,
-        dest_addr,
-        probe.ttl.0,
-        0,
-        echo_request.packet(),
-    )?;
-    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
-    icmp_send_socket.send_to(ipv4.packet(), remote_addr)?;
-    Ok(())
+/// IPv4 configuration.
+#[derive(Debug)]
+pub struct Ipv4 {
+    pub src_addr: Ipv4Addr,
+    pub dest_addr: Ipv4Addr,
+    pub byte_order: platform::Ipv4ByteOrder,
+    pub packet_size: PacketSize,
+    pub payload_pattern: PayloadPattern,
+    pub privilege_mode: PrivilegeMode,
+    pub tos: TypeOfService,
+    pub protocol: Protocol,
+    pub icmp_extension_mode: IcmpExtensionParseMode,
 }
 
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(raw_send_socket, probe))]
-pub fn dispatch_udp_probe<S: Socket>(
-    raw_send_socket: &mut S,
-    probe: Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    privilege_mode: PrivilegeMode,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> Result<()> {
-    let packet_size = usize::from(packet_size.0);
-    if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
-        return Err(Error::InvalidPacketSize(packet_size));
-    }
-    let payload_size = udp_payload_size(packet_size);
-    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
-    match privilege_mode {
-        PrivilegeMode::Privileged => dispatch_udp_probe_raw(
-            raw_send_socket,
-            probe,
-            src_addr,
-            dest_addr,
-            payload,
-            ipv4_byte_order,
-        ),
-        PrivilegeMode::Unprivileged => {
-            dispatch_udp_probe_non_raw::<S>(probe, src_addr, dest_addr, payload)
+impl Default for Ipv4 {
+    fn default() -> Self {
+        Self {
+            src_addr: Ipv4Addr::UNSPECIFIED,
+            dest_addr: Ipv4Addr::UNSPECIFIED,
+            byte_order: platform::Ipv4ByteOrder::Network,
+            packet_size: PacketSize(0),
+            payload_pattern: PayloadPattern(0),
+            privilege_mode: PrivilegeMode::Privileged,
+            tos: TypeOfService(0),
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
         }
     }
 }
 
-/// Dispatch a UDP probe using a raw socket with `IP_HDRINCL` set.
-///
-/// As `IP_HDRINCL` is set we must supply the IP and UDP headers which allows us to set custom
-/// values for certain fields such as the checksum as required by the Paris tracing strategy.
-#[instrument(skip(raw_send_socket, probe))]
-fn dispatch_udp_probe_raw<S: Socket>(
-    raw_send_socket: &mut S,
-    probe: Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    payload: &[u8],
-    ipv4_byte_order: platform::Ipv4ByteOrder,
-) -> Result<()> {
-    let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
-    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
-    let payload_paris = probe.sequence.0.to_be_bytes();
-    let payload = if probe.flags.contains(Flags::PARIS_CHECKSUM) {
-        payload_paris.as_slice()
-    } else {
-        payload
-    };
-    let mut udp = make_udp_packet(
-        &mut udp_buf,
-        src_addr,
-        dest_addr,
-        probe.src_port.0,
-        probe.dest_port.0,
-        payload,
-    )?;
-    if probe.flags.contains(Flags::PARIS_CHECKSUM) {
-        let checksum = udp.get_checksum().to_be_bytes();
-        let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
-        udp.set_checksum(payload);
-        udp.set_payload(&checksum);
-    }
-    let ipv4 = make_ipv4_packet(
-        &mut ipv4_buf,
-        ipv4_byte_order,
-        IpProtocol::Udp,
-        src_addr,
-        dest_addr,
-        probe.ttl.0,
-        probe.identifier.0,
-        udp.packet(),
-    )?;
-    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
-    raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
-    Ok(())
-}
-
-/// Dispatch a UDP probe using a new UDP datagram socket.
-#[instrument(skip(probe))]
-fn dispatch_udp_probe_non_raw<S: Socket>(
-    probe: Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    payload: &[u8],
-) -> Result<()> {
-    let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
-    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
-    let mut socket = S::new_udp_send_socket_ipv4(false)?;
-    process_result(local_addr, socket.bind(local_addr))?;
-    socket.set_ttl(u32::from(probe.ttl.0))?;
-    socket.send_to(payload, remote_addr)?;
-    Ok(())
-}
-
-#[instrument(skip(probe))]
-pub fn dispatch_tcp_probe<S: Socket>(
-    probe: &Probe,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    tos: TypeOfService,
-) -> Result<S> {
-    let mut socket = S::new_stream_socket_ipv4()?;
-    let local_addr = SocketAddr::new(IpAddr::V4(src_addr), probe.src_port.0);
-    process_result(local_addr, socket.bind(local_addr))?;
-    socket.set_ttl(u32::from(probe.ttl.0))?;
-    socket.set_tos(u32::from(tos.0))?;
-    let remote_addr = SocketAddr::new(IpAddr::V4(dest_addr), probe.dest_port.0);
-    process_result(remote_addr, socket.connect(remote_addr))?;
-    Ok(socket)
-}
-
-#[instrument(skip(recv_socket))]
-pub fn recv_icmp_probe<S: Socket>(
-    recv_socket: &mut S,
-    protocol: Protocol,
-    icmp_extension_mode: IcmpExtensionParseMode,
-    payload_pattern: PayloadPattern,
-) -> Result<Option<Response>> {
-    let mut buf = [0_u8; MAX_PACKET_SIZE];
-    match recv_socket.read(&mut buf) {
-        Ok(bytes_read) => {
-            let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
-            Ok(extract_probe_resp(
-                protocol,
-                icmp_extension_mode,
-                payload_pattern,
-                &ipv4,
-            )?)
+impl Ipv4 {
+    /// Dispatch an ICMP probe.
+    #[instrument(skip(self, icmp_send_socket, probe))]
+    pub fn dispatch_icmp_probe<S: Socket>(
+        &self,
+        icmp_send_socket: &mut S,
+        probe: Probe,
+    ) -> Result<()> {
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
+        let packet_size = usize::from(self.packet_size.0);
+        if !(MIN_PACKET_SIZE_ICMP..=MAX_PACKET_SIZE).contains(&packet_size) {
+            return Err(Error::InvalidPacketSize(packet_size));
         }
-        Err(err) => match err.kind() {
-            ErrorKind::WouldBlock => Ok(None),
-            _ => Err(Error::IoError(err)),
-        },
+        let echo_request = self.make_echo_request_icmp_packet(
+            &mut icmp_buf,
+            probe.identifier,
+            probe.sequence,
+            icmp_payload_size(packet_size),
+        )?;
+        let ipv4 = self.make_ipv4_packet(
+            &mut ipv4_buf,
+            IpProtocol::Icmp,
+            probe.ttl.0,
+            0,
+            echo_request.packet(),
+        )?;
+        let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), 0);
+        icmp_send_socket.send_to(ipv4.packet(), remote_addr)?;
+        Ok(())
     }
-}
 
-#[instrument(skip(tcp_socket))]
-pub fn recv_tcp_socket<S: Socket>(
-    tcp_socket: &mut S,
-    src_port: Port,
-    dest_port: Port,
-    dest_addr: IpAddr,
-) -> Result<Option<Response>> {
-    let resp_seq = ResponseSeq::Tcp(ResponseSeqTcp::new(dest_addr, src_port.0, dest_port.0));
-    match tcp_socket.take_error()? {
-        None => {
-            let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
-            tcp_socket.shutdown()?;
-            return Ok(Some(Response::TcpReply(ResponseData::new(
-                SystemTime::now(),
-                addr,
-                resp_seq,
-            ))));
+    /// Dispatch a UDP probe.
+    #[instrument(skip(self, raw_send_socket, probe))]
+    pub fn dispatch_udp_probe<S: Socket>(
+        &self,
+        raw_send_socket: &mut S,
+        probe: Probe,
+    ) -> Result<()> {
+        let packet_size = usize::from(self.packet_size.0);
+        if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
+            return Err(Error::InvalidPacketSize(packet_size));
         }
-        Some(err) => match err {
-            SocketError::ConnectionRefused => {
-                return Ok(Some(Response::TcpRefused(ResponseData::new(
+        let payload_size = udp_payload_size(packet_size);
+        let payload = &[self.payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..payload_size];
+        match self.privilege_mode {
+            PrivilegeMode::Privileged => {
+                self.dispatch_udp_probe_raw(raw_send_socket, probe, payload)
+            }
+            PrivilegeMode::Unprivileged => self.dispatch_udp_probe_non_raw::<S>(probe, payload),
+        }
+    }
+
+    /// Dispatch a UDP probe using a raw socket with `IP_HDRINCL` set.
+    ///
+    /// As `IP_HDRINCL` is set we must supply the IP and UDP headers which allows us to set custom
+    /// values for certain fields such as the checksum as required by the Paris tracing strategy.
+    #[instrument(skip(self, raw_send_socket, probe))]
+    fn dispatch_udp_probe_raw<S: Socket>(
+        &self,
+        raw_send_socket: &mut S,
+        probe: Probe,
+        payload: &[u8],
+    ) -> Result<()> {
+        let mut ipv4_buf = [0_u8; MAX_PACKET_SIZE];
+        let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+        let payload_paris = probe.sequence.0.to_be_bytes();
+        let payload = if probe.flags.contains(Flags::PARIS_CHECKSUM) {
+            payload_paris.as_slice()
+        } else {
+            payload
+        };
+        let mut udp =
+            self.make_udp_packet(&mut udp_buf, probe.src_port.0, probe.dest_port.0, payload)?;
+        if probe.flags.contains(Flags::PARIS_CHECKSUM) {
+            let checksum = udp.get_checksum().to_be_bytes();
+            let payload = u16::from_be_bytes(core::array::from_fn(|i| udp.payload()[i]));
+            udp.set_checksum(payload);
+            udp.set_payload(&checksum);
+        }
+        let ipv4 = self.make_ipv4_packet(
+            &mut ipv4_buf,
+            IpProtocol::Udp,
+            probe.ttl.0,
+            probe.identifier.0,
+            udp.packet(),
+        )?;
+        let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
+        raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
+        Ok(())
+    }
+
+    /// Dispatch a UDP probe using a new UDP datagram socket.
+    #[instrument(skip(self, probe))]
+    fn dispatch_udp_probe_non_raw<S: Socket>(&self, probe: Probe, payload: &[u8]) -> Result<()> {
+        let local_addr = SocketAddr::new(IpAddr::V4(self.src_addr), probe.src_port.0);
+        let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
+        let mut socket = S::new_udp_send_socket_ipv4(false)?;
+        process_result(local_addr, socket.bind(local_addr))?;
+        socket.set_ttl(u32::from(probe.ttl.0))?;
+        socket.send_to(payload, remote_addr)?;
+        Ok(())
+    }
+
+    /// Dispatch a TCP probe.
+    #[instrument(skip(self, probe))]
+    pub fn dispatch_tcp_probe<S: Socket>(&self, probe: &Probe) -> Result<S> {
+        let mut socket = S::new_stream_socket_ipv4()?;
+        let local_addr = SocketAddr::new(IpAddr::V4(self.src_addr), probe.src_port.0);
+        process_result(local_addr, socket.bind(local_addr))?;
+        socket.set_ttl(u32::from(probe.ttl.0))?;
+        socket.set_tos(u32::from(self.tos.0))?;
+        let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
+        process_result(remote_addr, socket.connect(remote_addr))?;
+        Ok(socket)
+    }
+
+    /// Receive an ICMP probe response.
+    #[instrument(skip(self, recv_socket))]
+    pub fn recv_icmp_probe<S: Socket>(&self, recv_socket: &mut S) -> Result<Option<Response>> {
+        let mut buf = [0_u8; MAX_PACKET_SIZE];
+        match recv_socket.read(&mut buf) {
+            Ok(bytes_read) => {
+                let ipv4 = Ipv4Packet::new_view(&buf[..bytes_read])?;
+                Ok(self.extract_probe_resp(&ipv4)?)
+            }
+            Err(err) => match err.kind() {
+                ErrorKind::WouldBlock => Ok(None),
+                _ => Err(Error::IoError(err)),
+            },
+        }
+    }
+
+    /// Receive a TCP probe response.
+    #[instrument(skip(self, tcp_socket))]
+    pub fn recv_tcp_socket<S: Socket>(
+        &self,
+        tcp_socket: &mut S,
+        src_port: Port,
+        dest_port: Port,
+    ) -> Result<Option<Response>> {
+        let resp_seq = ResponseSeq::Tcp(ResponseSeqTcp::new(
+            IpAddr::V4(self.dest_addr),
+            src_port.0,
+            dest_port.0,
+        ));
+        match tcp_socket.take_error()? {
+            None => {
+                let addr = tcp_socket.peer_addr()?.ok_or(Error::MissingAddr)?.ip();
+                tcp_socket.shutdown()?;
+                return Ok(Some(Response::TcpReply(ResponseData::new(
                     SystemTime::now(),
-                    dest_addr,
+                    addr,
                     resp_seq,
                 ))));
             }
-            SocketError::HostUnreachable => {
-                let error_addr = tcp_socket.icmp_error_info()?;
-                return Ok(Some(Response::TimeExceeded(
-                    ResponseData::new(SystemTime::now(), error_addr, resp_seq),
-                    IcmpPacketCode(1),
-                    None,
-                )));
+            Some(err) => match err {
+                SocketError::ConnectionRefused => {
+                    return Ok(Some(Response::TcpRefused(ResponseData::new(
+                        SystemTime::now(),
+                        IpAddr::V4(self.dest_addr),
+                        resp_seq,
+                    ))));
+                }
+                SocketError::HostUnreachable => {
+                    let error_addr = tcp_socket.icmp_error_info()?;
+                    return Ok(Some(Response::TimeExceeded(
+                        ResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        IcmpPacketCode(1),
+                        None,
+                    )));
+                }
+                SocketError::Other(_) => {}
+            },
+        };
+        Ok(None)
+    }
+
+    #[instrument(skip(self))]
+    fn extract_probe_resp(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<Response>> {
+        let recv = SystemTime::now();
+        let src = IpAddr::V4(ipv4.get_source());
+        let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
+        let icmp_type = icmp_v4.get_icmp_type();
+        let icmp_code = icmp_v4.get_icmp_code();
+        Ok(match icmp_type {
+            IcmpType::TimeExceeded => {
+                if IcmpTimeExceededCode::from(icmp_code) == IcmpTimeExceededCode::TtlExpired {
+                    let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
+                    let (nested_ipv4, extension) = match self.icmp_extension_mode {
+                        IcmpExtensionParseMode::Enabled => {
+                            let ipv4 = Ipv4Packet::new_view(packet.payload())?;
+                            let ext = packet.extension().map(Extensions::try_from).transpose()?;
+                            (ipv4, ext)
+                        }
+                        IcmpExtensionParseMode::Disabled => {
+                            let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
+                            (ipv4, None)
+                        }
+                    };
+                    self.extract_probe_resp_seq(&nested_ipv4)?.map(|resp_seq| {
+                        Response::TimeExceeded(
+                            ResponseData::new(recv, src, resp_seq),
+                            IcmpPacketCode(icmp_code.0),
+                            extension,
+                        )
+                    })
+                } else {
+                    None
+                }
             }
-            SocketError::Other(_) => {}
-        },
-    };
-    Ok(None)
-}
+            IcmpType::DestinationUnreachable => {
+                let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
+                let nested_ipv4 = Ipv4Packet::new_view(packet.payload())?;
+                let extension = match self.icmp_extension_mode {
+                    IcmpExtensionParseMode::Enabled => {
+                        packet.extension().map(Extensions::try_from).transpose()?
+                    }
+                    IcmpExtensionParseMode::Disabled => None,
+                };
+                self.extract_probe_resp_seq(&nested_ipv4)?.map(|resp_seq| {
+                    Response::DestinationUnreachable(
+                        ResponseData::new(recv, src, resp_seq),
+                        IcmpPacketCode(icmp_code.0),
+                        extension,
+                    )
+                })
+            }
+            IcmpType::EchoReply => match self.protocol {
+                Protocol::Icmp => {
+                    let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
+                    let id = packet.get_identifier();
+                    let seq = packet.get_sequence();
+                    let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq));
+                    Some(Response::EchoReply(
+                        ResponseData::new(recv, src, resp_seq),
+                        IcmpPacketCode(icmp_code.0),
+                    ))
+                }
+                Protocol::Udp | Protocol::Tcp => None,
+            },
+            _ => None,
+        })
+    }
 
-/// Create an ICMP `EchoRequest` packet.
-fn make_echo_request_icmp_packet(
-    icmp_buf: &mut [u8],
-    identifier: TraceId,
-    sequence: Sequence,
-    payload_size: usize,
-    payload_pattern: PayloadPattern,
-) -> Result<EchoRequestPacket<'_>> {
-    let payload_buf = [payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
-    let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
-    let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
-    icmp.set_icmp_type(IcmpType::EchoRequest);
-    icmp.set_icmp_code(IcmpCode(0));
-    icmp.set_identifier(identifier.0);
-    icmp.set_payload(&payload_buf[..payload_size]);
-    icmp.set_sequence(sequence.0);
-    icmp.set_checksum(icmp_ipv4_checksum(icmp.packet()));
-    Ok(icmp)
-}
+    #[instrument(skip(self))]
+    fn extract_probe_resp_seq(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<ResponseSeq>> {
+        Ok(match (self.protocol, ipv4.get_protocol()) {
+            (Protocol::Icmp, IpProtocol::Icmp) => {
+                let echo_request = extract_echo_request(ipv4)?;
+                let identifier = echo_request.get_identifier();
+                let sequence = echo_request.get_sequence();
+                Some(ResponseSeq::Icmp(ResponseSeqIcmp::new(
+                    identifier, sequence,
+                )))
+            }
+            (Protocol::Udp, IpProtocol::Udp) => {
+                let (src_port, dest_port, actual_checksum, identifier, payload_length) =
+                    extract_udp_packet(ipv4)?;
+                let expected_checksum =
+                    self.calc_udp_checksum(Port(src_port), Port(dest_port), payload_length)?;
+                Some(ResponseSeq::Udp(ResponseSeqUdp::new(
+                    identifier,
+                    IpAddr::V4(ipv4.get_destination()),
+                    src_port,
+                    dest_port,
+                    expected_checksum,
+                    actual_checksum,
+                    payload_length,
+                    false,
+                )))
+            }
+            (Protocol::Tcp, IpProtocol::Tcp) => {
+                let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
+                Some(ResponseSeq::Tcp(ResponseSeqTcp::new(
+                    IpAddr::V4(ipv4.get_destination()),
+                    src_port,
+                    dest_port,
+                )))
+            }
+            _ => None,
+        })
+    }
 
-/// Create a `UdpPacket`
-fn make_udp_packet<'a>(
-    udp_buf: &'a mut [u8],
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    src_port: u16,
-    dest_port: u16,
-    payload: &'_ [u8],
-) -> Result<UdpPacket<'a>> {
-    let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
-    let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
-    udp.set_source(src_port);
-    udp.set_destination(dest_port);
-    udp.set_length(udp_packet_size as u16);
-    udp.set_payload(payload);
-    udp.set_checksum(udp_ipv4_checksum(udp.packet(), src_addr, dest_addr));
-    Ok(udp)
-}
+    /// Create an ICMP `EchoRequest` packet.
+    fn make_echo_request_icmp_packet<'a>(
+        &self,
+        icmp_buf: &'a mut [u8],
+        identifier: TraceId,
+        sequence: Sequence,
+        payload_size: usize,
+    ) -> Result<EchoRequestPacket<'a>> {
+        let payload_buf = [self.payload_pattern.0; MAX_ICMP_PAYLOAD_BUF];
+        let packet_size = IcmpPacket::minimum_packet_size() + payload_size;
+        let mut icmp = EchoRequestPacket::new(&mut icmp_buf[..packet_size])?;
+        icmp.set_icmp_type(IcmpType::EchoRequest);
+        icmp.set_icmp_code(IcmpCode(0));
+        icmp.set_identifier(identifier.0);
+        icmp.set_payload(&payload_buf[..payload_size]);
+        icmp.set_sequence(sequence.0);
+        icmp.set_checksum(icmp_ipv4_checksum(icmp.packet()));
+        Ok(icmp)
+    }
 
-/// Calculate the expected checksum for a UDP packet.
-pub fn calc_udp_checksum(
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    src_port: Port,
-    dest_port: Port,
-    payload_size: u16,
-    payload_pattern: PayloadPattern,
-) -> Result<u16> {
-    let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
-    let payload = &[payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..usize::from(payload_size)];
-    let udp = make_udp_packet(
-        &mut udp_buf,
-        src_addr,
-        dest_addr,
-        src_port.0,
-        dest_port.0,
-        payload,
-    )?;
-    Ok(udp.get_checksum())
-}
+    /// Create a `UdpPacket`
+    fn make_udp_packet<'a>(
+        &self,
+        udp_buf: &'a mut [u8],
+        src_port: u16,
+        dest_port: u16,
+        payload: &'_ [u8],
+    ) -> Result<UdpPacket<'a>> {
+        let udp_packet_size = UdpPacket::minimum_packet_size() + payload.len();
+        let mut udp = UdpPacket::new(&mut udp_buf[..udp_packet_size])?;
+        udp.set_source(src_port);
+        udp.set_destination(dest_port);
+        udp.set_length(udp_packet_size as u16);
+        udp.set_payload(payload);
+        udp.set_checksum(udp_ipv4_checksum(
+            udp.packet(),
+            self.src_addr,
+            self.dest_addr,
+        ));
+        Ok(udp)
+    }
 
-/// Create an `Ipv4Packet`.
-#[allow(clippy::too_many_arguments)]
-fn make_ipv4_packet<'a>(
-    ipv4_buf: &'a mut [u8],
-    ipv4_byte_order: platform::Ipv4ByteOrder,
-    protocol: IpProtocol,
-    src_addr: Ipv4Addr,
-    dest_addr: Ipv4Addr,
-    ttl: u8,
-    identification: u16,
-    payload: &[u8],
-) -> Result<Ipv4Packet<'a>> {
-    let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
-    let ipv4_total_length_header = ipv4_byte_order.adjust_length(ipv4_total_length);
-    let ipv4_flags_and_fragment_offset_header = ipv4_byte_order.adjust_length(DONT_FRAGMENT);
-    let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize])?;
-    ipv4.set_version(4);
-    ipv4.set_header_length(5);
-    ipv4.set_total_length(ipv4_total_length_header);
-    ipv4.set_ttl(ttl);
-    ipv4.set_protocol(protocol);
-    ipv4.set_source(src_addr);
-    ipv4.set_destination(dest_addr);
-    ipv4.set_payload(payload);
-    ipv4.set_identification(identification);
-    ipv4.set_flags_and_fragment_offset(ipv4_flags_and_fragment_offset_header);
-    Ok(ipv4)
+    /// Create an `Ipv4Packet`.
+    fn make_ipv4_packet<'a>(
+        &self,
+        ipv4_buf: &'a mut [u8],
+        protocol: IpProtocol,
+        ttl: u8,
+        identification: u16,
+        payload: &[u8],
+    ) -> Result<Ipv4Packet<'a>> {
+        let ipv4_total_length = (Ipv4Packet::minimum_packet_size() + payload.len()) as u16;
+        let ipv4_total_length_header = self.byte_order.adjust_length(ipv4_total_length);
+        let ipv4_flags_and_fragment_offset_header = self.byte_order.adjust_length(DONT_FRAGMENT);
+        let mut ipv4 = Ipv4Packet::new(&mut ipv4_buf[..ipv4_total_length as usize])?;
+        ipv4.set_version(4);
+        ipv4.set_header_length(5);
+        ipv4.set_total_length(ipv4_total_length_header);
+        ipv4.set_ttl(ttl);
+        ipv4.set_protocol(protocol);
+        ipv4.set_source(self.src_addr);
+        ipv4.set_destination(self.dest_addr);
+        ipv4.set_payload(payload);
+        ipv4.set_identification(identification);
+        ipv4.set_flags_and_fragment_offset(ipv4_flags_and_fragment_offset_header);
+        Ok(ipv4)
+    }
+
+    /// Calculate the expected checksum for a UDP packet.
+    pub fn calc_udp_checksum(
+        &self,
+        src_port: Port,
+        dest_port: Port,
+        payload_size: u16,
+    ) -> Result<u16> {
+        let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
+        let payload = &[self.payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..usize::from(payload_size)];
+        let udp = self.make_udp_packet(&mut udp_buf, src_port.0, dest_port.0, payload)?;
+        Ok(udp.get_checksum())
+    }
 }
 
 const fn icmp_payload_size(packet_size: usize) -> usize {
@@ -370,127 +456,6 @@ const fn udp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv4Packet::minimum_packet_size();
     let udp_header_size = UdpPacket::minimum_packet_size();
     packet_size - udp_header_size - ip_header_size
-}
-
-#[instrument]
-fn extract_probe_resp(
-    protocol: Protocol,
-    icmp_extension_mode: IcmpExtensionParseMode,
-    payload_pattern: PayloadPattern,
-    ipv4: &Ipv4Packet<'_>,
-) -> Result<Option<Response>> {
-    let recv = SystemTime::now();
-    let src = IpAddr::V4(ipv4.get_source());
-    let icmp_v4 = IcmpPacket::new_view(ipv4.payload())?;
-    let icmp_type = icmp_v4.get_icmp_type();
-    let icmp_code = icmp_v4.get_icmp_code();
-    Ok(match icmp_type {
-        IcmpType::TimeExceeded => {
-            if IcmpTimeExceededCode::from(icmp_code) == IcmpTimeExceededCode::TtlExpired {
-                let packet = TimeExceededPacket::new_view(icmp_v4.packet())?;
-                let (nested_ipv4, extension) = match icmp_extension_mode {
-                    IcmpExtensionParseMode::Enabled => {
-                        let ipv4 = Ipv4Packet::new_view(packet.payload())?;
-                        let ext = packet.extension().map(Extensions::try_from).transpose()?;
-                        (ipv4, ext)
-                    }
-                    IcmpExtensionParseMode::Disabled => {
-                        let ipv4 = Ipv4Packet::new_view(packet.payload_raw())?;
-                        (ipv4, None)
-                    }
-                };
-                extract_probe_resp_seq(&nested_ipv4, protocol, payload_pattern)?.map(|resp_seq| {
-                    Response::TimeExceeded(
-                        ResponseData::new(recv, src, resp_seq),
-                        IcmpPacketCode(icmp_code.0),
-                        extension,
-                    )
-                })
-            } else {
-                None
-            }
-        }
-        IcmpType::DestinationUnreachable => {
-            let packet = DestinationUnreachablePacket::new_view(icmp_v4.packet())?;
-            let nested_ipv4 = Ipv4Packet::new_view(packet.payload())?;
-            let extension = match icmp_extension_mode {
-                IcmpExtensionParseMode::Enabled => {
-                    packet.extension().map(Extensions::try_from).transpose()?
-                }
-                IcmpExtensionParseMode::Disabled => None,
-            };
-            extract_probe_resp_seq(&nested_ipv4, protocol, payload_pattern)?.map(|resp_seq| {
-                Response::DestinationUnreachable(
-                    ResponseData::new(recv, src, resp_seq),
-                    IcmpPacketCode(icmp_code.0),
-                    extension,
-                )
-            })
-        }
-        IcmpType::EchoReply => match protocol {
-            Protocol::Icmp => {
-                let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
-                let id = packet.get_identifier();
-                let seq = packet.get_sequence();
-                let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq));
-                Some(Response::EchoReply(
-                    ResponseData::new(recv, src, resp_seq),
-                    IcmpPacketCode(icmp_code.0),
-                ))
-            }
-            Protocol::Udp | Protocol::Tcp => None,
-        },
-        _ => None,
-    })
-}
-
-#[instrument]
-fn extract_probe_resp_seq(
-    ipv4: &Ipv4Packet<'_>,
-    protocol: Protocol,
-    payload_pattern: PayloadPattern,
-) -> Result<Option<ResponseSeq>> {
-    Ok(match (protocol, ipv4.get_protocol()) {
-        (Protocol::Icmp, IpProtocol::Icmp) => {
-            let echo_request = extract_echo_request(ipv4)?;
-            let identifier = echo_request.get_identifier();
-            let sequence = echo_request.get_sequence();
-            Some(ResponseSeq::Icmp(ResponseSeqIcmp::new(
-                identifier, sequence,
-            )))
-        }
-        (Protocol::Udp, IpProtocol::Udp) => {
-            let (src_port, dest_port, actual_checksum, identifier, payload_length) =
-                extract_udp_packet(ipv4)?;
-            let expected_checksum = calc_udp_checksum(
-                ipv4.get_source(),
-                ipv4.get_destination(),
-                Port(src_port),
-                Port(dest_port),
-                payload_length,
-                payload_pattern,
-            )?;
-            Some(ResponseSeq::Udp(ResponseSeqUdp::new(
-                identifier,
-                IpAddr::V4(ipv4.get_destination()),
-                src_port,
-                dest_port,
-                expected_checksum,
-                actual_checksum,
-                payload_length,
-                false,
-            )))
-        }
-        (Protocol::Tcp, IpProtocol::Tcp) => {
-            let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
-            Some(ResponseSeq::Tcp(ResponseSeqTcp::new(
-                IpAddr::V4(ipv4.get_destination()),
-                src_port,
-                dest_port,
-            )))
-        }
-        _ => None,
-    })
 }
 
 #[instrument]
@@ -557,7 +522,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 00 00 40 00 0a 01 00 00 01 02 03 04
@@ -576,15 +541,15 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_icmp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            ..Default::default()
+        };
+        ipv4.dispatch_icmp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -595,7 +560,7 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(48);
         let payload_pattern = PayloadPattern(0xff);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 30 00 00 40 00 0a 01 00 00 01 02 03 04
@@ -615,15 +580,15 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_icmp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            ..Default::default()
+        };
+        ipv4.dispatch_icmp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -634,18 +599,17 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(27);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
-        let err = dispatch_icmp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )
-        .unwrap_err();
+            ..Default::default()
+        };
+        let err = ipv4.dispatch_icmp_probe(&mut mocket, probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -657,18 +621,17 @@ mod tests {
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
-        let err = dispatch_icmp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )
-        .unwrap_err();
+            ..Default::default()
+        };
+        let err = ipv4.dispatch_icmp_probe(&mut mocket, probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -681,7 +644,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -700,16 +663,16 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -721,7 +684,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(38);
         let payload_pattern = PayloadPattern(0xaa);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 26 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -741,16 +704,16 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -767,7 +730,7 @@ mod tests {
         // fixed two byte payload is used to hold the sequence
         let packet_size = PacketSize(300);
         let payload_pattern = PayloadPattern(0xaa);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1e 04 d2 40 00 0a 11 00 00 01 02 03 04
@@ -786,16 +749,16 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -812,7 +775,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0xaa);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!(
             "
             45 00 00 1c 82 9a 40 00 0a 11 00 00 01 02 03 04
@@ -831,16 +794,16 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
 
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -853,7 +816,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(28);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
@@ -887,17 +850,16 @@ mod tests {
 
             Ok(mocket)
         });
-
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -910,7 +872,7 @@ mod tests {
         let privilege_mode = PrivilegeMode::Unprivileged;
         let packet_size = PacketSize(36);
         let payload_pattern = PayloadPattern(0x1f);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let expected_send_to_buf = hex_literal::hex!("1f 1f 1f 1f 1f 1f 1f 1f");
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
@@ -944,17 +906,16 @@ mod tests {
 
             Ok(mocket)
         });
-
-        dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )?;
+            privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
         Ok(())
     }
 
@@ -966,19 +927,18 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(27);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
-        let err = dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )
-        .unwrap_err();
+            privilege_mode,
+            ..Default::default()
+        };
+        let err = ipv4.dispatch_udp_probe(&mut mocket, probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -991,19 +951,18 @@ mod tests {
         let privilege_mode = PrivilegeMode::Privileged;
         let packet_size = PacketSize(1025);
         let payload_pattern = PayloadPattern(0x00);
-        let ipv4_byte_order = platform::Ipv4ByteOrder::Network;
+        let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
-        let err = dispatch_udp_probe(
-            &mut mocket,
-            probe,
+        let ipv4 = Ipv4 {
             src_addr,
             dest_addr,
-            privilege_mode,
+            byte_order,
             packet_size,
             payload_pattern,
-            ipv4_byte_order,
-        )
-        .unwrap_err();
+            privilege_mode,
+            ..Default::default()
+        };
+        let err = ipv4.dispatch_udp_probe(&mut mocket, probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -1050,7 +1009,13 @@ mod tests {
             Ok(mocket)
         });
 
-        dispatch_tcp_probe::<MockSocket>(&probe, src_addr, dest_addr, tos)?;
+        let ipv4 = Ipv4 {
+            src_addr,
+            dest_addr,
+            tos,
+            ..Default::default()
+        };
+        ipv4.dispatch_tcp_probe::<MockSocket>(&probe)?;
         Ok(())
     }
 
@@ -1071,13 +1036,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::EchoReply(
             ResponseData {
@@ -1122,13 +1086,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1172,13 +1135,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::DestinationUnreachable(
             ResponseData {
@@ -1222,13 +1184,14 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
+            dest_addr: Ipv4Addr::from_str("142.250.204.142").unwrap(),
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1287,13 +1250,14 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
+            dest_addr: Ipv4Addr::from_str("9.9.9.9").unwrap(),
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::DestinationUnreachable(
             ResponseData {
@@ -1351,13 +1315,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Tcp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Tcp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1408,13 +1371,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Tcp,
-            IcmpExtensionParseMode::Disabled,
-            PayloadPattern(0x00),
-        )?
-        .unwrap();
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Tcp,
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
 
         let Response::DestinationUnreachable(
             ResponseData {
@@ -1463,26 +1425,29 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Tcp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Tcp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
         Ok(())
     }
@@ -1505,26 +1470,29 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Tcp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Tcp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
         Ok(())
     }
@@ -1546,34 +1514,37 @@ mod tests {
             .expect_read()
             .times(3)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Tcp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Tcp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_some());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Icmp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Icmp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
         Ok(())
     }
 
     #[test]
     fn test_recv_tcp_socket_tcp_reply() -> anyhow::Result<()> {
-        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
-        let expected_peer_addr = SocketAddr::new(dest_addr, 456);
+        let dest_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let expected_peer_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
 
         let mut mocket = MockSocket::new();
         mocket.expect_take_error().times(1).returning(|| Ok(None));
@@ -1583,7 +1554,13 @@ mod tests {
             .returning(move || Ok(Some(expected_peer_addr)));
         mocket.expect_shutdown().times(1).returning(|| Ok(()));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(456), dest_addr)?.unwrap();
+        let ipv4 = Ipv4 {
+            dest_addr,
+            ..Default::default()
+        };
+        let resp = ipv4
+            .recv_tcp_socket(&mut mocket, Port(33434), Port(456))?
+            .unwrap();
 
         let Response::TcpReply(ResponseData {
             addr,
@@ -1606,7 +1583,7 @@ mod tests {
 
     #[test]
     fn test_recv_tcp_socket_tcp_refused() -> anyhow::Result<()> {
-        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
+        let dest_addr = Ipv4Addr::from_str("1.2.3.4")?;
 
         let mut mocket = MockSocket::new();
         mocket
@@ -1614,7 +1591,13 @@ mod tests {
             .times(1)
             .returning(|| Ok(Some(SocketError::ConnectionRefused)));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(80), dest_addr)?.unwrap();
+        let ipv4 = Ipv4 {
+            dest_addr,
+            ..Default::default()
+        };
+        let resp = ipv4
+            .recv_tcp_socket(&mut mocket, Port(33434), Port(80))?
+            .unwrap();
 
         let Response::TcpRefused(ResponseData {
             addr,
@@ -1637,7 +1620,7 @@ mod tests {
 
     #[test]
     fn test_recv_tcp_socket_tcp_host_unreachable() -> anyhow::Result<()> {
-        let dest_addr = IpAddr::V4(Ipv4Addr::from_str("1.2.3.4")?);
+        let dest_addr = Ipv4Addr::from_str("1.2.3.4")?;
 
         let mut mocket = MockSocket::new();
         mocket
@@ -1647,9 +1630,15 @@ mod tests {
         mocket
             .expect_icmp_error_info()
             .times(1)
-            .returning(move || Ok(dest_addr));
+            .returning(move || Ok(IpAddr::V4(dest_addr)));
 
-        let resp = recv_tcp_socket(&mut mocket, Port(33434), Port(80), dest_addr)?.unwrap();
+        let ipv4 = Ipv4 {
+            dest_addr,
+            ..Default::default()
+        };
+        let resp = ipv4
+            .recv_tcp_socket(&mut mocket, Port(33434), Port(80))?
+            .unwrap();
 
         let Response::TimeExceeded(
             ResponseData {
@@ -1695,12 +1684,12 @@ mod tests {
             .expect_read()
             .times(1)
             .returning(mocket_read!(expected_read_buf));
-        let resp = recv_icmp_probe(
-            &mut mocket,
-            Protocol::Udp,
-            IcmpExtensionParseMode::Enabled,
-            PayloadPattern(0x00),
-        )?;
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            icmp_extension_mode: IcmpExtensionParseMode::Enabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
         Ok(())
     }

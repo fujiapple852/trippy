@@ -1,10 +1,9 @@
-use crate::config::{ChannelConfig, IcmpExtensionParseMode};
+use crate::config::ChannelConfig;
 use crate::error::{Error, Result};
 use crate::net::socket::Socket;
-use crate::net::{ipv4, ipv6, platform, Network};
+use crate::net::{ipv4::Ipv4, ipv6::Ipv6, platform, Network};
 use crate::probe::{Probe, Response};
-use crate::types::{PacketSize, PayloadPattern, TypeOfService};
-use crate::{Port, PrivilegeMode, Protocol, Sequence};
+use crate::{Port, PrivilegeMode, Protocol};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -18,21 +17,19 @@ const MAX_TCP_PROBES: usize = 256;
 
 /// A channel for sending and receiving `Probe` packets.
 pub struct Channel<S: Socket> {
-    privilege_mode: PrivilegeMode,
     protocol: Protocol,
-    src_addr: IpAddr,
-    ipv4_length_order: platform::Ipv4ByteOrder,
-    dest_addr: IpAddr,
-    packet_size: PacketSize,
-    payload_pattern: PayloadPattern,
-    initial_sequence: Sequence,
-    tos: TypeOfService,
-    icmp_extension_mode: IcmpExtensionParseMode,
     read_timeout: Duration,
     tcp_connect_timeout: Duration,
     send_socket: Option<S>,
     recv_socket: S,
     tcp_probes: ArrayVec<TcpProbe<S>, MAX_TCP_PROBES>,
+    family_config: FamilyConfig,
+}
+
+/// The IP family configuration for the channel.
+enum FamilyConfig {
+    V4(Ipv4),
+    V6(Ipv6),
 }
 
 impl<S: Socket> Channel<S> {
@@ -54,22 +51,38 @@ impl<S: Socket> Channel<S> {
             Protocol::Tcp => None,
         };
         let recv_socket = make_recv_socket(config.source_addr, raw)?;
+        let family_config = match (config.source_addr, config.target_addr) {
+            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => FamilyConfig::V4(Ipv4 {
+                src_addr,
+                dest_addr,
+                byte_order: ipv4_length_order,
+                packet_size: config.packet_size,
+                payload_pattern: config.payload_pattern,
+                privilege_mode: config.privilege_mode,
+                tos: config.tos,
+                protocol: config.protocol,
+                icmp_extension_mode: config.icmp_extension_parse_mode,
+            }),
+            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => FamilyConfig::V6(Ipv6 {
+                src_addr,
+                dest_addr,
+                packet_size: config.packet_size,
+                payload_pattern: config.payload_pattern,
+                privilege_mode: config.privilege_mode,
+                protocol: config.protocol,
+                icmp_extension_mode: config.icmp_extension_parse_mode,
+                initial_sequence: config.initial_sequence,
+            }),
+            _ => unreachable!(),
+        };
         Ok(Self {
-            privilege_mode: config.privilege_mode,
             protocol: config.protocol,
-            src_addr: config.source_addr,
-            ipv4_length_order,
-            dest_addr: config.target_addr,
-            packet_size: config.packet_size,
-            payload_pattern: config.payload_pattern,
-            initial_sequence: config.initial_sequence,
-            tos: config.tos,
-            icmp_extension_mode: config.icmp_extension_parse_mode,
             read_timeout: config.read_timeout,
             tcp_connect_timeout: config.tcp_connect_timeout,
             send_socket,
             recv_socket,
             tcp_probes: ArrayVec::new(),
+            family_config,
         })
     }
 }
@@ -103,28 +116,9 @@ impl<S: Socket> Channel<S> {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all)]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> Result<()> {
-        match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
-                ipv4::dispatch_icmp_probe(
-                    socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.packet_size,
-                    self.payload_pattern,
-                    self.ipv4_length_order,
-                )
-            }
-            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr), Some(socket)) => {
-                ipv6::dispatch_icmp_probe(
-                    socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.packet_size,
-                    self.payload_pattern,
-                )
-            }
+        match (&self.family_config, self.send_socket.as_mut()) {
+            (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_icmp_probe(socket, probe),
+            (FamilyConfig::V6(ipv6), Some(socket)) => ipv6.dispatch_icmp_probe(socket, probe),
             _ => unreachable!(),
         }
     }
@@ -132,31 +126,9 @@ impl<S: Socket> Channel<S> {
     /// Dispatch a UDP probe.
     #[instrument(skip_all)]
     fn dispatch_udp_probe(&mut self, probe: Probe) -> Result<()> {
-        match (self.src_addr, self.dest_addr, self.send_socket.as_mut()) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr), Some(socket)) => {
-                ipv4::dispatch_udp_probe(
-                    socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.privilege_mode,
-                    self.packet_size,
-                    self.payload_pattern,
-                    self.ipv4_length_order,
-                )
-            }
-            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr), Some(socket)) => {
-                ipv6::dispatch_udp_probe(
-                    socket,
-                    probe,
-                    src_addr,
-                    dest_addr,
-                    self.privilege_mode,
-                    self.packet_size,
-                    self.payload_pattern,
-                    self.initial_sequence,
-                )
-            }
+        match (&self.family_config, self.send_socket.as_mut()) {
+            (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_udp_probe(socket, probe),
+            (FamilyConfig::V6(ipv6), Some(socket)) => ipv6.dispatch_udp_probe(socket, probe),
             _ => unreachable!(),
         }
     }
@@ -164,14 +136,9 @@ impl<S: Socket> Channel<S> {
     /// Dispatch a TCP probe.
     #[instrument(skip_all)]
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> Result<()> {
-        let socket = match (self.src_addr, self.dest_addr) {
-            (IpAddr::V4(src_addr), IpAddr::V4(dest_addr)) => {
-                ipv4::dispatch_tcp_probe(&probe, src_addr, dest_addr, self.tos)
-            }
-            (IpAddr::V6(src_addr), IpAddr::V6(dest_addr)) => {
-                ipv6::dispatch_tcp_probe(&probe, src_addr, dest_addr)
-            }
-            _ => unreachable!(),
+        let socket = match &self.family_config {
+            FamilyConfig::V4(ipv4) => ipv4.dispatch_tcp_probe(&probe),
+            FamilyConfig::V6(ipv6) => ipv6.dispatch_tcp_probe(&probe),
         }?;
         self.tcp_probes.push(TcpProbe::new(
             socket,
@@ -186,18 +153,9 @@ impl<S: Socket> Channel<S> {
     #[instrument(skip(self))]
     fn recv_icmp_probe(&mut self) -> Result<Option<Response>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
-            match self.dest_addr {
-                IpAddr::V4(_) => ipv4::recv_icmp_probe(
-                    &mut self.recv_socket,
-                    self.protocol,
-                    self.icmp_extension_mode,
-                    self.payload_pattern,
-                ),
-                IpAddr::V6(_) => ipv6::recv_icmp_probe(
-                    &mut self.recv_socket,
-                    self.protocol,
-                    self.icmp_extension_mode,
-                ),
+            match &self.family_config {
+                FamilyConfig::V4(ipv4) => ipv4.recv_icmp_probe(&mut self.recv_socket),
+                FamilyConfig::V6(ipv6) => ipv6.recv_icmp_probe(&mut self.recv_socket),
             }
         } else {
             Ok(None)
@@ -225,19 +183,13 @@ impl<S: Socket> Channel<S> {
             });
         if let Some(i) = found_index {
             let mut probe = self.tcp_probes.remove(i);
-            match self.dest_addr {
-                IpAddr::V4(_) => ipv4::recv_tcp_socket(
-                    &mut probe.socket,
-                    probe.src_port,
-                    probe.dest_port,
-                    self.dest_addr,
-                ),
-                IpAddr::V6(_) => ipv6::recv_tcp_socket(
-                    &mut probe.socket,
-                    probe.src_port,
-                    probe.dest_port,
-                    self.dest_addr,
-                ),
+            match &self.family_config {
+                FamilyConfig::V4(ipv4) => {
+                    ipv4.recv_tcp_socket(&mut probe.socket, probe.src_port, probe.dest_port)
+                }
+                FamilyConfig::V6(ipv6) => {
+                    ipv6.recv_tcp_socket(&mut probe.socket, probe.src_port, probe.dest_port)
+                }
             }
         } else {
             Ok(None)
