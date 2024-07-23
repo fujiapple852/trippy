@@ -47,6 +47,14 @@ It is preferable to use `debchange` for this, eg:
 
 ---
 
+To automate the PPA publishing process, including cargo vendoring, Docker setup, and `debuild` execution, you can use the `publish-ppa.sh` script. This script is designed to streamline the process and ensure consistency across different Ubuntu versions. To use this script, simply run the following command:
+
+    ./debian/rules publish-ppa
+
+This command will execute the `publish-ppa.sh` script with the appropriate arguments, handling the entire process for you. For more details on how the script works and the steps it performs, please refer to the script documentation.
+
+---
+
 NOTES:
 - all `commands` are relative to the Trippy source directory.
 - the tarball is compressed with xz as per the [blog post] [3] I used

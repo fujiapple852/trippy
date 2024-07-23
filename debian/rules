@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-.PHONY: override_dh_strip vendor
+.PHONY: override_dh_strip vendor publish-ppa
 
 %:
 	dh $@
@@ -9,6 +9,9 @@ vendor:
 	-[ -d vendor ] && rm -rf vendor
 	cargo vendor
 	tar cJf debian/vendor.tar.xz vendor
+
+publish-ppa:
+	./publish-ppa.sh
 
 override_dh_auto_build:
 	mkdir .cargo
