@@ -64,7 +64,7 @@ fn main() -> anyhow::Result<()> {
         [] => return Err(anyhow!("traceroute: unknown host {}", hostname)),
         [addr] => *addr,
         [addr, ..] => {
-            println!("traceroute: Warning: bbc.co.uk has multiple addresses; using {addr}");
+            println!("traceroute: Warning: {hostname} has multiple addresses; using {addr}");
             *addr
         }
     };
