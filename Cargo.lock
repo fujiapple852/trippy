@@ -2122,9 +2122,9 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "2.0.2"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa06f8128a534de505cae0a1d394ca3f7acb8504580b24d23ba774c48baaa98e"
+checksum = "6f57e6b6d077b3896a4fa9328b664ba7218a7743f9c1b83dcb50b5e80adbd542"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2309,16 +2309,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
-name = "windows"
-version = "0.52.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48a53791691ab099e5e2ad123536d0fff50652600abaf43bbf952894110d0be"
-dependencies = [
- "windows-core",
- "windows-targets 0.52.6",
-]
-
-[[package]]
 name = "windows-core"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2487,15 +2477,15 @@ dependencies = [
 
 [[package]]
 name = "wintun"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b3c8c8876c686f8a2d6376999ac1c9a24c74d2968551c9394f7e89127783685"
+checksum = "b196f9328341b035820c54beebca487823e2e20a5977f284f2af2a0ee8f04400"
 dependencies = [
  "c2rust-bitfields",
  "libloading",
  "log",
  "thiserror",
- "windows",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
