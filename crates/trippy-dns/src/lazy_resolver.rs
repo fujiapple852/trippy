@@ -1,32 +1,8 @@
+use crate::config::Config;
 use crate::resolver::{DnsEntry, ResolvedIpAddrs, Resolver, Result};
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::rc::Rc;
-use std::time::Duration;
-
-/// Configuration for the `DnsResolver`.
-#[derive(Debug, Copy, Clone)]
-pub struct Config {
-    /// The method to use for DNS resolution.
-    pub resolve_method: ResolveMethod,
-    /// The IP address resolution family.
-    pub addr_family: IpAddrFamily,
-    /// The timeout for DNS resolution.
-    pub timeout: Duration,
-    /// The time-to-live (TTL) for DNS cache entries.
-    pub ttl: Duration,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            resolve_method: ResolveMethod::System,
-            addr_family: IpAddrFamily::Ipv4thenIpv6,
-            timeout: Duration::from_millis(5000),
-            ttl: Duration::from_secs(300),
-        }
-    }
-}
 
 /// How DNS queries will be resolved.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -61,24 +37,6 @@ impl Display for IpAddrFamily {
             Self::Ipv6Only => write!(f, "Ipv6Only"),
             Self::Ipv6thenIpv4 => write!(f, "Ipv6thenIpv4"),
             Self::Ipv4thenIpv6 => write!(f, "Ipv4thenIpv6"),
-        }
-    }
-}
-
-impl Config {
-    /// Create a `Config`.
-    #[must_use]
-    pub const fn new(
-        resolve_method: ResolveMethod,
-        addr_family: IpAddrFamily,
-        timeout: Duration,
-        ttl: Duration,
-    ) -> Self {
-        Self {
-            resolve_method,
-            addr_family,
-            timeout,
-            ttl,
         }
     }
 }
