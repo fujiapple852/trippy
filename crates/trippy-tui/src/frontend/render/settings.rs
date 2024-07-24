@@ -268,6 +268,10 @@ fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
             format!("{}", format_duration(app.resolver.config().timeout)),
         ),
         SettingsItem::new(
+            "dns-ttl",
+            format!("{}", format_duration(app.resolver.config().ttl)),
+        ),
+        SettingsItem::new(
             "dns-resolve-method",
             format_dns_method(app.resolver.config().resolve_method),
         ),
@@ -493,7 +497,7 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 pub const SETTINGS_TABS: [(&str, usize); 7] = [
     ("Tui", 8),
     ("Trace", 17),
-    ("Dns", 4),
+    ("Dns", 5),
     ("GeoIp", 1),
     ("Bindings", 36),
     ("Theme", 31),

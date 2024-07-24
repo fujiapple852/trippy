@@ -299,6 +299,7 @@ pub struct TrippyConfig {
     pub multipath_strategy: MultipathStrategy,
     pub port_direction: PortDirection,
     pub dns_timeout: Duration,
+    pub dns_ttl: Duration,
     pub dns_resolve_method: ResolveMethod,
     pub dns_lookup_as_info: bool,
     pub max_samples: usize,
@@ -546,6 +547,11 @@ impl TrippyConfig {
             cfg_file_dns.dns_timeout,
             constants::DEFAULT_DNS_TIMEOUT,
         );
+        let dns_ttl = cfg_layer(
+            args.dns_ttl,
+            cfg_file_dns.dns_ttl,
+            constants::DEFAULT_DNS_TTL,
+        );
         let report_cycles = cfg_layer(
             args.report_cycles,
             cfg_file_report.report_cycles,
@@ -677,6 +683,7 @@ impl TrippyConfig {
             interface,
             port_direction,
             dns_timeout,
+            dns_ttl,
             dns_resolve_method,
             dns_lookup_as_info,
             max_samples,
@@ -729,6 +736,7 @@ impl Default for TrippyConfig {
             multipath_strategy: defaults::DEFAULT_STRATEGY_MULTIPATH,
             port_direction: PortDirection::None,
             dns_timeout: constants::DEFAULT_DNS_TIMEOUT,
+            dns_ttl: constants::DEFAULT_DNS_TTL,
             dns_resolve_method: dns_resolve_method(constants::DEFAULT_DNS_RESOLVE_METHOD),
             dns_lookup_as_info: constants::DEFAULT_DNS_LOOKUP_AS_INFO,
             max_samples: defaults::DEFAULT_MAX_SAMPLES,
@@ -1386,6 +1394,13 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
+    #[test_case("trip example.com", Ok(cfg().dns_ttl(Duration::from_secs(300)).build()); "default dns ttl")]
+    #[test_case("trip example.com --dns-ttl 10secs", Ok(cfg().dns_ttl(Duration::from_secs(10)).build()); "custom dns ttl")]
+    #[test_case("trip example.com --dns-ttl 20", Err(anyhow!("error: invalid value '20' for '--dns-ttl <DNS_TTL>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom dns ttl")]
+    fn test_dns_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "default resolve method")]
     #[test_case("trip example.com --dns-resolve-method system", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "custom resolve method system")]
     #[test_case("trip example.com -r system", Ok(cfg().dns_resolve_method(ResolveMethod::System).build()); "custom resolve method system short")]
@@ -1939,6 +1954,15 @@ mod tests {
             Self {
                 config: TrippyConfig {
                     dns_timeout,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn dns_ttl(self, dns_ttl: Duration) -> Self {
+            Self {
+                config: TrippyConfig {
+                    dns_ttl,
                     ..self.config
                 },
             }
