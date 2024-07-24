@@ -201,6 +201,9 @@ pub struct ConfigDns {
     #[serde(default)]
     #[serde(deserialize_with = "humantime_deser")]
     pub dns_timeout: Option<Duration>,
+    #[serde(default)]
+    #[serde(deserialize_with = "humantime_deser")]
+    pub dns_ttl: Option<Duration>,
 }
 
 impl Default for ConfigDns {
@@ -210,6 +213,7 @@ impl Default for ConfigDns {
             dns_resolve_all: Some(super::constants::DEFAULT_DNS_RESOLVE_ALL),
             dns_lookup_as_info: Some(super::constants::DEFAULT_DNS_LOOKUP_AS_INFO),
             dns_timeout: Some(super::constants::DEFAULT_DNS_TIMEOUT),
+            dns_ttl: Some(super::constants::DEFAULT_DNS_TTL),
         }
     }
 }

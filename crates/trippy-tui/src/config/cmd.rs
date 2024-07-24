@@ -168,6 +168,10 @@ pub struct Args {
     #[arg(long, value_parser = parse_duration)]
     pub dns_timeout: Option<Duration>,
 
+    /// The time-to-live (TTL) of DNS entries [default: 300s]
+    #[arg(long, value_parser = parse_duration)]
+    pub dns_ttl: Option<Duration>,
+
     /// Lookup autonomous system (AS) information during DNS queries [default: false]
     #[arg(long, short = 'z')]
     pub dns_lookup_as_info: bool,

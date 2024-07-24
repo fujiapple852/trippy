@@ -216,6 +216,8 @@ dns-lookup-as-info = false
 # The maximum time to wait to perform DNS queries [default: 5s]
 dns-timeout = "5s"
 
+# The time-to-live (TTL) for DNS entries [default: 300s]
+dns-ttl = "300s"
 
 #
 # Report generation configuration.

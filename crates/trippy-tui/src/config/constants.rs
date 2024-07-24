@@ -58,6 +58,9 @@ pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;
 /// The default value for `dns-timeout`.
 pub const DEFAULT_DNS_TIMEOUT: Duration = Duration::from_millis(5000);
 
+/// The default value for `dns-ttl`.
+pub const DEFAULT_DNS_TTL: Duration = Duration::from_secs(300);
+
 /// The default value for `report-cycles`.
 pub const DEFAULT_REPORT_CYCLES: usize = 10;
 
