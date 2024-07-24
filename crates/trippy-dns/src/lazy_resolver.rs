@@ -13,6 +13,8 @@ pub struct Config {
     pub addr_family: IpAddrFamily,
     /// The timeout for DNS resolution.
     pub timeout: Duration,
+    /// The time-to-live (TTL) for DNS cache entries.
+    pub ttl: Duration,
 }
 
 impl Default for Config {
@@ -21,6 +23,7 @@ impl Default for Config {
             resolve_method: ResolveMethod::System,
             addr_family: IpAddrFamily::Ipv4thenIpv6,
             timeout: Duration::from_millis(5000),
+            ttl: Duration::from_secs(300),
         }
     }
 }
@@ -69,11 +72,13 @@ impl Config {
         resolve_method: ResolveMethod,
         addr_family: IpAddrFamily,
         timeout: Duration,
+        ttl: Duration,
     ) -> Self {
         Self {
             resolve_method,
             addr_family,
             timeout,
+            ttl,
         }
     }
 }
@@ -143,7 +148,7 @@ mod inner {
     use std::str::FromStr;
     use std::sync::Arc;
     use std::thread;
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime};
 
     /// The maximum number of in-flight reverse DNS resolutions that may be
     const RESOLVER_MAX_QUEUE_SIZE: usize = 100;
@@ -281,6 +286,7 @@ mod inner {
 
         fn lazy_reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
             let mut enqueue = false;
+            let now = SystemTime::now();
 
             // Check if we have already attempted to resolve this `IpAddr` and return the current
             // `DnsEntry` if so, otherwise add it in a state of `DnsEntry::Pending`.
@@ -290,19 +296,32 @@ mod inner {
                 .entry(addr)
                 .or_insert_with(|| {
                     enqueue = true;
-                    DnsEntry::Pending(addr)
+                    DnsEntry::Pending(addr, now)
                 })
                 .clone();
 
+            // If the entry exists but is stale then enqueue it again.  The existing entry will
+            // be returned until it is refreshed.
+            match &dns_entry {
+                DnsEntry::Resolved(_, timestamp)
+                | DnsEntry::NotFound(_, timestamp)
+                | DnsEntry::Failed(_, timestamp) => {
+                    if now.duration_since(*timestamp).unwrap_or_default() > self.config.ttl {
+                        enqueue = true;
+                    }
+                }
+                _ => {}
+            }
+
             // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue
             // it again.
-            if let DnsEntry::Timeout(addr) = dns_entry {
+            if let DnsEntry::Timeout(addr, _) = dns_entry {
                 *self
                     .addr_cache
                     .write()
                     .get_mut(&addr)
-                    .expect("addr must be in cache") = DnsEntry::Pending(addr);
-                dns_entry = DnsEntry::Pending(addr);
+                    .expect("addr must be in cache") = DnsEntry::Pending(addr, now);
+                dns_entry = DnsEntry::Pending(addr, now);
                 enqueue = true;
             }
 
@@ -324,8 +343,8 @@ mod inner {
                         .addr_cache
                         .write()
                         .get_mut(&addr)
-                        .expect("addr must be in cache") = DnsEntry::Timeout(addr);
-                    DnsEntry::Timeout(addr)
+                        .expect("addr must be in cache") = DnsEntry::Timeout(addr, now);
+                    DnsEntry::Timeout(addr, now)
                 }
             } else {
                 dns_entry
@@ -353,13 +372,14 @@ mod inner {
     }
 
     fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
+        let now = SystemTime::now();
         match &provider {
             DnsProvider::DnsLookup => {
                 // we can't distinguish between a failed lookup or a genuine error and so we just
                 // assume all failures are `DnsEntry::NotFound`.
                 match dns_lookup::lookup_addr(&addr) {
-                    Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])),
-                    Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr)),
+                    Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns]), now),
+                    Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr), now),
                 }
             }
             DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
@@ -374,22 +394,22 @@ mod inner {
                         .collect();
                     if with_asinfo {
                         let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info))
+                        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info), now)
                     } else {
-                        DnsEntry::Resolved(Resolved::Normal(addr, hostnames))
+                        DnsEntry::Resolved(Resolved::Normal(addr, hostnames), now)
                     }
                 }
                 Err(err) => match err.kind() {
                     ResolveErrorKind::NoRecordsFound { .. } => {
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info))
+                            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info), now)
                         } else {
-                            DnsEntry::NotFound(Unresolved::Normal(addr))
+                            DnsEntry::NotFound(Unresolved::Normal(addr), now)
                         }
                     }
-                    ResolveErrorKind::Timeout => DnsEntry::Timeout(addr),
-                    _ => DnsEntry::Failed(addr),
+                    ResolveErrorKind::Timeout => DnsEntry::Timeout(addr, now),
+                    _ => DnsEntry::Failed(addr, now),
                 },
             },
         }

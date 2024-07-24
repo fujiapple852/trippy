@@ -2,15 +2,16 @@
 //! and reverse DNS resolver which support the ability to lookup Autonomous
 //! System (AS) information.
 //!
+//! Only a single reverse DNS lookup is performed (lazily) regardless of how
+//! often the lookup is performed unless:
+//! - the previous lookup failed with `DnsEntry::Timeout(_)`
+//! - the previous lookup is older than the configured time-to-live (TTL)
+//!
 //! # Example
 //!
 //! The following example perform a reverse DNS lookup and loop until it is
 //! resolved or fails.  The lookup uses the Cloudflare 1.1.1.1 public DNS
 //! service.
-//!
-//! Note that only a single reverse DNS lookup is performed (lazily) regardless
-//! of how often the lookup is performed, unless the previous lookup failed
-//! with `DnsEntry::Timeout(_)`.
 //!
 //! ```no_run
 //! # fn main() -> anyhow::Result<()> {
@@ -26,40 +27,41 @@
 //!     ResolveMethod::Cloudflare,
 //!     IpAddrFamily::Ipv4Only,
 //!     Duration::from_secs(5),
+//!     Duration::from_secs(300),
 //! );
 //! let resolver = DnsResolver::start(config)?;
 //! let addr = IpAddr::from_str("1.1.1.1")?;
 //! loop {
 //!     let entry = resolver.lazy_reverse_lookup_with_asinfo(addr);
 //!     match entry {
-//!         DnsEntry::Pending(ip) => {
-//!             println!("lookup of {ip} is pending, sleeping for 1 sec");
+//!         DnsEntry::Pending(ip, timestamp) => {
+//!             println!("lookup of {ip} is pending, sleeping for 1 sec at {timestamp:?}");
 //!             sleep(Duration::from_secs(1));
 //!         }
-//!         DnsEntry::Resolved(Resolved::Normal(ip, addrs)) => {
-//!             println!("lookup of {ip} resolved to {addrs:?}");
+//!         DnsEntry::Resolved(Resolved::Normal(ip, addrs), timestamp) => {
+//!             println!("lookup of {ip} resolved to {addrs:?} at {timestamp:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Resolved(Resolved::WithAsInfo(ip, addrs, as_info)) => {
-//!             println!("lookup of {ip} resolved to {addrs:?} with AS information {as_info:?}");
+//!         DnsEntry::Resolved(Resolved::WithAsInfo(ip, addrs, as_info), timestamp) => {
+//!             println!("lookup of {ip} resolved to {addrs:?} with AS information {as_info:?} at {timestamp:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::NotFound(Unresolved::Normal(ip)) => {
-//!             println!("lookup of {ip} did not match any records");
+//!         DnsEntry::NotFound(Unresolved::Normal(ip), timestamp) => {
+//!             println!("lookup of {ip} did not match any records at {timestamp:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::NotFound(Unresolved::WithAsInfo(ip, as_info)) => {
+//!         DnsEntry::NotFound(Unresolved::WithAsInfo(ip, as_info), timestamp) => {
 //!             println!(
-//!                 "lookup of {ip} did not match any records with AS information {as_info:?}"
+//!                 "lookup of {ip} did not match any records with AS information {as_info:?} at {timestamp:?}"
 //!             );
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Timeout(ip) => {
-//!             println!("lookup of {ip} timed out");
+//!         DnsEntry::Timeout(ip, timestamp) => {
+//!             println!("lookup of {ip} timed out at {timestamp:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Failed(ip) => {
-//!             println!("lookup of {ip} failed");
+//!         DnsEntry::Failed(ip, timestamp) => {
+//!             println!("lookup of {ip} failed at {timestamp:?}");
 //!             return Ok(());
 //!         }
 //!     }

@@ -4,6 +4,7 @@ use crate::geoip::GeoIpLookup;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
+use std::time::Duration;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -135,6 +136,7 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
         cfg.dns_resolve_method,
         cfg.addr_family,
         cfg.dns_timeout,
+        Duration::from_secs(300),
     ))?)
 }
 
