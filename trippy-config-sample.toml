@@ -269,7 +269,7 @@ tui-as-mode = "asn"
 #   d - Stddev
 #   t - Status
 #
-# Also avilable:
+# Also available:
 #
 #   j - Jitter
 #   g - Jitter average
