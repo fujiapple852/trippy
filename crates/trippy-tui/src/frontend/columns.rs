@@ -184,6 +184,8 @@ pub enum ColumnType {
     LastIcmpPacketCode,
     /// The NAT detection status for the last probe for this hop.
     LastNatStatus,
+    /// The number of probes that failed for a hop.
+    Failed,
 }
 
 impl From<ColumnType> for char {
@@ -210,6 +212,7 @@ impl From<ColumnType> for char {
             ColumnType::LastIcmpPacketType => 'T',
             ColumnType::LastIcmpPacketCode => 'C',
             ColumnType::LastNatStatus => 'N',
+            ColumnType::Failed => 'f',
         }
     }
 }
@@ -238,6 +241,7 @@ impl From<TuiColumn> for Column {
             TuiColumn::LastIcmpPacketType => Self::new_shown(ColumnType::LastIcmpPacketType),
             TuiColumn::LastIcmpPacketCode => Self::new_shown(ColumnType::LastIcmpPacketCode),
             TuiColumn::LastNatStatus => Self::new_shown(ColumnType::LastNatStatus),
+            TuiColumn::Failed => Self::new_shown(ColumnType::Failed),
         }
     }
 }
@@ -266,6 +270,7 @@ impl Display for ColumnType {
             Self::LastIcmpPacketType => write!(f, "Type"),
             Self::LastIcmpPacketCode => write!(f, "Code"),
             Self::LastNatStatus => write!(f, "Nat"),
+            Self::Failed => write!(f, "Fail"),
         }
     }
 }
@@ -296,6 +301,7 @@ impl ColumnType {
             Self::LastIcmpPacketType => ColumnWidth::Fixed(7),
             Self::LastIcmpPacketCode => ColumnWidth::Fixed(7),
             Self::LastNatStatus => ColumnWidth::Fixed(7),
+            Self::Failed => ColumnWidth::Fixed(7),
         }
     }
 }
@@ -355,6 +361,7 @@ mod tests {
                 Column::new_hidden(ColumnType::LastIcmpPacketType),
                 Column::new_hidden(ColumnType::LastIcmpPacketCode),
                 Column::new_hidden(ColumnType::LastNatStatus),
+                Column::new_hidden(ColumnType::Failed),
             ])
         );
     }

@@ -152,6 +152,7 @@ fn new_cell(
         ColumnType::LossPct => render_loss_pct_cell(hop),
         ColumnType::Sent => render_usize_cell(hop.total_sent()),
         ColumnType::Received => render_usize_cell(hop.total_recv()),
+        ColumnType::Failed => render_usize_cell(hop.total_failed()),
         ColumnType::Last => render_float_cell(hop.last_ms(), 1, total_recv),
         ColumnType::Average => render_avg_cell(hop),
         ColumnType::Best => render_float_cell(hop.best_ms(), 1, total_recv),
