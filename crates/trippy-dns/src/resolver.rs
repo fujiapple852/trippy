@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
+use std::time::SystemTime;
 use thiserror::Error;
 
 /// A DNS resolver.
@@ -82,15 +83,15 @@ impl IntoIterator for ResolvedIpAddrs {
 #[derive(Debug, Clone)]
 pub enum DnsEntry {
     /// The reverse DNS resolution of `IpAddr` is pending.
-    Pending(IpAddr),
+    Pending(IpAddr, SystemTime),
     /// The reverse DNS resolution of `IpAddr` has resolved.
-    Resolved(Resolved),
+    Resolved(Resolved, SystemTime),
     /// The `IpAddr` could not be resolved.
-    NotFound(Unresolved),
+    NotFound(Unresolved, SystemTime),
     /// The reverse DNS resolution of `IpAddr` failed.
-    Failed(IpAddr),
+    Failed(IpAddr, SystemTime),
     /// The reverse DNS resolution of `IpAddr` timed out.
-    Timeout(IpAddr),
+    Timeout(IpAddr, SystemTime),
 }
 
 /// Information about a resolved `IpAddr`.
@@ -144,17 +145,17 @@ impl Display for DnsEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_same_arms)]
         match self {
-            Self::Resolved(Resolved::Normal(_, hosts)) => write!(f, "{}", hosts.join(" ")),
-            Self::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
+            Self::Resolved(Resolved::Normal(_, hosts), _) => write!(f, "{}", hosts.join(" ")),
+            Self::Resolved(Resolved::WithAsInfo(_, hosts, asinfo), _) => {
                 write!(f, "AS{} {}", asinfo.asn, hosts.join(" "))
             }
-            Self::Pending(ip) => write!(f, "{ip}"),
-            Self::Timeout(ip) => write!(f, "Timeout: {ip}"),
-            Self::NotFound(Unresolved::Normal(ip)) => write!(f, "{ip}"),
-            Self::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
+            Self::Pending(ip, _) => write!(f, "{ip}"),
+            Self::Timeout(ip, _) => write!(f, "Timeout: {ip}"),
+            Self::NotFound(Unresolved::Normal(ip), _) => write!(f, "{ip}"),
+            Self::NotFound(Unresolved::WithAsInfo(ip, asinfo), _) => {
                 write!(f, "AS{} {}", asinfo.asn, ip)
             }
-            Self::Failed(ip) => write!(f, "Failed: {ip}"),
+            Self::Failed(ip, _) => write!(f, "Failed: {ip}"),
         }
     }
 }
