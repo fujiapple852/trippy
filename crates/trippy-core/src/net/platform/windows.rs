@@ -20,8 +20,8 @@ use windows_sys::Win32::Networking::WinSock::{
     IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
     SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
     SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
-    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSA_IO_INCOMPLETE,
-    WSA_IO_PENDING,
+    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAENETUNREACH, WSAENOBUFS,
+    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -590,10 +590,21 @@ impl Socket for SocketImpl {
     }
 }
 
+// Note that we handle `WSAENOBUFS`, which can occurs when calling send_to()
+// for ICMP and UDP.  We return it as `NetUnreachable` to piggyback on the
+// existing error handling.
 impl From<&StdIoError> for ErrorKind {
     fn from(value: &StdIoError) -> Self {
-        if value.raw_os_error() == StdIoError::from_raw_os_error(WSAEINPROGRESS).raw_os_error() {
-            Self::InProgress
+        if let Some(raw) = value.raw_os_error() {
+            if raw == WSAEINPROGRESS {
+                Self::InProgress
+            } else if raw == WSAEHOSTUNREACH {
+                Self::HostUnreachable
+            } else if raw == WSAENETUNREACH || raw == WSAENOBUFS {
+                Self::NetUnreachable
+            } else {
+                Self::Std(value.kind())
+            }
         } else {
             Self::Std(value.kind())
         }
@@ -605,6 +616,8 @@ impl From<ErrorKind> for StdIoError {
     fn from(value: ErrorKind) -> Self {
         match value {
             ErrorKind::InProgress => Self::from_raw_os_error(WSAEINPROGRESS),
+            ErrorKind::HostUnreachable => Self::from_raw_os_error(WSAEHOSTUNREACH),
+            ErrorKind::NetUnreachable => Self::from_raw_os_error(WSAENETUNREACH),
             ErrorKind::Std(kind) => Self::from(kind),
         }
     }
