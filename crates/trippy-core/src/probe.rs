@@ -24,6 +24,11 @@ pub enum ProbeStatus {
     /// port.  When a probe is skipped, it will be marked as `Skipped` and a
     /// new probe will be sent with the same TTL next available sequence number.
     Skipped,
+    /// The probe has failed.
+    ///
+    /// A probe is considered failed when an error occurs while sending or
+    /// receiving.
+    Failed(ProbeFailed),
     /// The probe has been sent and is awaiting a response.
     ///
     /// If no response is received within the timeout, the probe will remain
@@ -110,6 +115,20 @@ impl Probe {
             extensions,
         }
     }
+
+    /// The probe has failed to send.
+    #[must_use]
+    pub(crate) const fn failed(self) -> ProbeFailed {
+        ProbeFailed {
+            sequence: self.sequence,
+            identifier: self.identifier,
+            src_port: self.src_port,
+            dest_port: self.dest_port,
+            ttl: self.ttl,
+            round: self.round,
+            sent: self.sent,
+        }
+    }
 }
 
 /// A complete network tracing probe.
@@ -151,6 +170,28 @@ pub struct ProbeComplete {
     pub actual_udp_checksum: Option<Checksum>,
     /// The ICMP response extensions.
     pub extensions: Option<Extensions>,
+}
+
+/// A failed network tracing probe.
+///
+/// A probe is considered failed when an error occurs while sending or
+/// receiving.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProbeFailed {
+    /// The sequence of the probe.
+    pub sequence: Sequence,
+    /// The trace identifier.
+    pub identifier: TraceId,
+    /// The source port (UDP/TCP only)
+    pub src_port: Port,
+    /// The destination port (UDP/TCP only)
+    pub dest_port: Port,
+    /// The TTL of the probe.
+    pub ttl: TimeToLive,
+    /// Which round the probe belongs to.
+    pub round: RoundId,
+    /// Timestamp when the probe was sent.
+    pub sent: SystemTime,
 }
 
 /// The type of ICMP packet received.

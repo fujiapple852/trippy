@@ -108,7 +108,12 @@ impl Ipv4 {
             echo_request.packet(),
         )?;
         let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), 0);
-        icmp_send_socket.send_to(ipv4.packet(), remote_addr)?;
+        icmp_send_socket
+            .send_to(ipv4.packet(), remote_addr)
+            .map_err(Error::IoError)
+            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable))
+            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))
+            .map_err(|err| ErrorMapper::probe_failed(err, INVALID_INPUT_KIND))?;
         Ok(())
     }
 
@@ -168,7 +173,11 @@ impl Ipv4 {
             udp.packet(),
         )?;
         let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
-        raw_send_socket.send_to(ipv4.packet(), remote_addr)?;
+        raw_send_socket
+            .send_to(ipv4.packet(), remote_addr)
+            .map_err(Error::IoError)
+            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable))
+            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))?;
         Ok(())
     }
 
@@ -182,7 +191,8 @@ impl Ipv4 {
             .bind(local_addr)
             .map_err(Error::IoError)
             .or_else(ErrorMapper::in_progress)
-            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
+            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))
+            .map_err(|err| ErrorMapper::probe_failed(err, ADDR_NOT_AVAILABLE_KIND))?;
         socket.set_ttl(u32::from(probe.ttl.0))?;
         socket.send_to(payload, remote_addr)?;
         Ok(())
@@ -197,7 +207,8 @@ impl Ipv4 {
             .bind(local_addr)
             .map_err(Error::IoError)
             .or_else(ErrorMapper::in_progress)
-            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
+            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))
+            .map_err(|err| ErrorMapper::probe_failed(err, ADDR_NOT_AVAILABLE_KIND))?;
         socket.set_ttl(u32::from(probe.ttl.0))?;
         socket.set_tos(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
@@ -205,7 +216,8 @@ impl Ipv4 {
             .connect(remote_addr)
             .map_err(Error::IoError)
             .or_else(ErrorMapper::in_progress)
-            .map_err(|err| ErrorMapper::addr_in_use(err, remote_addr))?;
+            .map_err(|err| ErrorMapper::addr_in_use(err, remote_addr))
+            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))?;
         Ok(socket)
     }
 
@@ -457,6 +469,9 @@ impl Ipv4 {
         Ok(udp.get_checksum())
     }
 }
+
+const ADDR_NOT_AVAILABLE_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::AddrNotAvailable);
+const INVALID_INPUT_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::InvalidInput);
 
 const fn icmp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv4Packet::minimum_packet_size();

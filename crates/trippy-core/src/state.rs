@@ -169,6 +169,8 @@ pub struct Hop {
     total_sent: usize,
     /// The total probes received for this hop.
     total_recv: usize,
+    /// The total probes that failed for this hop.
+    total_failed: usize,
     /// The total round trip time for this hop across all rounds.
     total_time: Duration,
     /// The round trip time for this hop in the current round.
@@ -235,6 +237,12 @@ impl Hop {
     #[must_use]
     pub const fn total_recv(&self) -> usize {
         self.total_recv
+    }
+
+    /// The total number of probes that failed.
+    #[must_use]
+    pub const fn total_failed(&self) -> usize {
+        self.total_failed
     }
 
     /// The % of packets that are lost.
@@ -359,6 +367,7 @@ impl Default for Hop {
             addrs: IndexMap::default(),
             total_sent: 0,
             total_recv: 0,
+            total_failed: 0,
             total_time: Duration::default(),
             last: None,
             best: None,
@@ -532,6 +541,21 @@ impl FlowState {
                 self.hops[index].last_src_port = awaited.src_port.0;
                 self.hops[index].last_dest_port = awaited.dest_port.0;
                 self.hops[index].last_sequence = awaited.sequence.0;
+            }
+            ProbeStatus::Failed(failed) => {
+                self.update_lowest_ttl(failed.ttl);
+                self.update_round(failed.round);
+                let index = usize::from(failed.ttl.0) - 1;
+                self.hops[index].total_sent += 1;
+                self.hops[index].total_failed += 1;
+                self.hops[index].ttl = failed.ttl.0;
+                self.hops[index].samples.insert(0, Duration::default());
+                if self.hops[index].samples.len() > self.max_samples {
+                    self.hops[index].samples.pop();
+                }
+                self.hops[index].last_src_port = failed.src_port.0;
+                self.hops[index].last_dest_port = failed.dest_port.0;
+                self.hops[index].last_sequence = failed.sequence.0;
             }
             ProbeStatus::NotSent | ProbeStatus::Skipped => {}
         }
@@ -712,6 +736,7 @@ mod tests {
                 Self::Skipped => Self::Skipped,
                 Self::Awaited(awaited) => Self::Awaited(Probe { round, ..awaited }),
                 Self::Complete(completed) => Self::Complete(ProbeComplete { round, ..completed }),
+                Self::Failed(failed) => Self::Failed(failed),
             }
         }
     }

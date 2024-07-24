@@ -7,7 +7,7 @@ use crate::probe::{
     ResponseSeqUdp,
 };
 use crate::types::{Checksum, Sequence, TimeToLive, TraceId};
-use crate::{Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Protocol};
+use crate::{Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Probe, Protocol};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -99,16 +99,20 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
             let sent = SystemTime::now();
             match self.config.protocol {
                 Protocol::Icmp => {
-                    network.send_probe(st.next_probe(sent))?;
+                    let probe = st.next_probe(sent);
+                    Self::do_send(network, st, probe)?;
                 }
-                Protocol::Udp => network.send_probe(st.next_probe(sent))?,
+                Protocol::Udp => {
+                    let probe = st.next_probe(sent);
+                    Self::do_send(network, st, probe)?;
+                }
                 Protocol::Tcp => {
                     let mut probe = if st.round_has_capacity() {
                         st.next_probe(sent)
                     } else {
                         return Err(Error::InsufficientCapacity);
                     };
-                    while let Err(err) = network.send_probe(probe) {
+                    while let Err(err) = Self::do_send(network, st, probe) {
                         match err {
                             Error::AddressInUse(_) => {
                                 if st.round_has_capacity() {
@@ -124,6 +128,21 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
             };
         }
         Ok(())
+    }
+
+    /// Send the probe and handle errors.
+    ///
+    /// Some errors are transient and should not be considered fatal.  In these cases we mark the
+    /// probe as failed and continue.
+    fn do_send<N: Network>(network: &mut N, st: &mut TracerState, probe: Probe) -> Result<()> {
+        match network.send_probe(probe) {
+            Ok(()) => Ok(()),
+            Err(Error::ProbeFailed(_)) => {
+                st.fail_probe();
+                Ok(())
+            }
+            Err(err) => Err(err),
+        }
     }
 
     /// Read and process the next incoming `ICMP` packet.
@@ -1008,6 +1027,19 @@ mod state {
             debug_assert!(self.sequence < Sequence(u16::MAX));
             self.sequence += Sequence(1);
             probe
+        }
+
+        /// Mark the `ProbeStatus` at the current `sequence` as failed.
+        #[instrument(skip(self))]
+        pub fn fail_probe(&mut self) {
+            let probe_index = usize::from(self.sequence - self.round_sequence);
+            let probe = self.buffer[probe_index - 1].clone();
+            match probe {
+                ProbeStatus::Awaited(awaited) => {
+                    self.buffer[probe_index - 1] = ProbeStatus::Failed(awaited.failed());
+                }
+                _ => unreachable!("expected ProbeStatus::Awaited"),
+            }
         }
 
         /// Determine the `src_port`, `dest_port` and `identifier` for the current probe.

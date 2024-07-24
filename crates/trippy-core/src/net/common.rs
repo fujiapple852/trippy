@@ -11,7 +11,7 @@ impl ErrorMapper {
         match err {
             Error::IoError(io_err) => match io_err.kind() {
                 ErrorKind::InProgress => Ok(()),
-                ErrorKind::Std(_) => Err(Error::IoError(io_err)),
+                _ => Err(Error::IoError(io_err)),
             },
             err => Err(err),
         }
@@ -26,6 +26,15 @@ impl ErrorMapper {
                 _ => Error::IoError(io_err),
             },
             err => err,
+        }
+    }
+
+    /// Convert a given [`ErrorKind`] to [`Error::ProbeFailed`].
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn probe_failed(err: Error, kind: ErrorKind) -> Error {
+        match err {
+            Error::IoError(io_err) if io_err.kind() == kind => Error::ProbeFailed(io_err),
+            _ => err,
         }
     }
 }
@@ -67,5 +76,13 @@ mod tests {
         let err = Error::IoError(IoError::Bind(io_err, ADDR));
         let addr_in_use_err = ErrorMapper::addr_in_use(err, ADDR);
         assert!(matches!(addr_in_use_err, Error::IoError(_)));
+    }
+
+    #[test]
+    fn test_probe_failed() {
+        let io_err = io::Error::from(ErrorKind::HostUnreachable);
+        let err = Error::IoError(IoError::Bind(io_err, ADDR));
+        let probe_err = ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable);
+        assert!(matches!(probe_err, Error::ProbeFailed(_)));
     }
 }

@@ -19,6 +19,8 @@ pub enum Error {
     BadConfig(String),
     #[error("IO error: {0}")]
     IoError(#[from] IoError),
+    #[error("Probe failed to send: {0}")]
+    ProbeFailed(IoError),
     #[error("insufficient buffer capacity")]
     InsufficientCapacity,
     #[error("address {0} in use")]
@@ -66,6 +68,8 @@ impl IoError {
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     InProgress,
+    HostUnreachable,
+    NetUnreachable,
     Std(io::ErrorKind),
 }
 
