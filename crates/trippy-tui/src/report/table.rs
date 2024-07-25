@@ -4,7 +4,7 @@ use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
 use trippy_dns::Resolver;
 
-/// Generate a markdown table report of trace data.
+/// Generate a Markdown table report of trace data.
 pub fn report_md<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,

@@ -872,7 +872,7 @@ pub mod extension_splitter {
                     _ => (icmp_payload, None),
                 }
             } else if length > 0 {
-                // a 'compliant' ICMP extension padded to at least 128 octets
+                // a 'compliant' ICMP extension padded to at least 128 octets,
                 // so we trim the original datagram to rfc4884 length.
                 match icmp_payload.split_at(ICMP_ORIG_DATAGRAM_MIN_LENGTH) {
                     (payload, extension) if extension.len() >= MIN_HEADER => {
@@ -932,7 +932,7 @@ pub mod extension_splitter {
             assert_eq!(extension, Some([0; 4].as_slice()));
         }
 
-        // Test handling of an ICMP payload which has an rfc4884 length that
+        // Test handling of an ICMP payload which has a rfc4884 length that
         // is longer than the original datagram.
         //
         // For such invalid packets we assume there is no extension.
@@ -1077,7 +1077,7 @@ pub mod extension_splitter {
                 assert_eq!(&buf[36..76], nested_echo.payload());
             }
 
-            // This is an real example that was observed in the wild whilst testing.
+            // This is a real example that was observed in the wild whilst testing.
             //
             // It has a rfc4884 complaint `length` field set to be 17 and so has
             // an original datagram if length 68 octet (17 * 4 = 68) but is padded
@@ -1148,7 +1148,7 @@ pub mod extension_splitter {
             use crate::icmpv6::{IcmpCode, IcmpType};
             use crate::ipv6::Ipv6Packet;
 
-            // Real IPv6 example with an rfc4884 length of 10 (10 * 8 = 80
+            // Real IPv6 example with a rfc4884 length of 10 (10 * 8 = 80
             // octets).
             //
             // This example contain an MPLS extension stack which contains
@@ -1233,7 +1233,7 @@ pub mod extension_splitter {
                 assert!(mpls_stack_member_iter.next().is_none());
             }
 
-            // Real Ipv6 example with an rfc4884 length of 16 (16 * 8 = 128
+            // Real Ipv6 example with a rfc4884 length of 16 (16 * 8 = 128
             // octets for) but the total payload is only 84 octets and
             // therefore this is a malformed packet.
             //

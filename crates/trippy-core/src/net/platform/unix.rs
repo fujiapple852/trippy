@@ -35,7 +35,7 @@ mod address {
     /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
     /// `fragment_offset`.
     ///
-    /// Linux accepts either network byte order or host byte order for the `total_length` field and
+    /// Linux accepts either network byte order or host byte order for the `total_length` field, and
     /// so we skip the check and return network byte order unconditionally.
     #[cfg(target_os = "linux")]
     #[allow(clippy::unnecessary_wraps)]
@@ -64,11 +64,11 @@ mod address {
 
     /// Attempt to send an `ICMP` packet to a local address.
     ///
-    /// The packet is actually of length `256` bytes but we set the `total_length` based on the
-    /// input provided so as to test if the OS rejects the attempt during the call to `send_to`.
+    /// The packet is actually of length `256` bytes, but we set the `total_length` based on the
+    /// input provided to test if the OS rejects the attempt during the call to `send_to`.
     ///
     /// Note that this implementation will try to create an `IPPROTO_ICMP` socket and if that fails
-    /// it will fallback to creating an `IPPROTO_RAW` socket.
+    /// it will fall back to creating an `IPPROTO_RAW` socket.
     #[cfg(not(target_os = "linux"))]
     #[instrument(ret)]
     fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> Result<()> {
