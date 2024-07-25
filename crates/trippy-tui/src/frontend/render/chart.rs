@@ -19,7 +19,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .iter()
                 .enumerate()
                 .take(samples)
-                .map(|(i, s)| (i as f64, (s.as_secs_f64() * 1000_f64)))
+                .map(|(i, s)| (i as f64, s.as_secs_f64() * 1000_f64))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();

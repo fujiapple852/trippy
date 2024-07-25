@@ -489,7 +489,7 @@ mod socket {
         }
     }
 
-    impl io::Read for SocketImpl {
+    impl Read for SocketImpl {
         fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
             self.inner.read(buf)
         }

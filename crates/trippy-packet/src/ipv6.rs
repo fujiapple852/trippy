@@ -142,7 +142,7 @@ impl<'a> Ipv6Packet<'a> {
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size();
         debug_assert!(
-            (vals.len() <= self.get_payload_length() as usize),
+            vals.len() <= self.get_payload_length() as usize,
             "vals.len() <= len"
         );
         self.buf.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
