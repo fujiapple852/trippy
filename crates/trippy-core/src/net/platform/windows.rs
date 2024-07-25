@@ -768,7 +768,7 @@ mod adapter {
             Self::retrieve_addresses(AF_INET6)
         }
 
-        /// Return a iterator of `AdapterAddress` in this `Adapters`.
+        /// Return an iterator of `AdapterAddress` in this `Adapters`.
         pub fn iter(&self) -> AdaptersIter<'_> {
             AdaptersIter::new(self)
         }

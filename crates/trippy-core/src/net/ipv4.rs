@@ -482,7 +482,7 @@ fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16, u16, u16, u16)
 /// `TCP` packet header is a minimum of 20 bytes.
 ///
 /// The `ICMP` packets we are extracting these from, such as `TimeExceeded`, only guarantee that 8
-/// bytes of the original packet (plus the IP header) be returned and so we may not have a complete
+/// bytes of the original packet (plus the IP header) be returned, and so we may not have a complete
 /// TCP packet.
 ///
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a

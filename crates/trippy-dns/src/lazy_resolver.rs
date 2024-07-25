@@ -333,7 +333,7 @@ mod inner {
         let now = SystemTime::now();
         match &provider {
             DnsProvider::DnsLookup => {
-                // we can't distinguish between a failed lookup or a genuine error and so we just
+                // we can't distinguish between a failed lookup or a genuine error, and so we just
                 // assume all failures are `DnsEntry::NotFound`.
                 match dns_lookup::lookup_addr(&addr) {
                     Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns]), now),
