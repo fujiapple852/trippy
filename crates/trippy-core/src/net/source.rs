@@ -46,7 +46,7 @@ impl SourceAddr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::{Error, IoError};
+    use crate::error::IoError;
     use crate::net::platform::MockPlatform;
     use crate::net::socket::MockSocket;
     use mockall::predicate;
@@ -215,6 +215,6 @@ mod tests {
         });
 
         let err = SourceAddr::validate::<MockSocket>(addr).unwrap_err();
-        assert!(matches!(err, Error::InvalidSourceAddr(_)));
+        assert!(matches!(err, InvalidSourceAddr(_)));
     }
 }

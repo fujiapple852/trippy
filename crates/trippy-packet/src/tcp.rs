@@ -89,7 +89,7 @@ impl<'a> TcpPacket<'a> {
     #[must_use]
     pub fn get_flags(&self) -> u16 {
         u16::from_be_bytes([
-            (self.buf.read(FLAGS_OFFSET) & 0x1),
+            self.buf.read(FLAGS_OFFSET) & 0x1,
             self.buf.read(FLAGS_OFFSET + 1),
         ])
     }
