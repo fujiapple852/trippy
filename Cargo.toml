@@ -81,7 +81,7 @@ windows-sys = "0.52.0"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
-rust_2018_idioms = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
