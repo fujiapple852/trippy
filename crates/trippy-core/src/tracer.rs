@@ -123,7 +123,7 @@ impl Tracer {
     ///
     /// - [`Tracer::run_with`] - Run the tracer with a custom round handler.
     /// - [`Tracer::spawn`] - Spawn the tracer on a new thread without a
-    /// custom round handler.
+    ///   custom round handler.
     pub fn run(&self) -> Result<()> {
         self.inner.run()
     }
@@ -253,7 +253,7 @@ impl Tracer {
     /// # See Also
     ///
     /// - [`Tracer::spawn`] - Spawn the tracer on a new thread without a
-    /// custom round handler.
+    ///   custom round handler.
     pub fn spawn_with<F: Fn(&Round<'_>) + Send + 'static>(
         self,
         func: F,

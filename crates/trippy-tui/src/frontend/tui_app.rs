@@ -86,7 +86,7 @@ impl TuiApp {
         self.selected_tracer_data = self.trace_info[self.trace_selected].data.snapshot();
     }
 
-    pub fn clear_trace_data(&mut self) {
+    pub fn clear_trace_data(&self) {
         self.trace_info[self.trace_selected].data.clear();
     }
 
