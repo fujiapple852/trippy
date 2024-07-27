@@ -22,8 +22,8 @@ pub enum Error {
     IoError(#[from] IoError),
     #[error("insufficient buffer capacity")]
     InsufficientCapacity,
-    #[error("address {0} not available")]
-    AddressNotAvailable(SocketAddr),
+    #[error("address {0} in use")]
+    AddressInUse(SocketAddr),
     #[error("source IP address {0} could not be bound")]
     InvalidSourceAddr(IpAddr),
     #[error("missing address from socket call")]

@@ -3,8 +3,10 @@ use crate::net::platform::in_progress_error;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
-/// Helper function to convert an `IoResult` to a `TraceResult` with special handling for
-/// `AddressNotAvailable`.
+/// Helper function to convert an `IoResult` to a `Result`.
+///
+/// The `AddressInUse` error is handled separately to allow for more specific
+/// handling upstream.
 pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> Result<()> {
     match res {
         Ok(()) => Ok(()),
@@ -13,9 +15,7 @@ pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> Result<()> {
                 Ok(())
             } else {
                 match err.kind() {
-                    ErrorKind::AddrInUse | ErrorKind::AddrNotAvailable => {
-                        Err(Error::AddressNotAvailable(addr))
-                    }
+                    ErrorKind::AddrInUse => Err(Error::AddressInUse(addr)),
                     _ => Err(Error::IoError(err)),
                 }
             }
@@ -56,7 +56,7 @@ mod tests {
         ));
         let trace_res = process_result(ADDR, res);
         let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, Error::AddressNotAvailable(ADDR)));
+        assert!(matches!(trace_err, Error::AddressInUse(ADDR)));
     }
 
     #[test]
@@ -67,7 +67,7 @@ mod tests {
         ));
         let trace_res = process_result(ADDR, res);
         let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, Error::AddressNotAvailable(ADDR)));
+        assert!(matches!(trace_err, Error::IoError(_)));
     }
 
     #[test]
