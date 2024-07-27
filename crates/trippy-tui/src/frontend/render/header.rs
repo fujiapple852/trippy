@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
 use std::net::IpAddr;
 use std::time::Duration;
-use trippy_core::{PortDirection, Protocol};
+use trippy_core::{Hop, PortDirection, Protocol};
 use trippy_dns::{ResolveMethod, Resolver};
 
 /// Render the title, config, target, clock and keyboard controls.
@@ -175,16 +175,36 @@ fn render_destination(app: &TuiApp) -> String {
 
 /// Render the headline status of the tracing.
 fn render_status(app: &TuiApp) -> String {
+    let failure_count: usize = app
+        .tracer_data()
+        .hops_for_flow(app.selected_flow)
+        .iter()
+        .map(Hop::total_failed)
+        .sum();
+    let failures = if failure_count > 0 {
+        let total_probes: usize = app
+            .tracer_data()
+            .hops_for_flow(app.selected_flow)
+            .iter()
+            .map(Hop::total_sent)
+            .sum();
+        let failure_rate = if total_probes > 0 {
+            (failure_count as f64 / total_probes as f64) * 100.0
+        } else {
+            0_f64
+        };
+        format!(" [{failure_count} of {total_probes} ({failure_rate:.1}%) probes failed❗]")
+    } else {
+        String::new()
+    };
     if app.selected_tracer_data.error().is_some() {
         String::from("Failed")
     } else if let Some(start) = app.frozen_start {
-        format!(
-            "Frozen ({})",
-            format_duration(Duration::from_secs(
-                start.elapsed().unwrap_or_default().as_secs()
-            ))
-        )
+        let frozen = format_duration(Duration::from_secs(
+            start.elapsed().unwrap_or_default().as_secs(),
+        ));
+        format!("Frozen ({frozen}){failures}")
     } else {
-        String::from("Running")
+        format!("Running{failures}")
     }
 }
