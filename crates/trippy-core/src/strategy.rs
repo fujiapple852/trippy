@@ -110,7 +110,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                     };
                     while let Err(err) = network.send_probe(probe) {
                         match err {
-                            Error::AddressNotAvailable(_) => {
+                            Error::AddressInUse(_) => {
                                 if st.round_has_capacity() {
                                     probe = st.reissue_probe(SystemTime::now());
                                 } else {
