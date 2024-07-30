@@ -1,5 +1,5 @@
 use crate::config::IcmpExtensionParseMode;
-use crate::error::{Error, Result};
+use crate::error::{Error, ErrorKind, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::platform;
@@ -10,7 +10,7 @@ use crate::probe::{
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
-use std::io::ErrorKind;
+use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
 use tracing::instrument;
@@ -207,7 +207,7 @@ impl Ipv4 {
                 Ok(self.extract_probe_resp(&ipv4)?)
             }
             Err(err) => match err.kind() {
-                ErrorKind::WouldBlock => Ok(None),
+                ErrorKind::Std(io::ErrorKind::WouldBlock) => Ok(None),
                 _ => Err(Error::IoError(err)),
             },
         }

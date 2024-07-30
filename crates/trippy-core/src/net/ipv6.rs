@@ -1,5 +1,5 @@
 use crate::config::IcmpExtensionParseMode;
-use crate::error::{Error, Result};
+use crate::error::{Error, ErrorKind, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::common::process_result;
 use crate::net::socket::{Socket, SocketError};
@@ -9,7 +9,7 @@ use crate::probe::{
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
-use std::io::ErrorKind;
+use std::io;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
 use tracing::instrument;
@@ -194,7 +194,7 @@ impl Ipv6 {
                 Ok(self.extract_probe_resp(&icmp_v6, *src_addr)?)
             }
             Err(err) => match err.kind() {
-                ErrorKind::WouldBlock => Ok(None),
+                ErrorKind::Std(io::ErrorKind::WouldBlock) => Ok(None),
                 _ => Err(Error::IoError(err)),
             },
         }
