@@ -9,16 +9,11 @@ use std::net::SocketAddr;
 pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> Result<()> {
     match res {
         Ok(()) => Ok(()),
-        Err(err) => {
-            if err.kind() == ErrorKind::InProgress {
-                Ok(())
-            } else {
-                match err.kind() {
-                    ErrorKind::Std(io::ErrorKind::AddrInUse) => Err(Error::AddressInUse(addr)),
-                    _ => Err(Error::IoError(err)),
-                }
-            }
-        }
+        Err(err) => match err.kind() {
+            ErrorKind::InProgress => Ok(()),
+            ErrorKind::Std(io::ErrorKind::AddrInUse) => Err(Error::AddressInUse(addr)),
+            ErrorKind::Std(_) => Err(Error::IoError(err)),
+        },
     }
 }
 
