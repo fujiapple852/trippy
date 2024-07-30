@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 use std::io;
-use std::io::ErrorKind;
 use std::net::{IpAddr, SocketAddr};
 use thiserror::Error;
 
@@ -51,20 +50,23 @@ pub enum IoError {
 }
 
 impl IoError {
-    pub fn raw_os_error(&self) -> Option<i32> {
-        match self {
-            Self::Bind(e, _) | Self::Connect(e, _) | Self::SendTo(e, _) | Self::Other(e, _) => {
-                e.raw_os_error()
-            }
-        }
-    }
+    /// Get the custom error kind.
     pub fn kind(&self) -> ErrorKind {
         match self {
             Self::Bind(e, _) | Self::Connect(e, _) | Self::SendTo(e, _) | Self::Other(e, _) => {
-                e.kind()
+                ErrorKind::from(e)
             }
         }
     }
+}
+
+/// Custom error kind.
+///
+/// This includes additional error kinds that are not part of the standard [`io::ErrorKind`].
+#[derive(Debug, Eq, PartialEq)]
+pub enum ErrorKind {
+    InProgress,
+    Std(io::ErrorKind),
 }
 
 /// Io operation.

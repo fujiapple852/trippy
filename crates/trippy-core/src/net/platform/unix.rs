@@ -52,7 +52,9 @@ mod address {
         };
         match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH) {
             Ok(()) => Ok(Ipv4ByteOrder::Network),
-            Err(Error::IoError(io)) if io.kind() == std::io::ErrorKind::InvalidInput => {
+            Err(Error::IoError(io))
+                if io.kind() == crate::error::ErrorKind::Std(std::io::ErrorKind::InvalidInput) =>
+            {
                 match test_send_local_ip4_packet(addr, TEST_PACKET_LENGTH.swap_bytes()) {
                     Ok(()) => Ok(Ipv4ByteOrder::Host),
                     Err(err) => Err(err),
@@ -148,7 +150,7 @@ mod address {
 }
 
 mod socket {
-    use crate::error::{IoError, IoOperation};
+    use crate::error::{ErrorKind, IoError, IoOperation};
     use crate::error::{IoResult, Result};
     use crate::net::socket::{Socket, SocketError};
     use itertools::Itertools;
@@ -170,10 +172,6 @@ mod socket {
     #[instrument]
     pub fn startup() -> Result<()> {
         Ok(())
-    }
-
-    pub fn in_progress_error() -> io::Error {
-        io::Error::from(Error::EINPROGRESS)
     }
 
     /// A network socket.
@@ -489,6 +487,26 @@ mod socket {
         }
     }
 
+    impl From<&io::Error> for ErrorKind {
+        fn from(value: &io::Error) -> Self {
+            if value.raw_os_error() == io::Error::from(Error::EINPROGRESS).raw_os_error() {
+                Self::InProgress
+            } else {
+                Self::Std(value.kind())
+            }
+        }
+    }
+
+    // only used for unit tests
+    impl From<ErrorKind> for io::Error {
+        fn from(value: ErrorKind) -> Self {
+            match value {
+                ErrorKind::InProgress => Self::from(Error::EINPROGRESS),
+                ErrorKind::Std(kind) => Self::from(kind),
+            }
+        }
+    }
+
     impl Read for SocketImpl {
         fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
             self.inner.read(buf)
@@ -516,4 +534,4 @@ mod socket {
     }
 }
 
-pub use socket::{in_progress_error, startup, SocketImpl};
+pub use socket::{startup, SocketImpl};

@@ -1,5 +1,5 @@
 use super::byte_order::Ipv4ByteOrder;
-use crate::error::{Error, IoError, IoOperation, IoResult, Result};
+use crate::error::{Error, ErrorKind, IoError, IoOperation, IoResult, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::platform::windows::adapter::Adapters;
 use crate::net::platform::Platform;
@@ -7,7 +7,7 @@ use crate::net::socket::{Socket, SocketError};
 use itertools::Itertools;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::ffi::c_void;
-use std::io::{Error as StdIoError, ErrorKind, Result as StdIoResult};
+use std::io::{Error as StdIoError, ErrorKind as StdErrorKind, Result as StdIoResult};
 use std::mem::{size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::os::windows::prelude::AsRawSocket;
@@ -85,10 +85,6 @@ impl Platform for PlatformImpl {
 #[instrument]
 pub fn startup() -> Result<()> {
     SocketImpl::startup().map_err(Error::IoError)
-}
-
-pub fn in_progress_error() -> StdIoError {
-    StdIoError::from_raw_os_error(WSAEINPROGRESS)
 }
 
 /// `WinSock` version 2.2
@@ -400,7 +396,7 @@ impl Socket for SocketImpl {
         self.inner
             .bind(&SockAddr::from(addr))
             .map_err(|e| {
-                if e.kind() == ErrorKind::PermissionDenied {
+                if e.kind() == StdErrorKind::PermissionDenied {
                     StdIoError::from_raw_os_error(WSAEADDRNOTAVAIL)
                 } else {
                     e
@@ -463,7 +459,7 @@ impl Socket for SocketImpl {
         let res = self.inner.connect(&SockAddr::from(addr));
         match res {
             Ok(()) => Ok(()),
-            Err(ref e) if e.kind() == ErrorKind::WouldBlock => Ok(()),
+            Err(ref e) if e.kind() == StdErrorKind::WouldBlock => Ok(()),
             Err(err) => Err(IoError::Connect(err, addr)),
         }
     }
@@ -483,7 +479,8 @@ impl Socket for SocketImpl {
             return Ok(false);
         };
         while let Err(err) = self.get_overlapped_result() {
-            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE) {
+            if err.kind() != ErrorKind::Std(StdIoError::from_raw_os_error(WSA_IO_INCOMPLETE).kind())
+            {
                 return Err(err);
             }
         }
@@ -497,7 +494,8 @@ impl Socket for SocketImpl {
             return Ok(false);
         };
         while let Err(err) = self.get_overlapped_result() {
-            if err.raw_os_error() != Some(WSA_IO_INCOMPLETE) {
+            if err.kind() != ErrorKind::Std(StdIoError::from_raw_os_error(WSA_IO_INCOMPLETE).kind())
+            {
                 return Err(err);
             }
         }
@@ -576,7 +574,7 @@ impl Socket for SocketImpl {
                 src_addr.Ipv6.sin6_addr.u.Byte
             }))),
             _ => Err(IoError::Other(
-                StdIoError::from(ErrorKind::AddrNotAvailable),
+                StdIoError::from(StdErrorKind::AddrNotAvailable),
                 IoOperation::TcpIcmpErrorInfo,
             )),
         }
@@ -589,6 +587,26 @@ impl Socket for SocketImpl {
             == SOCKET_ERROR)
         .map_err(|err| IoError::Other(err, IoOperation::Close))
         .map(|_| ())
+    }
+}
+
+impl From<&StdIoError> for ErrorKind {
+    fn from(value: &StdIoError) -> Self {
+        if value.raw_os_error() == StdIoError::from_raw_os_error(WSAEINPROGRESS).raw_os_error() {
+            Self::InProgress
+        } else {
+            Self::Std(value.kind())
+        }
+    }
+}
+
+// only used for unit tests
+impl From<ErrorKind> for StdIoError {
+    fn from(value: ErrorKind) -> Self {
+        match value {
+            ErrorKind::InProgress => Self::from_raw_os_error(WSAEINPROGRESS),
+            ErrorKind::Std(kind) => Self::from(kind),
+        }
     }
 }
 
@@ -673,7 +691,7 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr
         )))
     } else {
         Err(StdIoError::new(
-            ErrorKind::Unsupported,
+            StdErrorKind::Unsupported,
             format!("Unsupported address family: {af:?}"),
         ))
     }
