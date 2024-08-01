@@ -153,6 +153,14 @@ winget install trippy
 scoop install trippy
 ```
 
+### Chocolatey (Windows)
+
+[![Chocolatey package](https://repology.org/badge/version-for-repo/chocolatey/trippy.svg)](https://community.chocolatey.org/packages/trippy)
+
+```shell
+choco install trippy
+```
+
 ### NetBSD
 
 [![pkgsrc current package](https://repology.org/badge/version-for-repo/pkgsrc_current/trippy.svg)](https://pkgsrc.se/net/trippy)
