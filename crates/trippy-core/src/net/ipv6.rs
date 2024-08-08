@@ -1,7 +1,7 @@
 use crate::config::IcmpExtensionParseMode;
 use crate::error::{Error, ErrorKind, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
-use crate::net::common::process_result;
+use crate::net::common::ErrorMapper;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
     Extensions, IcmpPacketCode, Probe, Response, ResponseData, ResponseSeq, ResponseSeqIcmp,
@@ -162,7 +162,11 @@ impl Ipv6 {
         let local_addr = SocketAddr::new(IpAddr::V6(self.src_addr), probe.src_port.0);
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), probe.dest_port.0);
         let mut socket = S::new_udp_send_socket_ipv6(false)?;
-        process_result(local_addr, socket.bind(local_addr))?;
+        socket
+            .bind(local_addr)
+            .map_err(Error::IoError)
+            .or_else(ErrorMapper::in_progress)
+            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
         socket.set_unicast_hops_v6(probe.ttl.0)?;
         socket.send_to(payload, remote_addr)?;
         Ok(())
@@ -173,10 +177,18 @@ impl Ipv6 {
     pub fn dispatch_tcp_probe<S: Socket>(&self, probe: &Probe) -> Result<S> {
         let mut socket = S::new_stream_socket_ipv6()?;
         let local_addr = SocketAddr::new(IpAddr::V6(self.src_addr), probe.src_port.0);
-        process_result(local_addr, socket.bind(local_addr))?;
+        socket
+            .bind(local_addr)
+            .map_err(Error::IoError)
+            .or_else(ErrorMapper::in_progress)
+            .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
         socket.set_unicast_hops_v6(probe.ttl.0)?;
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), probe.dest_port.0);
-        process_result(remote_addr, socket.connect(remote_addr))?;
+        socket
+            .connect(remote_addr)
+            .map_err(Error::IoError)
+            .or_else(ErrorMapper::in_progress)
+            .map_err(|err| ErrorMapper::addr_in_use(err, remote_addr))?;
         Ok(socket)
     }
 

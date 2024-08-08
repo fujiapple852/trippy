@@ -1,70 +1,71 @@
-use crate::error::{Error, ErrorKind, IoResult, Result};
-use std::io;
+use crate::error::ErrorKind;
+use crate::error::{Error, Result};
 use std::net::SocketAddr;
 
-/// Helper function to convert an `IoResult` to a `Result`.
-///
-/// The `AddressInUse` error is handled separately to allow for more specific
-/// handling upstream.
-pub fn process_result(addr: SocketAddr, res: IoResult<()>) -> Result<()> {
-    match res {
-        Ok(()) => Ok(()),
-        Err(err) => match err.kind() {
-            ErrorKind::InProgress => Ok(()),
-            ErrorKind::Std(io::ErrorKind::AddrInUse) => Err(Error::AddressInUse(addr)),
-            ErrorKind::Std(_) => Err(Error::IoError(err)),
-        },
+/// Utility methods to map errors.
+pub struct ErrorMapper;
+
+impl ErrorMapper {
+    /// Convert [`ErrorKind::InProgress`] to [`Ok`].
+    pub fn in_progress(err: Error) -> Result<()> {
+        match err {
+            Error::IoError(io_err) => match io_err.kind() {
+                ErrorKind::InProgress => Ok(()),
+                ErrorKind::Std(_) => Err(Error::IoError(io_err)),
+            },
+            err => Err(err),
+        }
+    }
+
+    /// Convert [`io::ErrorKind::AddrInUse`] to [`Error::AddressInUse`].
+    #[must_use]
+    pub fn addr_in_use(err: Error, addr: SocketAddr) -> Error {
+        match err {
+            Error::IoError(io_err) => match io_err.kind() {
+                ErrorKind::Std(std::io::ErrorKind::AddrInUse) => Error::AddressInUse(addr),
+                _ => Error::IoError(io_err),
+            },
+            err => err,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::{IoError, IoOperation};
+    use crate::error::IoError;
     use std::io;
     use std::net::{Ipv4Addr, SocketAddrV4};
 
     const ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
 
     #[test]
-    fn test_ok() {
-        let res = Ok(());
-        let trace_res = process_result(ADDR, res);
-        assert!(trace_res.is_ok());
+    fn test_in_progress() {
+        let io_err = io::Error::from(ErrorKind::InProgress);
+        let err = Error::IoError(IoError::Bind(io_err, ADDR));
+        assert!(ErrorMapper::in_progress(err).is_ok());
     }
 
     #[test]
-    fn test_err() {
-        let io_error = io::Error::from(io::ErrorKind::ConnectionRefused);
-        let res = Err(IoError::Connect(io_error, ADDR));
-        let trace_res = process_result(ADDR, res);
-        let trace_io_error = trace_res.unwrap_err();
-        assert!(matches!(trace_io_error, Error::IoError(_)));
+    fn test_not_in_progress() {
+        let io_err = io::Error::from(ErrorKind::Std(io::ErrorKind::Other));
+        let err = Error::IoError(IoError::Bind(io_err, ADDR));
+        assert!(ErrorMapper::in_progress(err).is_err());
     }
 
     #[test]
-    fn test_addr_in_use_err() {
-        let io_error = io::Error::from(io::ErrorKind::AddrInUse);
-        let res = Err(IoError::Other(io_error, IoOperation::Read));
-        let trace_res = process_result(ADDR, res);
-        let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, Error::AddressInUse(ADDR)));
+    fn test_addr_in_use() {
+        let io_err = io::Error::from(ErrorKind::Std(io::ErrorKind::AddrInUse));
+        let err = Error::IoError(IoError::Bind(io_err, ADDR));
+        let addr_in_use_err = ErrorMapper::addr_in_use(err, ADDR);
+        assert!(matches!(addr_in_use_err, Error::AddressInUse(ADDR)));
     }
 
     #[test]
-    fn test_addr_not_avail_err() {
-        let io_error = io::Error::from(io::ErrorKind::AddrNotAvailable);
-        let res = Err(IoError::Bind(io_error, ADDR));
-        let trace_res = process_result(ADDR, res);
-        let trace_err = trace_res.unwrap_err();
-        assert!(matches!(trace_err, Error::IoError(_)));
-    }
-
-    #[test]
-    fn test_in_progress_ok() {
-        let io_error = io::Error::from(ErrorKind::InProgress);
-        let res = Err(IoError::Other(io_error, IoOperation::Select));
-        let trace_res = process_result(ADDR, res);
-        assert!(trace_res.is_ok());
+    fn test_not_addr_in_use() {
+        let io_err = io::Error::from(ErrorKind::Std(io::ErrorKind::Other));
+        let err = Error::IoError(IoError::Bind(io_err, ADDR));
+        let addr_in_use_err = ErrorMapper::addr_in_use(err, ADDR);
+        assert!(matches!(addr_in_use_err, Error::IoError(_)));
     }
 }
