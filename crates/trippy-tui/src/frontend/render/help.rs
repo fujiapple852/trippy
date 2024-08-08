@@ -19,7 +19,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
         .style(Style::default().fg(app.tui_config.theme.help_dialog_text))
         .block(block.clone())
         .alignment(Alignment::Left);
-    let area = util::centered_rect(60, 60, f.size());
+    let area = util::centered_rect(60, 60, f.area());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
     f.render_widget(control, area);

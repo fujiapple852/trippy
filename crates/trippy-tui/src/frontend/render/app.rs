@@ -47,7 +47,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(constraints.as_ref())
-        .split(f.size());
+        .split(f.area());
     header::render(f, app, chunks[0]);
     if app.trace_info.len() > 1 {
         tabs::render(f, chunks[1], app);

@@ -17,7 +17,7 @@ use trippy_dns::ResolveMethod;
 pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     let all_settings = format_all_settings(app);
     let (name, info, items) = &all_settings[app.settings_tab_selected];
-    let area = util::centered_rect(60, 60, f.size());
+    let area = util::centered_rect(60, 60, f.area());
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(SETTINGS_TABLE_WIDTH.as_ref())

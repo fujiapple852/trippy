@@ -58,8 +58,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .labels(
                     ["0".to_string(), format!("{samples} ({}x)", app.zoom_factor)]
                         .into_iter()
-                        .map(Span::from)
-                        .collect(),
+                        .map(Span::from),
                 )
                 .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
@@ -74,8 +73,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                         format!("{max_sample:.1}"),
                     ]
                     .into_iter()
-                    .map(Span::from)
-                    .collect(),
+                    .map(Span::from),
                 )
                 .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
