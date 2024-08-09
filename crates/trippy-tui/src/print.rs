@@ -15,7 +15,7 @@ pub fn print_tui_binding_commands() {
 }
 
 pub fn print_config_template() {
-    println!("{}", include_str!("../../../trippy-config-sample.toml"));
+    println!("{}", include_str!("../trippy-config-sample.toml"));
     process::exit(0);
 }
 
