@@ -152,7 +152,7 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, String, Vec<SettingsI
         ("Theme", String::from("Tui theme colors"), theme_settings),
         (
             "Columns",
-            format!("Tui table columns (press {toggle_column} to toggle a column on or off and use the {move_down} and {move_up} keys to change the column order)"),
+            format!("Tui table columns.  Press [{toggle_column}] to toggle a column on or off and use the [{move_down}] and [{move_up}] keys to change the column order."),
             columns_settings,
         ),
     ]
