@@ -40,6 +40,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Transient error handling for `IPv4` on macOS, Linux &
   Windows ([#1255](https://github.com/fujiapple852/trippy/issues/1255))
 - Improved error messages ([#1150](https://github.com/fujiapple852/trippy/issues/1150))
+- Revamp the help dialog ([#1260](https://github.com/fujiapple852/trippy/issues/1260))
 
 ### Fixed
 
