@@ -9,28 +9,37 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
-- Added Chocolatey package ([#572](https://github.com/fujiapple852/trippy/issues/572))
-- Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
-  page ([#85](https://github.com/fujiapple852/trippy/issues/85))
+### Changed
+
+### Fixed
+
+## [0.11.0] - 2024-08-11
+
+### Added
+
+- Added NAT detection for `IPv4/udp/dublin` ([#1104](https://github.com/fujiapple852/trippy/issues/1104))
+- Added public API ([#1192](https://github.com/fujiapple852/trippy/issues/1192))
+- Added support for NAT detection (`N`) column ([#1219](https://github.com/fujiapple852/trippy/issues/1219))
 - Added support for last icmp packet type (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
 - Added support for last icmp packet code (`C`) column ([#1109](https://github.com/fujiapple852/trippy/issues/1109))
 - Added settings dialog tab hotkeys ([#1217](https://github.com/fujiapple852/trippy/issues/1217))
-- Added NAT detection for `IPv4/udp/dublin` ([#1104](https://github.com/fujiapple852/trippy/issues/1104))
-- Added support for NAT detection (`N`) column ([#1219](https://github.com/fujiapple852/trippy/issues/1219))
-- Added transient error handling for `IPv4` for macOS, Linux &
-  Windows ([#1255](https://github.com/fujiapple852/trippy/issues/1255))
-- Refresh reverse DNS results after `--dns-ttl` ([#1233](https://github.com/fujiapple852/trippy/issues/1233))
+- Added `--dns-ttl` flag to allow refreshing the reverse DNS
+  results ([#1233](https://github.com/fujiapple852/trippy/issues/1233))
+- Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
+  page ([#85](https://github.com/fujiapple852/trippy/issues/85))
+- Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
+- Added Chocolatey package ([#572](https://github.com/fujiapple852/trippy/issues/572))
 
 ### Changed
 
-- Separate library and binary crates ([#1141](https://github.com/fujiapple852/trippy/issues/1141))
-- Improved error messages ([#1150](https://github.com/fujiapple852/trippy/issues/1150))
-- [BREAKING CHANGE] `tui-max-[samples|flows]` renamed
-  as `max-[samples|flows]` ([#1187](https://github.com/fujiapple852/trippy/issues/1187))
-- Trippy public API ([#1192](https://github.com/fujiapple852/trippy/issues/1192))
 - [BREAKING CHANGE] Changed initial sequence to be `33434` ([#1203](https://github.com/fujiapple852/trippy/issues/1203))
-- record `icmp` packet code ([#734](https://github.com/fujiapple852/trippy/issues/734))
+- [BREAKING CHANGE] Renamed `tui-max-[samples|flows]`
+  as `max-[samples|flows]` ([#1187](https://github.com/fujiapple852/trippy/issues/1187))
+- Separated library and binary crates ([#1141](https://github.com/fujiapple852/trippy/issues/1141))
+- Record `icmp` packet code ([#734](https://github.com/fujiapple852/trippy/issues/734))
+- Transient error handling for `IPv4` on macOS, Linux &
+  Windows ([#1255](https://github.com/fujiapple852/trippy/issues/1255))
+- Improved error messages ([#1150](https://github.com/fujiapple852/trippy/issues/1150))
 
 ### Fixed
 
@@ -355,7 +364,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.10.0...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.11.0...master
+
+[0.11.0]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0
 
 [0.10.0]: https://github.com/fujiapple852/trippy/compare/0.9.0...0.10.0
 
