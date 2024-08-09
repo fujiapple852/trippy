@@ -878,6 +878,7 @@ configuration file.
 | `Type`  | `T`  | The icmp packet type for the last probe for the hop:<br/>- TE: TimeExceeded<br/>- ER: EchoReply<br/>- DU: DestinationUnreachable<br/>- NA: NotApplicable                                                                                                                                                                                              |
 | `Code`  | `C`  | The icmp packet code for the last probe for the hop                                                                                                                                                                                                                                                                                                   |
 | `Nat`   | `N`  | The NAT detection status for the hop                                                                                                                                                                                                                                                                                                                  |
+| `Fail`  | `f`  | The number of probes which failed to send for the hop                                                                                                                                                                                                                                                                                                 |
 
 The default columns are `holsravbwdt`.
 
