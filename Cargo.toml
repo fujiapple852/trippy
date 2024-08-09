@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.11.0-dev"
+version = "0.11.0-rc.1"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 documentation = "https://github.com/fujiapple852/trippy"
 homepage = "https://github.com/fujiapple852/trippy"
