@@ -22,6 +22,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for NAT detection (`N`) column ([#1219](https://github.com/fujiapple852/trippy/issues/1219))
 - Added support for last icmp packet type (`T`) column ([#1105](https://github.com/fujiapple852/trippy/issues/1105))
 - Added support for last icmp packet code (`C`) column ([#1109](https://github.com/fujiapple852/trippy/issues/1109))
+- Added support for the probe failure count (`f`) column ([#1258](https://github.com/fujiapple852/trippy/issues/1258))
 - Added settings dialog tab hotkeys ([#1217](https://github.com/fujiapple852/trippy/issues/1217))
 - Added `--dns-ttl` flag to allow refreshing the reverse DNS
   results ([#1233](https://github.com/fujiapple852/trippy/issues/1233))
