@@ -82,6 +82,30 @@ fn run_app<B: Backend>(
                             || bindings.quit.check(key)
                         {
                             app.toggle_help();
+                        } else if bindings.toggle_settings.check(key) {
+                            app.toggle_help();
+                            app.toggle_settings();
+                        } else if bindings.toggle_settings_tui.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(0);
+                        } else if bindings.toggle_settings_trace.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(1);
+                        } else if bindings.toggle_settings_dns.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(2);
+                        } else if bindings.toggle_settings_geoip.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(3);
+                        } else if bindings.toggle_settings_bindings.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(4);
+                        } else if bindings.toggle_settings_theme.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(5);
+                        } else if bindings.toggle_settings_columns.check(key) {
+                            app.toggle_help();
+                            app.show_settings_columns(6);
                         }
                     } else if app.show_settings {
                         if bindings.toggle_settings.check(key)
