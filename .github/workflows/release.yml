@@ -169,7 +169,7 @@ jobs:
         if: startsWith(matrix.build, 'x86_64-linux-gnu') || startsWith(matrix.build, 'x86_64-linux-musl')
         run: |
           cargo install cargo-deb
-          cargo deb --target ${{ matrix.target }} --deb-version ${{ needs.create-release.outputs.trip_version }}
+          cargo deb -p trippy --target ${{ matrix.target }} --deb-version ${{ needs.create-release.outputs.trip_version }}
           case ${{ matrix.target }} in
             aarch64-*-linux-*) DPKG_ARCH=arm64 ;;
             arm-*-linux-*hf) DPKG_ARCH=armhf ;;
