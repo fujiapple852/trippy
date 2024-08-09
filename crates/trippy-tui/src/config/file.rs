@@ -459,7 +459,7 @@ mod tests {
     #[allow(clippy::too_many_lines)]
     fn test_parse_config_sample() {
         let config: ConfigFile =
-            toml::from_str(include_str!("../../../../trippy-config-sample.toml")).unwrap();
+            toml::from_str(include_str!("../../trippy-config-sample.toml")).unwrap();
         pretty_assertions::assert_eq!(ConfigFile::default(), config);
     }
 }

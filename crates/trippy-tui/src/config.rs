@@ -1139,7 +1139,7 @@ mod tests {
     fn test_config_sample() {
         let args = args(&["trip", "example.com"]).unwrap();
         let cfg_file: ConfigFile =
-            toml::from_str(include_str!("../../../trippy-config-sample.toml")).unwrap();
+            toml::from_str(include_str!("../trippy-config-sample.toml")).unwrap();
         let platform = dummy_platform();
         let config = TrippyConfig::build_config(args, cfg_file, &platform, 0).unwrap();
         let expected = TrippyConfig {
