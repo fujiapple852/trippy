@@ -399,6 +399,12 @@ see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 trip example.com -r google -z
 ```
 
+Set the reverse DNS lookup cache time-to-live to be 60 seconds:
+
+```shell
+trip example.com --dns-ttl 60sec
+```
+
 Lookup and display `short` (or `long` or `location` or `off`) GeoIp information from a `mmdb` file:
 
 ```shell
@@ -621,6 +627,9 @@ Options:
 
       --dns-timeout <DNS_TIMEOUT>
           The maximum time to wait to perform DNS queries [default: 5s]
+
+      --dns-ttl <DNS_TTL>
+          The time-to-live (TTL) of DNS entries [default: 300s]
 
   -z, --dns-lookup-as-info
           Lookup autonomous system (AS) information during DNS queries [default:
