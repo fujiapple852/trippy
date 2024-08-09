@@ -25,7 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added settings dialog tab hotkeys ([#1217](https://github.com/fujiapple852/trippy/issues/1217))
 - Added `--dns-ttl` flag to allow refreshing the reverse DNS
   results ([#1233](https://github.com/fujiapple852/trippy/issues/1233))
-- Added `--generate-man` flags for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
+- Added `--generate-man` flag for generating [ROFF](https://en.wikipedia.org/wiki/Roff_(software)) man
   page ([#85](https://github.com/fujiapple852/trippy/issues/85))
 - Added Ubuntu PPA package ([#859](https://github.com/fujiapple852/trippy/issues/859))
 - Added Chocolatey package ([#572](https://github.com/fujiapple852/trippy/issues/572))
