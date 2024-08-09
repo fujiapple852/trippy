@@ -36,3 +36,8 @@ anyhow = { workspace = true, optional = true }
 
 [lints]
 workspace = true
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
+]
