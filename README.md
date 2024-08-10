@@ -20,6 +20,7 @@ issues.
     * [Features](#features)
     * [Versions](#versions)
     * [Distributions](#distributions)
+    * [Crates](#crates)
     * [Privileges](#privileges)
     * [Usage Examples](#usage-examples)
     * [Command Reference](#command-reference)
@@ -230,6 +231,19 @@ docker run -it fujiapple/trippy
 | RPM     | `x86_64`  | `gnu`        | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64.rpm)                            | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy-0.9.0-x86_64.rpm)                            |
 | Debian  | `x86_64`  | `gnu`        | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy_x86_64-unknown-linux-gnu_0.10.0_amd64.deb)    | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy_x86_64-unknown-linux-gnu_0.9.0_amd64.deb)    |
 | Debian  | `x86_64`  | `musl`       | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy_x86_64-unknown-linux-musl_0.10.0_amd64.deb)   | [0.9.0](https://github.com/fujiapple852/trippy/releases/download/0.9.0/trippy_x86_64-unknown-linux-musl_0.9.0_amd64.deb)   |
+
+## Crates
+
+The following table lists the crates that are provided by Trippy. See [crates](crates/README.md) for more information.
+
+| Crate                                                         | Description                                                                         |
+|---------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [trippy](https://crates.io/crates/trippy)                     | A binary crate for the Trippy application and a library crate                       |
+| [trippy-core](https://crates.io/crates/trippy-core)           | A library crate providing the core Trippy tracing functionality                     |
+| [trippy-packet](https://crates.io/crates/trippy-packet)       | A library crate which provides packet wire formats and packet parsing functionality |
+| [trippy-dns](https://crates.io/crates/trippy-dns)             | A library crate for performing forward and reverse lazy DNS resolution              |
+| [trippy-privilege](https://crates.io/crates/trippy-privilege) | A library crate for discovering platform privileges                                 |
+| [trippy-tui](https://crates.io/crates/trippy-tui)             | A library crate for the Trippy terminal user interface                              |
 
 ## Privileges
 
@@ -899,7 +913,8 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the Windows data directory (Windows only): `%APPDATA%`
 
 An annotated template configuration file is available
-for [0.9.0](https://github.com/fujiapple852/trippy/blob/0.9.0/trippy-config-sample.toml), [0.10.0](https://github.com/fujiapple852/trippy/blob/0.10.0/trippy-config-sample.toml) and [0.11.0-rc.2](https://github.com/fujiapple852/trippy/blob/0.11.0-rc.2/trippy-config-sample.toml).
+for [0.9.0](https://github.com/fujiapple852/trippy/blob/0.9.0/trippy-config-sample.toml), [0.10.0](https://github.com/fujiapple852/trippy/blob/0.10.0/trippy-config-sample.toml)
+and [0.11.0-rc.2](https://github.com/fujiapple852/trippy/blob/0.11.0-rc.2/trippy-config-sample.toml).
 
 Trippy (version `0.9.0` or later) can generate a template configuration file:
 
