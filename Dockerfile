@@ -36,6 +36,7 @@ COPY crates/trippy-privilege/src /app/crates/trippy-privilege/src
 COPY trippy-config-sample.toml /app
 COPY trippy-config-sample.toml /app/crates/trippy-tui
 COPY README.md /app
+COPY README.md /app/crates/trippy
 RUN cargo clean --release --target=x86_64-unknown-linux-musl -p trippy-tui -p trippy-core -p trippy-dns -p trippy-packet -p trippy-privilege
 RUN cargo build --release --target=x86_64-unknown-linux-musl
 
