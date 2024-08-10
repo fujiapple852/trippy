@@ -3,7 +3,6 @@ name = "trippy-core"
 description = "A network tracing library"
 version.workspace = true
 authors.workspace = true
-documentation.workspace = true
 homepage.workspace = true
 repository.workspace = true
 readme.workspace = true
