@@ -946,17 +946,25 @@ icmp requests and responses are being send and received.
 
 ### How do I allow incoming ICMP traffic in the Windows Defender firewall?
 
-The Windows Defender firewall rule can be created using PowerShell:
+The Windows Defender firewall rule can be created using PowerShell.
 
 ```shell
-New-NetFirewallRule -DisplayName "ICMP Trippy Allow" -Name ICMP_TRIPPY_ALLOW -Protocol ICMPv4 -Action Allow
+New-NetFirewallRule -DisplayName "ICMPv4 Trippy Allow" -Name ICMPv4_TRIPPY_ALLOW -Protocol ICMPv4 -Action Allow
+New-NetFirewallRule -DisplayName "ICMPv6 Trippy Allow" -Name ICMPv6_TRIPPY_ALLOW -Protocol ICMPv6 -Action Allow
 ```
 
-The rule can be enabled and disabled as follows:
+The rules can be enabled as follows:
 
 ```shell
-Enable-NetFirewallRule ICMP_TRIPPY_ALLOW
-Disable-NetFirewallRule ICMP_TRIPPY_ALLOW
+Enable-NetFirewallRule ICMPv4_TRIPPY_ALLOW
+Enable-NetFirewallRule ICMPv6_TRIPPY_ALLOW
+```
+
+The rules can be disabled as follows:
+
+```shell
+Disable-NetFirewallRule ICMPv4_TRIPPY_ALLOW
+Disable-NetFirewallRule ICMPv6_TRIPPY_ALLOW
 ```
 
 The Windows Defender firewall rule may also be configured manually,
