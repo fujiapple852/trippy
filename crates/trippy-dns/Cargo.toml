@@ -3,7 +3,6 @@ name = "trippy-dns"
 description = "A lazy DNS resolver for Trippy"
 version.workspace = true
 authors.workspace = true
-documentation.workspace = true
 homepage.workspace = true
 repository.workspace = true
 readme.workspace = true
