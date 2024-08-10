@@ -4,7 +4,7 @@
     clippy::doc_markdown,
     clippy::doc_lazy_continuation
 )]
-#![doc = include_str!("../../../README.md")]
+#![doc = include_str!("../README.md")]
 
 // Re-export the user facing libraries, so they may be used from trippy crate directly.
 
