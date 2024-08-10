@@ -4,11 +4,21 @@ The following is a list of the crates defined by Trippy and their purposes:
 
 ### `trippy`
 
-A binary crate for the Trippy application. This is the crate you would use if you wish to install and run Trippy as a
-standalone tool.
+A binary crate for the Trippy application and a library crate. This is the crate you would use if you wish to install
+and run Trippy as a standalone tool.
 
 ```shell
 cargo install --locked trippy
+```
+
+It can also be used as library for crates that wish to use the Trippy tracing functionality.
+
+> [!NOTE]
+> The `trippy` crate has `tui` as a default feature and so you should disable default features when using it as a
+> library.
+
+```shell
+cargo add trippy --no-default-features --features core,dns
 ```
 
 ### `trippy-core`
