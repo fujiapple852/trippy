@@ -13,7 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-## [0.11.0-rc.2] - 2024-08-11
+## [0.11.0] - 2024-08-11
 
 ### Added
 
@@ -366,9 +366,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.11.0-rc.2...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.11.0...master
 
-[0.11.0-rc.2]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0-rc.2
+[0.11.0]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0
 
 [0.10.0]: https://github.com/fujiapple852/trippy/compare/0.9.0...0.10.0
 
