@@ -117,7 +117,7 @@ cargo install trippy --locked
 
 ### PPA (Ubuntu)
 
-[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.10.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
+[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.11.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
 
 ```shell
 sudo add-apt-repository ppa:fujiapple/trippy
