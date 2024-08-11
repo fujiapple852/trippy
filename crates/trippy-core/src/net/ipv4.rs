@@ -457,6 +457,10 @@ impl Ipv4 {
     }
 
     /// Calculate the expected checksum for a UDP packet.
+    ///
+    /// Note that this calculation takes place for incoming UDP packet before
+    /// packet validation and so this may not be a packet sent by us and so we
+    /// cannot assume the payload size is within the bounds of `MAX_UDP_PAYLOAD_BUF`.
     pub fn calc_udp_checksum(
         &self,
         src_port: Port,
@@ -464,7 +468,8 @@ impl Ipv4 {
         payload_size: u16,
     ) -> Result<u16> {
         let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
-        let payload = &[self.payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..usize::from(payload_size)];
+        let size = usize::from(payload_size).min(MAX_UDP_PAYLOAD_BUF);
+        let payload = &[self.payload_pattern.0; MAX_UDP_PAYLOAD_BUF][0..size];
         let udp = self.make_udp_packet(&mut udp_buf, src_port.0, dest_port.0, payload)?;
         Ok(udp.get_checksum())
     }
@@ -1718,6 +1723,84 @@ mod tests {
         };
         let resp = ipv4.recv_icmp_probe(&mut mocket)?;
         assert!(resp.is_none());
+        Ok(())
+    }
+
+    // This IPv4/ICMP TimeExceeded packet has an UDP Original Datagram
+    // with a bogus length (claimed 2040 vs actual 56).
+    //
+    // This is a test to ensure that the UDP checksum validation is working for
+    // packets which are larger than the maximum payload size.  This can occur
+    // as unrelated ICMP packets are delivered to our socket and the filtering
+    // occurs later on in the strategy module.
+    //
+    // The packet is not ignored and the UDP Original Datagram is parsed but
+    // notice the expected UDP checksum does not match the actual checksum as
+    // the calculation relies on the claimed payload length, which we restrict
+    // to the maximum packet size we can send.
+    #[test]
+    fn test_recv_icmp_probe_udp_wrong_payload_size() -> anyhow::Result<()> {
+        let expected_read_buf = hex_literal::hex!(
+            "
+            45 c0 00 70 0e c8 00 00 40 01 e7 9e c0 a8 01 01
+            c0 a8 01 15 0b 00 12 98 00 00 00 00 45 00 00 54
+            90 69 00 00 01 11 0b ea c0 a8 01 15 8e fa cc 8e
+            7c 55 81 06 08 00 e4 cb 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+           "
+        );
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_read()
+            .times(1)
+            .returning(mocket_read!(expected_read_buf));
+        let ipv4 = Ipv4 {
+            protocol: Protocol::Udp,
+            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
+            dest_addr: Ipv4Addr::from_str("9.9.9.9").unwrap(),
+            icmp_extension_mode: IcmpExtensionParseMode::Disabled,
+            ..Default::default()
+        };
+        let resp = ipv4.recv_icmp_probe(&mut mocket)?.unwrap();
+
+        let Response::TimeExceeded(
+            ResponseData {
+                addr,
+                resp_seq:
+                    ResponseSeq::Udp(ResponseSeqUdp {
+                        identifier,
+                        dest_addr,
+                        src_port,
+                        dest_port,
+                        expected_udp_checksum,
+                        actual_udp_checksum,
+                        payload_len,
+                        has_magic,
+                    }),
+                ..
+            },
+            icmp_code,
+            extensions,
+        ) = resp
+        else {
+            panic!("expected TimeExceeded")
+        };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1").unwrap()), addr);
+        assert_eq!(36969, identifier);
+        assert_eq!(
+            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142").unwrap()),
+            dest_addr
+        );
+        assert_eq!(31829, src_port);
+        assert_eq!(33030, dest_port);
+        assert_eq!(9963, expected_udp_checksum);
+        assert_eq!(58571, actual_udp_checksum);
+        assert_eq!(2040, payload_len);
+        assert!(!has_magic);
+        assert_eq!(IcmpPacketCode(0), icmp_code);
+        assert_eq!(None, extensions);
         Ok(())
     }
 
