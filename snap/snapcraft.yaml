@@ -23,6 +23,7 @@ description: |
     - Generic Extension Objects
     - MPLS Label Stacks
   - Unprivileged mode
+  - NAT detection
   - Tui interface:
       - Trace multiple targets simultaneously from a single instance of Trippy
       - Per hop stats (sent, received, loss%, last, avg, best, worst, stddev, jitter & status)
