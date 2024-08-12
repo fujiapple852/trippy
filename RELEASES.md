@@ -10,26 +10,33 @@ This release of Trippy adds NAT detection for IPv4/UDP/Dublin tracing, a new pub
 time-to-live, transient error handling for IPv4, a new ROFF manual page generator, several new columns, improved error
 messages and a revamped help dialog with settings tab hotkeys.
 
-There are two breaking changes, a new initial sequence number is used which impacts the default behaviour of UDP tracing
+There are two breaking changes, a new initial sequence number is used which impacts the default behavior of UDP tracing
 and two configuration fields have been renamed and moved.
 
-Finally, there are a handful of bug fixes and two new distribution packages, Chocolatey and an official PPA for Ubuntu
-and Debian based distributions.
+Finally, there are a handful of bug fixes and two new distribution packages, Chocolatey for Windows and an official PPA
+for Ubuntu and Debian based distributions.
 
 ### NAT Detection for IPv4/UDP/Dublin
 
 When tracing with the Dublin tracing strategy for IPv4/UDP, Trippy can now detect the presence of NAT (Network Address
 Translation) devices on the path.
 
+[RFC 3022 section 4.3](https://datatracker.ietf.org/doc/html/rfc3022#section-4.3) requires that "NAT to be completely
+transparent to the host" however in practice some fully compliant NAT devices leave behind a telltale sign that Trippy
+can use.
+
+Trippy will indicate if a NAT device has been detected by adding `[NAT]` at the end of the hostname. There is also a
+new (hidden by default) column, `Nat`, which can be enabled to show the NAT status per hop.
+
 <img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.11.0/nat_detection.png"/>
 
-NAT devices are detected by observing a difference in the _expected_ and _actual_ checksum of the UDP packet header that
-is returned as the part of the Original Datagram in the ICMP Time Exceeded message. Any difference is indicative of a
-NAT device that has modified the packet in flight. This happens because the NAT device must recalculate the UDP checksum
-after modifying the packet and so the checksum in the ICMP error will not match the original checksum.
+NAT devices are detected by observing a difference in the _expected_ and _actual_ checksum of the UDP packet that is
+returned as the part of the Original Datagram in the ICMP Time Exceeded message. If they differ then it indicates that a
+NAT device has modified the packet. This happens because the NAT device must recalculate the UDP checksum after
+modifying the packet (i.e. translating the source port) and so the checksum in the UDP packet that is nested in the ICMP
+error may not, depending on the device, match the original checksum.
 
-To help illustrate the technique, when sending the following IPv4/UDP packet (note the IPv4 `Checksum A` and
-UDP `Checksum B`):
+To help illustrate the technique, consider sending the following IPv4/UDP packet (note the UDP `Checksum B` here):
 
 ```
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │             
@@ -51,8 +58,8 @@ UDP `Checksum B`):
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                                                                             
 ```
 
-Trippy expect to receive an ICMP `TimeExceeded` error which contains the Original Datagram (OD) IPv4/UDP packet that was
-sent above with `Checksum A'` and `Checksum B'` in the Original Datagram (OD) IPv4/UDP packet:
+Trippy expect to receive an IPv4/ICMP `TimeExceeded` (or other) error which contains the Original Datagram (OD) IPv4/UDP
+packet that was sent above with `Checksum B'` in the Original Datagram (OD) IPv4/UDP packet:
 
 ```
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
@@ -92,12 +99,14 @@ sent above with `Checksum A'` and `Checksum B'` in the Original Datagram (OD) IP
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │                                
 ```
 
-If `Checksum B'` in the ICMP error does not match the `Checksum B` in the UDP packet that was sent then Trippy can infer
-that a NAT device has modified the packet.
+If `Checksum B'` in the UDP packet nested in the ICMP error does not match `Checksum B` in the UDP packet that was sent
+then Trippy can infer that a NAT device is present.
 
-This functionally is only possible when the Dublin tracing strategy is used at it does not modify the UDP header per
-probe and as such the checksums are expected to be constant for all hops. This allows detection multiple NAT devices on
-the path as changes to the checksum between consecutive hops indicates the presence of a NAT device.
+This technique allows for the detection of NAT at the first hop. To detect multiple NAT devices along the path, Trippy
+must also check for _changes_ in the observed checksum between consecutive hops, as changes to the UDP checksum will "
+carry forward" to subsequent hops. This requires taking care to account for hops that do not respond. This is only
+possible when using the Dublin tracing strategy, as it does not modify the UDP header per probe; therefore, the
+checksums are expected to remain constant, allowing changes in the checksum between hops to be detected.
 
 Note that this method cannot detect all types of NAT devices and so should be used in conjunction with other methods
 where possible.
@@ -106,9 +115,9 @@ See the [issue](https://github.com/fujiapple852/trippy/issues/1104) for more det
 
 ### Public API
 
-Trippy has been designed primarily a standalone _tool_, however it is built on top of a number of useful libraries,
-such as the core tracer, DNS resolver and more. These libraries have always existed but were tightly integrated into
-the tool and not designed to be used by third party crates.
+Trippy has been designed primarily as a standalone _tool_, however it is built on top of a number of useful libraries,
+such as the core tracer, DNS resolver and more. These libraries have always existed but were tightly integrated into the
+tool and were not designed for use by third party crates.
 
 This release introduces the Trippy public API which can be used to build custom tools on top of the Trippy libraries.
 
@@ -151,29 +160,29 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Whilst Trippy adheres to [Semantic Versioning](https://semver.org/), the public API is not yet considered stable and
-may change in future releases.
+Whilst Trippy adheres to [Semantic Versioning](https://semver.org/), the public API is not yet considered stable and may
+change in future releases.
 
 See [crates](crates/README.md) and the usage [examples](examples/README.md) for more information.
 
 ### New Initial Sequence
 
-For UDP tracing, by default Trippy uses a fixed src port and a variable destination port which is set from the sequence
-number, starting from an initial sequence of 33000 and incremented for each probe, eventually wrapping around.
+For UDP tracing, by default, Trippy uses a fixed source port and a variable destination port which is set from the
+sequence number, starting from an initial sequence of 33000 and incremented for each probe, eventually wrapping around.
 
 By [convention](https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers), many devices on the internet allow UDP
-probes to ports in the range 33434..=33534 and will return a `DestinationUnreachable` ICMP error which can be used to
-confirm that the target has been reached. As Trippy does not, by default, use destination ports in this range for UDP
-probes, the target host does not respond with an ICMP error and so Trippy cannot know that the target was reached and
-must therefore show the hop as unknown.
+probes to ports in the range 33434..=33534 and will return a `DestinationUnreachable` ICMP error, which can be used to
+confirm that the target has been reached. Since Trippy does not use destination ports in this range for UDP probes by
+default, the target host will typically not respond with an ICMP error, and so Trippy cannot know that the target was
+reached, and must therefore show the hop as unknown.
 
-After running for several rounds, the sequence number will enter into the range 33434..=33534 and the target will begin
-to respond with the `DestinationUnreachable` ICMP error, however there is no guarantee that the probe sent for sequence
-33434 corresponds to the smallest time-to-live (ttl) value sent and so the target which responds may have a larger ttl
-than expected. This leads to very confusing output which is very hard for users to interpret.
-See [issue](https://github.com/fujiapple852/trippy/issues/1203) for more details.
+Another issue with this default setup is that the sequence number will eventually enter the range 33434..=33534 at which
+point the target will _begin_ to respond with the `DestinationUnreachable` ICMP error. However, there is no guarantee
+that the probe sent for sequence 33434 (i.e., the first one for which the target host will be able to respond) will be
+for the minimum time-to-live (ttl) required to reach the target. This leads to confusing output, which is hard for users
+to interpret. See [issue](https://github.com/fujiapple852/trippy/issues/1203) for more details.
 
-This problem can be overcome today either by changing the initial sequence number to be in the range 33434..=33534 by
+These issues can be avoided today, either by changing the initial sequence number to be in the range 33434..=33534 by
 setting the `--initial-sequence` flag or by using a fixed destination port (and therefore a variable source port) in the
 same range by setting the `--target-port` flag.
 
@@ -203,23 +212,19 @@ This can be made permanent by setting the `target-port` value in the `strategy` 
 target-port = 33434
 ```
 
-Note that for TCP tracing, by default, the destination port is fixed (defaults to `80`) and so this issue does not
-typically arise.
+As the default behavior in Trippy leads to these confusing issues, this release modifies the default sequence number to
+33434. This is a **breaking change** and will impact users who rely on the old default initial sequence number.
 
-As the current default behaviour in Trippy is confusing, in this release the default sequence number has been changed
-to be 33434. This a **breaking change** and will impact users who rely on the old default initial sequence number.
+This change introduces a new problem, albeit a lesser one: UDP traces will now begin with a destination port of 33434
+and so `DestinationUnreachable` ICMP errors will typically be returned by the target immediately. However, eventually
+the sequence number will move _beyond_ the range 33434..=33534 and so the target host will _stop_ responding
+with `DestinationUnreachable` ICMP errors. This leads to the appearance that the target has started dropping packets.
+While this is technically correct, this is not desirable behavior as the target has not really disappeared.
 
-This change also introduces a new problem; UDP traces will now begin with a target port of 33434 and
-so `DestinationUnreachable` ICMP errors will typically be returned by the target. However, but after several
-rounds of tracing the sequence number will move _beyond_ the range 33434..=33534 and so the target host will _stop_
-responding with `DestinationUnreachable` ICMP errors. This leads to the appearance that the target has started dropping
-packets. Whilst technically correct, this is not desirable behaviour as the target has not changed, only the sequence
-number has changed.
-
-It is therefore recommended to always fix the `target-port` to be in the range 33434..=33534 for UDP tracing and allow
-the source port to vary instead. This may become the default behaviour for UDP tracing in a future release. Note that
-this would differ from the behaviour of most traditional Unix traceroute tools which vary the destination port by
-default.
+It is therefore recommended to _always_ fix the `target-port` to be in the range 33434..=33534 for UDP tracing and allow
+the source port to vary instead. This may become the default behavior for UDP tracing in a future release; that would
+represent a significant difference in default behavior compared to most traditional Unix traceroute tools, which vary
+the destination port by default.
 
 ### Reverse DNS Lookup Cache Time-to-live
 
@@ -228,7 +233,7 @@ indefinitely. This can lead to stale hostnames being displayed in the TUI if the
 
 Note that the DNS cache can be flushed manually by pressing `ctrl+k` (default key binding) in the TUI.
 
-Starting from this release the reverse DNS cache can be configured to expire after a certain time to live. By default
+Starting from this release, the reverse DNS cache can be configured to expire after a certain time to live. By default
 this is set to be 5 minutes (300 seconds) and can be configured using the `--dns-ttl` flag or the `dns-ttl`
 configuration option.
 
@@ -250,22 +255,24 @@ dns-ttl = "30s"
 Trippy records the number of probes sent and the number of probes received for each hop and uses this information to
 calculate packet loss. Any probe that is _successfully_ sent for which no response is received is considered lost.
 
-Currently, if a probe cannot be sent for any reason then Trippy will crash and show a BSOD. This is not typically an
+Currently, if a probe cannot be sent for any reason, then Trippy will crash and show a BSOD. This is not typically an
 issue, as such failures imply a local issue with the host network configuration rather than an issue with the target or
 any intermediate hops.
 
-It is however possible that a probe may fail to send for a transient reason, such as a temporary local host issue, and
+However, it is possible that a probe may fail to send for a transient reason, such as a temporary local host issue, and
 so it would be useful to be able to handle such errors gracefully. A common example would be running Trippy on a host
 and during the trace disabling the network interface.
 
 Starting from this release, Trippy will continue the trace even if a probe fails to send and will instead show a warning
-to the user in the TUI about number of probe failures. A new column (hidden by default), `Fail`, has also been added to
-the TUI to show the number of probes which failed to send for each hop.
-
-This has been implemented for macOS, Linux and Windows for IPv4 only. Support for IPv6 and other platforms will be added
-in future releases. See the [tracking issue](https://github.com/fujiapple852/trippy/issues/1238) for more details.
+to the user in the TUI about the number of probe failures. A new column (hidden by default), `Fail`, has also been added
+to the TUI to show the number of probes that failed to send for each hop.
 
 <img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.11.0/fails.png"/>
+
+This has been implemented for macOS, Linux and Windows for IPv4 only. Support for IPv6 and other platforms will be added
+in future releases.
+
+See the [tracking issue](https://github.com/fujiapple852/trippy/issues/1238) for more details.
 
 ### Generate ROFF Man Page
 
@@ -283,12 +290,12 @@ trip --generate-man > /path/to/man/pages/trip.1
 
 This release introduced several new columns, all of which are hidden by default. These are:
 
-- ICMP Type: The ICMP packet type for the last probe for the hop
-- ICMP Code: The ICMP packet code for the last probe for the hop
-- NAT detection status: The NAT detection status for the hop
-- Probe failures: The number of probes which failed to send for the hop
+- `Type`: The ICMP packet type for the last probe for the hop
+- `Code`: The ICMP packet code for the last probe for the hop
+- `Nat`: The NAT detection status for the hop
+- `Fail`: The number of probes which failed to send for the hop
 
-The following shows the ICMP type and code columns:
+The following shows the `Type` and `Code` columns:
 
 <img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.11.0/type_code_columns.png"/>
 
@@ -299,7 +306,7 @@ columns.
 
 The settings dialog can be accessed by pressing `s` (default key binding) and users can navigate between the tabs using
 the left and right arrow keys (default key bindings). This release introduces hotkeys to allow users to jump directly to
-a specific tab by pressing 1-7 (default key bindings).
+a specific tab by pressing `1`-`7` (default key bindings).
 
 See the [Key Bindings Reference](https://github.com/fujiapple852/trippy#key-bindings-reference) for details.
 
@@ -307,7 +314,7 @@ See the [Key Bindings Reference](https://github.com/fujiapple852/trippy#key-bind
 
 The existing Trippy help dialog shows a hardcoded list of key bindings which may not reflect the actual key bindings the
 user has configured. Trippy shows the correct key bindings in the settings dialog which can be accessed by
-pressing `s` (default key binding) and navigating the the Bindings tab. Therefore the key bindings in the help dialog
+pressing `s` (default key binding) and navigating to the Bindings tab. Therefore, the key bindings in the help dialog
 are both potentially incorrect and redundant.
 
 This release revamps the help dialog and includes instructions on how to access the key bindings from the settings
@@ -354,7 +361,7 @@ configuration file:
 This is a **breaking change**. Attempting to use the legacy field names will result in an error pointing to the new
 name.
 
-The following examples shows the error reported if the old names are used from the command line:
+The following example shows the error reported if the old names are used from the command line:
 
 ```shell
 error: unexpected argument '--tui-max-samples' found
@@ -390,7 +397,7 @@ choco install trippy
 
 Trippy also has an official PPA for Ubuntu and Debian based distributions (with thanks to @zarkdav!):
 
-[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.10.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
+[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.11.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
 
 ```shell
 sudo add-apt-repository ppa:fujiapple/trippy
