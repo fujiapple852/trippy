@@ -49,6 +49,8 @@ pub struct TuiTheme {
     pub flows_chart_text_non_current: TuiColor,
     /// The color of the samples chart.
     pub samples_chart: TuiColor,
+    /// The color of the samples chart for lost probes.
+    pub samples_chart_lost: TuiColor,
     /// The background color of the help dialog.
     pub help_dialog_bg: TuiColor,
     /// The color of the text in the help dialog.
@@ -98,6 +100,7 @@ impl Default for TuiTheme {
             flows_chart_text_current: TuiColor::LightGreen,
             flows_chart_text_non_current: TuiColor::White,
             samples_chart: TuiColor::Yellow,
+            samples_chart_lost: TuiColor::Red,
             help_dialog_bg: TuiColor::Blue,
             help_dialog_text: TuiColor::Gray,
             settings_dialog_bg: TuiColor::Blue,
@@ -192,6 +195,10 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::SamplesChartColor)
                 .or(cfg.samples_chart_color.as_ref())
                 .unwrap_or(&Self::default().samples_chart),
+            samples_chart_lost: *color_map
+                .get(&TuiThemeItem::SamplesChartLostColor)
+                .or(cfg.samples_chart_lost_color.as_ref())
+                .unwrap_or(&Self::default().samples_chart_lost),
             help_dialog_bg: *color_map
                 .get(&TuiThemeItem::HelpDialogBgColor)
                 .or(cfg.help_dialog_bg_color.as_ref())
@@ -289,6 +296,8 @@ pub enum TuiThemeItem {
     FlowsChartTextNonCurrentColor,
     /// The color of the samples chart.
     SamplesChartColor,
+    /// The color of the samples chart for lost probes.
+    SamplesChartLostColor,
     /// The background color of the help dialog.
     HelpDialogBgColor,
     /// The color of the text in the help dialog.
