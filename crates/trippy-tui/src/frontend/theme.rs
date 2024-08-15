@@ -46,6 +46,8 @@ pub struct Theme {
     pub flows_chart_text_non_current: Color,
     /// The color of the samples chart.
     pub samples_chart: Color,
+    /// The color of the samples chart for lost probes.
+    pub samples_chart_lost: Color,
     /// The background color of the help dialog.
     pub help_dialog_bg: Color,
     /// The color of the text in the help dialog.
@@ -95,6 +97,7 @@ impl From<TuiTheme> for Theme {
             flows_chart_text_current: Color::from(value.flows_chart_text_current),
             flows_chart_text_non_current: Color::from(value.flows_chart_text_non_current),
             samples_chart: Color::from(value.samples_chart),
+            samples_chart_lost: Color::from(value.samples_chart_lost),
             help_dialog_bg: Color::from(value.help_dialog_bg),
             help_dialog_text: Color::from(value.help_dialog_text),
             settings_dialog_bg: Color::from(value.settings_dialog_bg),
