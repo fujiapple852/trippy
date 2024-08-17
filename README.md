@@ -142,7 +142,7 @@ brew install trippy
 
 ### WinGet (Windows)
 
-[![winget package](https://img.shields.io/badge/WinGet-0.10.0-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.10.0)
+[![winget package](https://img.shields.io/badge/WinGet-0.11.0-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.11.0)
 
 ```shell
 winget install trippy
