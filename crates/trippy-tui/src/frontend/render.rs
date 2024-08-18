@@ -13,4 +13,5 @@ pub mod splash;
 pub mod table;
 pub mod tabs;
 pub mod util;
+pub mod widgets;
 pub mod world;
