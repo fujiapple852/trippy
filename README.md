@@ -794,6 +794,7 @@ line option or in the `theme-colors` section of the configuration file.
 | `flows-chart-text-current-color`     | The color of the current flow text in the flows chart     | `LightGreen` |
 | `flows-chart-text-non-current-color` | The color of the non-current flow text in the flows chart | `White`      |
 | `samples-chart-color`                | The color of the samples chart                            | `Yellow`     |
+| `samples-chart-lost-color`           | The color of the samples chart for lost probes            | `Red`        |
 | `help-dialog-bg-color`               | The background color of the help dialog                   | `Blue`       |
 | `help-dialog-text-color`             | The color of the text in the help dialog                  | `Gray`       |
 | `settings-dialog-bg-color`           | The background color of the settings dialog               | `blue`       |
