@@ -9,6 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Highlight lost probes in sample history ([#1247](https://github.com/fujiapple852/trippy/issues/1247))
+
 ### Changed
 
 ### Fixed
