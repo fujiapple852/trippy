@@ -2,6 +2,51 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
+# 0.12.0 - UNRELEASED
+
+## Highlights
+
+Draft release note follows.
+
+### Sample History Missing Probes
+
+Trippy shows a history of samples for each hop as a chart at the bottom of the TUI display. Each vertical line in the
+chart corresponds with one sample, which is the value of `Last` column.
+
+If a probe is lost, then the sample for that round will be shown as a blank line. Starting from this release, Trippy
+will instead show a full vertical line in red (default theme colour) for lost probes to make them stand out.
+
+<img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/lost_probes.png"/>
+
+The theme color of regular samples can be configured using the existing `samples-chart-color` configuration option and
+the theme color of lost probes can be configured using the new `samples-chart-lost-color` configuration option.
+
+To set the theme color of lost probes to blue for a single run:
+
+```shell
+trip example.com --tui-theme-colors samples-chart-lost-color=blue
+```
+
+This can be made permanent by setting the `samples-chart-lost-color` value in the `theme-colors` section of the
+configuration file:
+
+```toml
+[theme-colors]
+samples-chart-lost-color = "blue"
+```
+
+See [1247](https://github.com/fujiapple852/trippy/issues/1247) for more details.
+
+### Thanks
+
+My thanks to all Trippy contributors, package maintainers and community members.
+
+Feel free to drop by the new Trippy Zulip room for a chat:
+
+[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
+
+Happy Tracing!
+
 # 0.11.0
 
 ## Highlights
@@ -213,6 +258,7 @@ target-port = 33434
 ```
 
 As the default behavior in Trippy leads to these confusing issues, this release modifies the default sequence number to
+
 33434. This is a **breaking change** and will impact users who rely on the old default initial sequence number.
 
 This change introduces a new problem, albeit a lesser one: UDP traces will now begin with a destination port of 33434
