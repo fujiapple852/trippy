@@ -2132,9 +2132,9 @@ dependencies = [
 
 [[package]]
 name = "tun2"
-version = "2.0.5"
+version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50ff242bea1c5ceb9b6aa4918cf340a6c157e1328a2389c5353cf91049d8cf17"
+checksum = "5254ad58e460ff4d17b593d32f1be9ab28c80e96eec143e6e8237018b13bcae1"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2144,10 +2144,11 @@ dependencies = [
  "libloading",
  "log",
  "nix",
+ "rustversion",
  "thiserror",
  "tokio",
  "tokio-util",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
  "wintun",
 ]
 
@@ -2341,6 +2342,15 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
+dependencies = [
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-sys"
+version = "0.59.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]
