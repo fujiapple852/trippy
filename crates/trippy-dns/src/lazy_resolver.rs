@@ -116,7 +116,26 @@ mod inner {
     const RESOLVER_QUEUE_TIMEOUT: Duration = Duration::from_millis(10);
 
     /// Alias for a cache of reverse DNS lookup entries.
-    type Cache = Arc<RwLock<HashMap<IpAddr, DnsEntry>>>;
+    type Cache = Arc<RwLock<HashMap<IpAddr, CacheEntry>>>;
+
+    /// A cache entry for a reverse DNS lookup.
+    #[derive(Debug, Clone)]
+    struct CacheEntry {
+        /// The DNS entry to cache.
+        entry: DnsEntry,
+        /// The timestamp of the entry.
+        timestamp: SystemTime,
+    }
+
+    impl CacheEntry {
+        const fn new(entry: DnsEntry, timestamp: SystemTime) -> Self {
+            Self { entry, timestamp }
+        }
+
+        fn set_timestamp(&mut self, timestamp: SystemTime) {
+            self.timestamp = timestamp;
+        }
+    }
 
     #[derive(Clone)]
     enum DnsProvider {
@@ -236,13 +255,13 @@ mod inner {
 
         pub fn reverse_lookup(&self, addr: IpAddr, with_asinfo: bool, lazy: bool) -> DnsEntry {
             if lazy {
-                self.lazy_reverse_lookup(addr, with_asinfo)
+                self.lazy_reverse_lookup(addr, with_asinfo).entry
             } else {
-                reverse_lookup(&self.provider, addr, with_asinfo)
+                reverse_lookup(&self.provider, addr, with_asinfo).entry
             }
         }
 
-        fn lazy_reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
+        fn lazy_reverse_lookup(&self, addr: IpAddr, with_asinfo: bool) -> CacheEntry {
             let mut enqueue = false;
             let now = SystemTime::now();
 
@@ -254,17 +273,22 @@ mod inner {
                 .entry(addr)
                 .or_insert_with(|| {
                     enqueue = true;
-                    DnsEntry::Pending(addr, now)
+                    CacheEntry::new(DnsEntry::Pending(addr, now), now)
                 })
                 .clone();
 
             // If the entry exists but is stale then enqueue it again.  The existing entry will
-            // be returned until it is refreshed.
-            match &dns_entry {
-                DnsEntry::Resolved(_, timestamp)
-                | DnsEntry::NotFound(_, timestamp)
-                | DnsEntry::Failed(_, timestamp) => {
-                    if now.duration_since(*timestamp).unwrap_or_default() > self.config.ttl {
+            // be returned until it is refreshed but with an updated timestamp to prevent it from
+            // being enqueued multiple times.
+            match &dns_entry.entry {
+                DnsEntry::Resolved(_, _) | DnsEntry::NotFound(_, _) | DnsEntry::Failed(_, _) => {
+                    if now.duration_since(dns_entry.timestamp).unwrap_or_default() > self.config.ttl
+                    {
+                        self.addr_cache
+                            .write()
+                            .get_mut(&addr)
+                            .expect("addr must be in cache")
+                            .set_timestamp(now);
                         enqueue = true;
                     }
                 }
@@ -273,13 +297,14 @@ mod inner {
 
             // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue
             // it again.
-            if let DnsEntry::Timeout(addr, _) = dns_entry {
+            if let DnsEntry::Timeout(addr, _) = dns_entry.entry {
                 *self
                     .addr_cache
                     .write()
                     .get_mut(&addr)
-                    .expect("addr must be in cache") = DnsEntry::Pending(addr, now);
-                dns_entry = DnsEntry::Pending(addr, now);
+                    .expect("addr must be in cache") =
+                    CacheEntry::new(DnsEntry::Pending(addr, now), now);
+                dns_entry = CacheEntry::new(DnsEntry::Pending(addr, now), now);
                 enqueue = true;
             }
 
@@ -301,8 +326,9 @@ mod inner {
                         .addr_cache
                         .write()
                         .get_mut(&addr)
-                        .expect("addr must be in cache") = DnsEntry::Timeout(addr, now);
-                    DnsEntry::Timeout(addr, now)
+                        .expect("addr must be in cache") =
+                        CacheEntry::new(DnsEntry::Timeout(addr, now), now);
+                    CacheEntry::new(DnsEntry::Timeout(addr, now), now)
                 }
             } else {
                 dns_entry
@@ -329,15 +355,20 @@ mod inner {
         }
     }
 
-    fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> DnsEntry {
+    fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> CacheEntry {
         let now = SystemTime::now();
         match &provider {
             DnsProvider::DnsLookup => {
                 // we can't distinguish between a failed lookup or a genuine error, and so we just
                 // assume all failures are `DnsEntry::NotFound`.
                 match dns_lookup::lookup_addr(&addr) {
-                    Ok(dns) => DnsEntry::Resolved(Resolved::Normal(addr, vec![dns]), now),
-                    Err(_) => DnsEntry::NotFound(Unresolved::Normal(addr), now),
+                    Ok(dns) => CacheEntry::new(
+                        DnsEntry::Resolved(Resolved::Normal(addr, vec![dns]), now),
+                        now,
+                    ),
+                    Err(_) => {
+                        CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr), now), now)
+                    }
                 }
             }
             DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
@@ -352,22 +383,31 @@ mod inner {
                         .collect();
                     if with_asinfo {
                         let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info), now)
+                        CacheEntry::new(
+                            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info), now),
+                            now,
+                        )
                     } else {
-                        DnsEntry::Resolved(Resolved::Normal(addr, hostnames), now)
+                        CacheEntry::new(
+                            DnsEntry::Resolved(Resolved::Normal(addr, hostnames), now),
+                            now,
+                        )
                     }
                 }
                 Err(err) => match err.kind() {
                     ResolveErrorKind::NoRecordsFound { .. } => {
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                            DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info), now)
+                            CacheEntry::new(
+                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info), now),
+                                now,
+                            )
                         } else {
-                            DnsEntry::NotFound(Unresolved::Normal(addr), now)
+                            CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr), now), now)
                         }
                     }
-                    ResolveErrorKind::Timeout => DnsEntry::Timeout(addr, now),
-                    _ => DnsEntry::Failed(addr, now),
+                    ResolveErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr, now), now),
+                    _ => CacheEntry::new(DnsEntry::Failed(addr, now), now),
                 },
             },
         }
