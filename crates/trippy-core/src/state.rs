@@ -170,6 +170,10 @@ pub struct Hop {
     total_recv: usize,
     /// The total probes that failed for this hop.
     total_failed: usize,
+    /// The total forward loss for this hop.
+    total_forward_lost: usize,
+    /// The total backward loss for this hop.
+    total_backward_lost: usize,
     /// The total round trip time for this hop across all rounds.
     total_time: Duration,
     /// The round trip time for this hop in the current round.
@@ -238,6 +242,18 @@ impl Hop {
         self.total_recv
     }
 
+    /// The total number of probes with forward loss.
+    #[must_use]
+    pub const fn total_forward_loss(&self) -> usize {
+        self.total_forward_lost
+    }
+
+    /// The total number of probes with backward loss.
+    #[must_use]
+    pub const fn total_backward_loss(&self) -> usize {
+        self.total_backward_lost
+    }
+
     /// The total number of probes that failed.
     #[must_use]
     pub const fn total_failed(&self) -> usize {
@@ -249,7 +265,29 @@ impl Hop {
     pub fn loss_pct(&self) -> f64 {
         if self.total_sent > 0 {
             let lost = self.total_sent - self.total_recv;
-            lost as f64 / self.total_sent as f64 * 100f64
+            lost as f64 / self.total_sent as f64 * 100_f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The % of packets that are lost forward.
+    #[must_use]
+    pub fn forward_loss_pct(&self) -> f64 {
+        if self.total_sent > 0 {
+            let lost = self.total_forward_lost;
+            lost as f64 / self.total_sent as f64 * 100_f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The % of packets that are lost backward.
+    #[must_use]
+    pub fn backward_loss_pct(&self) -> f64 {
+        if self.total_sent > 0 {
+            let lost = self.total_backward_lost;
+            lost as f64 / self.total_sent as f64 * 100_f64
         } else {
             0_f64
         }
@@ -366,6 +404,8 @@ impl Default for Hop {
             addrs: IndexMap::default(),
             total_sent: 0,
             total_recv: 0,
+            total_forward_lost: 0,
+            total_backward_lost: 0,
             total_failed: 0,
             total_time: Duration::default(),
             last: None,
@@ -491,7 +531,7 @@ mod state_updater {
     use crate::{NatStatus, ProbeStatus, Round};
     use std::time::Duration;
 
-    /// Update the `FlowState` from a `Round`.
+    /// Update the state of a `FlowState` from a `Round`.
     pub(super) struct StateUpdater<'a> {
         /// The state to update.
         state: &'a mut FlowState,
@@ -499,6 +539,8 @@ mod state_updater {
         round: &'a Round<'a>,
         /// The checksum of the previous hop, if any.
         prev_hop_checksum: Option<u16>,
+        /// Whether any previous hop in the round had forward loss.
+        forward_loss: bool,
     }
     impl<'a> StateUpdater<'a> {
         pub(super) fn new(state: &'a mut FlowState, round: &'a Round<'_>) -> Self {
@@ -506,6 +548,7 @@ mod state_updater {
                 state,
                 round,
                 prev_hop_checksum: None,
+                forward_loss: false,
             }
         }
 
@@ -587,6 +630,19 @@ mod state_updater {
                     hop.last_src_port = awaited.src_port.0;
                     hop.last_dest_port = awaited.dest_port.0;
                     hop.last_sequence = awaited.sequence.0;
+                    if self.forward_loss {
+                        hop.total_backward_lost += 1;
+                    } else {
+                        let remaining = &self.round.probes[index..];
+                        let all_awaited = remaining
+                            .iter()
+                            .skip(1)
+                            .all(|p| matches!(p, ProbeStatus::Awaited(_) | ProbeStatus::Skipped));
+                        if all_awaited {
+                            hop.total_forward_lost += 1;
+                            self.forward_loss = true;
+                        }
+                    }
                 }
                 ProbeStatus::Failed(failed) => {
                     state.update_lowest_ttl(failed.ttl);
@@ -796,6 +852,8 @@ mod tests {
         ttl: Option<u8>,
         total_sent: Option<usize>,
         total_recv: Option<usize>,
+        total_forward_loss: Option<usize>,
+        total_backward_loss: Option<usize>,
         loss_pct: Option<f64>,
         last_ms: Option<f64>,
         best_ms: Option<f64>,
@@ -844,6 +902,7 @@ mod tests {
     #[test_case(file!("no_latency.yaml"))]
     #[test_case(file!("nat.yaml"))]
     #[test_case(file!("minimal.yaml"))]
+    #[test_case(file!("floss_bloss.yaml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,
@@ -878,6 +937,14 @@ mod tests {
             assert_eq_opt(&Some(actual.total_sent()), &expected.total_sent);
             assert_eq_opt(&Some(actual.total_recv()), &expected.total_recv);
             assert_eq_opt_f64(&Some(actual.loss_pct()), &expected.loss_pct);
+            assert_eq_opt(
+                &Some(actual.total_forward_loss()),
+                &expected.total_forward_loss,
+            );
+            assert_eq_opt(
+                &Some(actual.total_backward_loss()),
+                &expected.total_backward_loss,
+            );
             assert_eq_opt_f64(&actual.last_ms(), &expected.last_ms);
             assert_eq_opt_f64(&actual.best_ms(), &expected.best_ms);
             assert_eq_opt_f64(&actual.worst_ms(), &expected.worst_ms);
