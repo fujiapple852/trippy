@@ -189,6 +189,12 @@ pub enum ColumnType {
     LastNatStatus,
     /// The number of probes that failed for a hop.
     Failed,
+    /// The number of probes with forward loss for a hop.
+    Floss,
+    /// The number of probes with backward loss for a hop.
+    Bloss,
+    /// The forward loss % for a hop.
+    FlossPct,
 }
 
 impl From<ColumnType> for char {
@@ -216,6 +222,9 @@ impl From<ColumnType> for char {
             ColumnType::LastIcmpPacketCode => 'C',
             ColumnType::LastNatStatus => 'N',
             ColumnType::Failed => 'f',
+            ColumnType::Floss => 'F',
+            ColumnType::Bloss => 'B',
+            ColumnType::FlossPct => 'D',
         }
     }
 }
@@ -245,6 +254,9 @@ impl From<TuiColumn> for Column {
             TuiColumn::LastIcmpPacketCode => Self::new_shown(ColumnType::LastIcmpPacketCode),
             TuiColumn::LastNatStatus => Self::new_shown(ColumnType::LastNatStatus),
             TuiColumn::Failed => Self::new_shown(ColumnType::Failed),
+            TuiColumn::Floss => Self::new_shown(ColumnType::Floss),
+            TuiColumn::Bloss => Self::new_shown(ColumnType::Bloss),
+            TuiColumn::FlossPct => Self::new_shown(ColumnType::FlossPct),
         }
     }
 }
@@ -257,6 +269,7 @@ impl Display for ColumnType {
 
 impl ColumnType {
     /// The name of the column in the current locale.
+    #[allow(clippy::cognitive_complexity)]
     pub(self) fn name(&self) -> Cow<'_, str> {
         match self {
             Self::Ttl => Cow::Borrowed("#"),
@@ -281,6 +294,9 @@ impl ColumnType {
             Self::LastIcmpPacketCode => t!("column_code"),
             Self::LastNatStatus => t!("column_nat"),
             Self::Failed => t!("column_fail"),
+            Self::Floss => t!("column_floss"),
+            Self::Bloss => t!("column_bloss"),
+            Self::FlossPct => t!("column_floss_pct"),
         }
     }
 
@@ -319,6 +335,9 @@ impl ColumnType {
             Self::LastIcmpPacketCode => ColumnWidth::Fixed(width.max(7)),
             Self::LastNatStatus => ColumnWidth::Fixed(width.max(7)),
             Self::Failed => ColumnWidth::Fixed(width.max(7)),
+            Self::Floss => ColumnWidth::Fixed(width.max(7)),
+            Self::Bloss => ColumnWidth::Fixed(width.max(7)),
+            Self::FlossPct => ColumnWidth::Fixed(width.max(8)),
         }
     }
 }
@@ -379,6 +398,9 @@ mod tests {
                 Column::new_hidden(ColumnType::LastIcmpPacketCode),
                 Column::new_hidden(ColumnType::LastNatStatus),
                 Column::new_hidden(ColumnType::Failed),
+                Column::new_hidden(ColumnType::Floss),
+                Column::new_hidden(ColumnType::Bloss),
+                Column::new_hidden(ColumnType::FlossPct),
             ])
         );
     }
