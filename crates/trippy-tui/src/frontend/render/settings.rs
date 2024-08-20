@@ -1,4 +1,4 @@
-use crate::config::{AddressMode, AsMode, GeoIpMode};
+use crate::config::{AddressMode, AsMode, GeoIpMode, IcmpExtensionMode};
 use crate::frontend::render::util;
 use crate::frontend::theme;
 use crate::frontend::tui_app::TuiApp;
@@ -178,6 +178,10 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             format_address_mode(app.tui_config.address_mode),
         ),
         SettingsItem::new("tui-as-mode", format_as_mode(app.tui_config.as_mode)),
+        SettingsItem::new(
+            "tui-icmp-extension-mode",
+            format_extension_mode(app.tui_config.icmp_extension_mode),
+        ),
         SettingsItem::new(
             "tui-geoip-mode",
             format_geoip_mode(app.tui_config.geoip_mode),
@@ -495,7 +499,7 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 
 /// The name and number of items for each tabs in the setting dialog.
 pub const SETTINGS_TABS: [(&str, usize); 7] = [
-    ("Tui", 8),
+    ("Tui", 9),
     ("Trace", 17),
     ("Dns", 5),
     ("GeoIp", 1),
@@ -534,6 +538,15 @@ fn format_dns_method(resolve_method: ResolveMethod) -> String {
         ResolveMethod::Resolv => String::from("resolv"),
         ResolveMethod::Google => String::from("google"),
         ResolveMethod::Cloudflare => String::from("cloudflare"),
+    }
+}
+
+fn format_extension_mode(icmp_extension_mode: IcmpExtensionMode) -> String {
+    match icmp_extension_mode {
+        IcmpExtensionMode::Off => "off".to_string(),
+        IcmpExtensionMode::Mpls => "mpls".to_string(),
+        IcmpExtensionMode::Full => "full".to_string(),
+        IcmpExtensionMode::All => "all".to_string(),
     }
 }
 
