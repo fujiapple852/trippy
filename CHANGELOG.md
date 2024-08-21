@@ -13,7 +13,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- [BREAKING CHANGE] Remove `Timestamp` from all `DnsEntry`
+  variants ([#1296](https://github.com/fujiapple852/trippy/issues/1296))
+
 ### Fixed
+
+- Reverse dns enqueued multiple times when dns-ttl expires ([#1290](https://github.com/fujiapple852/trippy/issues/1290))
 
 ## [0.11.0] - 2024-08-11
 
