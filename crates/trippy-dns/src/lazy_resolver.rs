@@ -273,7 +273,7 @@ mod inner {
                 .entry(addr)
                 .or_insert_with(|| {
                     enqueue = true;
-                    CacheEntry::new(DnsEntry::Pending(addr, now), now)
+                    CacheEntry::new(DnsEntry::Pending(addr), now)
                 })
                 .clone();
 
@@ -281,7 +281,7 @@ mod inner {
             // be returned until it is refreshed but with an updated timestamp to prevent it from
             // being enqueued multiple times.
             match &dns_entry.entry {
-                DnsEntry::Resolved(_, _) | DnsEntry::NotFound(_, _) | DnsEntry::Failed(_, _) => {
+                DnsEntry::Resolved(_) | DnsEntry::NotFound(_) | DnsEntry::Failed(_) => {
                     if now.duration_since(dns_entry.timestamp).unwrap_or_default() > self.config.ttl
                     {
                         self.addr_cache
@@ -297,14 +297,14 @@ mod inner {
 
             // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue
             // it again.
-            if let DnsEntry::Timeout(addr, _) = dns_entry.entry {
+            if let DnsEntry::Timeout(addr) = dns_entry.entry {
                 *self
                     .addr_cache
                     .write()
                     .get_mut(&addr)
                     .expect("addr must be in cache") =
-                    CacheEntry::new(DnsEntry::Pending(addr, now), now);
-                dns_entry = CacheEntry::new(DnsEntry::Pending(addr, now), now);
+                    CacheEntry::new(DnsEntry::Pending(addr), now);
+                dns_entry = CacheEntry::new(DnsEntry::Pending(addr), now);
                 enqueue = true;
             }
 
@@ -327,8 +327,8 @@ mod inner {
                         .write()
                         .get_mut(&addr)
                         .expect("addr must be in cache") =
-                        CacheEntry::new(DnsEntry::Timeout(addr, now), now);
-                    CacheEntry::new(DnsEntry::Timeout(addr, now), now)
+                        CacheEntry::new(DnsEntry::Timeout(addr), now);
+                    CacheEntry::new(DnsEntry::Timeout(addr), now)
                 }
             } else {
                 dns_entry
@@ -362,13 +362,10 @@ mod inner {
                 // we can't distinguish between a failed lookup or a genuine error, and so we just
                 // assume all failures are `DnsEntry::NotFound`.
                 match dns_lookup::lookup_addr(&addr) {
-                    Ok(dns) => CacheEntry::new(
-                        DnsEntry::Resolved(Resolved::Normal(addr, vec![dns]), now),
-                        now,
-                    ),
-                    Err(_) => {
-                        CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr), now), now)
+                    Ok(dns) => {
+                        CacheEntry::new(DnsEntry::Resolved(Resolved::Normal(addr, vec![dns])), now)
                     }
+                    Err(_) => CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now),
                 }
             }
             DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
@@ -384,14 +381,11 @@ mod inner {
                     if with_asinfo {
                         let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
                         CacheEntry::new(
-                            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info), now),
+                            DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info)),
                             now,
                         )
                     } else {
-                        CacheEntry::new(
-                            DnsEntry::Resolved(Resolved::Normal(addr, hostnames), now),
-                            now,
-                        )
+                        CacheEntry::new(DnsEntry::Resolved(Resolved::Normal(addr, hostnames)), now)
                     }
                 }
                 Err(err) => match err.kind() {
@@ -399,15 +393,15 @@ mod inner {
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
                             CacheEntry::new(
-                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info), now),
+                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info)),
                                 now,
                             )
                         } else {
-                            CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr), now), now)
+                            CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now)
                         }
                     }
-                    ResolveErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr, now), now),
-                    _ => CacheEntry::new(DnsEntry::Failed(addr, now), now),
+                    ResolveErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr), now),
+                    _ => CacheEntry::new(DnsEntry::Failed(addr), now),
                 },
             },
         }

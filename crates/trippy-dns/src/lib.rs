@@ -34,34 +34,34 @@
 //! loop {
 //!     let entry = resolver.lazy_reverse_lookup_with_asinfo(addr);
 //!     match entry {
-//!         DnsEntry::Pending(ip, timestamp) => {
-//!             println!("lookup of {ip} is pending, sleeping for 1 sec at {timestamp:?}");
+//!         DnsEntry::Pending(ip) => {
+//!             println!("lookup of {ip} is pending, sleeping for 1 sec");
 //!             sleep(Duration::from_secs(1));
 //!         }
-//!         DnsEntry::Resolved(Resolved::Normal(ip, addrs), timestamp) => {
-//!             println!("lookup of {ip} resolved to {addrs:?} at {timestamp:?}");
+//!         DnsEntry::Resolved(Resolved::Normal(ip, addrs)) => {
+//!             println!("lookup of {ip} resolved to {addrs:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Resolved(Resolved::WithAsInfo(ip, addrs, as_info), timestamp) => {
-//!             println!("lookup of {ip} resolved to {addrs:?} with AS information {as_info:?} at {timestamp:?}");
+//!         DnsEntry::Resolved(Resolved::WithAsInfo(ip, addrs, as_info)) => {
+//!             println!("lookup of {ip} resolved to {addrs:?} with AS information {as_info:?}");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::NotFound(Unresolved::Normal(ip), timestamp) => {
-//!             println!("lookup of {ip} did not match any records at {timestamp:?}");
+//!         DnsEntry::NotFound(Unresolved::Normal(ip)) => {
+//!             println!("lookup of {ip} did not match any records");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::NotFound(Unresolved::WithAsInfo(ip, as_info), timestamp) => {
+//!         DnsEntry::NotFound(Unresolved::WithAsInfo(ip, as_info)) => {
 //!             println!(
-//!                 "lookup of {ip} did not match any records with AS information {as_info:?} at {timestamp:?}"
+//!                 "lookup of {ip} did not match any records with AS information {as_info:?}"
 //!             );
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Timeout(ip, timestamp) => {
-//!             println!("lookup of {ip} timed out at {timestamp:?}");
+//!         DnsEntry::Timeout(ip) => {
+//!             println!("lookup of {ip} timed out");
 //!             return Ok(());
 //!         }
-//!         DnsEntry::Failed(ip, timestamp) => {
-//!             println!("lookup of {ip} failed at {timestamp:?}");
+//!         DnsEntry::Failed(ip) => {
+//!             println!("lookup of {ip} failed");
 //!             return Ok(());
 //!         }
 //!     }

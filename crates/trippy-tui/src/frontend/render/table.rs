@@ -373,24 +373,24 @@ fn format_address(
 /// Format a `DnsEntry` with or without `AS` information (if available)
 fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) -> String {
     match dns_entry {
-        DnsEntry::Resolved(Resolved::Normal(_, hosts), _) => hosts.join(" "),
-        DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo), _) => {
+        DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),
+        DnsEntry::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {
             if lookup_as_info && !asinfo.asn.is_empty() {
                 format!("{} {}", format_asinfo(&asinfo, as_mode), hosts.join(" "))
             } else {
                 hosts.join(" ")
             }
         }
-        DnsEntry::NotFound(Unresolved::Normal(ip), _) | DnsEntry::Pending(ip, _) => format!("{ip}"),
-        DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo), _) => {
+        DnsEntry::NotFound(Unresolved::Normal(ip)) | DnsEntry::Pending(ip) => format!("{ip}"),
+        DnsEntry::NotFound(Unresolved::WithAsInfo(ip, asinfo)) => {
             if lookup_as_info && !asinfo.asn.is_empty() {
                 format!("{} {}", format_asinfo(&asinfo, as_mode), ip)
             } else {
                 format!("{ip}")
             }
         }
-        DnsEntry::Failed(ip, _) => format!("Failed: {ip}"),
-        DnsEntry::Timeout(ip, _) => format!("Timeout: {ip}"),
+        DnsEntry::Failed(ip) => format!("Failed: {ip}"),
+        DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
     }
 }
 
@@ -544,10 +544,10 @@ fn format_details(
     let ext = hop.extensions();
     let nat = hop.last_nat_status();
     match dns_entry {
-        DnsEntry::Pending(addr, _) => {
+        DnsEntry::Pending(addr) => {
             fmt_details_line(addr, index, count, None, None, geoip, ext, nat, config)
         }
-        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo), _) => fmt_details_line(
+        DnsEntry::Resolved(Resolved::WithAsInfo(addr, hosts, asinfo)) => fmt_details_line(
             addr,
             index,
             count,
@@ -558,7 +558,7 @@ fn format_details(
             nat,
             config,
         ),
-        DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo), _) => fmt_details_line(
+        DnsEntry::NotFound(Unresolved::WithAsInfo(addr, asinfo)) => fmt_details_line(
             addr,
             index,
             count,
@@ -569,7 +569,7 @@ fn format_details(
             nat,
             config,
         ),
-        DnsEntry::Resolved(Resolved::Normal(addr, hosts), _) => fmt_details_line(
+        DnsEntry::Resolved(Resolved::Normal(addr, hosts)) => fmt_details_line(
             addr,
             index,
             count,
@@ -580,7 +580,7 @@ fn format_details(
             nat,
             config,
         ),
-        DnsEntry::NotFound(Unresolved::Normal(addr), _) => fmt_details_line(
+        DnsEntry::NotFound(Unresolved::Normal(addr)) => fmt_details_line(
             addr,
             index,
             count,
@@ -591,10 +591,10 @@ fn format_details(
             nat,
             config,
         ),
-        DnsEntry::Failed(ip, _) => {
+        DnsEntry::Failed(ip) => {
             format!("Failed: {ip}")
         }
-        DnsEntry::Timeout(ip, _) => {
+        DnsEntry::Timeout(ip) => {
             format!("Timeout: {ip}")
         }
     }
