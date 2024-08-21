@@ -19,6 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Reverse dns enqueued multiple times when dns-ttl expires ([#1290](https://github.com/fujiapple852/trippy/issues/1290))
+- Fixed panic for icmp extensions with malformed length ([#1287](https://github.com/fujiapple852/trippy/issues/1287))
 
 ## [0.11.0] - 2024-08-11
 
