@@ -144,13 +144,13 @@ mod inner {
     }
 
     #[derive(Debug, Clone)]
-    pub struct DnsResolveRequest {
+    struct DnsResolveRequest {
         addr: IpAddr,
         with_asinfo: bool,
     }
 
     /// Resolver implementation.
-    pub struct DnsResolver {
+    pub(super) struct DnsResolver {
         config: Config,
         provider: DnsProvider,
         tx: Sender<DnsResolveRequest>,
@@ -158,7 +158,7 @@ mod inner {
     }
 
     impl DnsResolver {
-        pub fn start(config: Config) -> std::io::Result<Self> {
+        pub(super) fn start(config: Config) -> std::io::Result<Self> {
             let (tx, rx) = bounded(RESOLVER_MAX_QUEUE_SIZE);
             let addr_cache = Arc::new(RwLock::new(HashMap::new()));
 
@@ -199,11 +199,11 @@ mod inner {
             })
         }
 
-        pub const fn config(&self) -> &Config {
+        pub(super) const fn config(&self) -> &Config {
             &self.config
         }
 
-        pub fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
+        pub(super) fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
             match &self.provider {
                 DnsProvider::TrustDns(resolver) => Ok(resolver
                     .lookup_ip(hostname)
@@ -253,7 +253,12 @@ mod inner {
             .map(ResolvedIpAddrs)
         }
 
-        pub fn reverse_lookup(&self, addr: IpAddr, with_asinfo: bool, lazy: bool) -> DnsEntry {
+        pub(super) fn reverse_lookup(
+            &self,
+            addr: IpAddr,
+            with_asinfo: bool,
+            lazy: bool,
+        ) -> DnsEntry {
             if lazy {
                 self.lazy_reverse_lookup(addr, with_asinfo).entry
             } else {
