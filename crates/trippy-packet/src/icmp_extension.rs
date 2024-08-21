@@ -82,17 +82,21 @@ pub mod extension_structure {
         type Item = &'a [u8];
 
         fn next(&mut self) -> Option<Self::Item> {
-            if self.offset >= self.buf.as_slice().len() {
+            let buf_slice = self.buf.as_slice();
+            if self.offset > buf_slice.len() {
                 None
             } else {
-                let object_bytes = &self.buf.as_slice()[self.offset..];
+                let object_bytes = &buf_slice[self.offset..];
                 if let Ok(object) = ExtensionObjectPacket::new_view(object_bytes) {
-                    let length = object.get_length();
-                    // If a malformed extension object has a length of 0 then we end iteration.
-                    if length == 0 {
+                    let length = usize::from(object.get_length());
+                    // If a malformed extension object has a length that is less than the minimum
+                    // size or extends beyond the end of available bytes, then we discard it.
+                    if length < ExtensionObjectPacket::minimum_packet_size()
+                        || length > object_bytes.len()
+                    {
                         return None;
                     }
-                    self.offset += usize::from(length);
+                    self.offset += length;
                     Some(object_bytes)
                 } else {
                     None
@@ -143,6 +147,39 @@ pub mod extension_structure {
         fn test_object_iterator_zero_length() {
             let buf = [
                 0x20, 0x00, 0x99, 0x3a, 0x00, 0x00, 0x01, 0x01, 0x04, 0xbb, 0x41, 0x01,
+            ];
+            let extensions = ExtensionsPacket::new_view(&buf).unwrap();
+            let mut object_iter = extensions.objects();
+            assert!(object_iter.next().is_none());
+        }
+
+        #[test]
+        fn test_object_iterator_minimum_length() {
+            let buf = [
+                0x20, 0x00, 0x99, 0x3a, 0x00, 0x04, 0x01, 0x01, 0x04, 0xbb, 0x41, 0x01,
+            ];
+            let extensions = ExtensionsPacket::new_view(&buf).unwrap();
+            let mut object_iter = extensions.objects();
+            let object_bytes = object_iter.next().unwrap();
+            let object = ExtensionObjectPacket::new_view(object_bytes).unwrap();
+            assert_eq!(4, object.get_length());
+            assert_eq!(0, object.payload().len());
+        }
+
+        #[test]
+        fn test_object_iterator_length_to_short() {
+            let buf = [
+                0x20, 0x00, 0x99, 0x3a, 0x00, 0x03, 0x01, 0x01, 0x04, 0xbb, 0x41, 0x01,
+            ];
+            let extensions = ExtensionsPacket::new_view(&buf).unwrap();
+            let mut object_iter = extensions.objects();
+            assert!(object_iter.next().is_none());
+        }
+
+        #[test]
+        fn test_object_iterator_length_to_long() {
+            let buf = [
+                0x20, 0x00, 0x99, 0x3a, 0xa7, 0xdd, 0x01, 0x01, 0x04, 0xbb, 0x41, 0x01,
             ];
             let extensions = ExtensionsPacket::new_view(&buf).unwrap();
             let mut object_iter = extensions.objects();
