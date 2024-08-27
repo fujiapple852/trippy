@@ -10,6 +10,8 @@ use ratatui::widgets::{
     Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs, Wrap,
 };
 use ratatui::Frame;
+use rust_i18n::t;
+use std::string::ToString;
 use trippy_core::PortDirection;
 use trippy_dns::ResolveMethod;
 
@@ -30,11 +32,11 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
 
 /// Render settings tabs.
 fn render_settings_tabs(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
-    let titles: Vec<_> = SETTINGS_TABS
-        .iter()
+    let titles: Vec<_> = settings_tabs()
+        .into_iter()
         .map(|(title, _)| {
             Line::from(Span::styled(
-                *title,
+                title,
                 Style::default().fg(app.tui_config.theme.settings_tab_text),
             ))
         })
@@ -42,7 +44,7 @@ fn render_settings_tabs(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let tabs = Tabs::new(titles)
         .block(
             Block::default()
-                .title(" Settings ")
+                .title(format!(" {} ", t!("title_settings")))
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
                 .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg))
@@ -62,8 +64,8 @@ fn render_settings_table(
     name: &str,
     items: &[SettingsItem],
 ) {
-    let header_cells = SETTINGS_TABLE_HEADER.iter().map(|h| {
-        Cell::from(*h).style(Style::default().fg(app.tui_config.theme.settings_table_header_text))
+    let header_cells = settings_table_header().into_iter().map(|h| {
+        Cell::from(h).style(Style::default().fg(app.tui_config.theme.settings_table_header_text))
     });
     let header = Row::new(header_cells)
         .style(Style::default().bg(app.tui_config.theme.settings_table_header_bg))
@@ -109,7 +111,7 @@ fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str)
         .wrap(Wrap::default())
         .block(
             Block::default()
-                .title(" Info ")
+                .title(format!(" {} ", t!("settings_info")))
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
                 .style(Style::default().bg(app.tui_config.theme.settings_dialog_bg))
@@ -120,7 +122,7 @@ fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str)
 }
 
 /// Format all settings.
-fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, String, Vec<SettingsItem>)> {
+fn format_all_settings(app: &TuiApp) -> Vec<(String, String, Vec<SettingsItem>)> {
     let tui_settings = format_tui_settings(app);
     let trace_settings = format_trace_settings(app);
     let dns_settings = format_dns_settings(app);
@@ -133,26 +135,44 @@ fn format_all_settings(app: &TuiApp) -> Vec<(&'static str, String, Vec<SettingsI
     let move_up = app.tui_config.bindings.previous_hop_address.to_string();
     vec![
         (
-            "Tui",
-            String::from("Settings which control how data is displayed in this Tui"),
+            t!("settings_tab_tui_title").to_string(),
+            t!("settings_tab_tui_desc").to_string(),
             tui_settings,
         ),
         (
-            "Trace",
-            String::from("Settings which control the tracing strategy"),
+            t!("settings_tab_trace_title").to_string(),
+            t!("settings_tab_trace_desc").to_string(),
             trace_settings,
         ),
         (
-            "Dns",
-            String::from("Settings which control how DNS lookups are performed"),
+            t!("settings_tab_dns_title").to_string(),
+            t!("settings_tab_dns_desc").to_string(),
             dns_settings,
         ),
-        ("GeoIp", String::from("Settings relating to GeoIp"), geoip_settings),
-        ("Bindings", String::from("Tui key bindings"), bindings_settings),
-        ("Theme", String::from("Tui theme colors"), theme_settings),
         (
-            "Columns",
-            format!("Tui table columns.  Press [{toggle_column}] to toggle a column on or off and use the [{move_down}] and [{move_up}] keys to change the column order."),
+            t!("settings_tab_geoip_title").to_string(),
+            t!("settings_tab_geoip_desc").to_string(),
+            geoip_settings,
+        ),
+        (
+            t!("settings_tab_bindings_title").to_string(),
+            t!("settings_tab_bindings_desc").to_string(),
+            bindings_settings,
+        ),
+        (
+            t!("settings_tab_theme_title").to_string(),
+            t!("settings_tab_theme_desc").to_string(),
+            theme_settings,
+        ),
+        (
+            t!("settings_tab_columns_title").to_string(),
+            t!(
+                "settings_tab_columns_desc",
+                c = toggle_column,
+                d = move_down,
+                u = move_up
+            )
+            .to_string(),
             columns_settings,
         ),
     ]
@@ -190,7 +210,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-max-addrs",
             app.tui_config
                 .max_addrs
-                .map_or_else(|| String::from("auto"), |m| m.to_string()),
+                .map_or_else(|| t!("auto").to_string(), |m| m.to_string()),
         ),
         SettingsItem::new(
             "tui-custom-columns",
@@ -205,12 +225,12 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let interface = if let Some(iface) = cfg.data.interface() {
         iface.to_string()
     } else {
-        "auto".to_string()
+        t!("auto").to_string()
     };
     let (src_port, dst_port) = match cfg.data.port_direction() {
-        PortDirection::None => ("n/a".to_string(), "n/a".to_string()),
-        PortDirection::FixedDest(dst) => ("auto".to_string(), format!("{}", dst.0)),
-        PortDirection::FixedSrc(src) => (format!("{}", src.0), "auto".to_string()),
+        PortDirection::None => (t!("na").to_string(), t!("na").to_string()),
+        PortDirection::FixedDest(dst) => (t!("auto").to_string(), format!("{}", dst.0)),
+        PortDirection::FixedSrc(src) => (format!("{}", src.0), t!("auto").to_string()),
         PortDirection::FixedBoth(src, dst) => (format!("{}", src.0), format!("{}", dst.0)),
     };
     vec![
@@ -297,8 +317,7 @@ fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
         app.tui_config
             .geoip_mmdb_file
             .as_deref()
-            .unwrap_or("none")
-            .to_string(),
+            .map_or_else(|| t!("none").to_string(), ToString::to_string),
     )]
 }
 
@@ -495,21 +514,29 @@ fn format_columns_settings(app: &TuiApp) -> Vec<SettingsItem> {
         .collect()
 }
 
+/// The index of the columns tab.
 pub const SETTINGS_TAB_COLUMNS: usize = 6;
 
 /// The name and number of items for each tabs in the setting dialog.
-pub const SETTINGS_TABS: [(&str, usize); 7] = [
-    ("Tui", 9),
-    ("Trace", 17),
-    ("Dns", 5),
-    ("GeoIp", 1),
-    ("Bindings", 36),
-    ("Theme", 31),
-    ("Columns", 0),
-];
+pub fn settings_tabs() -> [(String, usize); 7] {
+    [
+        (t!("settings_tab_tui_title").to_string(), 9),
+        (t!("settings_tab_trace_title").to_string(), 17),
+        (t!("settings_tab_dns_title").to_string(), 5),
+        (t!("settings_tab_geoip_title").to_string(), 1),
+        (t!("settings_tab_bindings_title").to_string(), 36),
+        (t!("settings_tab_theme_title").to_string(), 31),
+        (t!("settings_tab_columns_title").to_string(), 0),
+    ]
+}
 
 /// The settings table header.
-const SETTINGS_TABLE_HEADER: [&str; 2] = ["Setting", "Value"];
+pub fn settings_table_header() -> [String; 2] {
+    [
+        t!("settings_table_header_setting").to_string(),
+        t!("settings_table_header_value").to_string(),
+    ]
+}
 
 const SETTINGS_TABLE_WIDTH: [Constraint; 3] = [
     Constraint::Length(3),

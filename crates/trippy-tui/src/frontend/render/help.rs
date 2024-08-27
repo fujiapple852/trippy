@@ -5,6 +5,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
+use rust_i18n::t;
 
 /// Render help dialog.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
@@ -20,20 +21,20 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
         r#"  |_||_| |_| .__/ .__/\_, |"#.to_string(),
         r#"           |_|  |_|   |__/ "#.to_string(),
         r#"                           "#.to_string(),
-        r#" A network diagnostic tool "#.to_string(),
+        t!("help_tagline").to_string(),
         r#"                           "#.to_string(),
-        format!(" Press [{s}] to show all settings "),
-        format!(" Press [{b}] to show key bindings "),
-        format!(" Press [{c}] to choose columns "),
+        t!("help_show_settings", key = s).to_string(),
+        t!("help_show_bindings", key = b).to_string(),
+        t!("help_show_columns", key = c).to_string(),
         r#"                           "#.to_string(),
         r#" https://github.com/fujiapple852/trippy "#.to_string(),
         r#"                           "#.to_string(),
-        r#" Distributed under the Apache License 2.0 "#.to_string(),
+        t!("help_license").to_string(),
         r#"                           "#.to_string(),
-        r#" Copyright 2022 Trippy Contributors "#.to_string(),
+        t!("help_copyright").to_string(),
     ];
     let block = Block::default()
-        .title(" Help ")
+        .title(format!(" {} ", t!("title_help")))
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .style(Style::default().bg(app.tui_config.theme.help_dialog_bg))

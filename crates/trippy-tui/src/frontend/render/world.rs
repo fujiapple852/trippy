@@ -7,6 +7,7 @@ use ratatui::text::Span;
 use ratatui::widgets::canvas::{Canvas, Circle, Context, Map, MapResolution, Rectangle};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Frame;
+use rust_i18n::t;
 use std::collections::HashMap;
 use trippy_core::Hop;
 
@@ -32,7 +33,7 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
         .background_color(app.tui_config.theme.bg)
         .block(
             Block::default()
-                .title("Map")
+                .title(t!("title_map").to_string())
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
                 .style(
@@ -145,24 +146,29 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
         })
         .collect::<Vec<_>>();
     let info = if app.hide_private_hops && app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
-        "**Hidden**".to_string()
+        format!("**{}**", t!("hidden"))
     } else {
         match locations.as_slice() {
-            _ if app.tui_config.geoip_mmdb_file.is_none() => "GeoIp not enabled".to_string(),
+            _ if app.tui_config.geoip_mmdb_file.is_none() => t!("geoip_not_enabled").to_string(),
             [] if selected_hop.addr_count() > 0 => format!(
-                "No GeoIp data for hop {} ({})",
+                "{} {} ({})",
+                t!("geoip_no_data_for_hop"),
                 selected_hop.ttl(),
                 selected_hop.addrs().join(", ")
             ),
-            [] => format!("No GeoIp data for hop {}", selected_hop.ttl()),
+            [] => format!("{} {}", t!("geoip_no_data_for_hop"), selected_hop.ttl()),
             [loc] => loc.to_string(),
-            _ => format!("Multiple GeoIp locations for hop {}", selected_hop.ttl()),
+            _ => format!(
+                "{} {}",
+                t!("geoip_multiple_data_for_hop"),
+                selected_hop.ttl()
+            ),
         }
     };
     let info_panel = Paragraph::new(info)
         .block(
             Block::default()
-                .title(format!("Hop {}", selected_hop.ttl()))
+                .title(format!("{} {}", t!("hop"), selected_hop.ttl()))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(theme.map_info_panel_border))
@@ -198,7 +204,7 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {
                     let entry = geo_map.entry(geo.long_name()).or_insert(MapEntry {
                         long_name: geo.long_name(),
-                        location: format!("{latitude}, {longitude} ~{radius}km"),
+                        location: format!("{latitude}, {longitude} ~{radius}{}", t!("kilometer")),
                         latitude,
                         longitude,
                         radius,

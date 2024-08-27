@@ -4,11 +4,12 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Tabs};
 use ratatui::Frame;
+use rust_i18n::t;
 
 /// Render the tabs, one per trace.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let tabs_block = Block::default()
-        .title("Traces")
+        .title(t!("title_traces").to_string())
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)

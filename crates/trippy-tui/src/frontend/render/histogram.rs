@@ -3,6 +3,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{BarChart, Block, BorderType, Borders};
 use ratatui::Frame;
+use rust_i18n::t;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -14,7 +15,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let barchart = BarChart::default()
         .block(
             Block::default()
-                .title(format!("Frequency #{}", selected_hop.ttl()))
+                .title(format!("{} #{}", t!("title_frequency"), selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg)

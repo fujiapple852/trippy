@@ -5,6 +5,7 @@ use ratatui::symbols::Marker;
 use ratatui::text::Span;
 use ratatui::widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType};
 use ratatui::Frame;
+use rust_i18n::t;
 
 /// Render the ping history for all hops as a chart.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
@@ -34,7 +35,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .enumerate()
         .map(|(i, s)| {
             Dataset::default()
-                .name(format!("Hop {}", i + 1))
+                .name(format!("{} {}", t!("hop"), i + 1))
                 .data(s)
                 .graph_type(GraphType::Line)
                 .marker(Marker::Braille)
@@ -52,7 +53,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let chart = Chart::new(sets)
         .x_axis(
             Axis::default()
-                .title("Samples")
+                .title(t!("samples").to_string())
                 .bounds([0_f64, samples as f64])
                 .labels_alignment(Alignment::Right)
                 .labels(
@@ -64,7 +65,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         )
         .y_axis(
             Axis::default()
-                .title("RTT")
+                .title(t!("rtt").to_string())
                 .bounds([0_f64, max_sample])
                 .labels(
                     [
@@ -88,7 +89,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
-                .title("Chart"),
+                .title(t!("chart").to_string()),
         );
     f.render_widget(chart, rect);
 }

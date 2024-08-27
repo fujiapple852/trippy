@@ -4,6 +4,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders};
 use ratatui::Frame;
+use rust_i18n::t;
 
 /// Render the ping history for the final hop which is typically the target.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
@@ -23,7 +24,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("Samples #{}", selected_hop.ttl()))
+                .title(format!("{} #{}", t!("title_samples"), selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg)

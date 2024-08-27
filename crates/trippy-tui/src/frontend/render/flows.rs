@@ -4,6 +4,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Bar, BarChart, BarGroup, Block, BorderType, Borders};
 use ratatui::Frame;
+use rust_i18n::t;
 
 /// Render the flows.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
@@ -35,7 +36,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         })
         .collect();
     let block = Block::default()
-        .title("Flows")
+        .title(t!("title_flows").to_string())
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)

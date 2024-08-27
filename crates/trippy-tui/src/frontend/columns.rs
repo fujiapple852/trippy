@@ -1,7 +1,10 @@
 use crate::config::{TuiColumn, TuiColumns};
 use ratatui::layout::{Constraint, Rect};
-use std::fmt::{Display, Formatter};
+use rust_i18n::t;
+use std::borrow::Cow;
+use std::fmt::{Debug, Display, Formatter};
 use strum::{EnumIter, IntoEnumIterator};
+use unicode_width::UnicodeWidthStr;
 
 /// The columns to display in the hops table of the TUI.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -133,8 +136,8 @@ pub enum ColumnStatus {
 impl Display for ColumnStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Shown => write!(f, "on"),
-            Self::Hidden => write!(f, "off"),
+            Self::Shown => write!(f, "{}", t!("on")),
+            Self::Hidden => write!(f, "{}", t!("off")),
         }
     }
 }
@@ -248,60 +251,74 @@ impl From<TuiColumn> for Column {
 
 impl Display for ColumnType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Ttl => write!(f, "#"),
-            Self::Host => write!(f, "Host"),
-            Self::LossPct => write!(f, "Loss%"),
-            Self::Sent => write!(f, "Snd"),
-            Self::Received => write!(f, "Recv"),
-            Self::Last => write!(f, "Last"),
-            Self::Average => write!(f, "Avg"),
-            Self::Best => write!(f, "Best"),
-            Self::Worst => write!(f, "Wrst"),
-            Self::StdDev => write!(f, "StDev"),
-            Self::Status => write!(f, "Sts"),
-            Self::Jitter => write!(f, "Jttr"),
-            Self::Javg => write!(f, "Javg"),
-            Self::Jmax => write!(f, "Jmax"),
-            Self::Jinta => write!(f, "Jint"),
-            Self::LastSrcPort => write!(f, "Sprt"),
-            Self::LastDestPort => write!(f, "Dprt"),
-            Self::LastSeq => write!(f, "Seq"),
-            Self::LastIcmpPacketType => write!(f, "Type"),
-            Self::LastIcmpPacketCode => write!(f, "Code"),
-            Self::LastNatStatus => write!(f, "Nat"),
-            Self::Failed => write!(f, "Fail"),
-        }
+        write!(f, "{}", self.name())
     }
 }
 
 impl ColumnType {
+    /// The name of the column in the current locale.
+    pub(self) fn name(&self) -> Cow<'_, str> {
+        match self {
+            Self::Ttl => Cow::Borrowed("#"),
+            Self::Host => t!("column_host"),
+            Self::LossPct => t!("column_loss_pct"),
+            Self::Sent => t!("column_snd"),
+            Self::Received => t!("column_recv"),
+            Self::Last => t!("column_last"),
+            Self::Average => t!("column_avg"),
+            Self::Best => t!("column_best"),
+            Self::Worst => t!("column_wrst"),
+            Self::StdDev => t!("column_stdev"),
+            Self::Status => t!("column_sts"),
+            Self::Jitter => t!("column_jttr"),
+            Self::Javg => t!("column_javg"),
+            Self::Jmax => t!("column_jmax"),
+            Self::Jinta => t!("column_jint"),
+            Self::LastSrcPort => t!("column_sprt"),
+            Self::LastDestPort => t!("column_dprt"),
+            Self::LastSeq => t!("column_seq"),
+            Self::LastIcmpPacketType => t!("column_type"),
+            Self::LastIcmpPacketCode => t!("column_code"),
+            Self::LastNatStatus => t!("column_nat"),
+            Self::Failed => t!("column_fail"),
+        }
+    }
+
     /// The width of the column.
-    pub(self) const fn width(self) -> ColumnWidth {
+    ///
+    /// For most columns the width is calculated based on the column name in
+    /// the current locale.
+    ///
+    /// For the `Ttl` column the width is fixed as it is always a single
+    /// character.
+    ///
+    /// The `Host` column is variable as it should use the remaining space.
+    pub(self) fn width(self) -> ColumnWidth {
+        let width = self.name().width() as u16 + 2;
         #[allow(clippy::match_same_arms)]
         match self {
             Self::Ttl => ColumnWidth::Fixed(4),
             Self::Host => ColumnWidth::Variable,
-            Self::LossPct => ColumnWidth::Fixed(8),
-            Self::Sent => ColumnWidth::Fixed(7),
-            Self::Received => ColumnWidth::Fixed(7),
-            Self::Last => ColumnWidth::Fixed(7),
-            Self::Average => ColumnWidth::Fixed(7),
-            Self::Best => ColumnWidth::Fixed(7),
-            Self::Worst => ColumnWidth::Fixed(7),
-            Self::StdDev => ColumnWidth::Fixed(8),
-            Self::Status => ColumnWidth::Fixed(7),
-            Self::Jitter => ColumnWidth::Fixed(7),
-            Self::Javg => ColumnWidth::Fixed(7),
-            Self::Jmax => ColumnWidth::Fixed(7),
-            Self::Jinta => ColumnWidth::Fixed(8),
-            Self::LastSrcPort => ColumnWidth::Fixed(7),
-            Self::LastDestPort => ColumnWidth::Fixed(7),
-            Self::LastSeq => ColumnWidth::Fixed(7),
-            Self::LastIcmpPacketType => ColumnWidth::Fixed(7),
-            Self::LastIcmpPacketCode => ColumnWidth::Fixed(7),
-            Self::LastNatStatus => ColumnWidth::Fixed(7),
-            Self::Failed => ColumnWidth::Fixed(7),
+            Self::LossPct => ColumnWidth::Fixed(width.max(8)),
+            Self::Sent => ColumnWidth::Fixed(width.max(7)),
+            Self::Received => ColumnWidth::Fixed(width.max(7)),
+            Self::Last => ColumnWidth::Fixed(width.max(7)),
+            Self::Average => ColumnWidth::Fixed(width.max(7)),
+            Self::Best => ColumnWidth::Fixed(width.max(7)),
+            Self::Worst => ColumnWidth::Fixed(width.max(7)),
+            Self::StdDev => ColumnWidth::Fixed(width.max(8)),
+            Self::Status => ColumnWidth::Fixed(width.max(7)),
+            Self::Jitter => ColumnWidth::Fixed(width.max(7)),
+            Self::Javg => ColumnWidth::Fixed(width.max(7)),
+            Self::Jmax => ColumnWidth::Fixed(width.max(7)),
+            Self::Jinta => ColumnWidth::Fixed(width.max(8)),
+            Self::LastSrcPort => ColumnWidth::Fixed(width.max(7)),
+            Self::LastDestPort => ColumnWidth::Fixed(width.max(7)),
+            Self::LastSeq => ColumnWidth::Fixed(width.max(7)),
+            Self::LastIcmpPacketType => ColumnWidth::Fixed(width.max(7)),
+            Self::LastIcmpPacketCode => ColumnWidth::Fixed(width.max(7)),
+            Self::LastNatStatus => ColumnWidth::Fixed(width.max(7)),
+            Self::Failed => ColumnWidth::Fixed(width.max(7)),
         }
     }
 }

@@ -88,15 +88,6 @@ impl PrivilegeMode {
     }
 }
 
-impl Display for PrivilegeMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Privileged => write!(f, "privileged"),
-            Self::Unprivileged => write!(f, "unprivileged"),
-        }
-    }
-}
-
 /// The ICMP extension parsing mode.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum IcmpExtensionParseMode {
