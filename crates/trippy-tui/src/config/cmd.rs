@@ -220,6 +220,10 @@ pub struct Args {
     #[arg(long)]
     pub tui_privacy_max_ttl: Option<u8>,
 
+    /// The locale to use for the TUI [default: auto]
+    #[arg(long)]
+    pub tui_locale: Option<String>,
+
     /// The TUI theme colors [item=color,item=color,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,

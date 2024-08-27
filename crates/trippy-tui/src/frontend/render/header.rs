@@ -1,4 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
+use crate::t;
 use chrono::SecondsFormat;
 use humantime::format_duration;
 use ratatui::layout::{Alignment, Rect};
@@ -6,16 +7,17 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
+use std::borrow::Cow;
 use std::net::IpAddr;
 use std::time::Duration;
-use trippy_core::{Hop, PortDirection, Protocol};
+use trippy_core::{Hop, PortDirection, PrivilegeMode, Protocol};
 use trippy_dns::{ResolveMethod, Resolver};
 
 /// Render the title, config, target, clock and keyboard controls.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
-        .title(format!(" Trippy v{} ", clap::crate_version!()))
+        .title(format!(" {} v{} ", t!("trippy"), clap::crate_version!()))
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
@@ -29,11 +31,11 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let clock_span = Line::from(Span::raw(now));
     let help_span = Line::from(vec![
         Span::styled("h", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw("elp "),
-        Span::styled("s", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw("ettings "),
-        Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw("uit"),
+        Span::raw(t!("header_help")),
+        Span::styled(" s", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(t!("header_settings")),
+        Span::styled(" q", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(t!("header_quit")),
     ]);
     let right_line = vec![clock_span, help_span];
     let right = Paragraph::new(right_line)
@@ -42,80 +44,98 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .alignment(Alignment::Right);
     let protocol = match app.tracer_config().data.protocol() {
         Protocol::Icmp => format!(
-            "icmp({}, {})",
-            render_target_family(app.tracer_config().data.target_addr()),
-            app.tracer_config().data.privilege_mode()
+            "{}({}, {})",
+            t!("icmp"),
+            fmt_target_family(app.tracer_config().data.target_addr()),
+            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
         Protocol::Udp => format!(
-            "udp({}, {}, {})",
-            render_target_family(app.tracer_config().data.target_addr()),
+            "{}({}, {}, {})",
+            t!("udp"),
+            fmt_target_family(app.tracer_config().data.target_addr()),
             app.tracer_config().data.multipath_strategy(),
-            app.tracer_config().data.privilege_mode()
+            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
         Protocol::Tcp => format!(
-            "tcp({}, {})",
-            render_target_family(app.tracer_config().data.target_addr()),
-            app.tracer_config().data.privilege_mode()
+            "{}({}, {})",
+            t!("tcp"),
+            fmt_target_family(app.tracer_config().data.target_addr()),
+            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
     };
     let details = if app.show_hop_details {
-        String::from("on")
+        String::from(t!("on"))
     } else {
-        String::from("off")
+        String::from(t!("off"))
     };
     let as_info = match app.resolver.config().resolve_method {
-        ResolveMethod::System => String::from("n/a"),
+        ResolveMethod::System => String::from(t!("na")),
         ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
             if app.tui_config.lookup_as_info {
-                String::from("on")
+                String::from(t!("on"))
             } else {
-                String::from("off")
+                String::from(t!("off"))
             }
         }
     };
     let max_hosts = app
         .tui_config
         .max_addrs
-        .map_or_else(|| String::from("auto"), |m| m.to_string());
+        .map_or_else(|| String::from(t!("auto")), |m| m.to_string());
     let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
-        "on"
+        t!("on")
     } else {
-        "off"
+        t!("off")
     };
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
+    let hop_count = app.tracer_data().hops_for_flow(app.selected_flow).len();
     let discovered = if app.selected_tracer_data.max_flows() > 1 {
         let plural_flows = if app.tracer_data().flows().len() > 1 {
-            "flows"
+            t!("flows")
         } else {
-            "flow"
+            t!("flow")
         };
+        let flow_count = app.tracer_data().flows().len();
         format!(
-            ", discovered {} hops and {} unique {}",
-            app.tracer_data().hops_for_flow(app.selected_flow).len(),
-            app.tracer_data().flows().len(),
-            plural_flows
+            ", {}",
+            t!("discovered_flows",
+                "hop_count" => hop_count,
+                "flow_count" => flow_count,
+                "plural_flows" => plural_flows
+            )
         )
     } else {
-        format!(
-            ", discovered {} hops",
-            app.tracer_data().hops_for_flow(app.selected_flow).len()
-        )
+        format!(", {}", t!("discovered", "hop_count" => hop_count))
     };
     let left_line = vec![
         Line::from(vec![
-            Span::styled("Target: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{}: ", t!("target")),
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
             Span::raw(target),
         ]),
         Line::from(vec![
-            Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{}: ", t!("config")),
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
             Span::raw(format!(
-                "protocol={protocol} as-info={as_info} details={details} max-hosts={max_hosts}, privacy={privacy}"
+                "{}={protocol} {}={as_info} {}={details} {}={max_hosts}, {}={privacy}",
+                t!("protocol"),
+                t!("as-info"),
+                t!("details"),
+                t!("max-hosts"),
+                t!("privacy")
             )),
         ]),
         Line::from(vec![
-            Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{}: ", t!("status")),
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
             Span::raw(render_status(app)),
             Span::raw(discovered),
         ]),
@@ -129,7 +149,14 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     f.render_widget(left, rect);
 }
 
-const fn render_target_family(target: IpAddr) -> &'static str {
+fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
+    match privilege_mode {
+        PrivilegeMode::Privileged => t!("privileged"),
+        PrivilegeMode::Unprivileged => t!("unprivileged"),
+    }
+}
+
+const fn fmt_target_family(target: IpAddr) -> &'static str {
     match target {
         IpAddr::V4(_) => "v4",
         IpAddr::V6(_) => "v6",
@@ -152,7 +179,7 @@ fn render_source(app: &TuiApp) -> String {
             }
         }
     } else {
-        String::from("unknown")
+        String::from(t!("unknown"))
     }
 }
 
@@ -193,18 +220,25 @@ fn render_status(app: &TuiApp) -> String {
         } else {
             0_f64
         };
-        format!(" [{failure_count} of {total_probes} ({failure_rate:.1}%) probes failed❗]")
+        let failure_rate = format!("{failure_rate:.1}");
+        format!(
+            " [{}❗]",
+            t!("status_failures",
+                    "failure_count" => failure_count,
+                    "total_probes" => total_probes,
+                    "failure_rate" => failure_rate)
+        )
     } else {
         String::new()
     };
     if app.selected_tracer_data.error().is_some() {
-        String::from("Failed")
+        String::from(t!("status_failed"))
     } else if let Some(start) = app.frozen_start {
         let frozen = format_duration(Duration::from_secs(
             start.elapsed().unwrap_or_default().as_secs(),
         ));
-        format!("Frozen ({frozen}){failures}")
+        format!("{} ({frozen}){failures}", t!("status_frozen"))
     } else {
-        format!("Running{failures}")
+        format!("{}{failures}", t!("status_running"))
     }
 }

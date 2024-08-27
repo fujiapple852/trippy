@@ -327,6 +327,8 @@ tui-refresh-rate = "100ms"
 # The maximum ttl of hops which will be masked for privacy [default: 1]
 tui-privacy-max-ttl = 0
 
+# The locale to use for Tui [default: auto]
+#tui-locale = "en-US"
 
 # Tui color theme configure.
 #

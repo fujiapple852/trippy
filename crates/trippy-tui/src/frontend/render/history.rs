@@ -1,5 +1,6 @@
 use crate::frontend::render::widgets::sparkline::{EmptyBarSymbol, Sparkline};
 use crate::frontend::tui_app::TuiApp;
+use crate::t;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders};
@@ -23,7 +24,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("Samples #{}", selected_hop.ttl()))
+                .title(format!("{} #{}", t!("title_samples"), selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg)

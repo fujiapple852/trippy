@@ -15,9 +15,13 @@ mod app;
 mod config;
 mod frontend;
 mod geoip;
+mod locale;
 mod print;
 mod report;
 mod util;
+
+// initialize the i18n system.
+rust_i18n::i18n!("locales", fallback = "en");
 
 /// Run the Trippy application.
 pub fn trippy() -> anyhow::Result<()> {

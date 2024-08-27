@@ -1,4 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
+use crate::t;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
@@ -35,7 +36,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         })
         .collect();
     let block = Block::default()
-        .title("Flows")
+        .title(Line::raw(t!("title_flows")))
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)

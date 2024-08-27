@@ -313,6 +313,7 @@ pub struct TrippyConfig {
     pub tui_icmp_extension_mode: IcmpExtensionMode,
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
+    pub tui_locale: Option<String>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
@@ -537,6 +538,7 @@ impl TrippyConfig {
             cfg_file_dns.dns_resolve_method,
             constants::DEFAULT_DNS_RESOLVE_METHOD,
         );
+        let tui_locale = cfg_layer_opt(args.tui_locale, cfg_file_tui.tui_locale);
         let dns_lookup_as_info = cfg_layer_bool_flag(
             args.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
@@ -697,6 +699,7 @@ impl TrippyConfig {
             tui_icmp_extension_mode,
             tui_geoip_mode,
             tui_max_addrs,
+            tui_locale,
             tui_theme,
             tui_bindings,
             mode,
@@ -749,6 +752,7 @@ impl Default for TrippyConfig {
             tui_icmp_extension_mode: constants::DEFAULT_TUI_ICMP_EXTENSION_MODE,
             tui_geoip_mode: constants::DEFAULT_TUI_GEOIP_MODE,
             tui_max_addrs: None,
+            tui_locale: None,
             tui_theme: TuiTheme::default(),
             tui_bindings: TuiBindings::default(),
             mode: constants::DEFAULT_MODE,
@@ -1465,6 +1469,12 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
+    #[test_case("trip example.com", Ok(cfg().tui_locale(None).build()); "default tui locale")]
+    #[test_case("trip example.com --tui-locale fr", Ok(cfg().tui_locale(Some(String::from("fr"))).build()); "custom tui locale")]
+    fn test_tui_locale(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "default tui address mode")]
     #[test_case("trip example.com --tui-address-mode ip", Ok(cfg().tui_address_mode(AddressMode::IP).build()); "ip tui address mode")]
     #[test_case("trip example.com --tui-address-mode host", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "host tui address mode")]
@@ -2035,6 +2045,15 @@ mod tests {
             Self {
                 config: TrippyConfig {
                     tui_privacy_max_ttl,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn tui_locale(self, tui_locale: Option<String>) -> Self {
+            Self {
+                config: TrippyConfig {
+                    tui_locale,
                     ..self.config
                 },
             }

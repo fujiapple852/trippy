@@ -1,9 +1,11 @@
 use crate::frontend::tui_app::TuiApp;
+use crate::t;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
+use std::borrow::Cow;
 
 /// Render the splash screen.
 ///
@@ -13,7 +15,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);
     let block = Block::default()
-        .title("Hops")
+        .title(Line::raw(t!("title_hops")))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(app.tui_config.theme.border))
@@ -23,14 +25,14 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text),
         );
     #[allow(clippy::needless_raw_string_hashes)]
-    let splash = vec![
-        r#" _____    _                "#,
-        r#"|_   _| _(_)_ __ _ __ _  _ "#,
-        r#"  | || '_| | '_ \ '_ \ || |"#,
-        r#"  |_||_| |_| .__/ .__/\_, |"#,
-        r#"           |_|  |_|   |__/ "#,
-        "",
-        "Awaiting data...",
+    let splash: Vec<Cow<'static, str>> = vec![
+        r#" _____    _                "#.into(),
+        r#"|_   _| _(_)_ __ _ __ _  _ "#.into(),
+        r#"  | || '_| | '_ \ '_ \ || |"#.into(),
+        r#"  |_||_| |_| .__/ .__/\_, |"#.into(),
+        r#"           |_|  |_|   |__/ "#.into(),
+        "".into(),
+        t!("awaiting_data"),
     ];
     let line: Vec<_> = splash
         .into_iter()
