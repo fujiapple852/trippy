@@ -1,3 +1,4 @@
+use crate::t;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -10,19 +11,19 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, error: &str) {
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);
     let block = Block::default()
-        .title("Hops")
+        .title(Line::raw(t!("title_hops")))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .style(Style::default().bg(Color::Blue));
     let line = vec![
         Line::from(Span::styled(
-            "Trippy Failed :(",
+            t!("bsod_failed"),
             Style::default().add_modifier(Modifier::REVERSED),
         )),
         Line::from(""),
         Line::from(error),
         Line::from(""),
-        Line::from("Press q to quit "),
+        Line::raw(t!("bsod_quit")),
     ];
     let paragraph = Paragraph::new(line).alignment(Alignment::Center);
     f.render_widget(block, rect);

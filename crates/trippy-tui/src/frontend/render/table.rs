@@ -4,8 +4,10 @@ use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::geoip::{GeoIpCity, GeoIpLookup};
+use crate::t;
 use itertools::Itertools;
 use ratatui::layout::Rect;
+use ratatui::prelude::Line;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
@@ -63,7 +65,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
-                .title("Hops"),
+                .title(Line::raw(t!("title_hops"))),
         )
         .style(
             Style::default()
@@ -178,9 +180,9 @@ fn render_usize_cell(value: usize) -> Cell<'static> {
 
 fn render_nat_cell(value: NatStatus) -> Cell<'static> {
     Cell::from(match value {
-        NatStatus::NotApplicable => "n/a",
-        NatStatus::NotDetected => "No",
-        NatStatus::Detected => "Yes",
+        NatStatus::NotApplicable => t!("na"),
+        NatStatus::NotDetected => t!("no"),
+        NatStatus::Detected => t!("yes"),
     })
 }
 
@@ -240,7 +242,7 @@ fn render_icmp_packet_code_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cel
             | IcmpPacketType::TimeExceeded(code)
             | IcmpPacketType::EchoReply(code),
         ) => Cell::from(format!("{}", code.0)),
-        _ => Cell::from("n/a"),
+        _ => Cell::from(t!("na")),
     }
 }
 
@@ -248,7 +250,7 @@ fn render_port_cell(port: u16) -> Cell<'static> {
     if port > 0 {
         Cell::from(format!("{port}"))
     } else {
-        Cell::from("n/a")
+        Cell::from(t!("na"))
     }
 }
 
@@ -261,7 +263,7 @@ fn render_hostname(
 ) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
         if app.hide_private_hops && app.tui_config.privacy_max_ttl >= hop.ttl() {
-            (String::from("**Hidden**"), 1)
+            (format!("**{}**", t!("hidden")), 1)
         } else {
             match app.tui_config.max_addrs {
                 None => {
@@ -290,7 +292,7 @@ fn render_hostname(
             }
         }
     } else {
-        (String::from("No response"), 1)
+        (format!("{}", t!("no_response")), 1)
     };
     (Cell::from(hostname), count)
 }
@@ -389,8 +391,8 @@ fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) 
                 format!("{ip}")
             }
         }
-        DnsEntry::Failed(ip) => format!("Failed: {ip}"),
-        DnsEntry::Timeout(ip) => format!("Timeout: {ip}"),
+        DnsEntry::Failed(ip) => format!("{}: {ip}", t!("dns_failed")),
+        DnsEntry::Timeout(ip) => format!("{}: {ip}", t!("dns_timeout")),
     }
 }
 
@@ -438,7 +440,7 @@ fn format_extensions_mpls(extensions: &Extensions) -> Option<String> {
     if labels.is_empty() {
         None
     } else {
-        Some(format!("labels: {labels}"))
+        Some(format!("{}: {labels}", t!("labels")))
     }
 }
 
@@ -511,13 +513,13 @@ fn render_hostname_with_details(
 ) -> (Cell<'static>, u16) {
     let rendered = if hop.total_recv() > 0 {
         if app.hide_private_hops && config.privacy_max_ttl >= hop.ttl() {
-            String::from("**Hidden**")
+            format!("**{}**", t!("hidden"))
         } else {
             let index = app.selected_hop_address;
             format_details(hop, index, dns, geoip_lookup, config)
         }
     } else {
-        String::from("No response")
+        format!("{}", t!("no_response"))
     };
     (Cell::from(rendered), 7)
 }
@@ -592,10 +594,10 @@ fn format_details(
             config,
         ),
         DnsEntry::Failed(ip) => {
-            format!("Failed: {ip}")
+            format!("{}: {ip}", t!("dns_failed"))
         }
         DnsEntry::Timeout(ip) => {
-            format!("Timeout: {ip}")
+            format!("{}: {ip}", t!("dns_timeout"))
         }
     }
 }
@@ -613,7 +615,7 @@ fn format_details(
 /// Pos: 37.751, -97.822 (~1000km)
 /// Ext: [mpls(label=48268, ttl=1, exp=0, bos=1)]
 /// ```
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::cognitive_complexity)]
 fn fmt_details_line(
     addr: IpAddr,
     index: usize,
@@ -626,41 +628,74 @@ fn fmt_details_line(
     config: &TuiConfig,
 ) -> String {
     let as_fmt = match (config.lookup_as_info, asinfo) {
-        (false, _) => "AS Name: <not enabled>\nAS Info: <not enabled>".to_string(),
-        (true, None) => "AS Name: <awaited>\nAS Info: <awaited>".to_string(),
+        (false, _) => format!(
+            "AS {}: <{}>\nAS {}: <{}>",
+            t!("name"),
+            t!("info"),
+            t!("not_enabled"),
+            t!("not_enabled")
+        ),
+        (true, None) => format!(
+            "AS {}: <{}>\nAS {}: <{}>",
+            t!("name"),
+            t!("info"),
+            t!("awaited"),
+            t!("awaited")
+        ),
         (true, Some(info)) if info.asn.is_empty() => {
-            "AS Name: <not found>\nAS Info: <not found>".to_string()
+            format!(
+                "AS {}: <{}>\nAS {}: <{}>",
+                t!("name"),
+                t!("info"),
+                t!("not_found"),
+                t!("not_found")
+            )
         }
         (true, Some(info)) => format!(
-            "AS Name: AS{} {}\nAS Info: {} {} {}",
-            info.asn, info.name, info.prefix, info.registry, info.allocated
+            "AS {}: AS{} {}\nAS {}: {} {} {}",
+            t!("name"),
+            t!("info"),
+            info.asn,
+            info.name,
+            info.prefix,
+            info.registry,
+            info.allocated
         ),
     };
     let hosts_rendered = if let Some(hosts) = hostnames {
         if hosts.is_empty() {
-            "Host: <not found>".to_string()
+            format!("{}: <{}>", t!("host"), t!("not_found"))
         } else {
-            format!("Host: {}", hosts.join(" "))
+            format!("{}: {}", t!("host"), hosts.join(" "))
         }
     } else {
-        "Host: <awaited>".to_string()
+        format!("{}: <{}>", t!("host"), t!("awaited"))
     };
     let geoip_fmt = if let Some(geo) = geoip {
         let (lat, long, radius) = geo.coordinates().unwrap_or_default();
         format!(
-            "Geo: {}\nPos: {}, {} (~{}km)",
+            "{}: {}\n{}: {}, {} (~{}{})",
+            t!("geo"),
             geo.long_name(),
+            t!("pos"),
             lat,
             long,
-            radius
+            radius,
+            t!("kilometer"),
         )
     } else {
-        "Geo: <not found>\nPos: <not found>".to_string()
+        format!(
+            "{}: <{}>\n{}: <{}>",
+            t!("geo"),
+            t!("not_found"),
+            t!("pos"),
+            t!("not_found")
+        )
     };
     let ext_fmt = if let Some(extensions) = extensions {
-        format!("Ext: [{}]", format_extensions_all(extensions))
+        format!("{}: [{}]", t!("geo"), format_extensions_all(extensions))
     } else {
-        "Ext: <none>".to_string()
+        format!("{}: <{}>", t!("geo"), t!("none"))
     };
     let nat_fmt = match nat {
         NatStatus::Detected => " [NAT]",

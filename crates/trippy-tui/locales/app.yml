@@ -1,0 +1,221 @@
+_version: 2
+trippy:
+  en: "trippy"
+auto:
+  en: "auto"
+on:
+  en: "on"
+off:
+  en: "off"
+yes:
+  en: "Yes"
+no:
+  en: "No"
+none:
+  en: "none"
+hidden:
+  en: "Hidden"
+flow:
+  en: "flow"
+flows:
+  en: "flows"
+target:
+  en: "Target"
+config:
+  en: "Config"
+status:
+  en: "Status"
+protocol:
+  en: "protocol"
+as-info:
+  en: "as-info"
+details:
+  en: "details"
+max-hosts:
+  en: "max-hosts"
+privacy:
+  en: "privacy"
+privileged:
+  en: "privileged"
+unprivileged:
+  en: "unprivileged"
+na:
+  en: "n/a"
+discovered:
+  en: "discovered %{hop_count} hops"
+discovered_flows:
+  en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
+unknown:
+  en: "unknown"
+icmp:
+  en: "icmp"
+udp:
+  en: "udp"
+tcp:
+  en: "tcp"
+status_failures:
+  en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
+status_failed:
+  en: "Failed"
+status_running:
+  en: "Running"
+status_frozen:
+  en: "Frozen"
+awaiting_data:
+  en: "Awaiting data..."
+header_help:
+  en: "elp"
+header_settings:
+  en: "ettings"
+header_quit:
+  en: "uit"
+title_hops:
+  en: "Hops"
+title_frequency:
+  en: "Frequency"
+title_samples:
+  en: "Samples"
+title_traces:
+  en: "Traces"
+title_flows:
+  en: "Flows"
+title_map:
+  en: "Map"
+title_help:
+  en: "Help"
+title_settings:
+  en: "Settings"
+bsod_failed:
+  en: "Trippy Failed :("
+bsod_quit:
+  en: "Press q to quit"
+hop:
+  en: "Hop"
+rtt:
+  en: "RTT"
+title_chart:
+  en: "Chart"
+samples:
+  en: "Samples"
+host:
+  en: "Host"
+no_response:
+  en: "No response"
+dns_failed:
+  en: "Failed"
+dns_timeout:
+  en: "Timeout"
+labels:
+  en: "labels"
+not_enabled:
+  en: "not enabled"
+not_found:
+  en: "not found"
+awaited:
+  en: "awaited"
+name:
+  en: "Name"
+info:
+  en: "Info"
+geo:
+  en: "Geo"
+pos:
+  en: "Pos"
+ext:
+  en: "Ext"
+help_tagline:
+  en: "A network diagnostic tool"
+help_show_settings:
+  en: "Press [%{key}] to show all settings"
+help_show_bindings:
+  en: "Press [%{key}] to show all bindings"
+help_show_columns:
+  en: "Press [%{key}] to show all columns"
+help_license:
+  en: "Distributed under the Apache License 2.0"
+help_copyright:
+  en: "Copyright 2022 Trippy Contributors"
+geoip_not_enabled:
+  en: "GeoIp not enabled"
+geoip_no_data_for_hop:
+  en: "No GeoIp data for hop"
+geoip_multiple_data_for_hop:
+  en: "Multiple GeoIp locations for hop"
+kilometer:
+  en: "km"
+settings_info:
+  en: "Info"
+settings_tab_tui_title:
+  en: "Tui"
+settings_tab_trace_title:
+  en: "Trace"
+settings_tab_dns_title:
+  en: "DNS"
+settings_tab_geoip_title:
+  en: "GeoIp"
+settings_tab_bindings_title:
+  en: "Bindings"
+settings_tab_theme_title:
+  en: "Theme"
+settings_tab_columns_title:
+  en: "Columns"
+settings_tab_tui_desc:
+  en: "Settings which control how data is displayed in this Tui"
+settings_tab_trace_desc:
+  en: "Settings which control the tracing strategy"
+settings_tab_dns_desc:
+  en: "Settings which control how DNS lookups are performed"
+settings_tab_geoip_desc:
+  en: "Settings relating to GeoIp"
+settings_tab_bindings_desc:
+  en: "Tui key bindings"
+settings_tab_theme_desc:
+  en: "Tui theme colors"
+settings_tab_columns_desc:
+  en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
+settings_table_header_setting:
+  en: "Setting"
+settings_table_header_value:
+  en: "Value"
+column_host:
+  en: "Host"
+column_loss_pct:
+  en: "Loss%"
+column_snd:
+  en: "Snd"
+column_recv:
+  en: "Recv"
+column_last:
+  en: "Last"
+column_avg:
+  en: "Avg"
+column_best:
+  en: "Best"
+column_wrst:
+  en: "Wrst"
+column_stdev:
+  en: "StDev"
+column_sts:
+  en: "Sts"
+column_jttr:
+  en: "Jttr"
+column_javg:
+  en: "Javg"
+column_jmax:
+  en: "Jmax"
+column_jint:
+  en: "Jint"
+column_sprt:
+  en: "Sprt"
+column_dprt:
+  en: "Dprt"
+column_seq:
+  en: "Seq"
+column_type:
+  en: "Type"
+column_code:
+  en: "Code"
+column_nat:
+  en: "Nat"
+column_fail:
+  en: "Fail"

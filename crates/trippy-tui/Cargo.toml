@@ -42,15 +42,18 @@ itertools.workspace = true
 maxminddb.workspace = true
 petgraph.workspace = true
 ratatui.workspace = true
+rust-i18n.workspace = true
 serde = { workspace = true, default-features = false, features = [ "derive" ] }
 serde_json.workspace = true
 serde_with.workspace = true
 strum = { workspace = true, default-features = false, features = [ "std", "derive" ] }
+sys-locale.workspace = true
 thiserror.workspace = true
 toml = { workspace = true, default-features = false, features = [ "parse" ] }
 tracing-chrome.workspace = true
 tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "json" ] }
 tracing.workspace = true
+unicode-width.workspace = true
 
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }

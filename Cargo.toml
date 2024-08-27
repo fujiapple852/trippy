@@ -61,12 +61,14 @@ petgraph = "0.6.5"
 pretty_assertions = "1.4.1"
 rand = "0.8.5"
 ratatui = "0.28.1"
+rust-i18n = "3.1.2"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = "3.9.0"
 serde_yaml = "=0.9.33"
 socket2 = "0.5.7"
 strum = { version = "0.26.3", default-features = false }
+sys-locale = "0.3.1"
 test-case = "3.3.1"
 thiserror = "1.0.60"
 tokio = "1.40.0"
@@ -76,6 +78,7 @@ tracing = "0.1.40"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.18", default-features = false }
 tun2 = "2.0.9"
+unicode-width = "0.2.0"
 widestring = "1.0.2"
 windows-sys = "0.52.0"
 

@@ -247,6 +247,7 @@ pub struct ConfigTui {
     pub tui_max_addrs: Option<u8>,
     pub geoip_mmdb_file: Option<String>,
     pub tui_custom_columns: Option<String>,
+    pub tui_locale: Option<String>,
     #[serde(rename = "tui-max-samples")]
     pub deprecated_tui_max_samples: Option<usize>,
     #[serde(rename = "tui-max-flows")]
@@ -265,6 +266,7 @@ impl Default for ConfigTui {
             tui_icmp_extension_mode: Some(super::constants::DEFAULT_TUI_ICMP_EXTENSION_MODE),
             tui_geoip_mode: Some(super::constants::DEFAULT_TUI_GEOIP_MODE),
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),
+            tui_locale: None,
             geoip_mmdb_file: None,
             deprecated_tui_max_samples: None,
             deprecated_tui_max_flows: None,

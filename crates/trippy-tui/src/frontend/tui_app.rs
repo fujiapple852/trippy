@@ -1,6 +1,6 @@
 use crate::app::TraceInfo;
 use crate::frontend::config::TuiConfig;
-use crate::frontend::render::settings::{SETTINGS_TABS, SETTINGS_TAB_COLUMNS};
+use crate::frontend::render::settings::{settings_tabs, SETTINGS_TAB_COLUMNS};
 use crate::geoip::GeoIpLookup;
 use itertools::Itertools;
 use ratatui::widgets::TableState;
@@ -238,7 +238,7 @@ impl TuiApp {
     }
 
     pub fn next_settings_tab(&mut self) {
-        if self.settings_tab_selected < SETTINGS_TABS.len() - 1 {
+        if self.settings_tab_selected < settings_tabs().len() - 1 {
             self.settings_tab_selected += 1;
         }
         self.setting_table_state.select(Some(0));
@@ -286,7 +286,7 @@ impl TuiApp {
         if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
             self.tui_config.tui_columns.all_columns_count()
         } else {
-            SETTINGS_TABS[self.settings_tab_selected].1
+            settings_tabs()[self.settings_tab_selected].1
         }
     }
 

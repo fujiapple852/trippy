@@ -1,4 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
+use crate::t;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -8,7 +9,7 @@ use ratatui::Frame;
 /// Render the tabs, one per trace.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let tabs_block = Block::default()
-        .title("Traces")
+        .title(Line::raw(t!("title_traces")))
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
