@@ -533,7 +533,9 @@ mod socket {
         // bytes to the `buf`fer, so this casting is safe.
         #![allow(unsafe_code)]
         fn recv_from_into_buf(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
-            let buf = unsafe { &mut *(buf as *mut [u8] as *mut [std::mem::MaybeUninit<u8>]) };
+            let buf = unsafe {
+                &mut *(std::ptr::from_mut::<[u8]>(buf) as *mut [std::mem::MaybeUninit<u8>])
+            };
             self.recv_from(buf)
                 .map(|(size, addr)| (size, addr.as_socket()))
         }
