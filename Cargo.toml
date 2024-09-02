@@ -48,7 +48,7 @@ etcetera = "0.8.0"
 hex-literal = "0.4.1"
 hickory-resolver = "0.24.1"
 humantime = "2.1.0"
-indexmap = { version = "2.4.0", default-features = false }
+indexmap = { version = "2.5.0", default-features = false }
 insta =  "1.39.0"
 ipnetwork = "0.20.0"
 itertools = "0.13.0"
