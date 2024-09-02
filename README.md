@@ -1,7 +1,6 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
 [![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.11.0)
 [![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
-[![HitCount](https://hits.dwyl.com/fujiapple852/trippy.svg?style=flat-square&show=unique)](http://github.com/fujiapple852/trippy)
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
 [![#trippy-dev:matrix.org](https://img.shields.io/badge/matrix/trippy-dev:matrix.org-blue)](https://matrix.to/#/#trippy-dev:matrix.org)
 
