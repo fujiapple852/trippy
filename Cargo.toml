@@ -77,7 +77,7 @@ tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.18", default-features = false }
 tun2 = "2.0.9"
 widestring = "1.0.2"
-windows-sys = "0.52.0"
+windows-sys = "0.59.0"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
