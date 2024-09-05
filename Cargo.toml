@@ -70,7 +70,7 @@ strum = { version = "0.26.3", default-features = false }
 test-case = "3.3.1"
 thiserror = "1.0.60"
 tokio = "1.40.0"
-tokio-util = "0.7.11"
+tokio-util = "0.7.12"
 toml = { version = "0.8.19", default-features = false }
 tracing = "0.1.40"
 tracing-chrome = "0.7.2"
