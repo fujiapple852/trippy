@@ -43,7 +43,7 @@ pub struct Tracer {
 }
 
 impl Tracer {
-    pub fn new(sim: Arc<Simulation>, token: CancellationToken) -> Self {
+    pub const fn new(sim: Arc<Simulation>, token: CancellationToken) -> Self {
         Self { sim, token }
     }
 
