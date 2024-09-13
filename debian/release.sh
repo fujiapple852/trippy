@@ -2,43 +2,67 @@
 
 set -o errexit -o pipefail -o nounset
 
+# The Trippy version to release
 VERSION="0.11.0"
+
+# The revision number for the PPA
+REVISION=1
+
+# The Ubuntu series to build for
+SERIES=("noble" "jammy" "focal" "bionic")
+
 TARBALL="trippy_${VERSION}.orig.tar.gz"
+PACKAGE="trippy"
+CHANGES="New upstream release"
 export DEBEMAIL="fujiapple852@gmail.com"
 export DEBFULLNAME="Fuji Apple"
-SERIES="noble"
 
-wget "https://github.com/fujiapple852/trippy/archive/refs/tags/${VERSION}.tar.gz"
-mv ${VERSION}.tar.gz $TARBALL
+# Download TARBALL
+wget -O "${TARBALL}" "https://github.com/fujiapple852/trippy/archive/refs/tags/${VERSION}.tar.gz"
+if [[ ! -f "${TARBALL}" ]]; then
+    echo "Error: Failed to download TARBALL." >&2
+    exit 1
+fi
 
-GPG_PRIVATE_KEY=$(cat launchpad_secret_key.pgp)
-GPG_KEY_ID=$(echo "$GPG_PRIVATE_KEY" | gpg --import-options show-only --import | sed -n '2s/^\s*//p')
-echo $GPG_KEY_ID
-echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+# Import GPG key securely
+if [[ ! -f launchpad_secret_key.pgp ]]; then
+    echo "Error: GPG key file 'launchpad_secret_key.pgp' not found." >&2
+    exit 1
+fi
+gpg --batch --import launchpad_secret_key.pgp
 
-echo "Checking GPG expirations..."
-if [[ $(gpg --list-keys | grep expired) ]]; then
+# Extract GPG key ID
+GPG_KEY_ID=$(gpg --with-colons --import-options show-only --import launchpad_secret_key.pgp | awk -F: '/^sec/ {print $5}')
+
+# Check GPG key expiration
+if gpg --list-keys --with-colons "${GPG_KEY_ID}" | grep '^pub' | grep '[e]'; then
     echo "GPG key has expired. Please update your GPG key." >&2
     exit 1
 fi
 
-mkdir -p build
-cp -r debian build/debian
+# Vendor the cargo dependencies
+cargo vendor
+tar cJf debian/vendor.tar.xz vendor
 
-ubuntu_version=$(distro-info --series ${SERIES} -r | cut -d' ' -f1)
-package=$(dpkg-parsechangelog --show-field Source)
-pkg_version=$(dpkg-parsechangelog --show-field Version | cut -d- -f1)
-changes="New upstream release"
-REVISION=1
+for series in "${SERIES[@]}"; do
+    UBUNTU_VERSION=$(distro-info --series "${series}" -r | cut -d' ' -f1)
+    BUILD_DIR="build-${series}"
+    mkdir -p "${BUILD_DIR}"
+    cp -r debian "${BUILD_DIR}/debian"
+    cd "${BUILD_DIR}"
 
-cd build
+    # Update changelog for the specific series
+    rm -f debian/changelog
+    dch --create --distribution "${series}" --PACKAGE "${PACKAGE}" \
+        --newversion "${VERSION}-ppa${REVISION}~ubuntu${UBUNTU_VERSION}" "$CHANGES"
 
-rm -rf debian/changelog
-dch --create --distribution ${SERIES} --package $package --newversion $pkg_version-ppa$REVISION~ubuntu$ubuntu_version "$changes"
+    # Build the source PACKAGE
+    debuild --prepend-path ~/.cargo/bin -S -sa
 
-./debian/rules vendor
-
-debuild --prepend-path ~/.cargo/bin -S -sa
+    cd ..
+done
 
 # The -ss flag is used to simulate the upload, remove to actually upload
-dput -ss ppa:fujiapple/trippy ../*.changes
+for changes_file in ./*.changes; do
+    dput -ss ppa:fujiapple/trippy "${changes_file}"
+done

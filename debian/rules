@@ -1,14 +1,9 @@
 #!/usr/bin/make -f
 
-.PHONY: override_dh_strip vendor
+.PHONY: override_dh_strip
 
 %:
 	dh $@
-
-vendor:
-	-[ -d vendor ] && rm -rf vendor
-	cargo vendor
-	tar cJf debian/vendor.tar.xz vendor
 
 override_dh_auto_build:
 	mkdir .cargo
