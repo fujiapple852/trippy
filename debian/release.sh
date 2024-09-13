@@ -6,7 +6,7 @@ VERSION="0.11.0"
 TARBALL="trippy_${VERSION}.orig.tar.gz"
 export DEBEMAIL="fujiapple852@gmail.com"
 export DEBFULLNAME="Fuji Apple"
-SERIES="jammy"
+SERIES="noble"
 
 wget "https://github.com/fujiapple852/trippy/archive/refs/tags/${VERSION}.tar.gz"
 mv ${VERSION}.tar.gz $TARBALL
