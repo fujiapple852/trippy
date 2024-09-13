@@ -1,5 +1,5 @@
-trippy (0.11.0-1ubuntu0.1~jammy1) jammy; urgency=medium
+trippy (0.11.0-ppa2~ubuntu24.04) noble; urgency=medium
 
-  * 0.11.0 release.
+  * New upstream release
 
- -- Fuji Apple <fujiapple852@gmail.com>  Sun, 11 Aug 2024 20:55:00 +0800
+ -- Fuji Apple <fujiapple852@gmail.com>  Fri, 13 Sep 2024 12:36:45 +0000
