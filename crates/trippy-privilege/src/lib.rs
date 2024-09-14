@@ -5,8 +5,8 @@
 //!
 //! [`Privilege::acquire_privileges`]:
 //!
-//! - On Linux we check if `CAP_NET_RAW` is in the permitted set and if so raise
-//!   it to the effective set
+//! - On Linux we check if `CAP_NET_RAW` is in the permitted set and if so raise it to the effective
+//!   set
 //! - On other Unix platforms this is a no-op
 //! - On Windows this is a no-op
 //!
@@ -18,10 +18,10 @@
 //!
 //! [`Privilege::needs_privileges`] (obtained via [`Privilege::discover`]):
 //!
-//! - On macOS we do not always need privileges to send ICMP packets as we
-//!   can use `IPPROTO_ICMP` sockets with the `IP_HDRINCL` socket option.
-//! - On Linux we always need privileges to send ICMP packets even though it
-//!   supports the `IPPROTO_ICMP` socket type but not the `IP_HDRINCL` socket option
+//! - On macOS we do not always need privileges to send ICMP packets as we can use `IPPROTO_ICMP`
+//!   sockets with the `IP_HDRINCL` socket option.
+//! - On Linux we always need privileges to send ICMP packets even though it supports the
+//!   `IPPROTO_ICMP` socket type but not the `IP_HDRINCL` socket option
 //! - On Windows we always need privileges to send ICMP packets
 //!
 //! [`Privilege::drop_privileges`]:

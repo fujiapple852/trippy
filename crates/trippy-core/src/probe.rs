@@ -137,11 +137,9 @@ impl Probe {
 /// received:
 ///
 /// - `TimeExceeded` - an ICMP packet indicating the TTL has expired.
-/// - `EchoReply` - an ICMP packet indicating the probe has reached the target host.
-/// - `DestinationUnreachable` - an ICMP packet indicating the probe could not
-///   reach the target host.
-/// - `NotApplicable` - a non-ICMP response (i.e. for some `UDP` & `TCP`
-///   probes).
+/// - `EchoReply` - an ICMP packet indicating the probe has reached the target.
+/// - `DestinationUnreachable` - an ICMP packet indicating the probe could not reach the target.
+/// - `NotApplicable` - a non-ICMP response (i.e. for some `UDP` & `TCP` probes).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProbeComplete {
     /// The sequence of the probe.
