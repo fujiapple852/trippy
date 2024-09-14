@@ -149,9 +149,9 @@ impl Ipv6 {
             udp.set_payload(&checksum);
         }
         udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
-        // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is encoded in
-        // the `UDP` packet.  If we (redundantly) set the target port here then the send_to will fail
-        // with `EINVAL`.
+        // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is
+        // encoded in the `UDP` packet.  If we (redundantly) set the target port here then
+        // the send_to will fail with `EINVAL`.
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), 0);
         udp_send_socket.send_to(udp.packet(), remote_addr)?;
         Ok(())

@@ -11,7 +11,6 @@ use std::time::Duration;
 /// use trippy_dns::{Builder, IpAddrFamily};
 ///
 /// let config = Builder::new().addr_family(IpAddrFamily::Ipv4Only).build();
-///
 pub struct Builder {
     resolve_method: ResolveMethod,
     addr_family: IpAddrFamily,
