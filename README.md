@@ -187,7 +187,7 @@ pkg install trippy
 pkg_add trippy
 ```
 
-### Pacman (Arch Linux)
+### Arch Linux
 
 [![Arch package](https://repology.org/badge/version-for-repo/arch/trippy.svg)](https://archlinux.org/packages/extra/x86_64/trippy)
 
