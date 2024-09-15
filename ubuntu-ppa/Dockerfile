@@ -10,4 +10,4 @@ COPY release.sh release.sh
 
 WORKDIR /data
 
-CMD ["./debian/release.sh"]
+CMD ["./ubuntu-ppa/release.sh"]
