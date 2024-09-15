@@ -195,6 +195,14 @@ pkg_add trippy
 pacman -S trippy
 ```
 
+### Gentoo Linux
+
+[![Gentoo package](https://repology.org/badge/version-for-repo/gentoo/trippy.svg)](https://packages.gentoo.org/packages/net-analyzer/trippy)
+
+```shell
+emerge -av net-analyzer/trippy
+```
+
 ### Nix
 
 [![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/networking/trippy/default.nix)
