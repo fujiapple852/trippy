@@ -42,13 +42,13 @@ fi
 
 # Vendor the cargo dependencies
 cargo vendor
-tar cJf debian/vendor.tar.xz vendor
+tar cJf ubuntu-ppa/vendor.tar.xz vendor
 
 for series in "${SERIES[@]}"; do
     UBUNTU_VERSION=$(distro-info --series "${series}" -r | cut -d' ' -f1)
     BUILD_DIR="build-${series}"
     mkdir -p "${BUILD_DIR}"
-    cp -r debian "${BUILD_DIR}/debian"
+    cp -r ubuntu-ppa "${BUILD_DIR}/debian"
     cd "${BUILD_DIR}"
 
     # Update changelog for the specific series
