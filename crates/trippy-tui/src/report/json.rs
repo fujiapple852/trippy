@@ -1,14 +1,15 @@
 use crate::app::TraceInfo;
 use crate::report::types::{Hop, Host, Info, Report};
+use std::thread::JoinHandle;
 use trippy_dns::Resolver;
 
 /// Generate a json report of trace data.
 pub fn report<R: Resolver>(
     info: &TraceInfo,
-    report_cycles: usize,
+    handle: JoinHandle<trippy_core::Result<()>>,
     resolver: &R,
 ) -> anyhow::Result<()> {
-    let trace = super::wait_for_round(&info.data, report_cycles)?;
+    let trace = super::wait_for_round(&info.data, handle)?;
     let hops: Vec<Hop> = trace
         .hops()
         .iter()

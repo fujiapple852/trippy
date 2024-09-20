@@ -3,15 +3,16 @@ use crate::report::types::fixed_width;
 use itertools::Itertools;
 use serde::Serialize;
 use std::net::IpAddr;
+use std::thread::JoinHandle;
 use trippy_dns::Resolver;
 
 /// Generate a CSV report of trace data.
 pub fn report<R: Resolver>(
     info: &TraceInfo,
-    report_cycles: usize,
+    handle: JoinHandle<trippy_core::Result<()>>,
     resolver: &R,
 ) -> anyhow::Result<()> {
-    let trace = super::wait_for_round(&info.data, report_cycles)?;
+    let trace = super::wait_for_round(&info.data, handle)?;
     let mut writer = csv::Writer::from_writer(std::io::stdout());
     for hop in trace.hops() {
         let row = CsvRow::new(
