@@ -186,6 +186,12 @@ pub enum ColumnType {
     LastNatStatus,
     /// The number of probes that failed for a hop.
     Failed,
+    /// The number of probes with forward loss.
+    Floss,
+    /// The number of probes with backward loss.
+    Bloss,
+    /// The loss percentage adjusted for back and forward loss.
+    AdjustedLossPct,
 }
 
 impl From<ColumnType> for char {
@@ -213,6 +219,9 @@ impl From<ColumnType> for char {
             ColumnType::LastIcmpPacketCode => 'C',
             ColumnType::LastNatStatus => 'N',
             ColumnType::Failed => 'f',
+            ColumnType::Floss => 'F',
+            ColumnType::Bloss => 'B',
+            ColumnType::AdjustedLossPct => 'A',
         }
     }
 }
@@ -242,6 +251,9 @@ impl From<TuiColumn> for Column {
             TuiColumn::LastIcmpPacketCode => Self::new_shown(ColumnType::LastIcmpPacketCode),
             TuiColumn::LastNatStatus => Self::new_shown(ColumnType::LastNatStatus),
             TuiColumn::Failed => Self::new_shown(ColumnType::Failed),
+            TuiColumn::Floss => Self::new_shown(ColumnType::Floss),
+            TuiColumn::Bloss => Self::new_shown(ColumnType::Bloss),
+            TuiColumn::AdjustedLossPct => Self::new_shown(ColumnType::AdjustedLossPct),
         }
     }
 }
@@ -271,6 +283,9 @@ impl Display for ColumnType {
             Self::LastIcmpPacketCode => write!(f, "Code"),
             Self::LastNatStatus => write!(f, "Nat"),
             Self::Failed => write!(f, "Fail"),
+            Self::Floss => write!(f, "Floss"),
+            Self::Bloss => write!(f, "Bloss"),
+            Self::AdjustedLossPct => write!(f, "ALoss%"),
         }
     }
 }
@@ -302,6 +317,9 @@ impl ColumnType {
             Self::LastIcmpPacketCode => ColumnWidth::Fixed(7),
             Self::LastNatStatus => ColumnWidth::Fixed(7),
             Self::Failed => ColumnWidth::Fixed(7),
+            Self::Floss => ColumnWidth::Fixed(7),
+            Self::Bloss => ColumnWidth::Fixed(7),
+            Self::AdjustedLossPct => ColumnWidth::Fixed(8),
         }
     }
 }
@@ -362,6 +380,9 @@ mod tests {
                 Column::new_hidden(ColumnType::LastIcmpPacketCode),
                 Column::new_hidden(ColumnType::LastNatStatus),
                 Column::new_hidden(ColumnType::Failed),
+                Column::new_hidden(ColumnType::Floss),
+                Column::new_hidden(ColumnType::Bloss),
+                Column::new_hidden(ColumnType::AdjustedLossPct),
             ])
         );
     }

@@ -93,6 +93,12 @@ pub enum TuiColumn {
     LastNatStatus,
     /// The number of probes that failed for a hop.
     Failed,
+    /// The number of probes with forward loss.
+    Floss,
+    /// The number of probes with backward loss.
+    Bloss,
+    /// The loss percentage adjusted for back and forward loss.
+    AdjustedLossPct,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -122,6 +128,9 @@ impl TryFrom<char> for TuiColumn {
             'C' => Ok(Self::LastIcmpPacketCode),
             'N' => Ok(Self::LastNatStatus),
             'f' => Ok(Self::Failed),
+            'F' => Ok(Self::Floss),
+            'B' => Ok(Self::Bloss),
+            'A' => Ok(Self::AdjustedLossPct),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -152,6 +161,9 @@ impl Display for TuiColumn {
             Self::LastIcmpPacketCode => write!(f, "C"),
             Self::LastNatStatus => write!(f, "N"),
             Self::Failed => write!(f, "f"),
+            Self::Floss => write!(f, "F"),
+            Self::Bloss => write!(f, "B"),
+            Self::AdjustedLossPct => write!(f, "A"),
         }
     }
 }

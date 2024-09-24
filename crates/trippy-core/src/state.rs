@@ -171,6 +171,10 @@ pub struct Hop {
     total_recv: usize,
     /// The total probes that failed for this hop.
     total_failed: usize,
+    /// The total forward loss for this hop.
+    total_forward_lost: usize,
+    /// The total backward loss for this hop.
+    total_backward_lost: usize,
     /// The total round trip time for this hop across all rounds.
     total_time: Duration,
     /// The round trip time for this hop in the current round.
@@ -239,6 +243,18 @@ impl Hop {
         self.total_recv
     }
 
+    /// The total number of probes with forward loss.
+    #[must_use]
+    pub const fn total_forward_loss(&self) -> usize {
+        self.total_forward_lost
+    }
+
+    /// The total number of probes with backward loss.
+    #[must_use]
+    pub const fn total_backward_loss(&self) -> usize {
+        self.total_backward_lost
+    }
+
     /// The total number of probes that failed.
     #[must_use]
     pub const fn total_failed(&self) -> usize {
@@ -250,6 +266,17 @@ impl Hop {
     pub fn loss_pct(&self) -> f64 {
         if self.total_sent > 0 {
             let lost = self.total_sent - self.total_recv;
+            lost as f64 / self.total_sent as f64 * 100f64
+        } else {
+            0_f64
+        }
+    }
+
+    /// The adjusted % of packets that are lost.
+    #[must_use]
+    pub fn adjusted_loss_pct(&self) -> f64 {
+        if self.total_sent > 0 {
+            let lost = self.total_forward_lost;
             lost as f64 / self.total_sent as f64 * 100f64
         } else {
             0_f64
@@ -367,6 +394,8 @@ impl Default for Hop {
             addrs: IndexMap::default(),
             total_sent: 0,
             total_recv: 0,
+            total_forward_lost: 0,
+            total_backward_lost: 0,
             total_failed: 0,
             total_time: Duration::default(),
             last: None,
@@ -471,12 +500,24 @@ impl FlowState {
         self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
         self.highest_ttl_for_round = round.largest_ttl.0;
         let mut prev_hop_checksum = None;
+        let mut prev_hop_carry = false;
         for probe in round.probes {
-            self.update_from_probe(probe, &mut prev_hop_checksum);
+            self.update_from_probe(
+                round.probes,
+                probe,
+                &mut prev_hop_checksum,
+                &mut prev_hop_carry,
+            );
         }
     }
 
-    fn update_from_probe(&mut self, probe: &ProbeStatus, prev_hop_checksum: &mut Option<u16>) {
+    fn update_from_probe(
+        &mut self,
+        probes: &[ProbeStatus],
+        probe: &ProbeStatus,
+        prev_hop_checksum: &mut Option<u16>,
+        prev_hop_carry: &mut bool,
+    ) {
         match probe {
             ProbeStatus::Complete(complete) => {
                 self.update_lowest_ttl(complete.ttl);
@@ -541,6 +582,22 @@ impl FlowState {
                 self.hops[index].last_src_port = awaited.src_port.0;
                 self.hops[index].last_dest_port = awaited.dest_port.0;
                 self.hops[index].last_sequence = awaited.sequence.0;
+                if *prev_hop_carry {
+                    self.hops[index].total_backward_lost += 1;
+                } else if awaited.ttl.0 <= self.highest_ttl_for_round {
+                    // TODO panicked: range end index 17 out of range for slice of length 5
+                    let remaining = &probes[index..usize::from(self.highest_ttl_for_round)];
+                    if remaining.len() > 1 {
+                        let all_awaited = remaining
+                            .iter()
+                            .skip(1)
+                            .all(|p| matches!(p, ProbeStatus::Awaited(_)));
+                        if all_awaited {
+                            self.hops[index].total_forward_lost += 1;
+                            *prev_hop_carry = true;
+                        }
+                    }
+                }
             }
             ProbeStatus::Failed(failed) => {
                 self.update_lowest_ttl(failed.ttl);

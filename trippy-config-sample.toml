@@ -282,6 +282,8 @@ tui-as-mode = "asn"
 #   C - Last icmp packet code
 #   N - Last NAT status
 #   f - Probes failed
+#   F = Probe forward loss
+#   B = Probe backward loss
 #
 # The columns will be shown in the order specified.
 tui-custom-columns = "holsravbwdt"

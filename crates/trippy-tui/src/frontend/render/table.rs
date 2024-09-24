@@ -169,6 +169,9 @@ fn new_cell(
         ColumnType::LastIcmpPacketType => render_icmp_packet_type_cell(hop.last_icmp_packet_type()),
         ColumnType::LastIcmpPacketCode => render_icmp_packet_code_cell(hop.last_icmp_packet_type()),
         ColumnType::LastNatStatus => render_nat_cell(hop.last_nat_status()),
+        ColumnType::Floss => render_usize_cell(hop.total_forward_loss()),
+        ColumnType::Bloss => render_usize_cell(hop.total_backward_loss()),
+        ColumnType::AdjustedLossPct => render_adjusted_loss_pct_cell(hop),
     }
 }
 
@@ -186,6 +189,10 @@ fn render_nat_cell(value: NatStatus) -> Cell<'static> {
 
 fn render_loss_pct_cell(hop: &Hop) -> Cell<'static> {
     Cell::from(format!("{:.1}%", hop.loss_pct()))
+}
+
+fn render_adjusted_loss_pct_cell(hop: &Hop) -> Cell<'static> {
+    Cell::from(format!("{:.1}%", hop.adjusted_loss_pct()))
 }
 
 fn render_avg_cell(hop: &Hop) -> Cell<'static> {

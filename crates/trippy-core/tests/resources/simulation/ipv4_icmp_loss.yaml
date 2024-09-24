@@ -1,0 +1,37 @@
+name: IPv4/ICMP with 9 hops, 2 of which do not respond
+target: 10.0.0.109
+protocol: Icmp
+icmp_identifier: 3
+hops:
+  - ttl: 1
+    resp: !SingleHost
+      addr: 10.0.0.101
+      rtt_ms: 10
+  - ttl: 2
+    resp: NoResponse
+  - ttl: 3
+    resp: !SingleHost
+      addr: 10.0.0.103
+      rtt_ms: 20
+  - ttl: 4
+    resp: !SingleHost
+      addr: 10.0.0.104
+      rtt_ms: 20
+  - ttl: 5
+    resp: !SingleHost
+      addr: 10.0.0.105
+      rtt_ms: 20
+  - ttl: 6
+    resp: !SingleHost
+      addr: 10.0.0.106
+      rtt_ms: 20
+  - ttl: 7
+    resp: !SingleHost
+      addr: 10.0.0.107
+      rtt_ms: 20
+  - ttl: 8
+    resp: NoResponse
+  - ttl: 9
+    resp: !SingleHost
+      addr: 10.0.0.109
+      rtt_ms: 20
