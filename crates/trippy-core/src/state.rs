@@ -856,10 +856,12 @@ mod tests {
         }
     }
 
-    #[allow(clippy::float_cmp)]
     fn assert_eq_optional(actual: Option<f64>, expected: Option<f64>) {
         match (actual, expected) {
-            (Some(actual), Some(expected)) => assert_eq!(actual, expected),
+            (Some(actual), Some(expected)) if (expected - actual).abs() < f64::EPSILON => {}
+            (Some(actual), Some(expected)) => {
+                panic!("expected {expected:?} did not match actual {actual:?}")
+            }
             (Some(_), None) => panic!("actual {actual:?} but not expected"),
             (None, Some(_)) => panic!("expected {expected:?} but no actual"),
             (None, None) => {}
