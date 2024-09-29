@@ -1,221 +1,331 @@
 _version: 2
 trippy:
   en: "trippy"
+  fr: "trippy"
 auto:
   en: "auto"
+  fr: "automatique"
 on:
   en: "on"
+  fr: "activé"
 off:
   en: "off"
+  fr: "désactivé"
 yes:
   en: "Yes"
+  fr: "Oui"
 no:
   en: "No"
+  fr: "Non"
 none:
   en: "none"
+  fr: "aucun"
 hidden:
   en: "Hidden"
+  fr: "Caché"
 flow:
   en: "flow"
+  fr: "flux"
 flows:
   en: "flows"
+  fr: "flux"
 target:
   en: "Target"
+  fr: "Cible"
 config:
   en: "Config"
+  fr: "Config"
 status:
   en: "Status"
+  fr: "Statut"
 protocol:
   en: "protocol"
+  fr: "protocole"
 as-info:
   en: "as-info"
+  fr: "info-as"
 details:
   en: "details"
+  fr: "détails"
 max-hosts:
   en: "max-hosts"
+  fr: "nombre d'hôtes maximum"
 privacy:
   en: "privacy"
+  fr: "confidentialité"
 privileged:
   en: "privileged"
+  fr: "privilégié"
 unprivileged:
   en: "unprivileged"
+  fr: "non privilégié"
 na:
   en: "n/a"
+  fr: "non disponible"
 discovered:
   en: "discovered %{hop_count} hops"
+  fr: "%{hop_count} sauts découverts"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
+  fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
 unknown:
   en: "unknown"
+  fr: "inconnu"
 icmp:
   en: "icmp"
+  fr: "icmp"
 udp:
   en: "udp"
+  fr: "udp"
 tcp:
   en: "tcp"
+  fr: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
+  fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
 status_failed:
   en: "Failed"
+  fr: "Échec"
 status_running:
   en: "Running"
+  fr: "En cours"
 status_frozen:
   en: "Frozen"
+  fr: "Gelé"
 awaiting_data:
   en: "Awaiting data..."
+  fr: "En attente de données..."
 header_help:
   en: "elp"
+  fr: "Aide"
 header_settings:
   en: "ettings"
+  fr: "Paramètres"
 header_quit:
   en: "uit"
+  fr: "Quitter"
 title_hops:
   en: "Hops"
+  fr: "Sauts"
 title_frequency:
   en: "Frequency"
+  fr: "Fréquence"
 title_samples:
   en: "Samples"
+  fr: "Échantillons"
 title_traces:
   en: "Traces"
+  fr: "Traces"
 title_flows:
   en: "Flows"
+  fr: "Flux"
 title_map:
   en: "Map"
+  fr: "Carte"
 title_help:
   en: "Help"
+  fr: "Aide"
 title_settings:
   en: "Settings"
+  fr: "Paramètres"
 bsod_failed:
   en: "Trippy Failed :("
+  fr: "Trippy a échoué :("
 bsod_quit:
   en: "Press q to quit"
+  fr: "Appuyez sur q pour quitter"
 hop:
   en: "Hop"
+  fr: "Saut"
 rtt:
   en: "RTT"
+  fr: "RTT"
 title_chart:
   en: "Chart"
+  fr: "Graphique"
 samples:
   en: "Samples"
+  fr: "Échantillons"
 host:
   en: "Host"
+  fr: "Hôte"
 no_response:
   en: "No response"
+  fr: "Pas de réponse"
 dns_failed:
   en: "Failed"
+  fr: "Échec"
 dns_timeout:
   en: "Timeout"
+  fr: "Délai dépassé"
 labels:
   en: "labels"
+  fr: "étiquettes"
 not_enabled:
   en: "not enabled"
+  fr: "non activé"
 not_found:
   en: "not found"
+  fr: "non trouvé"
 awaited:
   en: "awaited"
+  fr: "attendu"
 name:
   en: "Name"
+  fr: "Nom"
 info:
   en: "Info"
+  fr: "Information"
 geo:
   en: "Geo"
+  fr: "Géo"
 pos:
   en: "Pos"
+  fr: "Pos"
 ext:
   en: "Ext"
+  fr: "Ext"
 help_tagline:
   en: "A network diagnostic tool"
+  fr: "Un outil de diagnostic réseau"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
+  fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
+  fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
+  fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
 help_license:
   en: "Distributed under the Apache License 2.0"
+  fr: "Distribué sous licence Apache 2.0"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
+  fr: "Copyright 2022 Contributeurs de Trippy"
 geoip_not_enabled:
   en: "GeoIp not enabled"
+  fr: "GeoIp non activé"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
+  fr: "Pas de données GeoIp pour le saut"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
+  fr: "Emplacements GeoIp multiples pour le saut"
 kilometer:
   en: "km"
+  fr: "km"
 settings_info:
   en: "Info"
+  fr: "Information"
 settings_tab_tui_title:
   en: "Tui"
+  fr: "Tui"
 settings_tab_trace_title:
   en: "Trace"
+  fr: "Tracer"
 settings_tab_dns_title:
   en: "DNS"
+  fr: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
+  fr: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
+  fr: "Raccourcis clavier"
 settings_tab_theme_title:
   en: "Theme"
+  fr: "Thème"
 settings_tab_columns_title:
   en: "Columns"
+  fr: "Colonnes"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
+  fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
+  fr: "Paramètres qui contrôlent la stratégie de traçage"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
+  fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
+  fr: "Paramètres relatifs à GeoIp"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
+  fr: "Raccourcis clavier Tui"
 settings_tab_theme_desc:
   en: "Tui theme colors"
+  fr: "Couleurs du thème Tui"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
+  fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
 settings_table_header_setting:
   en: "Setting"
+  fr: "Paramètres"
 settings_table_header_value:
   en: "Value"
+  fr: "Valeur"
 column_host:
   en: "Host"
+  fr: "Hôte"
 column_loss_pct:
   en: "Loss%"
+  fr: "% Perdus"
 column_snd:
   en: "Snd"
+  fr: "Envoyés"
 column_recv:
   en: "Recv"
+  fr: "Reçus"
 column_last:
   en: "Last"
+  fr: "Dernier"
 column_avg:
   en: "Avg"
+  fr: "Moyenne"
 column_best:
   en: "Best"
+  fr: "Meilleur"
 column_wrst:
   en: "Wrst"
+  fr: "Pire"
 column_stdev:
   en: "StDev"
+  fr: "ÉcTyp"
 column_sts:
   en: "Sts"
+  fr: "État"
 column_jttr:
   en: "Jttr"
+  fr: "Gigue"
 column_javg:
   en: "Javg"
+  fr: "GigMoy"
 column_jmax:
   en: "Jmax"
+  fr: "GigMax"
 column_jint:
   en: "Jint"
+  fr: "GigInt"
 column_sprt:
   en: "Sprt"
+  fr: "Psrc"
 column_dprt:
   en: "Dprt"
+  fr: "Pdest"
 column_seq:
   en: "Seq"
+  fr: "Seq"
 column_type:
   en: "Type"
+  fr: "Type"
 column_code:
   en: "Code"
+  fr: "Code"
 column_nat:
   en: "Nat"
+  fr: "Nat"
 column_fail:
   en: "Fail"
+  fr: "Échec"
