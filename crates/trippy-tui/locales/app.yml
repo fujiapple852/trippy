@@ -8,6 +8,7 @@ trippy:
   zh: "trippy"
   sv: "trippy"
   ru: "trippy"
+  es: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
@@ -17,6 +18,7 @@ auto:
   zh: "自动"
   sv: "automatisk"
   ru: "авто"
+  es: "automático"
 on:
   en: "on"
   fr: "activé"
@@ -26,6 +28,7 @@ on:
   zh: "开"
   sv: "på"
   ru: "вкл"
+  es: "activo"
 off:
   en: "off"
   fr: "désactivé"
@@ -35,6 +38,7 @@ off:
   zh: "关"
   sv: "av"
   ru: "выкл"
+  es: "inactivo"
 yes:
   en: "Yes"
   fr: "Oui"
@@ -44,6 +48,7 @@ yes:
   zh: "是"
   sv: "Ja"
   ru: "Да"
+  es: "Sí"
 no:
   en: "No"
   fr: "Non"
@@ -53,6 +58,7 @@ no:
   zh: "否"
   sv: "Nej"
   ru: "Нет"
+  es: "No"
 none:
   en: "none"
   fr: "aucun"
@@ -62,6 +68,7 @@ none:
   zh: "无"
   sv: "ingen"
   ru: "нет"
+  es: "ninguno"
 hidden:
   en: "Hidden"
   fr: "Caché"
@@ -71,6 +78,7 @@ hidden:
   zh: "隐藏"
   sv: "Dold"
   ru: "Скрыто"
+  es: "Oculto"
 flow:
   en: "flow"
   fr: "flux"
@@ -80,6 +88,7 @@ flow:
   zh: "流量"
   sv: "flöde"
   ru: "поток"
+  es: "flujo"
 flows:
   en: "flows"
   fr: "flux"
@@ -89,6 +98,7 @@ flows:
   zh: "流量"
   sv: "flöden"
   ru: "потоки"
+  es: "flujos"
 target:
   en: "Target"
   fr: "Cible"
@@ -98,6 +108,7 @@ target:
   zh: "目标"
   sv: "Mål"
   ru: "Цель"
+  es: "Objetivo"
 status:
   en: "Status"
   fr: "Statut"
@@ -107,6 +118,7 @@ status:
   zh: "状态"
   sv: "Status"
   ru: "Статус"
+  es: "Estado"
 details:
   en: "detail"
   fr: "détail"
@@ -116,6 +128,7 @@ details:
   zh: "详情"
   sv: "detaljer"
   ru: "детали"
+  es: "detalles"
 privileged:
   en: "privileged"
   fr: "privilégié"
@@ -125,6 +138,7 @@ privileged:
   zh: "特权"
   sv: "privilegierad"
   ru: "привилегированный"
+  es: "privilegiado"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
@@ -134,6 +148,7 @@ unprivileged:
   zh: "非特权"
   sv: "oprivilegierad"
   ru: "непривилегированный"
+  es: "no privilegiado"
 na:
   en: "n/a"
   fr: "non disponible"
@@ -143,6 +158,7 @@ na:
   zh: "无"
   sv: "ej tillgänglig"
   ru: "н/д"
+  es: "n/d"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
@@ -152,6 +168,7 @@ discovered:
   zh: "发现 %{hop_count} 跳"
   sv: "upptäckte %{hop_count} hopp"
   ru: "обнаружено %{hop_count} прыжков"
+  es: "se descubrieron %{hop_count} saltos"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
@@ -161,6 +178,7 @@ discovered_flows:
   zh: "发现 %{hop_count} 跳，%{flow_count} 个唯一%{plural_flow}"
   sv: "%{hop_count} hopp och unika %{flow_count} %{plural_flows} upptäckta"
   ru: "обнаружено %{hop_count} прыжков и %{flow_count} уникальных %{plural_flows}"
+  es: "se descubrieron %{hop_count} saltos y %{flow_count} únicos %{plural_flows}"
 unknown:
   en: "unknown"
   fr: "inconnu"
@@ -170,6 +188,7 @@ unknown:
   zh: "未知"
   sv: "okänd"
   ru: "неизвестно"
+  es: "desconocido"
 icmp:
   en: "icmp"
   fr: "icmp"
@@ -179,6 +198,7 @@ icmp:
   zh: "icmp"
   sv: "icmp"
   ru: "icmp"
+  es: "icmp"
 udp:
   en: "udp"
   fr: "udp"
@@ -188,6 +208,7 @@ udp:
   zh: "udp"
   sv: "udp"
   ru: "udp"
+  es: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
@@ -197,6 +218,7 @@ tcp:
   zh: "tcp"
   sv: "tcp"
   ru: "tcp"
+  es: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
@@ -206,6 +228,7 @@ status_failures:
   zh: "%{failure_count} 个失败，共探测到 %{total_probes} 个（%{failure_rate}%）"
   sv: "%{failure_count} av %{total_probes} (%{failure_rate}%) misslyckade prober"
   ru: "%{failure_count} из %{total_probes} (%{failure_rate}%) зондов не удалось"
+  es: "%{failure_count} de %{total_probes} (%{failure_rate}%) sondas fallaron"
 status_failed:
   en: "Failed"
   fr: "Échec"
@@ -215,6 +238,7 @@ status_failed:
   zh: "失败"
   sv: "Misslyckades"
   ru: "Не удалось"
+  es: "Fallido"
 status_running:
   en: "Running"
   fr: "En cours"
@@ -224,6 +248,7 @@ status_running:
   zh: "运行中"
   sv: "Kör"
   ru: "Запущен"
+  es: "En ejecución"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
@@ -233,6 +258,7 @@ status_frozen:
   zh: "冻结"
   sv: "Frusen"
   ru: "Заморожен"
+  es: "Congelado"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
@@ -242,6 +268,7 @@ awaiting_data:
   zh: "等待数据……"
   sv: "Väntar på data..."
   ru: "Ожидание данных..."
+  es: "Esperando datos..."
 header_help:
   en: "help"
   fr: "aide"
@@ -251,6 +278,7 @@ header_help:
   zh: "帮助"
   sv: "hjälp"
   ru: "помощь"
+  es: "ayuda"
 header_settings:
   en: "settings"
   fr: "paramètres"
@@ -260,6 +288,7 @@ header_settings:
   zh: "设置"
   sv: "inställningar"
   ru: "настройки"
+  es: "configuraciones"
 header_quit:
   en: "quit"
   fr: "quitter"
@@ -269,6 +298,7 @@ header_quit:
   zh: "退出"
   sv: "avsluta"
   ru: "Выход"
+  es: "salir"
 title_hops:
   en: "Hops"
   fr: "Sauts"
@@ -278,6 +308,7 @@ title_hops:
   zh: "跳"
   sv: "Hopp"
   ru: "Прыжки"
+  es: "Saltos"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
@@ -287,6 +318,7 @@ title_frequency:
   zh: "频率"
   sv: "Frekvens"
   ru: "Частота"
+  es: "Frecuencia"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
@@ -296,6 +328,7 @@ title_samples:
   zh: "样本"
   sv: "Prover"
   ru: "Образцы"
+  es: "Muestras"
 title_traces:
   en: "Traces"
   fr: "Traces"
@@ -305,6 +338,7 @@ title_traces:
   zh: "跟踪"
   sv: "Spår"
   ru: "Следы"
+  es: "Trazas"
 title_flows:
   en: "Flows"
   fr: "Flux"
@@ -314,6 +348,7 @@ title_flows:
   zh: "流量"
   sv: "Flöden"
   ru: "Потоки"
+  es: "Flujos"
 title_map:
   en: "Map"
   fr: "Carte"
@@ -323,6 +358,7 @@ title_map:
   zh: "地图"
   sv: "Karta"
   ru: "Карта"
+  es: "Mapa"
 title_help:
   en: "Help"
   fr: "Aide"
@@ -332,6 +368,7 @@ title_help:
   zh: "帮助"
   sv: "Hjälp"
   ru: "Помощь"
+  es: "Ayuda"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
@@ -341,6 +378,7 @@ title_settings:
   zh: "设置"
   sv: "Inställningar"
   ru: "Настройки"
+  es: "Configuraciones"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
@@ -350,6 +388,7 @@ bsod_failed:
   zh: "Trippy 失败 :("
   sv: "Trippy misslyckades :("
   ru: "Trippy не удалось :("
+  es: "Trippy tuvo un problema :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
@@ -359,6 +398,7 @@ bsod_quit:
   zh: "按 q 退出"
   sv: "Tryck på q för att avsluta"
   ru: "Нажмите q для выхода"
+  es: "Presiona q para salir"
 hop:
   en: "Hop"
   fr: "Saut"
@@ -368,6 +408,7 @@ hop:
   zh: "跳"
   sv: "Hopp"
   ru: "Прыжок"
+  es: "Salto"
 rtt:
   en: "RTT"
   fr: "RTT"
@@ -377,6 +418,7 @@ rtt:
   zh: "往返时间"
   sv: "RTT"
   ru: "RTT"
+  es: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
@@ -386,6 +428,7 @@ title_chart:
   zh: "图表"
   sv: "Diagram"
   ru: "Диаграмма"
+  es: "Gráfico"
 samples:
   en: "Samples"
   fr: "Échantillons"
@@ -395,6 +438,7 @@ samples:
   zh: "样本"
   sv: "Prover"
   ru: "Образцы"
+  es: "Muestras"
 host:
   en: "Host"
   fr: "Hôte"
@@ -404,6 +448,7 @@ host:
   zh: "主机"
   sv: "Värd"
   ru: "Хост"
+  es: "Host"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
@@ -413,6 +458,7 @@ no_response:
   zh: "无响应"
   sv: "Inget svar"
   ru: "Нет ответа"
+  es: "Sin respuesta"
 dns_failed:
   en: "Failed"
   fr: "Échec"
@@ -422,6 +468,7 @@ dns_failed:
   zh: "失败"
   sv: "Misslyckades"
   ru: "Не удалось"
+  es: "Fallido"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
@@ -431,6 +478,7 @@ dns_timeout:
   zh: "超时"
   sv: "Tidsgräns nådd"
   ru: "Тайм-аут"
+  es: "Tiempo de espera"
 labels:
   en: "labels"
   fr: "étiquettes"
@@ -440,6 +488,7 @@ labels:
   zh: "标签"
   sv: "etiketter"
   ru: "метки"
+  es: "etiquetas"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
@@ -449,6 +498,7 @@ not_enabled:
   zh: "未启用"
   sv: "ej aktiverad"
   ru: "не активирован"
+  es: "no habilitado"
 not_found:
   en: "not found"
   fr: "non trouvé"
@@ -458,6 +508,7 @@ not_found:
   zh: "未找到"
   sv: "hittades inte"
   ru: "не найдено"
+  es: "no encontrado"
 awaited:
   en: "awaited"
   fr: "attendu"
@@ -467,6 +518,7 @@ awaited:
   zh: "等待"
   sv: "väntade"
   ru: "ожидаемый"
+  es: "esperado"
 name:
   en: "Name"
   fr: "Nom"
@@ -476,6 +528,7 @@ name:
   zh: "名称"
   sv: "Namn"
   ru: "Имя"
+  es: "Nombre"
 info:
   en: "Info"
   fr: "Information"
@@ -485,6 +538,7 @@ info:
   zh: "信息"
   sv: "Information"
   ru: "Информация"
+  es: "Información"
 geo:
   en: "Geo"
   fr: "Géo"
@@ -494,6 +548,7 @@ geo:
   zh: "地理坐标"
   sv: "Geo"
   ru: "Гео"
+  es: "Geo"
 pos:
   en: "Pos"
   fr: "Pos"
@@ -503,6 +558,7 @@ pos:
   zh: "位置"
   sv: "Pos"
   ru: "Поз"
+  es: "Pos"
 ext:
   en: "Ext"
   fr: "Ext"
@@ -512,6 +568,7 @@ ext:
   zh: "扩展"
   sv: "Ext"
   ru: "Расширение"
+  es: "Ext"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
@@ -521,6 +578,7 @@ help_tagline:
   zh: "网络诊断工具"
   sv: "Ett nätverksdiagnostikverktyg"
   ru: "Инструмент диагностики сети"
+  es: "Una herramienta de diagnóstico de red"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
@@ -530,6 +588,7 @@ help_show_settings:
   zh: "按 [%{key}] 显示所有设置"
   sv: "Tryck på [%{key}] för att visa alla inställningar"
   ru: "Нажмите [%{key}], чтобы показать все настройки"
+  es: "Presiona [%{key}] para mostrar todas las configuraciones"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
@@ -539,6 +598,7 @@ help_show_bindings:
   zh: "按 [%{key}] 显示所有绑定"
   sv: "Tryck på [%{key}] för att visa alla kortkommando"
   ru: "Нажмите [%{key}], чтобы показать все привязки"
+  es: "Presiona [%{key}] para mostrar todos los atajos"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
@@ -548,6 +608,7 @@ help_show_columns:
   zh: "按 [%{key}] 显示所有列"
   sv: "Tryck på [%{key}] för att visa alla kolumner"
   ru: "Нажмите [%{key}], чтобы показать все столбцы"
+  es: "Presiona [%{key}] para mostrar todas las columnas"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
@@ -557,6 +618,7 @@ help_license:
   zh: "以 Apache-2.0 许可分发"
   sv: "Distribueras under Apache License 2.0"
   ru: "Распространяется под лицензией Apache 2.0"
+  es: "Distribuido bajo la Licencia Apache 2.0"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
@@ -566,6 +628,7 @@ help_copyright:
   zh: "版权所有 2022 Trippy 贡献者"
   sv: "Upphovsrätt 2022 Trippy-bidragsgivare"
   ru: "Авторское право 2022 Участники Trippy"
+  es: "Derechos de autor 2022 Contribuidores de Trippy"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
@@ -575,6 +638,7 @@ geoip_not_enabled:
   zh: "GeoIp 未启用"
   sv: "GeoIp inte aktiverad"
   ru: "GeoIp не активирован"
+  es: "GeoIp no habilitado"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
@@ -584,6 +648,7 @@ geoip_no_data_for_hop:
   zh: "无 GeoIp 数据"
   sv: "Inga GeoIp-data för hopp"
   ru: "Нет данных GeoIp для прыжка"
+  es: "No hay datos de GeoIp para el salto"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
@@ -593,6 +658,7 @@ geoip_multiple_data_for_hop:
   zh: "多个 GeoIp 位置"
   sv: "Flera GeoIp-platser för hopp"
   ru: "Несколько местоположений GeoIp для прыжка"
+  es: "Múltiples ubicaciones de GeoIp para el salto"
 kilometer:
   en: "km"
   fr: "km"
@@ -602,6 +668,7 @@ kilometer:
   zh: "公里"
   sv: "km"
   ru: "км"
+  es: "km"
 settings_info:
   en: "Info"
   fr: "Information"
@@ -611,6 +678,7 @@ settings_info:
   zh: "信息"
   sv: "Information"
   ru: "Информация"
+  es: "Información"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
@@ -620,6 +688,7 @@ settings_tab_tui_title:
   zh: "终端用户界面"
   sv: "Tui"
   ru: "Tui"
+  es: "Tui"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
@@ -629,6 +698,7 @@ settings_tab_trace_title:
   zh: "跟踪"
   sv: "Spåra"
   ru: "След"
+  es: "Rastrear"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
@@ -638,6 +708,7 @@ settings_tab_dns_title:
   zh: "DNS"
   sv: "DNS"
   ru: "DNS"
+  es: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
@@ -647,6 +718,7 @@ settings_tab_geoip_title:
   zh: "GeoIp"
   sv: "GeoIp"
   ru: "GeoIp"
+  es: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
@@ -656,6 +728,7 @@ settings_tab_bindings_title:
   zh: "绑定"
   sv: "Kortkommando"
   ru: "Привязки"
+  es: "Atajos"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
@@ -665,6 +738,7 @@ settings_tab_theme_title:
   zh: "主题"
   sv: "Tema"
   ru: "Тема"
+  es: "Tema"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
@@ -672,6 +746,7 @@ settings_tab_columns_title:
   it: "Colonne"
   pt: "Colunas"
   zh: "列"
+  es: "Columnas"
   sv: "Kolumner"
   ru: "Столбцы"
 settings_tab_tui_desc:
@@ -683,6 +758,7 @@ settings_tab_tui_desc:
   zh: "数据显示方式设置"
   sv: "Inställningar som styr hur data visas i detta Tui"
   ru: "Настройки, которые контролируют, как данные отображаются в этом Tui"
+  es: "Configuraciones que controlan cómo se muestran los datos en este Tui"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
@@ -692,6 +768,7 @@ settings_tab_trace_desc:
   zh: "跟踪策略设置"
   sv: "Inställningar som styr spårningsstrategin"
   ru: "Настройки, которые контролируют стратегию трассировки"
+  es: "Configuraciones que controlan la estrategia de rastreo"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
@@ -701,6 +778,7 @@ settings_tab_dns_desc:
   zh: "DNS 查询设置"
   sv: "Inställningar som styr hur DNS-uppslag utförs"
   ru: "Настройки, которые контролируют, как выполняются DNS-запросы"
+  es: "Configuraciones que controlan cómo se realizan las búsquedas de DNS"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
@@ -710,6 +788,7 @@ settings_tab_geoip_desc:
   zh: "GeoIp 设置"
   sv: "Inställningar som rör GeoIp"
   ru: "Настройки, касающиеся GeoIp"
+  es: "Configuraciones relacionadas con GeoIp"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
@@ -719,6 +798,7 @@ settings_tab_bindings_desc:
   zh: "按键绑定设置"
   sv: "Tui-kortkommando"
   ru: "Привязки клавиш Tui"
+  es: "Atajos de teclado Tui"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
@@ -728,6 +808,7 @@ settings_tab_theme_desc:
   zh: "主题颜色设置"
   sv: "Tui-temafärger"
   ru: "Цвета темы Tui"
+  es: "Colores del tema Tui"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
@@ -737,6 +818,7 @@ settings_tab_columns_desc:
   zh: "终端用户界面表格列。按 [%{c}] 切换列的显示和隐藏，使用 [%{d}] 和 [%{u}] 键更改列的顺序。"
   sv: "Tui-tabellkolumner. Tryck på [%{c}] för att slå på eller av en kolumn och använd [%{d}] och [%{u}] för att ändra kolumnordningen."
   ru: "Столбцы таблицы Tui. Нажмите [%{c}], чтобы включить или отключить столбец, и используйте клавиши [%{d}] и [%{u}], чтобы изменить порядок столбцов."
+  es: "Columnas de la tabla Tui. Presiona [%{c}] para activar o desactivar una columna y usa las teclas [%{d}] y [%{u}] para cambiar el orden de las columnas."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
@@ -746,6 +828,7 @@ settings_table_header_setting:
   zh: "设置"
   sv: "Inställning"
   ru: "Настройка"
+  es: "Configuración"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
@@ -755,6 +838,7 @@ settings_table_header_value:
   zh: "值"
   sv: "Värde"
   ru: "Значение"
+  es: "Valor"
 column_host:
   en: "Host"
   fr: "Hôte"
@@ -764,6 +848,7 @@ column_host:
   zh: "主机"
   sv: "Värd"
   ru: "Хост"
+  es: "Host"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
@@ -773,6 +858,7 @@ column_loss_pct:
   zh: "丢包率"
   sv: "Förlust%"
   ru: "Потери%"
+  es: "% Perdidos"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
@@ -782,6 +868,7 @@ column_snd:
   zh: "发出"
   sv: "Skickat"
   ru: "Отпр"
+  es: "Enviados"
 column_recv:
   en: "Recv"
   fr: "Reçus"
@@ -791,6 +878,7 @@ column_recv:
   zh: "接收"
   sv: "Mottagna"
   ru: "Получ"
+  es: "Recibidos"
 column_last:
   en: "Last"
   fr: "Dernier"
@@ -800,6 +888,7 @@ column_last:
   zh: "最后"
   sv: "Senast"
   ru: "Посл"
+  es: "Último"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
@@ -809,6 +898,7 @@ column_avg:
   zh: "平均"
   sv: "Genomsnitt"
   ru: "Сред"
+  es: "Prom"
 column_best:
   en: "Best"
   fr: "Meilleur"
@@ -818,6 +908,7 @@ column_best:
   zh: "最佳"
   sv: "Bäst"
   ru: "Луч"
+  es: "Mejor"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
@@ -827,6 +918,7 @@ column_wrst:
   zh: "最差"
   sv: "Sämst"
   ru: "Худ"
+  es: "Peor"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
@@ -836,6 +928,7 @@ column_stdev:
   zh: "标准差"
   sv: "StDev"
   ru: "СКО"
+  es: "DesvE"
 column_sts:
   en: "Sts"
   fr: "État"
@@ -845,6 +938,7 @@ column_sts:
   zh: "状态"
   sv: "Sts"
   ru: "Статус"
+  es: "Est"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
@@ -854,6 +948,7 @@ column_jttr:
   zh: "抖动"
   sv: "Jttr"
   ru: "Джитр"
+  es: "Jttr"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
@@ -863,6 +958,7 @@ column_javg:
   zh: "均抖"
   sv: "Javg"
   ru: "СреднДжитр"
+  es: "PromJit"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
@@ -872,6 +968,7 @@ column_jmax:
   zh: "最大抖"
   sv: "Jmax"
   ru: "МаксДжитр"
+  es: "JitMax"
 column_jint:
   en: "Jint"
   fr: "GigInt"
@@ -881,6 +978,7 @@ column_jint:
   zh: "抖动间隔"
   sv: "Jint"
   ru: "ИнтДжитр"
+  es: "JitInt"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
@@ -889,6 +987,7 @@ column_sprt:
   zh: "源端"
   sv: "Sprt"
   ru: "Исх"
+  es: "Sprt"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
@@ -898,6 +997,7 @@ column_dprt:
   zh: "目标"
   sv: "Dprt"
   ru: "Назн"
+  es: "Dprt"
 column_seq:
   en: "Seq"
   fr: "Seq"
@@ -907,6 +1007,7 @@ column_seq:
   zh: "序列"
   sv: "Seq"
   ru: "Посл"
+  es: "Seq"
 column_type:
   en: "Type"
   fr: "Type"
@@ -916,6 +1017,7 @@ column_type:
   zh: "类型"
   sv: "Typ"
   ru: "Тип"
+  es: "Tipo"
 column_code:
   en: "Code"
   fr: "Code"
@@ -925,6 +1027,7 @@ column_code:
   zh: "代码"
   sv: "Kod"
   ru: "Код"
+  es: "Código"
 column_nat:
   en: "Nat"
   fr: "Nat"
@@ -934,6 +1037,7 @@ column_nat:
   zh: "网络地址转换"
   sv: "Nat"
   ru: "Nat"
+  es: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
@@ -943,3 +1047,4 @@ column_fail:
   zh: "失败"
   sv: "Misslyckades"
   ru: "Неуд"
+  es: "Falló"
