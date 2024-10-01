@@ -1,33 +1,32 @@
-use crate::buffer::Buffer;
 use crate::error::{Error, Result};
-use crate::fmt_payload;
+use bytemuck::{Pod, Zeroable};
 use std::fmt::{Debug, Formatter};
+use crate::fmt_payload;
 
-const SOURCE_PORT_OFFSET: usize = 0;
-const DESTINATION_PORT_OFFSET: usize = 2;
-const SEQUENCE_OFFSET: usize = 4;
-const ACKNOWLEDGEMENT_OFFSET: usize = 8;
-const DATA_OFFSET_OFFSET: usize = 12;
-const RESERVED_OFFSET: usize = 12;
-const FLAGS_OFFSET: usize = 12;
-const WINDOW_SIZE_OFFSET: usize = 14;
-const CHECKSUM_OFFSET: usize = 16;
-const URGENT_POINTER_OFFSET: usize = 18;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+pub struct TcpHeader {
+    pub source: u16,
+    pub destination: u16,
+    pub sequence: u32,
+    pub acknowledgement: u32,
+    pub data_offset_reserved_flags: u16,
+    pub window_size: u16,
+    pub checksum: u16,
+    pub urgent_pointer: u16,
+}
 
-/// Represents an TCP Packet.
-///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods
-/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct TcpPacket<'a> {
-    buf: Buffer<'a>,
+    header: &'a mut TcpHeader,
+    payload: &'a mut [u8],
 }
 
 impl<'a> TcpPacket<'a> {
-    pub fn new(packet: &mut [u8]) -> Result<TcpPacket<'_>> {
-        if packet.len() >= Self::minimum_packet_size() {
-            Ok(TcpPacket {
-                buf: Buffer::Mutable(packet),
-            })
+    pub fn new(packet: &'a mut [u8]) -> Result<TcpPacket<'a>> {
+        if packet.len() >= TcpPacket::minimum_packet_size() {
+            let (header_bytes, payload) = packet.split_at_mut(std::mem::size_of::<TcpHeader>());
+            let header = bytemuck::from_bytes_mut(header_bytes);
+            Ok(TcpPacket { header, payload })
         } else {
             Err(Error::InsufficientPacketBuffer(
                 String::from("TcpPacket"),
@@ -37,11 +36,11 @@ impl<'a> TcpPacket<'a> {
         }
     }
 
-    pub fn new_view(packet: &[u8]) -> Result<TcpPacket<'_>> {
-        if packet.len() >= Self::minimum_packet_size() {
-            Ok(TcpPacket {
-                buf: Buffer::Immutable(packet),
-            })
+    pub fn new_view(packet: &'a [u8]) -> Result<TcpPacket<'a>> {
+        if packet.len() >= TcpPacket::minimum_packet_size() {
+            let (header_bytes, payload) = packet.split_at(std::mem::size_of::<TcpHeader>());
+            let header = bytemuck::from_bytes_mut(header_bytes);
+            Ok(TcpPacket { header, payload })
         } else {
             Err(Error::InsufficientPacketBuffer(
                 String::from("TcpPacket"),
@@ -53,60 +52,22 @@ impl<'a> TcpPacket<'a> {
 
     #[must_use]
     pub const fn minimum_packet_size() -> usize {
-        20
-    }
-
-    #[must_use]
-    pub fn get_source(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(SOURCE_PORT_OFFSET))
-    }
-
-    #[must_use]
-    pub fn get_destination(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(DESTINATION_PORT_OFFSET))
-    }
-
-    #[must_use]
-    pub fn get_sequence(&self) -> u32 {
-        u32::from_be_bytes(self.buf.get_bytes(SEQUENCE_OFFSET))
-    }
-
-    #[must_use]
-    pub fn get_acknowledgement(&self) -> u32 {
-        u32::from_be_bytes(self.buf.get_bytes(ACKNOWLEDGEMENT_OFFSET))
+        std::mem::size_of::<TcpHeader>()
     }
 
     #[must_use]
     pub fn get_data_offset(&self) -> u8 {
-        (self.buf.read(DATA_OFFSET_OFFSET) & 0xf0) >> 4
+        (self.header.data_offset_reserved_flags & 0xf000) as u8 >> 12
     }
 
     #[must_use]
     pub fn get_reserved(&self) -> u8 {
-        (self.buf.read(RESERVED_OFFSET) & 0xe) >> 1
+        (self.header.data_offset_reserved_flags & 0x0e00) as u8 >> 9
     }
 
     #[must_use]
     pub fn get_flags(&self) -> u16 {
-        u16::from_be_bytes([
-            self.buf.read(FLAGS_OFFSET) & 0x1,
-            self.buf.read(FLAGS_OFFSET + 1),
-        ])
-    }
-
-    #[must_use]
-    pub fn get_window_size(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(WINDOW_SIZE_OFFSET))
-    }
-
-    #[must_use]
-    pub fn get_checksum(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(CHECKSUM_OFFSET))
-    }
-
-    #[must_use]
-    pub fn get_urgent_pointer(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(URGENT_POINTER_OFFSET))
+        self.header.data_offset_reserved_flags & 0x01ff
     }
 
     #[must_use]
@@ -114,74 +75,40 @@ impl<'a> TcpPacket<'a> {
         let current_offset = Self::minimum_packet_size();
         let end = std::cmp::min(
             current_offset + self.tcp_options_length(),
-            self.buf.as_slice().len(),
+            self.payload.len(),
         );
-        &self.buf.as_slice()[current_offset..end]
-    }
-
-    pub fn set_source(&mut self, val: u16) {
-        self.buf.set_bytes(SOURCE_PORT_OFFSET, val.to_be_bytes());
-    }
-
-    pub fn set_destination(&mut self, val: u16) {
-        self.buf
-            .set_bytes(DESTINATION_PORT_OFFSET, val.to_be_bytes());
-    }
-
-    pub fn set_sequence(&mut self, val: u32) {
-        self.buf.set_bytes(SEQUENCE_OFFSET, val.to_be_bytes());
-    }
-
-    pub fn set_acknowledgement(&mut self, val: u32) {
-        self.buf
-            .set_bytes(ACKNOWLEDGEMENT_OFFSET, val.to_be_bytes());
+        &self.payload[current_offset..end]
     }
 
     pub fn set_data_offset(&mut self, val: u8) {
-        *self.buf.write(DATA_OFFSET_OFFSET) =
-            (self.buf.read(DATA_OFFSET_OFFSET) & 0xf) | ((val & 0xf) << 4);
+        self.header.data_offset_reserved_flags =
+            (self.header.data_offset_reserved_flags & 0x0fff) | ((val as u16) << 12);
     }
 
     pub fn set_reserved(&mut self, val: u8) {
-        *self.buf.write(RESERVED_OFFSET) =
-            (self.buf.read(RESERVED_OFFSET) & 0xf1) | ((val & 0x7) << 1);
+        self.header.data_offset_reserved_flags =
+            (self.header.data_offset_reserved_flags & 0xf1ff) | ((val as u16) << 9);
     }
 
     pub fn set_flags(&mut self, val: u16) {
-        let bytes = val.to_be_bytes();
-        *self.buf.write(FLAGS_OFFSET) = (self.buf.read(FLAGS_OFFSET) & 0xfe) | (bytes[0] & 0x1);
-        *self.buf.write(FLAGS_OFFSET + 1) = bytes[1];
-    }
-
-    pub fn set_window_size(&mut self, val: u16) {
-        self.buf.set_bytes(WINDOW_SIZE_OFFSET, val.to_be_bytes());
-    }
-
-    pub fn set_checksum(&mut self, val: u16) {
-        self.buf.set_bytes(CHECKSUM_OFFSET, val.to_be_bytes());
-    }
-
-    pub fn set_urgent_pointer(&mut self, val: u16) {
-        self.buf.set_bytes(URGENT_POINTER_OFFSET, val.to_be_bytes());
+        self.header.data_offset_reserved_flags =
+            (self.header.data_offset_reserved_flags & 0xfe00) | (val & 0x01ff);
     }
 
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size() + self.tcp_options_length();
-        self.buf.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
+        self.payload[current_offset..current_offset + vals.len()].copy_from_slice(vals);
     }
 
     #[must_use]
     pub fn packet(&self) -> &[u8] {
-        self.buf.as_slice()
+        unsafe { std::slice::from_raw_parts(self.header as *const _ as *const u8, self.payload.len() + std::mem::size_of::<TcpHeader>()) }
     }
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        let start = Self::minimum_packet_size() + self.tcp_options_length();
-        if self.buf.as_slice().len() <= start {
-            return &[];
-        }
-        &self.buf.as_slice()[start..]
+        let start = TcpPacket::minimum_packet_size() + self.tcp_options_length();
+        &self.payload[start..]
     }
 
     fn tcp_options_length(&self) -> usize {
@@ -197,16 +124,16 @@ impl<'a> TcpPacket<'a> {
 impl Debug for TcpPacket<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TcpPacket")
-            .field("source", &self.get_source())
-            .field("destination", &self.get_destination())
-            .field("sequence", &self.get_sequence())
-            .field("acknowledgement", &self.get_acknowledgement())
+            .field("source", &self.header.source)
+            .field("destination", &self.header.destination)
+            .field("sequence", &self.header.sequence)
+            .field("acknowledgement", &self.header.acknowledgement)
             .field("data_offset", &self.get_data_offset())
             .field("reserved", &self.get_reserved())
             .field("flags", &self.get_flags())
-            .field("window_size", &self.get_window_size())
-            .field("checksum", &self.get_checksum())
-            .field("urgent_pointer", &self.get_urgent_pointer())
+            .field("window_size", &self.header.window_size)
+            .field("checksum", &self.header.checksum)
+            .field("urgent_pointer", &self.header.urgent_pointer)
             .field("options", &self.get_options_raw())
             .field("payload", &fmt_payload(self.payload()))
             .finish()
@@ -221,17 +148,17 @@ mod tests {
     fn test_source() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_source(0);
-        assert_eq!(0, packet.get_source());
+        packet.header.source = 0;
+        assert_eq!(0, packet.header.source);
         assert_eq!([0x00, 0x00], packet.packet()[..=1]);
-        packet.set_source(80);
-        assert_eq!(80, packet.get_source());
+        packet.header.source = 80;
+        assert_eq!(80, packet.header.source);
         assert_eq!([0x00, 0x50], packet.packet()[..=1]);
-        packet.set_source(443);
-        assert_eq!(443, packet.get_source());
+        packet.header.source = 443;
+        assert_eq!(443, packet.header.source);
         assert_eq!([0x01, 0xBB], packet.packet()[..=1]);
-        packet.set_source(u16::MAX);
-        assert_eq!(u16::MAX, packet.get_source());
+        packet.header.source = u16::MAX;
+        assert_eq!(u16::MAX, packet.header.source);
         assert_eq!([0xFF, 0xFF], packet.packet()[..=1]);
     }
 
@@ -239,17 +166,17 @@ mod tests {
     fn test_destination() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_destination(0);
-        assert_eq!(0, packet.get_destination());
+        packet.header.destination = 0;
+        assert_eq!(0, packet.header.destination);
         assert_eq!([0x00, 0x00], packet.packet()[2..=3]);
-        packet.set_destination(80);
-        assert_eq!(80, packet.get_destination());
+        packet.header.destination = 80;
+        assert_eq!(80, packet.header.destination);
         assert_eq!([0x00, 0x50], packet.packet()[2..=3]);
-        packet.set_destination(443);
-        assert_eq!(443, packet.get_destination());
+        packet.header.destination = 443;
+        assert_eq!(443, packet.header.destination);
         assert_eq!([0x01, 0xBB], packet.packet()[2..=3]);
-        packet.set_destination(u16::MAX);
-        assert_eq!(u16::MAX, packet.get_destination());
+        packet.header.destination = u16::MAX;
+        assert_eq!(u16::MAX, packet.header.destination);
         assert_eq!([0xFF, 0xFF], packet.packet()[2..=3]);
     }
 
@@ -257,14 +184,14 @@ mod tests {
     fn test_sequence() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_sequence(0);
-        assert_eq!(0, packet.get_sequence());
+        packet.header.sequence = 0;
+        assert_eq!(0, packet.header.sequence);
         assert_eq!([0x00, 0x00, 0x00, 0x00], packet.packet()[4..=7]);
-        packet.set_sequence(123_456);
-        assert_eq!(123_456, packet.get_sequence());
+        packet.header.sequence = 123_456;
+        assert_eq!(123_456, packet.header.sequence);
         assert_eq!([0x00, 0x01, 0xE2, 0x40], packet.packet()[4..=7]);
-        packet.set_sequence(u32::MAX);
-        assert_eq!(u32::MAX, packet.get_sequence());
+        packet.header.sequence = u32::MAX;
+        assert_eq!(u32::MAX, packet.header.sequence);
         assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.packet()[4..=7]);
     }
 
@@ -272,14 +199,14 @@ mod tests {
     fn test_acknowledgement() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_acknowledgement(0);
-        assert_eq!(0, packet.get_acknowledgement());
+        packet.header.acknowledgement = 0;
+        assert_eq!(0, packet.header.acknowledgement);
         assert_eq!([0x00, 0x00, 0x00, 0x00], packet.packet()[8..=11]);
-        packet.set_acknowledgement(123_456);
-        assert_eq!(123_456, packet.get_acknowledgement());
+        packet.header.acknowledgement = 123_456;
+        assert_eq!(123_456, packet.header.acknowledgement);
         assert_eq!([0x00, 0x01, 0xE2, 0x40], packet.packet()[8..=11]);
-        packet.set_acknowledgement(u32::MAX);
-        assert_eq!(u32::MAX, packet.get_acknowledgement());
+        packet.header.acknowledgement = u32::MAX;
+        assert_eq!(u32::MAX, packet.header.acknowledgement);
         assert_eq!([0xFF, 0xFF, 0xFF, 0xFF], packet.packet()[8..=11]);
     }
 
@@ -289,10 +216,10 @@ mod tests {
         let mut packet = TcpPacket::new(&mut buf).unwrap();
         packet.set_data_offset(0);
         assert_eq!(0, packet.get_data_offset());
-        assert_eq!([0x00], packet.packet()[12..13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_data_offset(15);
         assert_eq!(15, packet.get_data_offset());
-        assert_eq!([0xf0], packet.packet()[12..13]);
+        assert_eq!([0xf0, 0x00], packet.packet()[12..14]);
     }
 
     #[test]
@@ -301,10 +228,10 @@ mod tests {
         let mut packet = TcpPacket::new(&mut buf).unwrap();
         packet.set_reserved(0);
         assert_eq!(0, packet.get_reserved());
-        assert_eq!([0x00], packet.packet()[12..13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_reserved(7);
         assert_eq!(7, packet.get_reserved());
-        assert_eq!([0x0e], packet.packet()[12..13]);
+        assert_eq!([0x0e, 0x00], packet.packet()[12..14]);
     }
 
     #[test]
@@ -313,10 +240,10 @@ mod tests {
         let mut packet = TcpPacket::new(&mut buf).unwrap();
         packet.set_flags(0);
         assert_eq!(0, packet.get_flags());
-        assert_eq!([0x00, 0x00], packet.packet()[12..=13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_flags(511);
         assert_eq!(511, packet.get_flags());
-        assert_eq!([0x01, 0xff], packet.packet()[12..=13]);
+        assert_eq!([0x01, 0xff], packet.packet()[12..14]);
     }
 
     #[test]
@@ -327,12 +254,12 @@ mod tests {
         packet.set_reserved(0);
         assert_eq!(0, packet.get_data_offset());
         assert_eq!(0, packet.get_reserved());
-        assert_eq!([0x00], packet.packet()[12..13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_data_offset(15);
         packet.set_reserved(7);
         assert_eq!(15, packet.get_data_offset());
         assert_eq!(7, packet.get_reserved());
-        assert_eq!([0xfe], packet.packet()[12..13]);
+        assert_eq!([0xfe, 0x00], packet.packet()[12..14]);
     }
 
     #[test]
@@ -342,11 +269,11 @@ mod tests {
         packet.set_reserved(0);
         packet.set_flags(0);
         assert_eq!(0, packet.get_flags());
-        assert_eq!([0x00, 0x00], packet.packet()[12..=13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_reserved(7);
         packet.set_flags(511);
         assert_eq!(511, packet.get_flags());
-        assert_eq!([0x0f, 0xff], packet.packet()[12..=13]);
+        assert_eq!([0x0f, 0xff], packet.packet()[12..14]);
     }
 
     #[test]
@@ -357,29 +284,29 @@ mod tests {
         packet.set_reserved(0);
         packet.set_flags(0);
         assert_eq!(0, packet.get_flags());
-        assert_eq!([0x00, 0x00], packet.packet()[12..=13]);
+        assert_eq!([0x00, 0x00], packet.packet()[12..14]);
         packet.set_data_offset(15);
         packet.set_reserved(7);
         packet.set_flags(511);
         assert_eq!(511, packet.get_flags());
-        assert_eq!([0xff, 0xff], packet.packet()[12..=13]);
+        assert_eq!([0xff, 0xff], packet.packet()[12..14]);
     }
 
     #[test]
     fn test_window_size() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_window_size(0);
-        assert_eq!(0, packet.get_window_size());
+        packet.header.window_size = 0;
+        assert_eq!(0, packet.header.window_size);
         assert_eq!([0x00, 0x00], packet.packet()[14..=15]);
-        packet.set_window_size(80);
-        assert_eq!(80, packet.get_window_size());
+        packet.header.window_size = 80;
+        assert_eq!(80, packet.header.window_size);
         assert_eq!([0x00, 0x50], packet.packet()[14..=15]);
-        packet.set_window_size(443);
-        assert_eq!(443, packet.get_window_size());
+        packet.header.window_size = 443;
+        assert_eq!(443, packet.header.window_size);
         assert_eq!([0x01, 0xBB], packet.packet()[14..=15]);
-        packet.set_window_size(u16::MAX);
-        assert_eq!(u16::MAX, packet.get_window_size());
+        packet.header.window_size = u16::MAX;
+        assert_eq!(u16::MAX, packet.header.window_size);
         assert_eq!([0xFF, 0xFF], packet.packet()[14..=15]);
     }
 
@@ -387,17 +314,17 @@ mod tests {
     fn test_checksum() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_checksum(0);
-        assert_eq!(0, packet.get_checksum());
+        packet.header.checksum = 0;
+        assert_eq!(0, packet.header.checksum);
         assert_eq!([0x00, 0x00], packet.packet()[16..=17]);
-        packet.set_checksum(80);
-        assert_eq!(80, packet.get_checksum());
+        packet.header.checksum = 80;
+        assert_eq!(80, packet.header.checksum);
         assert_eq!([0x00, 0x50], packet.packet()[16..=17]);
-        packet.set_checksum(443);
-        assert_eq!(443, packet.get_checksum());
+        packet.header.checksum = 443;
+        assert_eq!(443, packet.header.checksum);
         assert_eq!([0x01, 0xBB], packet.packet()[16..=17]);
-        packet.set_checksum(u16::MAX);
-        assert_eq!(u16::MAX, packet.get_checksum());
+        packet.header.checksum = u16::MAX;
+        assert_eq!(u16::MAX, packet.header.checksum);
         assert_eq!([0xFF, 0xFF], packet.packet()[16..=17]);
     }
 
@@ -405,17 +332,17 @@ mod tests {
     fn test_urgent_pointer() {
         let mut buf = [0_u8; TcpPacket::minimum_packet_size()];
         let mut packet = TcpPacket::new(&mut buf).unwrap();
-        packet.set_urgent_pointer(0);
-        assert_eq!(0, packet.get_urgent_pointer());
+        packet.header.urgent_pointer = 0;
+        assert_eq!(0, packet.header.urgent_pointer);
         assert_eq!([0x00, 0x00], packet.packet()[18..=19]);
-        packet.set_urgent_pointer(80);
-        assert_eq!(80, packet.get_urgent_pointer());
+        packet.header.urgent_pointer = 80;
+        assert_eq!(80, packet.header.urgent_pointer);
         assert_eq!([0x00, 0x50], packet.packet()[18..=19]);
-        packet.set_urgent_pointer(443);
-        assert_eq!(443, packet.get_urgent_pointer());
+        packet.header.urgent_pointer = 443;
+        assert_eq!(443, packet.header.urgent_pointer);
         assert_eq!([0x01, 0xBB], packet.packet()[18..=19]);
-        packet.set_urgent_pointer(u16::MAX);
-        assert_eq!(u16::MAX, packet.get_urgent_pointer());
+        packet.header.urgent_pointer = u16::MAX;
+        assert_eq!(u16::MAX, packet.header.urgent_pointer);
         assert_eq!([0xFF, 0xFF], packet.packet()[18..=19]);
     }
 
@@ -427,16 +354,16 @@ mod tests {
             0xea, 0x3a, 0x2a, 0x51,
         ];
         let packet = TcpPacket::new_view(&buf).unwrap();
-        assert_eq!(443, packet.get_source());
-        assert_eq!(58839, packet.get_destination());
-        assert_eq!(1_622_177_360, packet.get_sequence());
-        assert_eq!(2_382_579_362, packet.get_acknowledgement());
+        assert_eq!(443, packet.header.source);
+        assert_eq!(58839, packet.header.destination);
+        assert_eq!(1_622_177_360, packet.header.sequence);
+        assert_eq!(2_382_579_362, packet.header.acknowledgement);
         assert_eq!(8, packet.get_data_offset());
         assert_eq!(0, packet.get_reserved());
         assert_eq!(0x10, packet.get_flags());
-        assert_eq!(128, packet.get_window_size());
-        assert_eq!(0x3edc, packet.get_checksum());
-        assert_eq!(0, packet.get_urgent_pointer());
+        assert_eq!(128, packet.header.window_size);
+        assert_eq!(0x3edc, packet.header.checksum);
+        assert_eq!(0, packet.header.urgent_pointer);
         assert_eq!(12, packet.tcp_options_length());
         assert_eq!(
             &[0x01, 0x01, 0x08, 0x0a, 0x10, 0x52, 0xf6, 0xd4, 0xea, 0x3a, 0x2a, 0x51],

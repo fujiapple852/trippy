@@ -1302,3 +1302,9 @@ pub mod extension_splitter {
         }
     }
 }
+                assert_eq!(8, extension_object.get_length());
+                assert_eq!(8, extension_object.get_length());
+                assert_eq!(8, extension_object.get_length());
+                assert_eq!(8, extension_object.get_length());
+                assert_eq!(8, extension_object.get_length());
+                assert_eq!(8, extension_object.get_length());

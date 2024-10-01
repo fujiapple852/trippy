@@ -15,6 +15,7 @@ categories.workspace = true
 [dependencies]
 itertools.workspace = true
 thiserror.workspace = true
+bytemuck = "1.9.1"
 
 [dev-dependencies]
 anyhow.workspace = true

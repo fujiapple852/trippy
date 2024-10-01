@@ -1,14 +1,16 @@
 use crate::buffer::Buffer;
 use crate::error::{Error, Result};
+use bytemuck::{Pod, Zeroable};
 use std::fmt::{Debug, Formatter};
 
 /// The type of ICMP packet.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[repr(u8)]
 pub enum IcmpType {
-    EchoRequest,
-    EchoReply,
-    DestinationUnreachable,
-    TimeExceeded,
+    EchoRequest = 8,
+    EchoReply = 0,
+    DestinationUnreachable = 3,
+    TimeExceeded = 11,
     Other(u8),
 }
 
@@ -39,6 +41,7 @@ impl From<u8> for IcmpType {
 
 /// The ICMP code.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[repr(transparent)]
 pub struct IcmpCode(pub u8);
 
 impl From<u8> for IcmpCode {
@@ -49,11 +52,12 @@ impl From<u8> for IcmpCode {
 
 /// The code for `TimeExceeded` ICMP packet type.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[repr(u8)]
 pub enum IcmpTimeExceededCode {
     /// TTL expired in transit.
-    TtlExpired,
+    TtlExpired = 0,
     /// Fragment reassembly time exceeded.
-    FragmentReassembly,
+    FragmentReassembly = 1,
     /// An unknown code.
     Unknown(u8),
 }
@@ -76,6 +80,8 @@ const CHECKSUM_OFFSET: usize = 2;
 ///
 /// The internal representation is held in network byte order (big-endian) and all accessor methods
 /// take and return data in host byte order, converting as necessary for the given architecture.
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
 pub struct IcmpPacket<'a> {
     buf: Buffer<'a>,
 }
@@ -144,16 +150,6 @@ impl<'a> IcmpPacket<'a> {
     #[must_use]
     pub fn packet(&self) -> &[u8] {
         self.buf.as_slice()
-    }
-}
-
-impl Debug for IcmpPacket<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("IcmpPacket")
-            .field("icmp_type", &self.get_icmp_type())
-            .field("icmp_code", &self.get_icmp_code())
-            .field("checksum", &self.get_checksum())
-            .finish()
     }
 }
 
@@ -240,6 +236,7 @@ pub mod echo_request {
     use crate::error::{Error, Result};
     use crate::fmt_payload;
     use crate::icmpv4::{IcmpCode, IcmpType};
+    use bytemuck::{Pod, Zeroable};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -253,6 +250,8 @@ pub mod echo_request {
     /// The internal representation is held in network byte order (big-endian) and all accessor
     /// methods take and return data in host byte order, converting as necessary for the given
     /// architecture.
+    #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+    #[repr(C)]
     pub struct EchoRequestPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -350,19 +349,6 @@ pub mod echo_request {
         #[must_use]
         pub fn payload(&self) -> &[u8] {
             &self.buf.as_slice()[Self::minimum_packet_size()..]
-        }
-    }
-
-    impl Debug for EchoRequestPacket<'_> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("EchoRequestPacket")
-                .field("icmp_type", &self.get_icmp_type())
-                .field("icmp_code", &self.get_icmp_code())
-                .field("checksum", &self.get_checksum())
-                .field("identifier", &self.get_identifier())
-                .field("sequence", &self.get_sequence())
-                .field("payload", &fmt_payload(self.payload()))
-                .finish()
         }
     }
 
@@ -492,6 +478,7 @@ pub mod echo_reply {
     use crate::error::{Error, Result};
     use crate::fmt_payload;
     use crate::icmpv4::{IcmpCode, IcmpType};
+    use bytemuck::{Pod, Zeroable};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -505,6 +492,8 @@ pub mod echo_reply {
     /// The internal representation is held in network byte order (big-endian) and all accessor
     /// methods take and return data in host byte order, converting as necessary for the given
     /// architecture.
+    #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+    #[repr(C)]
     pub struct EchoReplyPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -602,19 +591,6 @@ pub mod echo_reply {
         #[must_use]
         pub fn payload(&self) -> &[u8] {
             &self.buf.as_slice()[Self::minimum_packet_size()..]
-        }
-    }
-
-    impl Debug for EchoReplyPacket<'_> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("EchoReplyPacket")
-                .field("icmp_type", &self.get_icmp_type())
-                .field("icmp_code", &self.get_icmp_code())
-                .field("checksum", &self.get_checksum())
-                .field("identifier", &self.get_identifier())
-                .field("sequence", &self.get_sequence())
-                .field("payload", &fmt_payload(self.payload()))
-                .finish()
         }
     }
 
@@ -745,6 +721,7 @@ pub mod time_exceeded {
     use crate::fmt_payload;
     use crate::icmp_extension::extension_splitter::split;
     use crate::icmpv4::{IcmpCode, IcmpType};
+    use bytemuck::{Pod, Zeroable};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -757,6 +734,8 @@ pub mod time_exceeded {
     /// The internal representation is held in network byte order (big-endian) and all accessor
     /// methods take and return data in host byte order, converting as necessary for the given
     /// architecture.
+    #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+    #[repr(C)]
     pub struct TimeExceededPacket<'a> {
         buf: Buffer<'a>,
     }
@@ -866,18 +845,6 @@ pub mod time_exceeded {
             let length = usize::from(self.get_length() * 4);
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
             split(length, icmp_payload)
-        }
-    }
-
-    impl Debug for TimeExceededPacket<'_> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("TimeExceededPacket")
-                .field("icmp_type", &self.get_icmp_type())
-                .field("icmp_code", &self.get_icmp_code())
-                .field("checksum", &self.get_checksum())
-                .field("length", &self.get_length())
-                .field("payload", &fmt_payload(self.payload()))
-                .finish()
         }
     }
 
@@ -992,6 +959,7 @@ pub mod destination_unreachable {
     use crate::fmt_payload;
     use crate::icmp_extension::extension_splitter::split;
     use crate::icmpv4::{IcmpCode, IcmpType};
+    use bytemuck::{Pod, Zeroable};
     use std::fmt::{Debug, Formatter};
 
     const TYPE_OFFSET: usize = 0;
@@ -1005,6 +973,8 @@ pub mod destination_unreachable {
     /// The internal representation is held in network byte order (big-endian) and all accessor
     /// methods take and return data in host byte order, converting as necessary for the given
     /// architecture.
+    #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+    #[repr(C)]
     pub struct DestinationUnreachablePacket<'a> {
         buf: Buffer<'a>,
     }
@@ -1120,19 +1090,6 @@ pub mod destination_unreachable {
             let length = usize::from(self.get_length() * 4);
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
             split(length, icmp_payload)
-        }
-    }
-
-    impl Debug for DestinationUnreachablePacket<'_> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("DestinationUnreachablePacket")
-                .field("icmp_type", &self.get_icmp_type())
-                .field("icmp_code", &self.get_icmp_code())
-                .field("checksum", &self.get_checksum())
-                .field("length", &self.get_length())
-                .field("next_hop_mtu", &self.get_next_hop_mtu())
-                .field("payload", &fmt_payload(self.payload()))
-                .finish()
         }
     }
 

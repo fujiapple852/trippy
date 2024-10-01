@@ -1,32 +1,31 @@
-use crate::buffer::Buffer;
 use crate::error::{Error, Result};
-use crate::{fmt_payload, IpProtocol};
+use bytemuck::{Pod, Zeroable};
 use std::fmt::{Debug, Formatter};
 use std::net::Ipv6Addr;
+use crate::{fmt_payload, IpProtocol};
 
-const VERSION_OFFSET: usize = 0;
-const TRAFFIC_CLASS_OFFSET: usize = 0;
-const FLOW_LABEL_OFFSET: usize = 1;
-const PAYLOAD_LENGTH_OFFSET: usize = 4;
-const NEXT_HEADER_OFFSET: usize = 6;
-const HOP_LIMIT_OFFSET: usize = 7;
-const SOURCE_ADDRESS_OFFSET: usize = 8;
-const DESTINATION_ADDRESS_OFFSET: usize = 24;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+pub struct Ipv6Header {
+    pub version_traffic_class_flow_label: u32,
+    pub payload_length: u16,
+    pub next_header: u8,
+    pub hop_limit: u8,
+    pub source_address: [u8; 16],
+    pub destination_address: [u8; 16],
+}
 
-/// Represents an IPv6 Packet.
-///
-/// The internal representation is held in network byte order (big-endian) and all accessor methods
-/// take and return data in host byte order, converting as necessary for the given architecture.
 pub struct Ipv6Packet<'a> {
-    buf: Buffer<'a>,
+    header: &'a mut Ipv6Header,
+    payload: &'a mut [u8],
 }
 
 impl<'a> Ipv6Packet<'a> {
-    pub fn new(packet: &'a mut [u8]) -> Result<Self> {
-        if packet.len() >= Self::minimum_packet_size() {
-            Ok(Self {
-                buf: Buffer::Mutable(packet),
-            })
+    pub fn new(packet: &'a mut [u8]) -> Result<Ipv6Packet<'a>> {
+        if packet.len() >= Ipv6Packet::minimum_packet_size() {
+            let (header_bytes, payload) = packet.split_at_mut(std::mem::size_of::<Ipv6Header>());
+            let header = bytemuck::from_bytes_mut(header_bytes);
+            Ok(Ipv6Packet { header, payload })
         } else {
             Err(Error::InsufficientPacketBuffer(
                 String::from("Ipv6Packet"),
@@ -36,11 +35,11 @@ impl<'a> Ipv6Packet<'a> {
         }
     }
 
-    pub fn new_view(packet: &'a [u8]) -> Result<Self> {
-        if packet.len() >= Self::minimum_packet_size() {
-            Ok(Self {
-                buf: Buffer::Immutable(packet),
-            })
+    pub fn new_view(packet: &'a [u8]) -> Result<Ipv6Packet<'a>> {
+        if packet.len() >= Ipv6Packet::minimum_packet_size() {
+            let (header_bytes, payload) = packet.split_at(std::mem::size_of::<Ipv6Header>());
+            let header = bytemuck::from_bytes_mut(header_bytes);
+            Ok(Ipv6Packet { header, payload })
         } else {
             Err(Error::InsufficientPacketBuffer(
                 String::from("Ipv6Packet"),
@@ -52,118 +51,98 @@ impl<'a> Ipv6Packet<'a> {
 
     #[must_use]
     pub const fn minimum_packet_size() -> usize {
-        40
+        std::mem::size_of::<Ipv6Header>()
     }
 
     #[must_use]
     pub fn get_version(&self) -> u8 {
-        (self.buf.read(VERSION_OFFSET) & 0xf0) >> 4
+        (self.header.version_traffic_class_flow_label >> 28) as u8
     }
 
     #[must_use]
     pub fn get_traffic_class(&self) -> u8 {
-        let b0 = ((self.buf.read(TRAFFIC_CLASS_OFFSET)) & 0xf) << 4;
-        let b1 = ((self.buf.read(TRAFFIC_CLASS_OFFSET + 1)) & 0xf0) >> 4;
-        b0 | b1
+        ((self.header.version_traffic_class_flow_label >> 20) & 0xff) as u8
     }
 
     #[must_use]
     pub fn get_flow_label(&self) -> u32 {
-        let b1 = (self.buf.read(FLOW_LABEL_OFFSET)) & 0xf;
-        let b2 = self.buf.read(FLOW_LABEL_OFFSET + 1);
-        let b3 = self.buf.read(FLOW_LABEL_OFFSET + 2);
-        u32::from_be_bytes([0, b1, b2, b3])
+        self.header.version_traffic_class_flow_label & 0x000fffff
     }
 
     #[must_use]
     pub fn get_payload_length(&self) -> u16 {
-        u16::from_be_bytes(self.buf.get_bytes(PAYLOAD_LENGTH_OFFSET))
+        self.header.payload_length
     }
 
     #[must_use]
     pub fn get_next_header(&self) -> IpProtocol {
-        IpProtocol::from(self.buf.read(NEXT_HEADER_OFFSET))
+        IpProtocol::from(self.header.next_header)
     }
 
     #[must_use]
     pub fn get_hop_limit(&self) -> u8 {
-        self.buf.read(HOP_LIMIT_OFFSET)
+        self.header.hop_limit
     }
 
     #[must_use]
     pub fn get_source_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from(self.buf.get_bytes(SOURCE_ADDRESS_OFFSET))
+        Ipv6Addr::from(self.header.source_address)
     }
 
     #[must_use]
     pub fn get_destination_address(&self) -> Ipv6Addr {
-        Ipv6Addr::from(self.buf.get_bytes(DESTINATION_ADDRESS_OFFSET))
+        Ipv6Addr::from(self.header.destination_address)
     }
 
     pub fn set_version(&mut self, val: u8) {
-        *self.buf.write(VERSION_OFFSET) =
-            (self.buf.read(VERSION_OFFSET) & 0xf) | ((val & 0xf) << 4);
+        self.header.version_traffic_class_flow_label =
+            (self.header.version_traffic_class_flow_label & 0x0fffffff) | ((val as u32) << 28);
     }
 
     pub fn set_traffic_class(&mut self, val: u8) {
-        *self.buf.write(TRAFFIC_CLASS_OFFSET) =
-            (self.buf.read(TRAFFIC_CLASS_OFFSET) & 0xf0) | ((val & 0xf0) >> 4);
-        *self.buf.write(TRAFFIC_CLASS_OFFSET + 1) =
-            (self.buf.read(TRAFFIC_CLASS_OFFSET + 1) & 0xf) | ((val & 0xf) << 4);
+        self.header.version_traffic_class_flow_label =
+            (self.header.version_traffic_class_flow_label & 0xf00fffff) | ((val as u32) << 20);
     }
 
     pub fn set_flow_label(&mut self, val: u32) {
-        let bytes = val.to_be_bytes();
-        *self.buf.write(FLOW_LABEL_OFFSET) = (self.buf.read(FLOW_LABEL_OFFSET) & 0xf0) | bytes[1];
-        *self.buf.write(FLOW_LABEL_OFFSET + 1) = bytes[2];
-        *self.buf.write(FLOW_LABEL_OFFSET + 2) = bytes[3];
+        self.header.version_traffic_class_flow_label =
+            (self.header.version_traffic_class_flow_label & 0xfff00000) | (val & 0x000fffff);
     }
 
     pub fn set_payload_length(&mut self, val: u16) {
-        self.buf.set_bytes(PAYLOAD_LENGTH_OFFSET, val.to_be_bytes());
+        self.header.payload_length = val;
     }
 
     pub fn set_next_header(&mut self, val: IpProtocol) {
-        *self.buf.write(NEXT_HEADER_OFFSET) = val.id();
+        self.header.next_header = val.id();
     }
 
     pub fn set_hop_limit(&mut self, val: u8) {
-        *self.buf.write(HOP_LIMIT_OFFSET) = val;
+        self.header.hop_limit = val;
     }
 
     pub fn set_source_address(&mut self, val: Ipv6Addr) {
-        self.buf.set_bytes(SOURCE_ADDRESS_OFFSET, val.octets());
+        self.header.source_address = val.octets();
     }
 
     pub fn set_destination_address(&mut self, val: Ipv6Addr) {
-        self.buf.set_bytes(DESTINATION_ADDRESS_OFFSET, val.octets());
+        self.header.destination_address = val.octets();
     }
 
     pub fn set_payload(&mut self, vals: &[u8]) {
         let current_offset = Self::minimum_packet_size();
-        debug_assert!(
-            vals.len() <= self.get_payload_length() as usize,
-            "vals.len() <= len"
-        );
-        self.buf.as_slice_mut()[current_offset..current_offset + vals.len()].copy_from_slice(vals);
+        self.payload[current_offset..current_offset + vals.len()].copy_from_slice(vals);
     }
 
     #[must_use]
     pub fn packet(&self) -> &[u8] {
-        self.buf.as_slice()
+        unsafe { std::slice::from_raw_parts(self.header as *const _ as *const u8, self.payload.len() + std::mem::size_of::<Ipv6Header>()) }
     }
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        let start = Self::minimum_packet_size();
-        let end = std::cmp::min(
-            Self::minimum_packet_size() + self.get_payload_length() as usize,
-            self.buf.as_slice().len(),
-        );
-        if self.buf.as_slice().len() <= start {
-            return &[];
-        }
-        &self.buf.as_slice()[start..end]
+        let start = Ipv6Packet::minimum_packet_size();
+        &self.payload[start..]
     }
 }
 

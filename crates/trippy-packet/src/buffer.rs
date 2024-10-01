@@ -1,3 +1,5 @@
+use bytemuck::{Pod, Zeroable};
+
 /// A byte buffer that holds a mutable or immutable byte slice.
 #[derive(Debug)]
 pub enum Buffer<'a> {
@@ -54,6 +56,15 @@ impl<'a> Buffer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bytemuck::{Pod, Zeroable};
+
+    #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+    #[repr(C)]
+    struct TestStruct {
+        a: u8,
+        b: u16,
+        c: u32,
+    }
 
     #[test]
     fn test_immutable_buffer() {
@@ -109,5 +120,15 @@ mod tests {
         let buf = [0_u8; 5];
         let mut buffer = Buffer::Immutable(&buf);
         buffer.as_slice_mut();
+    }
+
+    #[test]
+    fn test_pod_struct() {
+        let mut buf = [0_u8; 7];
+        let mut buffer = Buffer::Mutable(&mut buf);
+        let test_struct = TestStruct { a: 1, b: 2, c: 3 };
+        buffer.set_bytes(0, bytemuck::cast(test_struct));
+        let read_struct: TestStruct = bytemuck::cast(buffer.get_bytes(0));
+        assert_eq!(test_struct, read_struct);
     }
 }
