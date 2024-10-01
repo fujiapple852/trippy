@@ -182,7 +182,7 @@ fn run_app<B: Backend>(
                     } else if bindings.previous_hop_address.check(key) {
                         app.previous_hop_address();
                     } else if bindings.address_mode_ip.check(key) {
-                        app.tui_config.address_mode = AddressMode::IP;
+                        app.tui_config.address_mode = AddressMode::Ip;
                     } else if bindings.address_mode_host.check(key) {
                         app.tui_config.address_mode = AddressMode::Host;
                     } else if bindings.address_mode_both.check(key) {
