@@ -127,7 +127,7 @@ impl From<MultipathStrategy> for MultipathStrategyConfig {
 #[serde(rename_all = "kebab-case")]
 pub enum AddressMode {
     /// Show IP address only.
-    IP,
+    Ip,
     /// Show reverse-lookup DNS hostname only.
     Host,
     /// Show both IP address and reverse-lookup DNS hostname.
@@ -1476,7 +1476,7 @@ mod tests {
     }
 
     #[test_case("trip example.com", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "default tui address mode")]
-    #[test_case("trip example.com --tui-address-mode ip", Ok(cfg().tui_address_mode(AddressMode::IP).build()); "ip tui address mode")]
+    #[test_case("trip example.com --tui-address-mode ip", Ok(cfg().tui_address_mode(AddressMode::Ip).build()); "ip tui address mode")]
     #[test_case("trip example.com --tui-address-mode host", Ok(cfg().tui_address_mode(AddressMode::Host).build()); "host tui address mode")]
     #[test_case("trip example.com --tui-address-mode both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "both tui address mode")]
     #[test_case("trip example.com -a both", Ok(cfg().tui_address_mode(AddressMode::Both).build()); "custom tui address mode short")]

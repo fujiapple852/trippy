@@ -591,7 +591,7 @@ fn format_as_mode(as_mode: AsMode) -> String {
 /// Format the `AddressMode`.
 fn format_address_mode(address_mode: AddressMode) -> String {
     match address_mode {
-        AddressMode::IP => "ip".to_string(),
+        AddressMode::Ip => "ip".to_string(),
         AddressMode::Host => "host".to_string(),
         AddressMode::Both => "both".to_string(),
     }

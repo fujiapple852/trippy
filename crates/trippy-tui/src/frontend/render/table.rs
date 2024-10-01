@@ -307,7 +307,7 @@ fn format_address(
     config: &TuiConfig,
 ) -> String {
     let addr_fmt = match config.address_mode {
-        AddressMode::IP => addr.to_string(),
+        AddressMode::Ip => addr.to_string(),
         AddressMode::Host => {
             if config.lookup_as_info {
                 let entry = dns.lazy_reverse_lookup_with_asinfo(*addr);
