@@ -9,6 +9,7 @@ trippy:
   sv: "trippy"
   ru: "trippy"
   es: "trippy"
+  de: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
@@ -19,6 +20,7 @@ auto:
   sv: "automatisk"
   ru: "авто"
   es: "automático"
+  de: "auto"
 on:
   en: "on"
   fr: "activé"
@@ -29,6 +31,7 @@ on:
   sv: "på"
   ru: "вкл"
   es: "activo"
+  de: "an"
 off:
   en: "off"
   fr: "désactivé"
@@ -39,6 +42,7 @@ off:
   sv: "av"
   ru: "выкл"
   es: "inactivo"
+  de: "aus"
 yes:
   en: "Yes"
   fr: "Oui"
@@ -49,6 +53,7 @@ yes:
   sv: "Ja"
   ru: "Да"
   es: "Sí"
+  de: "Ja"
 no:
   en: "No"
   fr: "Non"
@@ -59,6 +64,7 @@ no:
   sv: "Nej"
   ru: "Нет"
   es: "No"
+  de: "Nein"
 none:
   en: "none"
   fr: "aucun"
@@ -69,6 +75,7 @@ none:
   sv: "ingen"
   ru: "нет"
   es: "ninguno"
+  de: "keiner"
 hidden:
   en: "Hidden"
   fr: "Caché"
@@ -79,6 +86,7 @@ hidden:
   sv: "Dold"
   ru: "Скрыто"
   es: "Oculto"
+  de: "Versteckt"
 flow:
   en: "flow"
   fr: "flux"
@@ -89,6 +97,7 @@ flow:
   sv: "flöde"
   ru: "поток"
   es: "flujo"
+  de: "fluss"
 flows:
   en: "flows"
   fr: "flux"
@@ -99,6 +108,7 @@ flows:
   sv: "flöden"
   ru: "потоки"
   es: "flujos"
+  de: "flüsse"
 target:
   en: "Target"
   fr: "Cible"
@@ -109,6 +119,7 @@ target:
   sv: "Mål"
   ru: "Цель"
   es: "Objetivo"
+  de: "Ziel"
 status:
   en: "Status"
   fr: "Statut"
@@ -119,6 +130,7 @@ status:
   sv: "Status"
   ru: "Статус"
   es: "Estado"
+  de: "Status"
 details:
   en: "detail"
   fr: "détail"
@@ -129,6 +141,7 @@ details:
   sv: "detaljer"
   ru: "детали"
   es: "detalles"
+  de: "detail"
 privileged:
   en: "privileged"
   fr: "privilégié"
@@ -139,6 +152,7 @@ privileged:
   sv: "privilegierad"
   ru: "привилегированный"
   es: "privilegiado"
+  de: "privilegiert"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
@@ -149,6 +163,7 @@ unprivileged:
   sv: "oprivilegierad"
   ru: "непривилегированный"
   es: "no privilegiado"
+  de: "unprivilegiert"
 na:
   en: "n/a"
   fr: "non disponible"
@@ -159,6 +174,7 @@ na:
   sv: "ej tillgänglig"
   ru: "н/д"
   es: "n/d"
+  de: "n/a"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
@@ -169,6 +185,7 @@ discovered:
   sv: "upptäckte %{hop_count} hopp"
   ru: "обнаружено %{hop_count} прыжков"
   es: "se descubrieron %{hop_count} saltos"
+  de: "%{hop_count} gefundene hops"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
@@ -179,6 +196,7 @@ discovered_flows:
   sv: "%{hop_count} hopp och unika %{flow_count} %{plural_flows} upptäckta"
   ru: "обнаружено %{hop_count} прыжков и %{flow_count} уникальных %{plural_flows}"
   es: "se descubrieron %{hop_count} saltos y %{flow_count} únicos %{plural_flows}"
+  de: "%{hop_count} gefundene hops und %{flow_count} eindeutige %{plural_flows}"
 unknown:
   en: "unknown"
   fr: "inconnu"
@@ -189,6 +207,7 @@ unknown:
   sv: "okänd"
   ru: "неизвестно"
   es: "desconocido"
+  de: "unbekannt"
 icmp:
   en: "icmp"
   fr: "icmp"
@@ -199,6 +218,7 @@ icmp:
   sv: "icmp"
   ru: "icmp"
   es: "icmp"
+  de: "icmp"
 udp:
   en: "udp"
   fr: "udp"
@@ -209,6 +229,7 @@ udp:
   sv: "udp"
   ru: "udp"
   es: "udp"
+  de: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
@@ -219,6 +240,7 @@ tcp:
   sv: "tcp"
   ru: "tcp"
   es: "tcp"
+  de: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
@@ -229,6 +251,7 @@ status_failures:
   sv: "%{failure_count} av %{total_probes} (%{failure_rate}%) misslyckade prober"
   ru: "%{failure_count} из %{total_probes} (%{failure_rate}%) зондов не удалось"
   es: "%{failure_count} de %{total_probes} (%{failure_rate}%) sondas fallaron"
+  de: "%{failure_count} von %{total_probes} (%{failure_rate}%) sonden sind fehlgeschlagen"
 status_failed:
   en: "Failed"
   fr: "Échec"
@@ -239,6 +262,7 @@ status_failed:
   sv: "Misslyckades"
   ru: "Не удалось"
   es: "Fallido"
+  de: "Fehlgeschlagen"
 status_running:
   en: "Running"
   fr: "En cours"
@@ -249,6 +273,7 @@ status_running:
   sv: "Kör"
   ru: "Запущен"
   es: "En ejecución"
+  de: "Läuft"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
@@ -259,6 +284,7 @@ status_frozen:
   sv: "Frusen"
   ru: "Заморожен"
   es: "Congelado"
+  de: "Eingefroren"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
@@ -269,6 +295,7 @@ awaiting_data:
   sv: "Väntar på data..."
   ru: "Ожидание данных..."
   es: "Esperando datos..."
+  de: "Warten auf Daten..."
 header_help:
   en: "help"
   fr: "aide"
@@ -279,6 +306,7 @@ header_help:
   sv: "hjälp"
   ru: "помощь"
   es: "ayuda"
+  de: "hilfe"
 header_settings:
   en: "settings"
   fr: "paramètres"
@@ -289,6 +317,7 @@ header_settings:
   sv: "inställningar"
   ru: "настройки"
   es: "configuraciones"
+  de: "einstellungen"
 header_quit:
   en: "quit"
   fr: "quitter"
@@ -299,6 +328,7 @@ header_quit:
   sv: "avsluta"
   ru: "Выход"
   es: "salir"
+  de: "beenden"
 title_hops:
   en: "Hops"
   fr: "Sauts"
@@ -309,6 +339,7 @@ title_hops:
   sv: "Hopp"
   ru: "Прыжки"
   es: "Saltos"
+  de: "Hops"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
@@ -319,6 +350,7 @@ title_frequency:
   sv: "Frekvens"
   ru: "Частота"
   es: "Frecuencia"
+  de: "Frequenz"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
@@ -329,6 +361,7 @@ title_samples:
   sv: "Prover"
   ru: "Образцы"
   es: "Muestras"
+  de: "Proben"
 title_traces:
   en: "Traces"
   fr: "Traces"
@@ -339,6 +372,7 @@ title_traces:
   sv: "Spår"
   ru: "Следы"
   es: "Trazas"
+  de: "Spuren"
 title_flows:
   en: "Flows"
   fr: "Flux"
@@ -349,6 +383,7 @@ title_flows:
   sv: "Flöden"
   ru: "Потоки"
   es: "Flujos"
+  de: "Flüsse"
 title_map:
   en: "Map"
   fr: "Carte"
@@ -359,6 +394,7 @@ title_map:
   sv: "Karta"
   ru: "Карта"
   es: "Mapa"
+  de: "Karte"
 title_help:
   en: "Help"
   fr: "Aide"
@@ -369,6 +405,7 @@ title_help:
   sv: "Hjälp"
   ru: "Помощь"
   es: "Ayuda"
+  de: "Hilfe"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
@@ -379,6 +416,7 @@ title_settings:
   sv: "Inställningar"
   ru: "Настройки"
   es: "Configuraciones"
+  de: "Einstellungen"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
@@ -389,6 +427,7 @@ bsod_failed:
   sv: "Trippy misslyckades :("
   ru: "Trippy не удалось :("
   es: "Trippy tuvo un problema :("
+  de: "Trippy ist fehlgeschlagen :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
@@ -399,6 +438,7 @@ bsod_quit:
   sv: "Tryck på q för att avsluta"
   ru: "Нажмите q для выхода"
   es: "Presiona q para salir"
+  de: "Drücken Sie q, um zu beenden"
 hop:
   en: "Hop"
   fr: "Saut"
@@ -409,6 +449,7 @@ hop:
   sv: "Hopp"
   ru: "Прыжок"
   es: "Salto"
+  de: "Hop"
 rtt:
   en: "RTT"
   fr: "RTT"
@@ -419,6 +460,7 @@ rtt:
   sv: "RTT"
   ru: "RTT"
   es: "RTT"
+  de: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
@@ -429,6 +471,7 @@ title_chart:
   sv: "Diagram"
   ru: "Диаграмма"
   es: "Gráfico"
+  de: "Diagramm"
 samples:
   en: "Samples"
   fr: "Échantillons"
@@ -439,6 +482,7 @@ samples:
   sv: "Prover"
   ru: "Образцы"
   es: "Muestras"
+  de: "Proben"
 host:
   en: "Host"
   fr: "Hôte"
@@ -449,6 +493,7 @@ host:
   sv: "Värd"
   ru: "Хост"
   es: "Host"
+  de: "Host"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
@@ -459,6 +504,7 @@ no_response:
   sv: "Inget svar"
   ru: "Нет ответа"
   es: "Sin respuesta"
+  de: "Keine Antwort"
 dns_failed:
   en: "Failed"
   fr: "Échec"
@@ -469,6 +515,7 @@ dns_failed:
   sv: "Misslyckades"
   ru: "Не удалось"
   es: "Fallido"
+  de: "Fehlgeschlagen"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
@@ -479,6 +526,7 @@ dns_timeout:
   sv: "Tidsgräns nådd"
   ru: "Тайм-аут"
   es: "Tiempo de espera"
+  de: "Zeitüberschreitung"
 labels:
   en: "labels"
   fr: "étiquettes"
@@ -489,6 +537,7 @@ labels:
   sv: "etiketter"
   ru: "метки"
   es: "etiquetas"
+  de: "etiketten"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
@@ -499,6 +548,7 @@ not_enabled:
   sv: "ej aktiverad"
   ru: "не активирован"
   es: "no habilitado"
+  de: "nicht aktiviert"
 not_found:
   en: "not found"
   fr: "non trouvé"
@@ -509,6 +559,7 @@ not_found:
   sv: "hittades inte"
   ru: "не найдено"
   es: "no encontrado"
+  de: "nicht gefunden"
 awaited:
   en: "awaited"
   fr: "attendu"
@@ -519,6 +570,7 @@ awaited:
   sv: "väntade"
   ru: "ожидаемый"
   es: "esperado"
+  de: "erwartet"
 name:
   en: "Name"
   fr: "Nom"
@@ -529,6 +581,7 @@ name:
   sv: "Namn"
   ru: "Имя"
   es: "Nombre"
+  de: "Name"
 info:
   en: "Info"
   fr: "Information"
@@ -539,6 +592,7 @@ info:
   sv: "Information"
   ru: "Информация"
   es: "Información"
+  de: "Info"
 geo:
   en: "Geo"
   fr: "Géo"
@@ -549,6 +603,7 @@ geo:
   sv: "Geo"
   ru: "Гео"
   es: "Geo"
+  de: "Geo"
 pos:
   en: "Pos"
   fr: "Pos"
@@ -559,6 +614,7 @@ pos:
   sv: "Pos"
   ru: "Поз"
   es: "Pos"
+  de: "Pos"
 ext:
   en: "Ext"
   fr: "Ext"
@@ -569,6 +625,7 @@ ext:
   sv: "Ext"
   ru: "Расширение"
   es: "Ext"
+  de: "Ext"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
@@ -579,6 +636,7 @@ help_tagline:
   sv: "Ett nätverksdiagnostikverktyg"
   ru: "Инструмент диагностики сети"
   es: "Una herramienta de diagnóstico de red"
+  de: "Ein Netzwerkdiagnosetool"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
@@ -589,6 +647,7 @@ help_show_settings:
   sv: "Tryck på [%{key}] för att visa alla inställningar"
   ru: "Нажмите [%{key}], чтобы показать все настройки"
   es: "Presiona [%{key}] para mostrar todas las configuraciones"
+  de: "Drücken Sie [%{key}], um alle Einstellungen anzuzeigen"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
@@ -599,6 +658,7 @@ help_show_bindings:
   sv: "Tryck på [%{key}] för att visa alla kortkommando"
   ru: "Нажмите [%{key}], чтобы показать все привязки"
   es: "Presiona [%{key}] para mostrar todos los atajos"
+  de: "Drücken Sie [%{key}], um alle Tastenbelegungen anzuzeigen"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
@@ -609,6 +669,7 @@ help_show_columns:
   sv: "Tryck på [%{key}] för att visa alla kolumner"
   ru: "Нажмите [%{key}], чтобы показать все столбцы"
   es: "Presiona [%{key}] para mostrar todas las columnas"
+  de: "Drücken Sie [%{key}], um alle Spalten anzuzeigen"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
@@ -619,6 +680,7 @@ help_license:
   sv: "Distribueras under Apache License 2.0"
   ru: "Распространяется под лицензией Apache 2.0"
   es: "Distribuido bajo la Licencia Apache 2.0"
+  de: "Verteilt unter der Apache-Lizenz 2.0"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
@@ -629,6 +691,7 @@ help_copyright:
   sv: "Upphovsrätt 2022 Trippy-bidragsgivare"
   ru: "Авторское право 2022 Участники Trippy"
   es: "Derechos de autor 2022 Contribuidores de Trippy"
+  de: "Copyright 2022 Trippy Mitwirkende"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
@@ -639,6 +702,7 @@ geoip_not_enabled:
   sv: "GeoIp inte aktiverad"
   ru: "GeoIp не активирован"
   es: "GeoIp no habilitado"
+  de: "GeoIp nicht aktiviert"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
@@ -649,6 +713,7 @@ geoip_no_data_for_hop:
   sv: "Inga GeoIp-data för hopp"
   ru: "Нет данных GeoIp для прыжка"
   es: "No hay datos de GeoIp para el salto"
+  de: "Keine GeoIp-Daten für den Hop"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
@@ -659,6 +724,7 @@ geoip_multiple_data_for_hop:
   sv: "Flera GeoIp-platser för hopp"
   ru: "Несколько местоположений GeoIp для прыжка"
   es: "Múltiples ubicaciones de GeoIp para el salto"
+  de: "Mehrere GeoIp-Standorte für den Hop"
 kilometer:
   en: "km"
   fr: "km"
@@ -669,6 +735,7 @@ kilometer:
   sv: "km"
   ru: "км"
   es: "km"
+  de: "km"
 settings_info:
   en: "Info"
   fr: "Information"
@@ -679,6 +746,7 @@ settings_info:
   sv: "Information"
   ru: "Информация"
   es: "Información"
+  de: "Info"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
@@ -689,6 +757,7 @@ settings_tab_tui_title:
   sv: "Tui"
   ru: "Tui"
   es: "Tui"
+  de: "Tui"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
@@ -699,6 +768,7 @@ settings_tab_trace_title:
   sv: "Spåra"
   ru: "След"
   es: "Rastrear"
+  de: "Trace"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
@@ -709,6 +779,7 @@ settings_tab_dns_title:
   sv: "DNS"
   ru: "DNS"
   es: "DNS"
+  de: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
@@ -719,6 +790,7 @@ settings_tab_geoip_title:
   sv: "GeoIp"
   ru: "GeoIp"
   es: "GeoIp"
+  de: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
@@ -729,6 +801,7 @@ settings_tab_bindings_title:
   sv: "Kortkommando"
   ru: "Привязки"
   es: "Atajos"
+  de: "Tastenbelegungen"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
@@ -739,6 +812,7 @@ settings_tab_theme_title:
   sv: "Tema"
   ru: "Тема"
   es: "Tema"
+  de: "Darstellung"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
@@ -749,6 +823,7 @@ settings_tab_columns_title:
   es: "Columnas"
   sv: "Kolumner"
   ru: "Столбцы"
+  de: "Spalten"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
@@ -759,6 +834,7 @@ settings_tab_tui_desc:
   sv: "Inställningar som styr hur data visas i detta Tui"
   ru: "Настройки, которые контролируют, как данные отображаются в этом Tui"
   es: "Configuraciones que controlan cómo se muestran los datos en este Tui"
+  de: "Einstellungen, die steuern, wie Daten in diesem Tui angezeigt werden"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
@@ -769,6 +845,7 @@ settings_tab_trace_desc:
   sv: "Inställningar som styr spårningsstrategin"
   ru: "Настройки, которые контролируют стратегию трассировки"
   es: "Configuraciones que controlan la estrategia de rastreo"
+  de: "Einstellungen, die die Tracing-Strategie steuern"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
@@ -779,6 +856,7 @@ settings_tab_dns_desc:
   sv: "Inställningar som styr hur DNS-uppslag utförs"
   ru: "Настройки, которые контролируют, как выполняются DNS-запросы"
   es: "Configuraciones que controlan cómo se realizan las búsquedas de DNS"
+  de: "Einstellungen, die steuern, wie DNS-Lookups durchgeführt werden"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
@@ -789,6 +867,7 @@ settings_tab_geoip_desc:
   sv: "Inställningar som rör GeoIp"
   ru: "Настройки, касающиеся GeoIp"
   es: "Configuraciones relacionadas con GeoIp"
+  de: "Einstellungen im Zusammenhang mit GeoIp"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
@@ -799,6 +878,7 @@ settings_tab_bindings_desc:
   sv: "Tui-kortkommando"
   ru: "Привязки клавиш Tui"
   es: "Atajos de teclado Tui"
+  de: "Tui-Tastenbelegungen"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
@@ -809,6 +889,7 @@ settings_tab_theme_desc:
   sv: "Tui-temafärger"
   ru: "Цвета темы Tui"
   es: "Colores del tema Tui"
+  de: "Tui-Themefarben"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
@@ -819,6 +900,7 @@ settings_tab_columns_desc:
   sv: "Tui-tabellkolumner. Tryck på [%{c}] för att slå på eller av en kolumn och använd [%{d}] och [%{u}] för att ändra kolumnordningen."
   ru: "Столбцы таблицы Tui. Нажмите [%{c}], чтобы включить или отключить столбец, и используйте клавиши [%{d}] и [%{u}], чтобы изменить порядок столбцов."
   es: "Columnas de la tabla Tui. Presiona [%{c}] para activar o desactivar una columna y usa las teclas [%{d}] y [%{u}] para cambiar el orden de las columnas."
+  de: "Tui-Tabellenspalten. Drücken Sie [%{c}], um eine Spalte ein- oder auszuschalten, und verwenden Sie die Tasten [%{d}] und [%{u}], um die Spaltenreihenfolge zu ändern."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
@@ -829,6 +911,7 @@ settings_table_header_setting:
   sv: "Inställning"
   ru: "Настройка"
   es: "Configuración"
+  de: "Einstellung"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
@@ -839,6 +922,7 @@ settings_table_header_value:
   sv: "Värde"
   ru: "Значение"
   es: "Valor"
+  de: "Wert"
 column_host:
   en: "Host"
   fr: "Hôte"
@@ -849,6 +933,7 @@ column_host:
   sv: "Värd"
   ru: "Хост"
   es: "Host"
+  de: "Host"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
@@ -859,6 +944,7 @@ column_loss_pct:
   sv: "Förlust%"
   ru: "Потери%"
   es: "% Perdidos"
+  de: "Verlust%"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
@@ -869,6 +955,7 @@ column_snd:
   sv: "Skickat"
   ru: "Отпр"
   es: "Enviados"
+  de: "Snd"
 column_recv:
   en: "Recv"
   fr: "Reçus"
@@ -879,6 +966,7 @@ column_recv:
   sv: "Mottagna"
   ru: "Получ"
   es: "Recibidos"
+  de: "Recv"
 column_last:
   en: "Last"
   fr: "Dernier"
@@ -889,6 +977,7 @@ column_last:
   sv: "Senast"
   ru: "Посл"
   es: "Último"
+  de: "Letzte"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
@@ -899,6 +988,7 @@ column_avg:
   sv: "Genomsnitt"
   ru: "Сред"
   es: "Prom"
+  de: "Durchschnitt"
 column_best:
   en: "Best"
   fr: "Meilleur"
@@ -909,6 +999,7 @@ column_best:
   sv: "Bäst"
   ru: "Луч"
   es: "Mejor"
+  de: "Beste"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
@@ -919,6 +1010,7 @@ column_wrst:
   sv: "Sämst"
   ru: "Худ"
   es: "Peor"
+  de: "Schlechteste"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
@@ -929,6 +1021,7 @@ column_stdev:
   sv: "StDev"
   ru: "СКО"
   es: "DesvE"
+  de: "StdAbw"
 column_sts:
   en: "Sts"
   fr: "État"
@@ -939,6 +1032,7 @@ column_sts:
   sv: "Sts"
   ru: "Статус"
   es: "Est"
+  de: "Sts"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
@@ -949,6 +1043,7 @@ column_jttr:
   sv: "Jttr"
   ru: "Джитр"
   es: "Jttr"
+  de: "Jttr"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
@@ -959,6 +1054,7 @@ column_javg:
   sv: "Javg"
   ru: "СреднДжитр"
   es: "PromJit"
+  de: "Javg"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
@@ -969,6 +1065,7 @@ column_jmax:
   sv: "Jmax"
   ru: "МаксДжитр"
   es: "JitMax"
+  de: "Jmax"
 column_jint:
   en: "Jint"
   fr: "GigInt"
@@ -979,6 +1076,7 @@ column_jint:
   sv: "Jint"
   ru: "ИнтДжитр"
   es: "JitInt"
+  de: "Jint"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
@@ -988,6 +1086,7 @@ column_sprt:
   sv: "Sprt"
   ru: "Исх"
   es: "Sprt"
+  de: "Sprt"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
@@ -998,6 +1097,7 @@ column_dprt:
   sv: "Dprt"
   ru: "Назн"
   es: "Dprt"
+  de: "Dprt"
 column_seq:
   en: "Seq"
   fr: "Seq"
@@ -1008,6 +1108,7 @@ column_seq:
   sv: "Seq"
   ru: "Посл"
   es: "Seq"
+  de: "Seq"
 column_type:
   en: "Type"
   fr: "Type"
@@ -1018,6 +1119,7 @@ column_type:
   sv: "Typ"
   ru: "Тип"
   es: "Tipo"
+  de: "Typ"
 column_code:
   en: "Code"
   fr: "Code"
@@ -1028,6 +1130,7 @@ column_code:
   sv: "Kod"
   ru: "Код"
   es: "Código"
+  de: "Code"
 column_nat:
   en: "Nat"
   fr: "Nat"
@@ -1038,6 +1141,7 @@ column_nat:
   sv: "Nat"
   ru: "Nat"
   es: "Nat"
+  de: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
@@ -1048,3 +1152,4 @@ column_fail:
   sv: "Misslyckades"
   ru: "Неуд"
   es: "Falló"
+  de: "Fehlgeschlagen"
