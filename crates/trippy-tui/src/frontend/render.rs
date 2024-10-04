@@ -1,4 +1,5 @@
 pub mod app;
+pub mod bar;
 pub mod body;
 pub mod bsod;
 pub mod chart;

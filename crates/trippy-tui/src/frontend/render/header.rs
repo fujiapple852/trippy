@@ -7,13 +7,11 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
-use std::borrow::Cow;
-use std::net::IpAddr;
 use std::time::Duration;
-use trippy_core::{Hop, PortDirection, PrivilegeMode, Protocol};
-use trippy_dns::{ResolveMethod, Resolver};
+use trippy_core::{Hop, PortDirection};
+use trippy_dns::Resolver;
 
-/// Render the title, config, target, clock and keyboard controls.
+/// Render the title, target, clock and basic keyboard controls.
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
@@ -29,60 +27,74 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         );
     let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
     let clock_span = Line::from(Span::raw(now));
-    let help_span = Line::from(vec![
-        Span::styled("h", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(t!("header_help")),
-        Span::styled(" s", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(t!("header_settings")),
-        Span::styled(" q", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(t!("header_quit")),
-    ]);
+    let bold = Style::default().add_modifier(Modifier::BOLD);
+
+    let help_binding = app.tui_config.bindings.toggle_help.to_string();
+    let header_help = t!("header_help");
+    let help_line_help = if header_help.starts_with(&help_binding) {
+        vec![
+            Span::styled(&help_binding, bold),
+            Span::raw(&header_help[help_binding.len()..]),
+        ]
+    } else {
+        vec![
+            Span::raw("["),
+            Span::styled(help_binding, bold),
+            Span::raw("]"),
+            Span::raw(header_help),
+        ]
+    };
+
+    let settings_binding = app.tui_config.bindings.toggle_settings.to_string();
+    let header_settings = t!("header_settings");
+    let help_line_settings = if header_settings.starts_with(&settings_binding) {
+        vec![
+            Span::styled(&settings_binding, bold),
+            Span::raw(&header_settings[settings_binding.len()..]),
+        ]
+    } else {
+        vec![
+            Span::raw("["),
+            Span::styled(settings_binding, bold),
+            Span::raw("]"),
+            Span::raw(header_settings),
+        ]
+    };
+
+    let quit_binding = app.tui_config.bindings.quit.to_string();
+    let header_quit = t!("header_quit");
+    let help_line_quit = if header_quit.starts_with(&quit_binding) {
+        vec![
+            Span::styled(&quit_binding, bold),
+            Span::raw(&header_quit[quit_binding.len()..]),
+        ]
+    } else {
+        vec![
+            Span::raw("["),
+            Span::styled(quit_binding, bold),
+            Span::raw("]"),
+            Span::raw(header_quit),
+        ]
+    };
+
+    let help_span = Line::from(
+        [
+            help_line_help,
+            vec![Span::raw(" ")],
+            help_line_settings,
+            vec![Span::raw(" ")],
+            help_line_quit,
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>(),
+    );
     let right_line = vec![clock_span, help_span];
     let right = Paragraph::new(right_line)
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    let protocol = match app.tracer_config().data.protocol() {
-        Protocol::Icmp => format!(
-            "{}({}, {})",
-            t!("icmp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-        Protocol::Udp => format!(
-            "{}({}, {}, {})",
-            t!("udp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            app.tracer_config().data.multipath_strategy(),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-        Protocol::Tcp => format!(
-            "{}({}, {})",
-            t!("tcp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-    };
-    let details = if app.show_hop_details {
-        String::from(t!("on"))
-    } else {
-        String::from(t!("off"))
-    };
-    let as_info = match app.resolver.config().resolve_method {
-        ResolveMethod::System => String::from(t!("na")),
-        ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
-            if app.tui_config.lookup_as_info {
-                String::from(t!("on"))
-            } else {
-                String::from(t!("off"))
-            }
-        }
-    };
-    let max_hosts = app
-        .tui_config
-        .max_addrs
-        .map_or_else(|| String::from(t!("auto")), |m| m.to_string());
-    let privacy = app.tui_config.privacy_max_ttl;
+
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
@@ -115,20 +127,6 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         ]),
         Line::from(vec![
             Span::styled(
-                format!("{}: ", t!("config")),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(
-                "{}={protocol} {}={as_info} {}={details} {}={max_hosts}, {}={privacy}",
-                t!("protocol"),
-                t!("as-info"),
-                t!("details"),
-                t!("max-hosts"),
-                t!("privacy")
-            )),
-        ]),
-        Line::from(vec![
-            Span::styled(
                 format!("{}: ", t!("status")),
                 Style::default().add_modifier(Modifier::BOLD),
             ),
@@ -143,20 +141,6 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .alignment(Alignment::Left);
     f.render_widget(right, rect);
     f.render_widget(left, rect);
-}
-
-fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
-    match privilege_mode {
-        PrivilegeMode::Privileged => t!("privileged"),
-        PrivilegeMode::Unprivileged => t!("unprivileged"),
-    }
-}
-
-const fn fmt_target_family(target: IpAddr) -> &'static str {
-    match target {
-        IpAddr::V4(_) => "v4",
-        IpAddr::V6(_) => "v6",
-    }
 }
 
 /// Render the source address of the trace.
