@@ -242,7 +242,7 @@ report-cycles = 10
 #   both - Show both IP address and reverse-lookup DNS hostname
 tui-address-mode = "host"
 
-# How to render AS information.
+# How to render autonomous system (AS) information.
 #
 # Allowed values are:
 #   asn             - Show the ASN [default]

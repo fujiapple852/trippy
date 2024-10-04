@@ -16,9 +16,9 @@ pub struct TuiConfig {
     pub preserve_screen: bool,
     /// How to render addresses.
     pub address_mode: AddressMode,
-    /// Lookup `AS` information.
+    /// Lookup autonomous system (AS) information.
     pub lookup_as_info: bool,
-    /// How to render AS data.
+    /// How to render autonomous system (AS) data.
     pub as_mode: AsMode,
     /// How to render ICMP extensions.
     pub icmp_extension_mode: IcmpExtensionMode,
