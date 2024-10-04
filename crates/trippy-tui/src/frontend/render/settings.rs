@@ -502,6 +502,8 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "map-info-panel-text-color",
             theme::fmt_color(theme.map_info_panel_text),
         ),
+        SettingsItem::new("info-bar-bg-color", theme::fmt_color(theme.info_bar_bg)),
+        SettingsItem::new("info-bar-text-color", theme::fmt_color(theme.info_bar_text)),
     ]
 }
 
@@ -525,7 +527,7 @@ pub fn settings_tabs() -> [(String, usize); 7] {
         (t!("settings_tab_dns_title").to_string(), 5),
         (t!("settings_tab_geoip_title").to_string(), 1),
         (t!("settings_tab_bindings_title").to_string(), 37),
-        (t!("settings_tab_theme_title").to_string(), 31),
+        (t!("settings_tab_theme_title").to_string(), 33),
         (t!("settings_tab_columns_title").to_string(), 0),
     ]
 }

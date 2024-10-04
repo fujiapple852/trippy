@@ -16,9 +16,10 @@ use trippy_privilege::Privilege;
 /// Run the trippy application.
 pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     set_locale(cfg.tui_locale.as_deref());
+    let locale = locale();
     let _guard = configure_logging(cfg);
     let resolver = start_dns_resolver(cfg)?;
-    let geoip_lookup = create_geoip_lookup(cfg, locale())?;
+    let geoip_lookup = create_geoip_lookup(cfg, &locale)?;
     let addrs = resolve_targets(cfg, &resolver)?;
     if addrs.is_empty() {
         return Err(anyhow!(
@@ -29,7 +30,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     }
     let traces = start_tracers(cfg, &addrs, pid)?;
     Privilege::drop_privileges()?;
-    run_frontend(cfg, resolver, geoip_lookup, traces)
+    run_frontend(cfg, locale, resolver, geoip_lookup, traces)
 }
 
 /// Start all tracers.
@@ -87,12 +88,18 @@ fn start_tracer(
 /// Run the TUI, stream or report.
 fn run_frontend(
     args: &TrippyConfig,
+    locale: String,
     resolver: DnsResolver,
     geoip_lookup: GeoIpLookup,
     traces: Vec<TraceInfo>,
 ) -> anyhow::Result<()> {
     match args.mode {
-        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
+        Mode::Tui => frontend::run_frontend(
+            traces,
+            make_tui_config(args, locale),
+            resolver,
+            geoip_lookup,
+        )?,
         Mode::Stream => report::stream::report(&traces[0], &resolver)?,
         Mode::Csv => report::csv::report(&traces[0], args.report_cycles, &resolver)?,
         Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
@@ -141,9 +148,9 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     ))?)
 }
 
-fn create_geoip_lookup(cfg: &TrippyConfig, locale: String) -> anyhow::Result<GeoIpLookup> {
+fn create_geoip_lookup(cfg: &TrippyConfig, locale: &str) -> anyhow::Result<GeoIpLookup> {
     if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
-        GeoIpLookup::from_file(path, locale)
+        GeoIpLookup::from_file(path, String::from(locale))
     } else {
         Ok(GeoIpLookup::empty())
     }
@@ -192,7 +199,7 @@ fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
 }
 
 /// Make the TUI configuration.
-fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
+fn make_tui_config(args: &TrippyConfig, locale: String) -> TuiConfig {
     TuiConfig::new(
         args.tui_refresh_rate,
         args.tui_privacy_max_ttl,
@@ -208,6 +215,7 @@ fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
         &args.tui_custom_columns,
         args.geoip_mmdb_file.clone(),
         args.dns_resolve_all,
+        locale,
     )
 }
 
