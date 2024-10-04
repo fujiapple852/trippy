@@ -1,14 +1,14 @@
-use std::borrow::Cow;
-use std::net::IpAddr;
-use ratatui::Frame;
-use ratatui::layout::{Alignment, Rect};
-use ratatui::prelude::{Color, Line, Modifier, Span, Style};
-use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
-use trippy_core::{PrivilegeMode, Protocol};
-use trippy_dns::ResolveMethod;
 use crate::config::AddressMode;
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::layout::{Alignment, Rect};
+use ratatui::prelude::{Color, Line, Modifier, Span, Style};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+use ratatui::Frame;
+use std::borrow::Cow;
+use std::net::IpAddr;
+use trippy_core::{PrivilegeMode, Protocol};
+use trippy_dns::ResolveMethod;
 
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let footer_block = Block::default()
@@ -49,7 +49,12 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         ResolveMethod::System => Span::styled("asn", Style::default()),
         ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
             if app.tui_config.lookup_as_info {
-                Span::styled("asn", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
+                Span::styled(
+                    "asn",
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                )
             } else {
                 Span::styled("asn", Style::default())
             }
@@ -57,19 +62,29 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let details = if app.show_hop_details {
-        Span::styled("detail", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
+        Span::styled(
+            "detail",
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        )
     } else {
         Span::styled("detail", Style::default())
     };
 
+    // needs to be padded to length of translation of "auto".
     let max_hosts = app
         .tui_config
         .max_addrs
-        .map_or_else(|| Span::raw(t!("auto")), |m| Span::raw(format!("{:4}", m)));
-
+        .map_or_else(|| Span::raw(t!("auto")), |m| Span::raw(format!("{m:4}")));
 
     let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
-        Span::styled("private", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
+        Span::styled(
+            "private",
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
+        )
     } else {
         Span::styled("private", Style::default())
     };

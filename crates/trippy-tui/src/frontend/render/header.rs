@@ -7,10 +7,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
-use std::borrow::Cow;
-use std::net::IpAddr;
 use std::time::Duration;
-use trippy_core::{Hop, PortDirection, PrivilegeMode, Protocol};
+use trippy_core::{Hop, PortDirection};
 use trippy_dns::Resolver;
 
 /// Render the title, config, target, clock and keyboard controls.
