@@ -376,6 +376,8 @@ map-selected-color = "green"
 map-info-panel-border-color = "gray"
 map-info-panel-bg-color = "black"
 map-info-panel-text-color = "gray"
+dynamic-bar-bg-color = "white"
+dynamic-bar-text-color = "black"
 
 
 # Tui key bindings Configuration.

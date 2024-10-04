@@ -74,6 +74,10 @@ pub struct Theme {
     pub map_info_panel_bg: Color,
     /// The color of text in the map info panel.
     pub map_info_panel_text: Color,
+    /// The color of the dynamic bar background.
+    pub dynamic_bar_bg: Color,
+    /// The color of the dynamic bar text.
+    pub dynamic_bar_text: Color,
 }
 
 impl From<TuiTheme> for Theme {
@@ -111,6 +115,8 @@ impl From<TuiTheme> for Theme {
             map_info_panel_border: Color::from(value.map_info_panel_border),
             map_info_panel_bg: Color::from(value.map_info_panel_bg),
             map_info_panel_text: Color::from(value.map_info_panel_text),
+            dynamic_bar_bg: Color::from(value.dynamic_bar_bg),
+            dynamic_bar_text: Color::from(value.dynamic_bar_text),
         }
     }
 }
