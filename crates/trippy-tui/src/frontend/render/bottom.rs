@@ -43,7 +43,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         ),
     };
 
-    let privilige_mode = fmt_privilege_mode(app.tracer_config().data.privilege_mode());
+    let privilege_mode = fmt_privilege_mode(app.tracer_config().data.privilege_mode());
 
     let as_mode = match app.resolver.config().resolve_method {
         ResolveMethod::System => Span::styled("asn", Style::default()),
@@ -98,7 +98,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let left_line = Line::from(vec![
         Span::raw(protocol),
         Span::raw("│ "),
-        Span::raw(privilige_mode),
+        Span::raw(privilege_mode),
         Span::raw(" │ ["),
         as_mode,
         Span::raw("] │ ["),
