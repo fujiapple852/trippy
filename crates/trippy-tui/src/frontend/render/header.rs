@@ -11,7 +11,7 @@ use std::borrow::Cow;
 use std::net::IpAddr;
 use std::time::Duration;
 use trippy_core::{Hop, PortDirection, PrivilegeMode, Protocol};
-use trippy_dns::{ResolveMethod, Resolver};
+use trippy_dns::Resolver;
 
 /// Render the title, config, target, clock and keyboard controls.
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
@@ -42,51 +42,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .style(Style::default())
         .block(header_block.clone())
         .alignment(Alignment::Right);
-    let protocol = match app.tracer_config().data.protocol() {
-        Protocol::Icmp => format!(
-            "{}({}, {})",
-            t!("icmp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-        Protocol::Udp => format!(
-            "{}({}, {}, {})",
-            t!("udp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            app.tracer_config().data.multipath_strategy(),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-        Protocol::Tcp => format!(
-            "{}({}, {})",
-            t!("tcp"),
-            fmt_target_family(app.tracer_config().data.target_addr()),
-            fmt_privilege_mode(app.tracer_config().data.privilege_mode())
-        ),
-    };
-    let details = if app.show_hop_details {
-        String::from(t!("on"))
-    } else {
-        String::from(t!("off"))
-    };
-    let as_info = match app.resolver.config().resolve_method {
-        ResolveMethod::System => String::from(t!("na")),
-        ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
-            if app.tui_config.lookup_as_info {
-                String::from(t!("on"))
-            } else {
-                String::from(t!("off"))
-            }
-        }
-    };
-    let max_hosts = app
-        .tui_config
-        .max_addrs
-        .map_or_else(|| String::from(t!("auto")), |m| m.to_string());
-    let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
-        t!("on")
-    } else {
-        t!("off")
-    };
+
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");
@@ -119,20 +75,6 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         ]),
         Line::from(vec![
             Span::styled(
-                format!("{}: ", t!("config")),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(format!(
-                "{}={protocol} {}={as_info} {}={details} {}={max_hosts}, {}={privacy}",
-                t!("protocol"),
-                t!("as-info"),
-                t!("details"),
-                t!("max-hosts"),
-                t!("privacy")
-            )),
-        ]),
-        Line::from(vec![
-            Span::styled(
                 format!("{}: ", t!("status")),
                 Style::default().add_modifier(Modifier::BOLD),
             ),
@@ -147,20 +89,6 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .alignment(Alignment::Left);
     f.render_widget(right, rect);
     f.render_widget(left, rect);
-}
-
-fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
-    match privilege_mode {
-        PrivilegeMode::Privileged => t!("privileged"),
-        PrivilegeMode::Unprivileged => t!("unprivileged"),
-    }
-}
-
-const fn fmt_target_family(target: IpAddr) -> &'static str {
-    match target {
-        IpAddr::V4(_) => "v4",
-        IpAddr::V6(_) => "v6",
-    }
 }
 
 /// Render the source address of the trace.
