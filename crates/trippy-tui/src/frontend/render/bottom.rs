@@ -43,28 +43,20 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let privilege_mode = fmt_privilege_mode(app.tracer_config().data.privilege_mode());
 
     let as_mode = match app.resolver.config().resolve_method {
-        ResolveMethod::System => Span::styled("asn", Style::default()),
+        ResolveMethod::System => Span::styled("asn-", Style::default()),
         ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
             if app.tui_config.lookup_as_info {
-                Span::styled(
-                    "asn",
-                    Style::default()
-                        .fg(Color::Blue),
-                )
+                Span::styled("asn+", Style::default().fg(Color::Blue))
             } else {
-                Span::styled("asn", Style::default())
+                Span::styled("asn-", Style::default())
             }
         }
     };
 
     let details = if app.show_hop_details {
-        Span::styled(
-            "detail",
-            Style::default()
-                .fg(Color::Green),
-        )
+        Span::styled("detail+", Style::default().fg(Color::Green))
     } else {
-        Span::styled("detail", Style::default())
+        Span::styled("detail-", Style::default())
     };
 
     // needs to be padded to length of translation of "auto".
@@ -74,13 +66,9 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         .map_or_else(|| Span::raw(t!("auto")), |m| Span::raw(format!("{m:4}")));
 
     let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
-        Span::styled(
-            "private",
-            Style::default()
-                .fg(Color::Red),
-        )
+        Span::styled("private+", Style::default().fg(Color::Red))
     } else {
-        Span::styled("private", Style::default())
+        Span::styled("private-", Style::default())
     };
 
     let address_mode = match app.tui_config.address_mode {
