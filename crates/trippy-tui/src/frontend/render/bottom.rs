@@ -12,9 +12,9 @@ use trippy_dns::ResolveMethod;
 
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let footer_block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(app.tui_config.theme.border))
+        // .borders(Borders::ALL)
+        // .border_type(BorderType::Rounded)
+        // .border_style(Style::default().fg(app.tui_config.theme.border))
         .style(
             Style::default()
                 .bg(app.tui_config.theme.bg)
@@ -23,23 +23,20 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
 
     let protocol = match app.tracer_config().data.protocol() {
         Protocol::Icmp => format!(
-            " {}/{} ",
+            "{}/{}",
             t!("icmp"),
             fmt_target_family(app.tracer_config().data.target_addr()),
-            // fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
         Protocol::Udp => format!(
-            " {}/{}/{} ",
+            "{}/{}/{}",
             t!("udp"),
             fmt_target_family(app.tracer_config().data.target_addr()),
             app.tracer_config().data.multipath_strategy(),
-            // fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
         Protocol::Tcp => format!(
-            " {}/{} ",
+            "{}/{}",
             t!("tcp"),
             fmt_target_family(app.tracer_config().data.target_addr()),
-            // fmt_privilege_mode(app.tracer_config().data.privilege_mode())
         ),
     };
 
@@ -52,8 +49,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
                 Span::styled(
                     "asn",
                     Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD),
+                        .fg(Color::Blue),
                 )
             } else {
                 Span::styled("asn", Style::default())
@@ -65,8 +61,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         Span::styled(
             "detail",
             Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::BOLD),
+                .fg(Color::Green),
         )
     } else {
         Span::styled("detail", Style::default())
@@ -82,8 +77,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         Span::styled(
             "private",
             Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::BOLD),
+                .fg(Color::Red),
         )
     } else {
         Span::styled("private", Style::default())
@@ -96,32 +90,33 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let left_line = Line::from(vec![
+        Span::raw(" ["),
         Span::raw(protocol),
-        Span::raw("│ "),
+        Span::raw("] ["),
         Span::raw(privilege_mode),
-        Span::raw(" │ ["),
+        Span::raw("] ["),
         as_mode,
-        Span::raw("] │ ["),
+        Span::raw("] ["),
         details,
-        Span::raw("] │ ["),
+        Span::raw("] ["),
         privacy,
-        Span::raw("] │"),
+        Span::raw("]"),
     ]);
 
     let right_line = Line::from(vec![
-        Span::raw("│ "),
+        Span::raw(" ["),
         address_mode,
-        Span::raw(" │ "),
+        Span::raw("] ["),
         max_hosts,
-        Span::raw(" "),
+        Span::raw("] "),
     ]);
 
     let left = Paragraph::new(left_line)
-        .style(Style::default())
+        .style(Style::default().bg(Color::White).fg(Color::Black))
         .block(footer_block.clone())
         .alignment(Alignment::Left);
     let right = Paragraph::new(right_line)
-        .style(Style::default())
+        .style(Style::default().bg(Color::White).fg(Color::Black))
         .block(footer_block.clone())
         .alignment(Alignment::Right);
 

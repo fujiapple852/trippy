@@ -75,7 +75,7 @@ const LAYOUT_WITHOUT_TABS: [Constraint; 4] = [
     Constraint::Length(4),
     Constraint::Min(10),
     Constraint::Length(6),
-    Constraint::Length(3),
+    Constraint::Length(1),
 ];
 
 const LAYOUT_WITH_TABS: [Constraint; 5] = [
@@ -83,7 +83,7 @@ const LAYOUT_WITH_TABS: [Constraint; 5] = [
     Constraint::Length(3),
     Constraint::Min(10),
     Constraint::Length(6),
-    Constraint::Length(3),
+    Constraint::Length(1),
 ];
 
 const LAYOUT_WITH_FLOWS: [Constraint; 5] = [
@@ -91,5 +91,5 @@ const LAYOUT_WITH_FLOWS: [Constraint; 5] = [
     Constraint::Length(6),
     Constraint::Min(10),
     Constraint::Length(6),
-    Constraint::Length(3),
+    Constraint::Length(1),
 ];
