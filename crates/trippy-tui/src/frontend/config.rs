@@ -34,6 +34,8 @@ pub struct TuiConfig {
     pub tui_columns: Columns,
     pub geoip_mmdb_file: Option<String>,
     pub dns_resolve_all: bool,
+    /// The current locale.
+    pub locale: String,
 }
 
 impl TuiConfig {
@@ -51,9 +53,9 @@ impl TuiConfig {
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
         tui_columns: &TuiColumns,
-
         geoip_mmdb_file: Option<String>,
         dns_resolve_all: bool,
+        locale: String,
     ) -> Self {
         Self {
             refresh_rate,
@@ -70,6 +72,7 @@ impl TuiConfig {
             tui_columns: Columns::from(tui_columns.clone()),
             geoip_mmdb_file,
             dns_resolve_all,
+            locale,
         }
     }
 }

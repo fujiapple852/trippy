@@ -77,6 +77,10 @@ pub struct TuiTheme {
     pub map_info_panel_bg: TuiColor,
     /// The color of text in the map info panel.
     pub map_info_panel_text: TuiColor,
+    /// The color of the dynamic bar background.
+    pub dynamic_bar_bg: TuiColor,
+    /// The color of the dynamic bar text.
+    pub dynamic_bar_text: TuiColor,
 }
 
 impl Default for TuiTheme {
@@ -114,6 +118,8 @@ impl Default for TuiTheme {
             map_info_panel_border: TuiColor::Gray,
             map_info_panel_bg: TuiColor::Black,
             map_info_panel_text: TuiColor::Gray,
+            dynamic_bar_bg: TuiColor::White,
+            dynamic_bar_text: TuiColor::Black,
         }
     }
 }
@@ -251,6 +257,14 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::MapInfoPanelTextColor)
                 .or(cfg.map_info_panel_text_color.as_ref())
                 .unwrap_or(&Self::default().map_info_panel_text),
+            dynamic_bar_bg: *color_map
+                .get(&TuiThemeItem::DynamicBarBgColor)
+                .or(cfg.dynamic_bar_bg_color.as_ref())
+                .unwrap_or(&Self::default().dynamic_bar_bg),
+            dynamic_bar_text: *color_map
+                .get(&TuiThemeItem::DynamicBarTextColor)
+                .or(cfg.dynamic_bar_text_color.as_ref())
+                .unwrap_or(&Self::default().dynamic_bar_text),
         }
     }
 }
@@ -324,6 +338,10 @@ pub enum TuiThemeItem {
     MapInfoPanelBgColor,
     /// The color of text in the map info panel.
     MapInfoPanelTextColor,
+    /// The color of the dynamic bar background.
+    DynamicBarBgColor,
+    /// The color of the dynamic bar text.
+    DynamicBarTextColor,
 }
 
 /// A TUI color.

@@ -105,7 +105,7 @@ as-info:
   pt: "info-as"
   zh: "AS 信息"
 details:
-  en: "details"
+  en: "detail" # TODO removed the s
   fr: "détails"
   tr: "ayrıntılar"
   it: "dettagli"
