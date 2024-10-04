@@ -372,7 +372,7 @@ fn format_address(
     address
 }
 
-/// Format a `DnsEntry` with or without `AS` information (if available)
+/// Format a `DnsEntry` with or without autonomous system (AS) information (if available)
 fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) -> String {
     match dns_entry {
         DnsEntry::Resolved(Resolved::Normal(_, hosts)) => hosts.join(" "),

@@ -134,7 +134,7 @@ pub enum AddressMode {
     Both,
 }
 
-/// How to render AS information.
+/// How to render autonomous system (AS) information.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AsMode {

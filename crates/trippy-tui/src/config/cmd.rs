@@ -188,7 +188,7 @@ pub struct Args {
     #[arg(value_enum, short = 'a', long)]
     pub tui_address_mode: Option<AddressMode>,
 
-    /// How to render AS information [default: asn]
+    /// How to render autonomous system (AS) information [default: asn]
     #[arg(value_enum, long)]
     pub tui_as_mode: Option<AsMode>,
 

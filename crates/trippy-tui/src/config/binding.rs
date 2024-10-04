@@ -608,7 +608,7 @@ pub enum TuiCommandItem {
     ClearDnsCache,
     /// Clear hop selection.
     ClearSelection,
-    /// Toggle AS info.
+    /// Toggle autonomous system (AS) info.
     ToggleASInfo,
     /// Toggle hop details.
     ToggleHopDetails,

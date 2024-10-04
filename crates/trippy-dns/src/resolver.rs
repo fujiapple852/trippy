@@ -111,10 +111,10 @@ pub enum Unresolved {
     WithAsInfo(IpAddr, AsInfo),
 }
 
-/// Autonomous System (AS) information.
+/// Information about an autonomous System (AS).
 #[derive(Debug, Clone, Default)]
 pub struct AsInfo {
-    /// The Autonomous System Number.
+    /// The autonomous system Number.
     ///
     /// This is returned without the AS prefix i.e. `12301`.
     pub asn: String,
@@ -134,7 +134,7 @@ pub struct AsInfo {
     ///
     /// Given as an ISO date i.e. `1999-02-25`.
     pub allocated: String,
-    /// The Autonomous System Name.
+    /// The autonomous system (AS) Name.
     ///
     /// Given as a string i.e. `INVITECH, HU`.
     pub name: String,
