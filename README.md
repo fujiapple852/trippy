@@ -72,7 +72,7 @@ issues.
 - DNS:
     - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
     - Lazy reverse DNS queries
-    - Lookup [autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number (ASN) and name
+    - Lookup [autonomous system][autonomous_system] number (ASN) and name
 - GeoIp:
     - Lookup and display GeoIp information from local [MaxMind](https://www.maxmind.com)
       and [IPinfo](https://ipinfo.io) `mmdb` files
@@ -415,7 +415,7 @@ Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, 
 trip example.com -r google
 ```
 
-Lookup AS information for all discovered IP addresses (not yet available for the `system` resolver,
+Lookup [AS][autonomous_system] information for all discovered IP addresses (not yet available for the `system` resolver,
 see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
@@ -1166,7 +1166,7 @@ from both [libparistraceroute](https://github.com/libparistraceroute/libparistra
 The Trippy networking code is inspired by [pnet](https://github.com/libpnet/libpnet) and some elements of that codebase
 are incorporated in Trippy.
 
-The [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) data is retrieved from
+The [AS][autonomous_system] data is retrieved from
 the [IP to ASN Mapping Service](https://team-cymru.com/community-services/ip-asn-mapping/#dns) provided
 by [Team Cymru](https://team-cymru.com).
 
@@ -1184,3 +1184,5 @@ in the Apache-2.0 license, shall be licensed as above, without any additional te
 See [LICENSE](LICENSE) for details.
 
 Copyright 2022 [Trippy Contributors](https://github.com/fujiapple852/trippy/graphs/contributors)
+
+[autonomous_system]: https://en.wikipedia.org/wiki/Autonomous_system_(Internet)
