@@ -1,4 +1,4 @@
-use crate::frontend::render::{body, flows, footer, header, help, settings, tabs};
+use crate::frontend::render::{body, bottom, flows, footer, header, help, settings, tabs};
 use crate::frontend::tui_app::TuiApp;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
@@ -53,13 +53,16 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
         tabs::render(f, chunks[1], app);
         body::render(f, chunks[2], app);
         footer::render(f, chunks[3], app);
+        bottom::render(f, chunks[4], app);
     } else if app.show_flows {
         flows::render(f, chunks[1], app);
         body::render(f, chunks[2], app);
         footer::render(f, chunks[3], app);
+        bottom::render(f, chunks[4], app);
     } else {
         body::render(f, chunks[1], app);
         footer::render(f, chunks[2], app);
+        bottom::render(f, chunks[3], app);
     }
     if app.show_settings {
         settings::render(f, app);
@@ -68,22 +71,25 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     }
 }
 
-const LAYOUT_WITHOUT_TABS: [Constraint; 3] = [
-    Constraint::Length(5),
+const LAYOUT_WITHOUT_TABS: [Constraint; 4] = [
+    Constraint::Length(4),
     Constraint::Min(10),
     Constraint::Length(6),
+    Constraint::Length(1),
 ];
 
-const LAYOUT_WITH_TABS: [Constraint; 4] = [
-    Constraint::Length(5),
+const LAYOUT_WITH_TABS: [Constraint; 5] = [
+    Constraint::Length(4),
     Constraint::Length(3),
     Constraint::Min(10),
     Constraint::Length(6),
+    Constraint::Length(1),
 ];
 
-const LAYOUT_WITH_FLOWS: [Constraint; 4] = [
-    Constraint::Length(5),
+const LAYOUT_WITH_FLOWS: [Constraint; 5] = [
+    Constraint::Length(4),
     Constraint::Length(6),
     Constraint::Min(10),
     Constraint::Length(6),
+    Constraint::Length(1),
 ];
