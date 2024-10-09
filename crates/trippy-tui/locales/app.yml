@@ -3,439 +3,549 @@ trippy:
   en: "trippy"
   fr: "trippy"
   tr: "trippy"
+  hi: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
   tr: "otomatik"
+  hi: "स्वचालित"
 on:
   en: "on"
   fr: "activé"
   tr: "açık"
+  hi: "चालू"
 off:
   en: "off"
   fr: "désactivé"
   tr: "kapalı"
+  hi: "बंद"
 yes:
   en: "Yes"
   fr: "Oui"
   tr: "Evet"
+  hi: "हाँ"
 no:
   en: "No"
   fr: "Non"
   tr: "Hayır"
+  hi: "नहीं"
 none:
   en: "none"
   fr: "aucun"
   tr: "hiçbiri"
+  hi: "कोई नहीं"
 hidden:
   en: "Hidden"
   fr: "Caché"
   tr: "Gizli"
+  hi: "छिपा हुआ"
 flow:
   en: "flow"
   fr: "flux"
   tr: "akış"
+  hi: "प्रवाह"
 flows:
   en: "flows"
   fr: "flux"
   tr: "akışlar"
+  hi: "प्रवाह"
 target:
   en: "Target"
   fr: "Cible"
   tr: "Hedef"
+  hi: "लक्ष्य"
 config:
   en: "Config"
   fr: "Config"
   tr: "Konfigurasyon"
+  hi: "कॉन्फ़िग"
 status:
   en: "Status"
   fr: "Statut"
   tr: "Durum"
+  hi: "स्थिति"
 protocol:
   en: "protocol"
   fr: "protocole"
   tr: "protokol"
+  hi: "प्रोटोकॉल"
 as-info:
   en: "as-info"
   fr: "info-as"
   tr: "AS bilgisi"
+  hi: "एएस-जानकारी"
 details:
   en: "details"
   fr: "détails"
   tr: "ayrıntılar"
+  hi: "विवरण"
 max-hosts:
   en: "max-hosts"
   fr: "nombre d'hôtes maximum"
   tr: "maksimum hostlar"
+  hi: "अधिकतम-होस्ट"
 privacy:
   en: "privacy"
   fr: "confidentialité"
   tr: "gizlilik"
+  hi: "गोपनीयता"
 privileged:
   en: "privileged"
   fr: "privilégié"
   tr: "ayrıcalıklı"
+  hi: "विशेषाधिकारित"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
   tr: "ayrıcalıksız"
+  hi: "अविशेषाधिकारित"
 na:
   en: "n/a"
   fr: "non disponible"
   tr: "yok"
+  hi: "लागू नहीं"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
   tr: "%{hop_count} atlanan keşfedildi"
+  hi: "%{hop_count} हॉप्स खोजे गए"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
   tr: "%{hop_count} atlanan ve %{flow_count} benzersiz %{plural_flows} keşfedildi"
+  hi: "%{hop_count} हॉप्स और %{flow_count} अद्वितीय %{plural_flows} खोजे गए"
 unknown:
   en: "unknown"
   fr: "inconnu"
   tr: "bilinmeyen"
+  hi: "अज्ञात"
 icmp:
   en: "icmp"
   fr: "icmp"
   tr: "icmp"
+  hi: "icmp"
 udp:
   en: "udp"
   fr: "udp"
   tr: "udp"
+  hi: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
   tr: "tcp"
+  hi: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
   tr: "%{failure_count} / %{total_probes} (%{failure_rate}%) sondajın başarısız olması"
+  hi: "%{failure_count} में से %{total_probes} (%{failure_rate}%) प्रोब्स विफल रहे"
 status_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  hi: "विफल"
 status_running:
   en: "Running"
   fr: "En cours"
   tr: "Çalışıyor"
+  hi: "चल रहा है"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
   tr: "Dondurulmuş"
+  hi: "जमा हुआ"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
   tr: "Veri bekleniyor..."
+  hi: "डेटा की प्रतीक्षा कर रहा है..."
 header_help:
   en: "elp"
   fr: "Aide"
   tr: "Yardım"
+  hi: "सहायता"
 header_settings:
   en: "ettings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  hi: "सेटिंग्स"
 header_quit:
   en: "uit"
   fr: "Quitter"
   tr: "Çıkış"
+  hi: "बाहर निकलें"
 title_hops:
   en: "Hops"
   fr: "Sauts"
   tr: "Atlananlar"
+  hi: "हॉप्स"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
   tr: "Sıklık"
+  hi: "आवृत्ति"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  hi: "नमूने"
 title_traces:
   en: "Traces"
   fr: "Traces"
   tr: "İzler"
+  hi: "ट्रेस"
 title_flows:
   en: "Flows"
   fr: "Flux"
   tr: "Akışlar"
+  hi: "प्रवाह"
 title_map:
   en: "Map"
   fr: "Carte"
   tr: "Harita"
+  hi: "नक्शा"
 title_help:
   en: "Help"
   fr: "Aide"
   tr: "Yardım"
+  hi: "सहायता"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  hi: "सेटिंग्स"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
   tr: "Trippy Başarısız :("
+  hi: "ट्रिप्पी विफल हो गया :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
   tr: "Çıkmak için q tuşuna basın"
+  hi: "निकलने के लिए q दबाएं"
 hop:
   en: "Hop"
   fr: "Saut"
   tr: "Atla"
+  hi: "हॉप"
 rtt:
   en: "RTT"
   fr: "RTT"
   tr: "RTT"
+  hi: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
   tr: "Grafik"
+  hi: "चार्ट"
 samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  hi: "नमूने"
 host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  hi: "होस्ट"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
   tr: "Yanıt yok"
+  hi: "कोई प्रतिक्रिया नहीं"
 dns_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  hi: "विफल"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
   tr: "Zaman aşımı"
+  hi: "समय समाप्त"
 labels:
   en: "labels"
   fr: "étiquettes"
   tr: "etiketler"
+  hi: "लेबल"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
   tr: "etkin değil"
+  hi: "सक्रिय नहीं"
 not_found:
   en: "not found"
   fr: "non trouvé"
   tr: "bulunamadı"
+  hi: "नहीं मिला"
 awaited:
   en: "awaited"
   fr: "attendu"
   tr: "beklenen"
+  hi: "प्रतीक्षित"
 name:
   en: "Name"
   fr: "Nom"
   tr: "Ad"
+  hi: "नाम"
 info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  hi: "सूचना"
 geo:
   en: "Geo"
   fr: "Géo"
   tr: "Coğrafi"
+  hi: "भूगोल"
 pos:
   en: "Pos"
   fr: "Pos"
   tr: "Poz"
+  hi: "स्थिति"
 ext:
   en: "Ext"
   fr: "Ext"
   tr: "Uzantı"
+  hi: "एक्सटेंशन"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
   tr: "Bir ağ analiz aracı"
+  hi: "नेटवर्क निदान उपकरण"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
   tr: "Tüm ayarları görmek için [%{key}] tuşuna basın"
+  hi: "सभी सेटिंग्स दिखाने के लिए [%{key}] दबाएं"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
   tr: "Tüm bağlantıları görmek için [%{key}] tuşuna basın"
+  hi: "सभी बाइंडिंग्स दिखाने के लिए [%{key}] दबाएं"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
   tr: "Tüm sütunları görmek için [%{key}] tuşuna basın"
+  hi: "सभी कॉलम दिखाने के लिए [%{key}] दबाएं"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
   tr: "Apache Lisansı 2.0 altında dağıtılmıştır"
+  hi: "एपाचे लाइसेंस 2.0 के तहत वितरित"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
   tr: "Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar"
+  hi: "कॉपीराइट 2022 ट्रिप्पी योगदानकर्ताओं"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
   tr: "GeoIp etkin değil"
+  hi: "जियोआईपी सक्रिय नहीं है"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
   tr: "Hop için GeoIp verisi yok"
+  hi: "हॉप के लिए कोई जियोआईपी डेटा नहीं"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
   tr: "Hop için birden fazla GeoIp konumu"
+  hi: "हॉप के लिए एकाधिक जियोआईपी स्थान"
 kilometer:
   en: "km"
   fr: "km"
   tr: "km"
+  hi: "km"
 settings_info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  hi: "सूचना"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
   tr: "Tui"
+  hi: "Tui"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
   tr: "İz"
+  hi: "ट्रेस"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
   tr: "DNS"
+  hi: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
   tr: "GeoIp"
+  hi: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
   tr: "Bağlantılar"
+  hi: "बाइंडिंग्स"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
   tr: "Tema"
+  hi: "थीम"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
   tr: "Sütunlar"
+  hi: "कॉलम"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
   tr: "Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar"
+  hi: "इस टुई में डेटा को कैसे प्रदर्शित किया जाता है उसे नियंत्रित करने वाले सेटिंग्स"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
   tr: "İzleme stratejisini kontrol eden ayarlar"
+  hi: "ट्रेसिंग रणनीति को नियंत्रित करने वाले सेटिंग्स"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
   tr: "DNS aramalarının nasıl yapıldığını kontrol eden ayarlar"
+  hi: "DNS खोज कैसे की जाती है उसे नियंत्रित करने वाले सेटिंग्स"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
   tr: "GeoIp ile ilgili ayarlar"
+  hi: "जियोआईपी से संबंधित सेटिंग्स"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
   tr: "Tui tuş ayarları"
+  hi: "टुई कुंजी बाइंडिंग्स"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
   tr: "Tui tema renkleri"
+  hi: "टुई थीम रंग"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
   tr: "Tui tablo sütunları. Bir sütunu açmak veya kapatmak için [%{c}] tuşuna basın ve sütun sırasını değiştirmek için [%{d}] ve [%{u}] tuşlarını kullanın."
+  hi: "टुई तालिका कॉलम। एक कॉलम को चालू या बंद करने के लिए [%{c}] दबाएं और कॉलम क्रम बदलने के लिए [%{d}] और [%{u}] कुंजी का उपयोग करें।"
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
   tr: "Ayar"
+  hi: "सेटिंग"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
   tr: "Değer"
+  hi: "मूल्य"
 column_host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  hi: "होस्ट"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
   tr: "Kayıp%"
+  hi: "हानि%"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
   tr: "Gönderilen"
+  hi: "भेजा"
 column_recv:
   en: "Recv"
   fr: "Reçus"
   tr: "Alınan"
+  hi: "प्राप्त"
 column_last:
   en: "Last"
   fr: "Dernier"
   tr: "Son"
+  hi: "अंतिम"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
   tr: "Ort"
+  hi: "औसत"
 column_best:
   en: "Best"
   fr: "Meilleur"
   tr: "En iyi"
+  hi: "सर्वोत्तम"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
   tr: "En kötü"
+  hi: "खराब"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
   tr: "StDev"
+  hi: "मानक विचलन"
 column_sts:
   en: "Sts"
   fr: "État"
   tr: "Sts"
+  hi: "स्थिति"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
   tr: "Jttr"
+  hi: "जिटर"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
   tr: "Javg"
+  hi: "औसत जिटर"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
   tr: "Jmax"
+  hi: "जिटर अधिकतम"
 column_jint:
   en: "Jint"
   fr: "GigInt"
   tr: "Jint"
+  hi: "जिटर अंतर"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
+  hi: "उत्पादक"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
   tr: "Dprt"
+  hi: "उपभोक्ता"
 column_seq:
   en: "Seq"
   fr: "Seq"
   tr: "Seq"
+  hi: "क्रम"
 column_type:
   en: "Type"
   fr: "Type"
   tr: "Type"
+  hi: "प्रकार"
 column_code:
   en: "Code"
   fr: "Code"
   tr: "Code"
+  hi: "कोड"
 column_nat:
   en: "Nat"
   fr: "Nat"
   tr: "Nat"
+  hi: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
   tr: "Başarısız"
+  hi: "विफल"
