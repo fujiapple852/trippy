@@ -3,439 +3,549 @@ trippy:
   en: "trippy"
   fr: "trippy"
   tr: "trippy"
+  nl: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
   tr: "otomatik"
+  nl: "auto"
 on:
   en: "on"
   fr: "activé"
   tr: "açık"
+  nl: "aan"
 off:
   en: "off"
   fr: "désactivé"
   tr: "kapalı"
+  nl: "uit"
 yes:
   en: "Yes"
   fr: "Oui"
   tr: "Evet"
+  nl: "Ja"
 no:
   en: "No"
   fr: "Non"
   tr: "Hayır"
+  nl: "Nee"
 none:
   en: "none"
   fr: "aucun"
   tr: "hiçbiri"
+  nl: "geen"
 hidden:
   en: "Hidden"
   fr: "Caché"
   tr: "Gizli"
+  nl: "Verborgen"
 flow:
   en: "flow"
   fr: "flux"
   tr: "akış"
+  nl: "stroom"
 flows:
   en: "flows"
   fr: "flux"
   tr: "akışlar"
+  nl: "stromen"
 target:
   en: "Target"
   fr: "Cible"
   tr: "Hedef"
+  nl: "Doel"
 config:
   en: "Config"
   fr: "Config"
   tr: "Konfigurasyon"
+  nl: "Config"
 status:
   en: "Status"
   fr: "Statut"
   tr: "Durum"
+  nl: "Status"
 protocol:
   en: "protocol"
   fr: "protocole"
   tr: "protokol"
+  nl: "protocol"
 as-info:
   en: "as-info"
   fr: "info-as"
   tr: "AS bilgisi"
+  nl: "as-info"
 details:
   en: "details"
   fr: "détails"
   tr: "ayrıntılar"
+  nl: "details"
 max-hosts:
   en: "max-hosts"
   fr: "nombre d'hôtes maximum"
   tr: "maksimum hostlar"
+  nl: "max-hosts"
 privacy:
   en: "privacy"
   fr: "confidentialité"
   tr: "gizlilik"
+  nl: "privacy"
 privileged:
   en: "privileged"
   fr: "privilégié"
   tr: "ayrıcalıklı"
+  nl: "bevoorrecht"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
   tr: "ayrıcalıksız"
+  nl: "niet-bevoorrecht"
 na:
   en: "n/a"
   fr: "non disponible"
   tr: "yok"
+  nl: "n.v.t."
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
   tr: "%{hop_count} atlanan keşfedildi"
+  nl: "ontdekte %{hop_count} hops"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
   tr: "%{hop_count} atlanan ve %{flow_count} benzersiz %{plural_flows} keşfedildi"
+  nl: "ontdekte %{hop_count} hops en %{flow_count} unieke %{plural_flows}"
 unknown:
   en: "unknown"
   fr: "inconnu"
   tr: "bilinmeyen"
+  nl: "onbekend"
 icmp:
   en: "icmp"
   fr: "icmp"
   tr: "icmp"
+  nl: "icmp"
 udp:
   en: "udp"
   fr: "udp"
   tr: "udp"
+  nl: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
   tr: "tcp"
+  nl: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
   tr: "%{failure_count} / %{total_probes} (%{failure_rate}%) sondajın başarısız olması"
+  nl: "%{failure_count} van %{total_probes} (%{failure_rate}%) probes mislukt"
 status_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  nl: "Mislukt"
 status_running:
   en: "Running"
   fr: "En cours"
   tr: "Çalışıyor"
+  nl: "Lopend"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
   tr: "Dondurulmuş"
+  nl: "Bevroren"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
   tr: "Veri bekleniyor..."
+  nl: "Wachten op gegevens..."
 header_help:
   en: "elp"
   fr: "Aide"
   tr: "Yardım"
+  nl: "ulp"
 header_settings:
   en: "ettings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  nl: "instellingen"
 header_quit:
   en: "uit"
   fr: "Quitter"
   tr: "Çıkış"
+  nl: "ontslag"
 title_hops:
   en: "Hops"
   fr: "Sauts"
   tr: "Atlananlar"
+  nl: "Hops"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
   tr: "Sıklık"
+  nl: "Frequentie"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  nl: "Monsters"
 title_traces:
   en: "Traces"
   fr: "Traces"
   tr: "İzler"
+  nl: "Traces"
 title_flows:
   en: "Flows"
   fr: "Flux"
   tr: "Akışlar"
+  nl: "Stromen"
 title_map:
   en: "Map"
   fr: "Carte"
   tr: "Harita"
+  nl: "Kaart"
 title_help:
   en: "Help"
   fr: "Aide"
   tr: "Yardım"
+  nl: "Hulp"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  nl: "Instellingen"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
   tr: "Trippy Başarısız :("
+  nl: "Trippy mislukt :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
   tr: "Çıkmak için q tuşuna basın"
+  nl: "Druk op q om te stoppen"
 hop:
   en: "Hop"
   fr: "Saut"
   tr: "Atla"
+  nl: "Hop"
 rtt:
   en: "RTT"
   fr: "RTT"
   tr: "RTT"
+  nl: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
   tr: "Grafik"
+  nl: "Grafiek"
 samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  nl: "Monsters"
 host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  nl: "Host"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
   tr: "Yanıt yok"
+  nl: "Geen reactie"
 dns_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  nl: "Mislukt"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
   tr: "Zaman aşımı"
+  nl: "Time-out"
 labels:
   en: "labels"
   fr: "étiquettes"
   tr: "etiketler"
+  nl: "labels"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
   tr: "etkin değil"
+  nl: "niet ingeschakeld"
 not_found:
   en: "not found"
   fr: "non trouvé"
   tr: "bulunamadı"
+  nl: "niet gevonden"
 awaited:
   en: "awaited"
   fr: "attendu"
   tr: "beklenen"
+  nl: "verwacht"
 name:
   en: "Name"
   fr: "Nom"
   tr: "Ad"
+  nl: "Naam"
 info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  nl: "Info"
 geo:
   en: "Geo"
   fr: "Géo"
   tr: "Coğrafi"
+  nl: "Geo"
 pos:
   en: "Pos"
   fr: "Pos"
   tr: "Poz"
+  nl: "Pos"
 ext:
   en: "Ext"
   fr: "Ext"
   tr: "Uzantı"
+  nl: "Ext"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
   tr: "Bir ağ analiz aracı"
+  nl: "Een netwerkdiagnostisch hulpmiddel"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
   tr: "Tüm ayarları görmek için [%{key}] tuşuna basın"
+  nl: "Druk op [%{key}] om alle instellingen te tonen"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
   tr: "Tüm bağlantıları görmek için [%{key}] tuşuna basın"
+  nl: "Druk op [%{key}] om alle bindings te tonen"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
   tr: "Tüm sütunları görmek için [%{key}] tuşuna basın"
+  nl: "Druk op [%{key}] om alle kolommen te tonen"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
   tr: "Apache Lisansı 2.0 altında dağıtılmıştır"
+  nl: "Gedistribueerd onder de Apache License 2.0"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
   tr: "Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar"
+  nl: "Copyright 2022 Trippy Contributors"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
   tr: "GeoIp etkin değil"
+  nl: "GeoIp niet ingeschakeld"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
   tr: "Hop için GeoIp verisi yok"
+  nl: "Geen GeoIp-gegevens voor hop"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
   tr: "Hop için birden fazla GeoIp konumu"
+  nl: "Meerdere GeoIp-locaties voor hop"
 kilometer:
   en: "km"
   fr: "km"
   tr: "km"
+  nl: "km"
 settings_info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  nl: "Info"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
   tr: "Tui"
+  nl: "Tui"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
   tr: "İz"
+  nl: "Trace"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
   tr: "DNS"
+  nl: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
   tr: "GeoIp"
+  nl: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
   tr: "Bağlantılar"
+  nl: "Bindingen"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
   tr: "Tema"
+  nl: "Thema"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
   tr: "Sütunlar"
+  nl: "Kolommen"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
   tr: "Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar"
+  nl: "Instellingen die bepalen hoe gegevens in deze Tui worden weergegeven"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
   tr: "İzleme stratejisini kontrol eden ayarlar"
+  nl: "Instellingen die de traceerstrategie bepalen"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
   tr: "DNS aramalarının nasıl yapıldığını kontrol eden ayarlar"
+  nl: "Instellingen die bepalen hoe DNS-lookups worden uitgevoerd"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
   tr: "GeoIp ile ilgili ayarlar"
+  nl: "Instellingen met betrekking tot GeoIp"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
   tr: "Tui tuş ayarları"
+  nl: "Tui-toetsbindings"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
   tr: "Tui tema renkleri"
+  nl: "Tui-themakleuren"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
   tr: "Tui tablo sütunları. Bir sütunu açmak veya kapatmak için [%{c}] tuşuna basın ve sütun sırasını değiştirmek için [%{d}] ve [%{u}] tuşlarını kullanın."
+  nl: "Tui-tabelkolommen. Druk op [%{c}] om een kolom in of uit te schakelen en gebruik de toetsen [%{d}] en [%{u}] om de kolomvolgorde te wijzigen."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
   tr: "Ayar"
+  nl: "Instelling"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
   tr: "Değer"
+  nl: "Waarde"
 column_host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  nl: "Host"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
   tr: "Kayıp%"
+  nl: "Verlies%"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
   tr: "Gönderilen"
+  nl: "Verzonden"
 column_recv:
   en: "Recv"
   fr: "Reçus"
   tr: "Alınan"
+  nl: "Ontvangen"
 column_last:
   en: "Last"
   fr: "Dernier"
   tr: "Son"
+  nl: "Laatste"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
   tr: "Ort"
+  nl: "Gem"
 column_best:
   en: "Best"
   fr: "Meilleur"
   tr: "En iyi"
+  nl: "Beste"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
   tr: "En kötü"
+  nl: "Slechtste"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
   tr: "StDev"
+  nl: "StDev"
 column_sts:
   en: "Sts"
   fr: "État"
   tr: "Sts"
+  nl: "Sts"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
   tr: "Jttr"
+  nl: "Jttr"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
   tr: "Javg"
+  nl: "Javg"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
   tr: "Jmax"
+  nl: "Jmax"
 column_jint:
   en: "Jint"
   fr: "GigInt"
   tr: "Jint"
+  nl: "Jint"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
+  nl: "Sprt"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
   tr: "Dprt"
+  nl: "Dprt"
 column_seq:
   en: "Seq"
   fr: "Seq"
   tr: "Seq"
+  nl: "Seq"
 column_type:
   en: "Type"
   fr: "Type"
   tr: "Type"
+  nl: "Type"
 column_code:
   en: "Code"
   fr: "Code"
   tr: "Code"
+  nl: "Code"
 column_nat:
   en: "Nat"
   fr: "Nat"
   tr: "Nat"
+  nl: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
   tr: "Başarısız"
+  nl: "Mislukken"
