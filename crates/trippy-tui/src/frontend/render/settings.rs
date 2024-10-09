@@ -188,6 +188,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-refresh-rate",
             format!("{}", format_duration(app.tui_config.refresh_rate)),
         ),
+        SettingsItem::new("tui-privacy", format!("{}", app.tui_config.privacy)),
         SettingsItem::new(
             "tui-privacy-max-ttl",
             format!("{}", app.tui_config.privacy_max_ttl),
@@ -519,7 +520,7 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 /// The name and number of items for each tabs in the setting dialog.
 pub fn settings_tabs() -> [(String, usize); 7] {
     [
-        (t!("settings_tab_tui_title").to_string(), 9),
+        (t!("settings_tab_tui_title").to_string(), 10),
         (t!("settings_tab_trace_title").to_string(), 17),
         (t!("settings_tab_dns_title").to_string(), 5),
         (t!("settings_tab_geoip_title").to_string(), 1),

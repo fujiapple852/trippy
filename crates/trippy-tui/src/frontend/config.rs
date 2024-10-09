@@ -10,6 +10,8 @@ use std::time::Duration;
 pub struct TuiConfig {
     /// Refresh rate.
     pub refresh_rate: Duration,
+    /// Mask addresses for privacy.
+    pub privacy: bool,
     /// The maximum ttl of hops which will be masked for privacy.
     pub privacy_max_ttl: u8,
     /// Preserve screen on exit.
@@ -37,9 +39,10 @@ pub struct TuiConfig {
 }
 
 impl TuiConfig {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::fn_params_excessive_bools)]
     pub fn new(
         refresh_rate: Duration,
+        privacy: bool,
         privacy_max_ttl: u8,
         preserve_screen: bool,
         address_mode: AddressMode,
@@ -51,12 +54,12 @@ impl TuiConfig {
         tui_theme: TuiTheme,
         tui_bindings: &TuiBindings,
         tui_columns: &TuiColumns,
-
         geoip_mmdb_file: Option<String>,
         dns_resolve_all: bool,
     ) -> Self {
         Self {
             refresh_rate,
+            privacy,
             privacy_max_ttl,
             preserve_screen,
             address_mode,

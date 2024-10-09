@@ -239,6 +239,7 @@ pub struct ConfigTui {
     #[serde(default)]
     #[serde(deserialize_with = "humantime_deser")]
     pub tui_refresh_rate: Option<Duration>,
+    pub tui_privacy: Option<bool>,
     pub tui_privacy_max_ttl: Option<u8>,
     pub tui_address_mode: Option<AddressMode>,
     pub tui_as_mode: Option<AsMode>,
@@ -259,6 +260,7 @@ impl Default for ConfigTui {
         Self {
             tui_preserve_screen: Some(super::constants::DEFAULT_TUI_PRESERVE_SCREEN),
             tui_refresh_rate: Some(super::constants::DEFAULT_TUI_REFRESH_RATE),
+            tui_privacy: Some(super::constants::DEFAULT_TUI_PRIVACY),
             tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),

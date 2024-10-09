@@ -262,7 +262,7 @@ fn render_hostname(
     geoip_lookup: &GeoIpLookup,
 ) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
-        if app.hide_private_hops && app.tui_config.privacy_max_ttl >= hop.ttl() {
+        if app.tui_config.privacy && app.tui_config.privacy_max_ttl >= hop.ttl() {
             (format!("**{}**", t!("hidden")), 1)
         } else {
             match app.tui_config.max_addrs {
@@ -512,7 +512,7 @@ fn render_hostname_with_details(
     config: &TuiConfig,
 ) -> (Cell<'static>, u16) {
     let rendered = if hop.total_recv() > 0 {
-        if app.hide_private_hops && config.privacy_max_ttl >= hop.ttl() {
+        if app.tui_config.privacy && config.privacy_max_ttl >= hop.ttl() {
             format!("**{}**", t!("hidden"))
         } else {
             let index = app.selected_hop_address;

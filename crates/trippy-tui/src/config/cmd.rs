@@ -216,7 +216,11 @@ pub struct Args {
     #[arg(long, value_parser = parse_duration)]
     pub tui_refresh_rate: Option<Duration>,
 
-    /// The maximum ttl of hops which will be masked for privacy [default: 0]
+    /// Mask hops for privacy [default: false]
+    #[arg(long)]
+    pub tui_privacy: bool,
+
+    /// The maximum ttl of hops which will be masked for privacy [default: 1]
     #[arg(long)]
     pub tui_privacy_max_ttl: Option<u8>,
 
