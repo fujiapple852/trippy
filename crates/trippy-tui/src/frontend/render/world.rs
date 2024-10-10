@@ -51,7 +51,7 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
                     .hops
                     .iter()
                     .any(|hop| *hop > app.tui_config.privacy_max_ttl);
-                if !app.hide_private_hops || any_show {
+                if !app.tui_config.privacy || any_show {
                     render_map_canvas_pin(ctx, entry);
                     render_map_canvas_radius(ctx, entry, theme.map_radius);
                     render_map_canvas_selected(
@@ -146,7 +146,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
             }
         })
         .collect::<Vec<_>>();
-    let info = if app.hide_private_hops && app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
+    let info = if app.tui_config.privacy && app.tui_config.privacy_max_ttl >= selected_hop.ttl() {
         format!("**{}**", t!("hidden"))
     } else {
         match locations.as_slice() {

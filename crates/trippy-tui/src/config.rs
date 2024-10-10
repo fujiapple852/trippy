@@ -306,6 +306,7 @@ pub struct TrippyConfig {
     pub max_flows: usize,
     pub tui_preserve_screen: bool,
     pub tui_refresh_rate: Duration,
+    pub tui_privacy: bool,
     pub tui_privacy_max_ttl: u8,
     pub tui_address_mode: AddressMode,
     pub tui_as_mode: AsMode,
@@ -501,6 +502,11 @@ impl TrippyConfig {
             cfg_file_tui.tui_refresh_rate,
             constants::DEFAULT_TUI_REFRESH_RATE,
         );
+        let tui_privacy = cfg_layer_bool_flag(
+            args.tui_privacy,
+            cfg_file_tui.tui_privacy,
+            constants::DEFAULT_TUI_PRIVACY,
+        );
         let tui_privacy_max_ttl = cfg_layer(
             args.tui_privacy_max_ttl,
             cfg_file_tui.tui_privacy_max_ttl,
@@ -692,6 +698,7 @@ impl TrippyConfig {
             max_flows,
             tui_preserve_screen,
             tui_refresh_rate,
+            tui_privacy,
             tui_privacy_max_ttl,
             tui_address_mode,
             tui_as_mode,
@@ -746,6 +753,7 @@ impl Default for TrippyConfig {
             max_flows: defaults::DEFAULT_MAX_FLOWS,
             tui_preserve_screen: constants::DEFAULT_TUI_PRESERVE_SCREEN,
             tui_refresh_rate: constants::DEFAULT_TUI_REFRESH_RATE,
+            tui_privacy: constants::DEFAULT_TUI_PRIVACY,
             tui_privacy_max_ttl: constants::DEFAULT_TUI_PRIVACY_MAX_TTL,
             tui_address_mode: constants::DEFAULT_TUI_ADDRESS_MODE,
             tui_as_mode: constants::DEFAULT_TUI_AS_MODE,

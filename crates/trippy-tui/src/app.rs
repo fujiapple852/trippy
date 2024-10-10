@@ -195,6 +195,7 @@ fn configure_logging(cfg: &TrippyConfig) -> Option<FlushGuard> {
 fn make_tui_config(args: &TrippyConfig) -> TuiConfig {
     TuiConfig::new(
         args.tui_refresh_rate,
+        args.tui_privacy,
         args.tui_privacy_max_ttl,
         args.tui_preserve_screen,
         args.tui_address_mode,
