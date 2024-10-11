@@ -3,17 +3,18 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
 use std::fmt::{Debug, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
+use std::thread::JoinHandle;
 use trippy_core::FlowEntry;
 
 /// Run a trace and generate a dot file.
-pub fn report(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
+pub fn report(info: &TraceInfo, handle: JoinHandle<trippy_core::Result<()>>) -> anyhow::Result<()> {
     struct DotWrapper<'a>(Dot<'a, &'a DiGraphMap<IpAddr, ()>>);
     impl Debug for DotWrapper<'_> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             self.0.fmt(f)
         }
     }
-    super::wait_for_round(&info.data, report_cycles)?;
+    super::wait_for_round(&info.data, handle)?;
     let trace = info.data.snapshot();
     let mut graph: DiGraphMap<IpAddr, ()> = DiGraphMap::new();
     for (flow, _id) in trace.flows() {

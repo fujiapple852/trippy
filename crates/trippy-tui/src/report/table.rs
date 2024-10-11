@@ -2,33 +2,34 @@ use crate::app::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
+use std::thread::JoinHandle;
 use trippy_dns::Resolver;
 
 /// Generate a Markdown table report of trace data.
 pub fn report_md<R: Resolver>(
     info: &TraceInfo,
-    report_cycles: usize,
+    handle: JoinHandle<trippy_core::Result<()>>,
     resolver: &R,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN)
+    run_report_table(info, handle, resolver, ASCII_MARKDOWN)
 }
 
 /// Generate a pretty table report of trace data.
 pub fn report_pretty<R: Resolver>(
     info: &TraceInfo,
-    report_cycles: usize,
+    handle: JoinHandle<trippy_core::Result<()>>,
     resolver: &R,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, UTF8_FULL)
+    run_report_table(info, handle, resolver, UTF8_FULL)
 }
 
 fn run_report_table<R: Resolver>(
     info: &TraceInfo,
-    report_cycles: usize,
+    handle: JoinHandle<trippy_core::Result<()>>,
     resolver: &R,
     preset: &str,
 ) -> anyhow::Result<()> {
-    let trace = super::wait_for_round(&info.data, report_cycles)?;
+    let trace = super::wait_for_round(&info.data, handle)?;
     let columns = vec![
         "Hop", "IPs", "Addrs", "Loss%", "Snt", "Recv", "Last", "Avg", "Best", "Wrst", "StdDev",
     ];

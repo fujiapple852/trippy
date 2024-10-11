@@ -5,6 +5,7 @@ use crate::locale::set_locale;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
+use std::thread::JoinHandle;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -27,9 +28,61 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
             cfg.addr_family,
         ));
     }
-    let traces = start_tracers(cfg, &addrs, pid)?;
-    Privilege::drop_privileges()?;
-    run_frontend(cfg, resolver, geoip_lookup, traces)
+    match cfg.mode {
+        Mode::Tui => {
+            let traces = start_tracers(cfg, &addrs, pid)?;
+            Privilege::drop_privileges()?;
+            frontend::run_frontend(traces, make_tui_config(cfg), resolver, geoip_lookup)
+        }
+        Mode::Stream => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, _) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::stream::report(&trace_info, &resolver)
+        }
+        Mode::Csv => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::csv::report(&trace_info, handle, &resolver)
+        }
+        Mode::Json => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::json::report(&trace_info, handle, &resolver)
+        }
+        Mode::Pretty => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::table::report_pretty(&trace_info, handle, &resolver)
+        }
+        Mode::Markdown => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::table::report_md(&trace_info, handle, &resolver)
+        }
+        Mode::Dot => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::dot::report(&trace_info, handle)
+        }
+        Mode::Flows => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::flows::report(&trace_info, handle)
+        }
+        Mode::Silent => {
+            let TargetInfo { hostname, addr } = &addrs[0];
+            let (trace_info, handle) = start_tracer(cfg, hostname, *addr, pid)?;
+            Privilege::drop_privileges()?;
+            report::silent::report(&trace_info, handle)
+        }
+    }
 }
 
 /// Start all tracers.
@@ -42,7 +95,7 @@ fn start_tracers(
         .iter()
         .enumerate()
         .map(|(i, TargetInfo { hostname, addr })| {
-            start_tracer(cfg, hostname, *addr, pid + i as u16)
+            start_tracer(cfg, hostname, *addr, pid + i as u16).map(|(info, _)| info)
         })
         .collect::<anyhow::Result<Vec<_>>>()
 }
@@ -53,8 +106,8 @@ fn start_tracer(
     target_host: &str,
     target_addr: IpAddr,
     trace_identifier: u16,
-) -> Result<TraceInfo, Error> {
-    let (tracer, _) = Builder::new(target_addr)
+) -> Result<(TraceInfo, JoinHandle<trippy_core::Result<()>>), Error> {
+    let (tracer, handle) = Builder::new(target_addr)
         .interface(cfg.interface.clone())
         .source_addr(cfg.source_addr)
         .privilege_mode(cfg.privilege_mode)
@@ -81,28 +134,8 @@ fn start_tracer(
         .drop_privileges(true)
         .build()?
         .spawn()?;
-    Ok(make_trace_info(tracer, target_host.to_string()))
-}
-
-/// Run the TUI, stream or report.
-fn run_frontend(
-    args: &TrippyConfig,
-    resolver: DnsResolver,
-    geoip_lookup: GeoIpLookup,
-    traces: Vec<TraceInfo>,
-) -> anyhow::Result<()> {
-    match args.mode {
-        Mode::Tui => frontend::run_frontend(traces, make_tui_config(args), resolver, geoip_lookup)?,
-        Mode::Stream => report::stream::report(&traces[0], &resolver)?,
-        Mode::Csv => report::csv::report(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Json => report::json::report(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Pretty => report::table::report_pretty(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Markdown => report::table::report_md(&traces[0], args.report_cycles, &resolver)?,
-        Mode::Dot => report::dot::report(&traces[0], args.report_cycles)?,
-        Mode::Flows => report::flows::report(&traces[0], args.report_cycles)?,
-        Mode::Silent => report::silent::report(&traces[0], args.report_cycles)?,
-    }
-    Ok(())
+    let trace_info = make_trace_info(tracer, target_host.to_string());
+    Ok((trace_info, handle))
 }
 
 /// Resolve targets.
