@@ -15,6 +15,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [BREAKING CHANGE] Remove `Timestamp` from all `DnsEntry`
   variants ([#1296](https://github.com/fujiapple852/trippy/issues/1296))
+- [BREAKING CHANGE] Add `tui-privacy` flag and change default value of
+  `tui-privacy-max-ttl` ([#1347](https://github.com/fujiapple852/trippy/issues/1347))
 
 ### Fixed
 
