@@ -221,8 +221,8 @@ docker run -it fujiapple/trippy
 
 ### Binary Asset Download
 
-| OS      | Arch      | Env          | Current                                                                                                                       | Previous                                                                                                                   |
-|---------|-----------|--------------|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| OS      | Arch      | Env          | Current                                                                                                                       | Previous                                                                                                                      |
+|---------|-----------|--------------|-------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | Linux   | `x86_64`  | `gnu`        | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-gnu.tar.gz)       | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-linux-gnu.tar.gz)       |
 | Linux   | `x86_64`  | `musl`       | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-musl.tar.gz)      | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-linux-musl.tar.gz)      |
 | Linux   | `aarch64` | `gnu`        | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-unknown-linux-gnu.tar.gz)      | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-aarch64-unknown-linux-gnu.tar.gz)      |
@@ -818,7 +818,8 @@ line option or in the `theme-colors` section of the configuration file.
 
 The supported [ANSI colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) are:
 
-- `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`, `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
+- `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`,
+  `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
 
 In addition, CSS [named colors](https://developer.mozilla.org/en-US/docs/Web/CSS/named-color) (i.e. SkyBlue) and raw hex
 values (i.e. ffffff) may be used but note that these are only supported on some platforms and terminals and may not
