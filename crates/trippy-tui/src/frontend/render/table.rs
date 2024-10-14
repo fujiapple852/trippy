@@ -693,9 +693,9 @@ fn fmt_details_line(
         )
     };
     let ext_fmt = if let Some(extensions) = extensions {
-        format!("{}: [{}]", t!("geo"), format_extensions_all(extensions))
+        format!("{}: [{}]", t!("ext"), format_extensions_all(extensions))
     } else {
-        format!("{}: <{}>", t!("geo"), t!("none"))
+        format!("{}: <{}>", t!("ext"), t!("none"))
     };
     let nat_fmt = match nat {
         NatStatus::Detected => " [NAT]",
