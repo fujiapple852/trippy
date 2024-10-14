@@ -212,7 +212,7 @@ pub struct Args {
     #[arg(long)]
     pub tui_preserve_screen: bool,
 
-    /// The Tui refresh rate [default: 100ms]
+    /// The TUI refresh rate [default: 100ms]
     #[arg(long, value_parser = parse_duration)]
     pub tui_refresh_rate: Option<Duration>,
 
