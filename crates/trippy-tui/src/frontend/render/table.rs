@@ -631,8 +631,8 @@ fn fmt_details_line(
         (false, _) => format!(
             "AS {}: <{}>\nAS {}: <{}>",
             t!("name"),
-            t!("info"),
             t!("not_enabled"),
+            t!("info"),
             t!("not_enabled")
         ),
         (true, None) => format!(
@@ -646,17 +646,17 @@ fn fmt_details_line(
             format!(
                 "AS {}: <{}>\nAS {}: <{}>",
                 t!("name"),
-                t!("info"),
                 t!("not_found"),
+                t!("info"),
                 t!("not_found")
             )
         }
         (true, Some(info)) => format!(
             "AS {}: AS{} {}\nAS {}: {} {} {}",
             t!("name"),
-            t!("info"),
             info.asn,
             info.name,
+            t!("info"),
             info.prefix,
             info.registry,
             info.allocated
