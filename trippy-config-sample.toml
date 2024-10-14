@@ -330,7 +330,7 @@ tui-privacy-max-ttl = 0
 # The locale to use for Tui [default: auto]
 #tui-locale = "en-US"
 
-# Tui color theme configure.
+# Tui color theme configuraton.
 #
 # The supported ANSI color values are:
 #   Black, Red, Green, Yellow, Blue, Magenta, Cyan, Gray, DarkGray, LightRed,
