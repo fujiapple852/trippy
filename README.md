@@ -443,7 +443,7 @@ trip example.com -e
 Hide the IP address, hostname and GeoIp for the first two hops:
 
 ```shell
-trip example.com --tui-privacy-max-ttl 2
+trip example.com --tui-privacy --tui-privacy-max-ttl 2
 ```
 
 Customize Tui columns (see [Column Reference](#column-reference)):
