@@ -290,8 +290,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Reorder the cli flags in the help output ([#163](https://github.com/fujiapple852/trippy/issues/163))
 - Change short alias for flag `max_round_duration` from `-I`
   to `-T` ([1](https://github.com/fujiapple852/trippy/commit/15978b0909139bb2b38baa4c6f6ca969c818fc75))
-- Added short cli flags for `source-port` (`-S`), `first-ttl` (`-f`)
-  and `tui-max-addrs` (`-M`) ([1](https://github.com/fujiapple852/trippy/commit/6a6a490174582c8500972b89407ba8d694c4c6fa))
+- Added short cli flags for `source-port` (`-S`), `first-ttl` (`-f`) and `tui-max-addrs` (
+  `-M`) ([1](https://github.com/fujiapple852/trippy/commit/6a6a490174582c8500972b89407ba8d694c4c6fa))
 
 ### Fixed
 
