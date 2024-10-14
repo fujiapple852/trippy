@@ -37,6 +37,41 @@ samples-chart-lost-color = "blue"
 
 See [1247](https://github.com/fujiapple852/trippy/issues/1247) for more details.
 
+### Improved Hop Privacy Settings
+
+Trippy has a privacy mode which can be used to hide sensitive information, such as IP address and GeoIp, for all hops up
+to a configurable `tui-privacy-max-ttl`. The privacy mode can be toggled on and off from within the TUI using the
+`toggle-privacy` TUI command (bound to the `p` key by default), but only when `tui-privacy-max-ttl` is set to be greater
+than the default value of 0. If `tui-privacy-max-ttl` is set to be greater than 0, then the privacy mode will be enabled
+by default when Trippy starts.
+
+This behaviour is inconvenient for users who wish to enable privacy mode _after_ starting Trippy, as there is no way to
+enable the privacy mode without first setting `tui-privacy-max-ttl` to be greater than 0 and restarting Trippy.
+
+Starting from this release, the default value of `tui-privacy-max-ttl` has been increased to 1 and a new configuration
+option, `tui-privacy`, has been added to enable or disable the privacy mode when Trippy starts. This allows users to
+enable the privacy mode _after_ starting Trippy without needing to restart.
+
+The following example enables privacy mode for the first 3 hops:
+
+```shell
+trip example.com --tui-privacy --tui-privacy-max-ttl 3
+```
+
+Alternatively, to make the changes permanent you may add the `tui-privacy` and `tui-privacy-max-ttl` entries to the
+`tui` section of the Trippy configuration file:
+
+```toml
+[tui]
+tui-privacy = true
+tui-privacy-max-ttl = 3
+```
+
+This is a **breaking change** and will impact users who current configure the `tui-privacy-max-ttl` setting as they must
+now also enable `tui-privacy`.
+
+See [#1347](https://github.com/fujiapple852/trippy/issues/1347) for more details.
+
 ### Thanks
 
 My thanks to all Trippy contributors, package maintainers and community members.
