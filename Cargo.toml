@@ -96,3 +96,6 @@ cast_possible_truncation = "allow"
 missing_errors_doc = "allow"
 cast_precision_loss = "allow"
 bool_assert_comparison = "allow"
+
+[profile.release]
+lto = true
