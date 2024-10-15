@@ -857,7 +857,8 @@ command line option or in the `bindings` section of the configuration file.
 | `toggle-chart`             | Toggle the chart                                | `c`      |
 | `toggle-map`               | Toggle the GeoIp map                            | `m`      |
 | `toggle-flows`             | Toggle the flows                                | `f`      |
-| `toggle-privacy`           | Toggle the hop privacy                          | `p`      |
+| `expand-privacy`           | Expand hop privacy                              | `p`      |
+| `contract-privacy`         | Contract hop privacy                            | `o`      |
 | `expand-hosts`             | Expand the hosts shown per hop                  | `]`      |
 | `expand-hosts-max`         | Expand the hosts shown per hop to the maximum   | `}`      |
 | `contract-hosts`           | Contract the hosts shown per hop                | `[`      |
