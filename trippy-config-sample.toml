@@ -324,7 +324,7 @@ tui-preserve-screen = false
 # The Tui refresh rate [default: 100ms]
 tui-refresh-rate = "100ms"
 
-# The maximum ttl of hops which will be masked for privacy [default: 1]
+# The maximum ttl of hops which will be masked for privacy [default: 0]
 tui-privacy-max-ttl = 0
 
 # The locale to use for Tui [default: auto]
@@ -408,7 +408,8 @@ toggle-freeze = "ctrl+f"
 toggle-chart = "c"
 toggle-map = "m"
 toggle-flows = "f"
-toggle-privacy = "p"
+expand-privacy = "p"
+contract-privacy = "o"
 expand-hosts = "]"
 expand-hosts-max = "}"
 contract-hosts = "["

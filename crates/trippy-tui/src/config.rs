@@ -20,7 +20,7 @@ mod constants;
 mod file;
 mod theme;
 
-use crate::config::file::ConfigTui;
+use crate::config::file::{ConfigBindings, ConfigTui};
 pub use binding::{TuiBindings, TuiCommandItem, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
@@ -364,7 +364,7 @@ impl TrippyConfig {
         let cfg_file_tui = cfg_file.tui.unwrap_or_default();
         let cfg_file_dns = cfg_file.dns.unwrap_or_default();
         let cfg_file_report = cfg_file.report.unwrap_or_default();
-        validate_deprecated(&cfg_file_tui)?;
+        validate_deprecated(&cfg_file_tui, &cfg_file_tui_bindings)?;
         let mode = cfg_layer(args.mode, cfg_file_trace.mode, constants::DEFAULT_MODE);
         let unprivileged = cfg_layer_bool_flag(
             args.unprivileged,
@@ -811,11 +811,16 @@ const fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> boo
 }
 
 /// Check for deprecated fields.
-fn validate_deprecated(cfg_file_tui: &ConfigTui) -> anyhow::Result<()> {
+fn validate_deprecated(
+    cfg_file_tui: &ConfigTui,
+    cfg_file_tui_bindings: &ConfigBindings,
+) -> anyhow::Result<()> {
     if cfg_file_tui.deprecated_tui_max_samples.is_some() {
         Err(anyhow!("tui-max-samples in [tui] section is deprecated, use max-samples in [strategy] section instead"))
     } else if cfg_file_tui.deprecated_tui_max_flows.is_some() {
         Err(anyhow!("tui-max-flows in [tui] section is deprecated, use max-flows in [strategy] section instead"))
+    } else if cfg_file_tui_bindings.deprecated_toggle_privacy.is_some() {
+        Err(anyhow!("toggle-privacy in [bindings] section is deprecated, use expand-privacy and contract-privacy instead"))
     } else {
         Ok(())
     }
@@ -1646,6 +1651,7 @@ mod tests {
 
     #[test_case("trip example.com --tui-max-samples foo", Err(anyhow!("error: unexpected argument '--tui-max-samples' found")); "deprecated tui max samples")]
     #[test_case("trip example.com --tui-max-flows foo", Err(anyhow!("error: unexpected argument '--tui-max-flows' found")); "deprecated tui max flows")]
+    #[test_case("trip example.com --tui-key-bindings toggle-privacy=o", Err(anyhow!("error: invalid value 'toggle-privacy=o' for '--tui-key-bindings <TUI_KEY_BINDINGS>': toggle-privacy is deprecated, use expand-privacy and contract-privacy instead")); "deprecated toggle-privacy key binding")]
     fn test_deprecated(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare_lines(parse_config(cmd), expected, Some(0));
     }

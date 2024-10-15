@@ -292,6 +292,11 @@ fn parse_tui_binding_value(value: &str) -> anyhow::Result<(TuiCommandItem, TuiKe
         .ok_or_else(|| anyhow!("invalid binding value: expected format `item=value`"))?;
     let item = TuiCommandItem::try_from(&value[..pos])?;
     let binding = TuiKeyBinding::try_from(&value[pos + 1..])?;
+    if item == TuiCommandItem::DeprecatedTogglePrivacy {
+        return Err(anyhow!(
+            "toggle-privacy is deprecated, use expand-privacy and contract-privacy instead"
+        ));
+    }
     Ok((item, binding))
 }
 

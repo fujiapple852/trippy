@@ -33,7 +33,8 @@ pub struct TuiBindings {
     pub toggle_chart: TuiKeyBinding,
     pub toggle_map: TuiKeyBinding,
     pub toggle_flows: TuiKeyBinding,
-    pub toggle_privacy: TuiKeyBinding,
+    pub expand_privacy: TuiKeyBinding,
+    pub contract_privacy: TuiKeyBinding,
     pub expand_hosts: TuiKeyBinding,
     pub contract_hosts: TuiKeyBinding,
     pub expand_hosts_max: TuiKeyBinding,
@@ -77,7 +78,8 @@ impl Default for TuiBindings {
             toggle_chart: TuiKeyBinding::new(KeyCode::Char('c')),
             toggle_map: TuiKeyBinding::new(KeyCode::Char('m')),
             toggle_flows: TuiKeyBinding::new(KeyCode::Char('f')),
-            toggle_privacy: TuiKeyBinding::new(KeyCode::Char('p')),
+            expand_privacy: TuiKeyBinding::new(KeyCode::Char('p')),
+            contract_privacy: TuiKeyBinding::new(KeyCode::Char('o')),
             expand_hosts: TuiKeyBinding::new(KeyCode::Char(']')),
             contract_hosts: TuiKeyBinding::new(KeyCode::Char('[')),
             expand_hosts_max: TuiKeyBinding::new(KeyCode::Char('}')),
@@ -135,7 +137,8 @@ impl TuiBindings {
             (self.toggle_chart, TuiCommandItem::ToggleChart),
             (self.toggle_map, TuiCommandItem::ToggleMap),
             (self.toggle_flows, TuiCommandItem::ToggleFlows),
-            (self.toggle_privacy, TuiCommandItem::TogglePrivacy),
+            (self.expand_privacy, TuiCommandItem::ExpandPrivacy),
+            (self.contract_privacy, TuiCommandItem::ContractPrivacy),
             (self.expand_hosts, TuiCommandItem::ExpandHosts),
             (self.expand_hosts_max, TuiCommandItem::ExpandHostsMax),
             (self.contract_hosts, TuiCommandItem::ContractHosts),
@@ -263,10 +266,14 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&TuiCommandItem::ToggleFlows)
                 .or(cfg.toggle_flows.as_ref())
                 .unwrap_or(&Self::default().toggle_flows),
-            toggle_privacy: *cmd_items
-                .get(&TuiCommandItem::TogglePrivacy)
-                .or(cfg.toggle_privacy.as_ref())
-                .unwrap_or(&Self::default().toggle_privacy),
+            expand_privacy: *cmd_items
+                .get(&TuiCommandItem::ExpandPrivacy)
+                .or(cfg.expand_privacy.as_ref())
+                .unwrap_or(&Self::default().expand_privacy),
+            contract_privacy: *cmd_items
+                .get(&TuiCommandItem::ContractPrivacy)
+                .or(cfg.contract_privacy.as_ref())
+                .unwrap_or(&Self::default().contract_privacy),
             toggle_map: *cmd_items
                 .get(&TuiCommandItem::ToggleMap)
                 .or(cfg.toggle_map.as_ref())
@@ -589,7 +596,14 @@ pub enum TuiCommandItem {
     /// Toggle the flows panel.
     ToggleFlows,
     /// Toggle hop privacy mode.
-    TogglePrivacy,
+    ///
+    /// Deprecated: use `ExpandPrivacy` and `ContractPrivacy` instead.
+    #[strum(serialize = "toggle-privacy")]
+    DeprecatedTogglePrivacy,
+    /// Expand hop privacy.
+    ExpandPrivacy,
+    /// Contract hop privacy.
+    ContractPrivacy,
     /// Expand hosts.
     ExpandHosts,
     /// Expand hosts to max.
