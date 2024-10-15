@@ -264,7 +264,7 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .or(cfg.toggle_flows.as_ref())
                 .unwrap_or(&Self::default().toggle_flows),
             toggle_privacy: *cmd_items
-                .get(&TuiCommandItem::ToggleFlows)
+                .get(&TuiCommandItem::TogglePrivacy)
                 .or(cfg.toggle_privacy.as_ref())
                 .unwrap_or(&Self::default().toggle_privacy),
             toggle_map: *cmd_items
