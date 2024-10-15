@@ -371,7 +371,8 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("toggle-chart", format!("{}", binds.toggle_chart)),
         SettingsItem::new("toggle-map", format!("{}", binds.toggle_map)),
         SettingsItem::new("toggle-flows", format!("{}", binds.toggle_flows)),
-        SettingsItem::new("toggle-privacy", format!("{}", binds.toggle_privacy)),
+        SettingsItem::new("expand-privacy", format!("{}", binds.expand_privacy)),
+        SettingsItem::new("contract-privacy", format!("{}", binds.contract_privacy)),
         SettingsItem::new("expand-hosts", format!("{}", binds.expand_hosts)),
         SettingsItem::new("expand-hosts-max", format!("{}", binds.expand_hosts_max)),
         SettingsItem::new("contract-hosts", format!("{}", binds.contract_hosts)),
@@ -523,7 +524,7 @@ pub fn settings_tabs() -> [(String, usize); 7] {
         (t!("settings_tab_trace_title").to_string(), 17),
         (t!("settings_tab_dns_title").to_string(), 5),
         (t!("settings_tab_geoip_title").to_string(), 1),
-        (t!("settings_tab_bindings_title").to_string(), 36),
+        (t!("settings_tab_bindings_title").to_string(), 37),
         (t!("settings_tab_theme_title").to_string(), 31),
         (t!("settings_tab_columns_title").to_string(), 0),
     ]

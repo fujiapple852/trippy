@@ -82,11 +82,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .tui_config
         .max_addrs
         .map_or_else(|| String::from(t!("auto")), |m| m.to_string());
-    let privacy = if app.hide_private_hops && app.tui_config.privacy_max_ttl > 0 {
-        t!("on")
-    } else {
-        t!("off")
-    };
+    let privacy = app.tui_config.privacy_max_ttl;
     let source = render_source(app);
     let dest = render_destination(app);
     let target = format!("{source} -> {dest}");

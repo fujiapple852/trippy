@@ -38,8 +38,6 @@ pub struct TuiApp {
     pub show_settings: bool,
     pub show_hop_details: bool,
     pub show_flows: bool,
-    /// Whether private hops should be shown or not.
-    pub hide_private_hops: bool,
     pub show_chart: bool,
     pub show_map: bool,
     pub frozen_start: Option<SystemTime>,
@@ -70,7 +68,6 @@ impl TuiApp {
             show_settings: false,
             show_hop_details: false,
             show_flows: false,
-            hide_private_hops: true,
             show_chart: false,
             show_map: false,
             frozen_start: None,
@@ -382,8 +379,17 @@ impl TuiApp {
         }
     }
 
-    pub fn toggle_privacy(&mut self) {
-        self.hide_private_hops = !self.hide_private_hops;
+    pub fn expand_privacy(&mut self) {
+        let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
+        if usize::from(self.tui_config.privacy_max_ttl) < hop_count {
+            self.tui_config.privacy_max_ttl += 1;
+        }
+    }
+
+    pub fn contract_privacy(&mut self) {
+        if self.tui_config.privacy_max_ttl > 0 {
+            self.tui_config.privacy_max_ttl -= 1;
+        }
     }
 
     pub fn toggle_asinfo(&mut self) {
