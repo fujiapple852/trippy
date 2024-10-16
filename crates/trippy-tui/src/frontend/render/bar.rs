@@ -29,7 +29,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
             fmt_target_family(app.tracer_config().data.target_addr()),
         ),
     };
-    
+
     let privilege_mode = fmt_privilege_mode(app.tracer_config().data.privilege_mode());
 
     let as_mode = match app.resolver.config().resolve_method {
@@ -56,9 +56,9 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let privacy = if app.tui_config.privacy_max_ttl > 0 {
-        Span::raw(format!("⛨:{}", app.tui_config.privacy_max_ttl))
+        Span::raw(format!("◉:{}", app.tui_config.privacy_max_ttl))
     } else {
-        Span::raw("⛨:∅")
+        Span::raw("◉:-")
     };
 
     let address_mode = match app.tui_config.address_mode {
@@ -66,6 +66,8 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         AddressMode::Host => Span::styled("host", Style::default()),
         AddressMode::Both => Span::styled("both", Style::default()),
     };
+
+    let locale = Span::raw(app.tui_config.locale.as_str());
 
     let left_line = Line::from(vec![
         Span::raw(" ["),
@@ -86,6 +88,8 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         privacy,
         Span::raw("] ["),
         max_hosts,
+        Span::raw("] ["),
+        locale,
         Span::raw("] "),
     ]);
 
