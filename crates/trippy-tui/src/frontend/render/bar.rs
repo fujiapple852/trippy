@@ -3,7 +3,6 @@ use crate::frontend::tui_app::TuiApp;
 use crate::t;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Line, Span, Style};
-use ratatui::style::Stylize;
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
 use std::borrow::Cow;
@@ -30,37 +29,36 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
             fmt_target_family(app.tracer_config().data.target_addr()),
         ),
     };
-
+    
     let privilege_mode = fmt_privilege_mode(app.tracer_config().data.privilege_mode());
 
     let as_mode = match app.resolver.config().resolve_method {
-        ResolveMethod::System => Span::styled("✖asn", Style::default().dim()),
+        ResolveMethod::System => Span::styled("□ asn", Style::default()),
         ResolveMethod::Resolv | ResolveMethod::Google | ResolveMethod::Cloudflare => {
             if app.tui_config.lookup_as_info {
-                Span::styled("✓asn", Style::default())
+                Span::styled("■ asn", Style::default())
             } else {
-                Span::styled("✖asn", Style::default().dim())
+                Span::styled("□ asn", Style::default())
             }
         }
     };
 
     let details = if app.show_hop_details {
-        Span::styled(format!("✓{}", t!("details")), Style::default())
+        Span::styled(format!("■ {}", t!("details")), Style::default())
     } else {
-        Span::styled(format!("✖{}", t!("details")), Style::default().dim())
+        Span::styled(format!("□ {}", t!("details")), Style::default())
     };
 
-    let auto = t!("auto");
-    let width = auto.len();
-    let max_hosts = app
-        .tui_config
-        .max_addrs
-        .map_or_else(|| Span::raw(auto), |m| Span::raw(format!("{m:width$}")));
+    let max_hosts = if let Some(m) = app.tui_config.max_addrs {
+        Span::raw(format!("∓:{m}"))
+    } else {
+        Span::raw("∓:∞")
+    };
 
     let privacy = if app.tui_config.privacy_max_ttl > 0 {
-        Span::styled(format!("✓{}", t!("privacy")), Style::default())
+        Span::raw(format!("⛨:{}", app.tui_config.privacy_max_ttl))
     } else {
-        Span::styled(format!("✖{}", t!("privacy")), Style::default().dim())
+        Span::raw("⛨:∅")
     };
 
     let address_mode = match app.tui_config.address_mode {
@@ -78,14 +76,14 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         as_mode,
         Span::raw("] ["),
         details,
-        Span::raw("] ["),
-        privacy,
         Span::raw("]"),
     ]);
 
     let right_line = Line::from(vec![
         Span::raw(" ["),
         address_mode,
+        Span::raw("] ["),
+        privacy,
         Span::raw("] ["),
         max_hosts,
         Span::raw("] "),
