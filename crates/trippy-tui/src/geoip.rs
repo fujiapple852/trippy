@@ -210,20 +210,20 @@ impl From<ipinfo::IpInfoGeoIp> for GeoIpCity {
     }
 }
 
-impl From<maxminddb::geoip2::City<'_>> for GeoIpCity {
-    fn from(value: maxminddb::geoip2::City<'_>) -> Self {
+impl From<(maxminddb::geoip2::City<'_>, &str)> for GeoIpCity {
+    fn from((value, locale): (maxminddb::geoip2::City<'_>, &str)) -> Self {
         let city = value
             .city
             .as_ref()
             .and_then(|city| city.names.as_ref())
-            .and_then(|names| names.get(LOCALE))
+            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
             .map(ToString::to_string);
         let subdivision = value
             .subdivisions
             .as_ref()
             .and_then(|c| c.first())
             .and_then(|c| c.names.as_ref())
-            .and_then(|names| names.get(LOCALE))
+            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
             .map(ToString::to_string);
         let subdivision_code = value
             .subdivisions
@@ -235,7 +235,7 @@ impl From<maxminddb::geoip2::City<'_>> for GeoIpCity {
             .country
             .as_ref()
             .and_then(|country| country.names.as_ref())
-            .and_then(|names| names.get(LOCALE))
+            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
             .map(ToString::to_string);
         let country_code = value
             .country
@@ -246,7 +246,7 @@ impl From<maxminddb::geoip2::City<'_>> for GeoIpCity {
             .continent
             .as_ref()
             .and_then(|continent| continent.names.as_ref())
-            .and_then(|names| names.get(LOCALE))
+            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
             .map(ToString::to_string);
         let latitude = value
             .location
@@ -274,8 +274,19 @@ impl From<maxminddb::geoip2::City<'_>> for GeoIpCity {
     }
 }
 
-/// The default locale.
-const LOCALE: &str = "en";
+/// The fallback locale.
+///
+/// The `MaxMind` support documentation says:
+///
+/// > Our geolocation name data includes the names of the continent, country, city, and
+/// > subdivisions of the location of the IP address. We include the country names in
+/// > English, Simplified Chinese, Spanish, Brazilian Portuguese, Russian, Japanese, French,
+/// > and German.
+/// >
+/// > Please note: Not every place name is always available in each language. We recommend checking
+/// > English names as a default for cases where a localized name isn’t available in your preferred
+/// > language.
+const FALLBACK_LOCALE: &str = "en";
 
 /// Alias for a cache of `GeoIp` data.
 type Cache = RefCell<HashMap<IpAddr, Rc<GeoIpCity>>>;
@@ -285,16 +296,18 @@ type Cache = RefCell<HashMap<IpAddr, Rc<GeoIpCity>>>;
 pub struct GeoIpLookup {
     reader: Option<Reader<Vec<u8>>>,
     cache: Cache,
+    locale: String,
 }
 
 impl GeoIpLookup {
     /// Create a new `GeoIpLookup` from a `MaxMind` DB file.
-    pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    pub fn from_file<P: AsRef<Path>>(path: P, locale: String) -> anyhow::Result<Self> {
         let reader = maxminddb::Reader::open_readfile(path.as_ref())
             .context(format!("{}", path.as_ref().display()))?;
         Ok(Self {
             reader: Some(reader),
             cache: RefCell::new(HashMap::new()),
+            locale,
         })
     }
 
@@ -303,6 +316,7 @@ impl GeoIpLookup {
         Self {
             reader: None,
             cache: RefCell::new(HashMap::new()),
+            locale: FALLBACK_LOCALE.to_string(),
         }
     }
 
@@ -317,7 +331,10 @@ impl GeoIpLookup {
             let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
                 GeoIpCity::from(reader.lookup::<ipinfo::IpInfoGeoIp>(addr)?)
             } else {
-                GeoIpCity::from(reader.lookup::<maxminddb::geoip2::City<'_>>(addr)?)
+                GeoIpCity::from((
+                    reader.lookup::<maxminddb::geoip2::City<'_>>(addr)?,
+                    self.locale.as_ref(),
+                ))
             };
             let geo = self.cache.borrow_mut().insert(addr, Rc::new(city_data));
             Ok(geo)
