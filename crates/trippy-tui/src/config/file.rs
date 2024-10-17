@@ -310,6 +310,8 @@ pub struct ConfigThemeColors {
     pub map_info_panel_border_color: Option<TuiColor>,
     pub map_info_panel_bg_color: Option<TuiColor>,
     pub map_info_panel_text_color: Option<TuiColor>,
+    pub dynamic_bar_bg_color: Option<TuiColor>,
+    pub dynamic_bar_text_color: Option<TuiColor>,
 }
 
 impl Default for ConfigThemeColors {
@@ -348,6 +350,8 @@ impl Default for ConfigThemeColors {
             map_info_panel_border_color: Some(theme.map_info_panel_border),
             map_info_panel_bg_color: Some(theme.map_info_panel_bg),
             map_info_panel_text_color: Some(theme.map_info_panel_text),
+            dynamic_bar_bg_color: Some(theme.dynamic_bar_bg),
+            dynamic_bar_text_color: Some(theme.dynamic_bar_text),
         }
     }
 }

@@ -60,7 +60,7 @@ as-info:
   fr: "info-as"
   tr: "AS bilgisi"
 details:
-  en: "details"
+  en: "detail" # TODO removed the s
   fr: "détails"
   tr: "ayrıntılar"
 max-hosts:
