@@ -3,439 +3,549 @@ trippy:
   en: "trippy"
   fr: "trippy"
   tr: "trippy"
+  ru: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
   tr: "otomatik"
+  ru: "авто"
 on:
   en: "on"
   fr: "activé"
   tr: "açık"
+  ru: "вкл"
 off:
   en: "off"
   fr: "désactivé"
   tr: "kapalı"
+  ru: "выкл"
 yes:
   en: "Yes"
   fr: "Oui"
   tr: "Evet"
+  ru: "Да"
 no:
   en: "No"
   fr: "Non"
   tr: "Hayır"
+  ru: "Нет"
 none:
   en: "none"
   fr: "aucun"
   tr: "hiçbiri"
+  ru: "нет"
 hidden:
   en: "Hidden"
   fr: "Caché"
   tr: "Gizli"
+  ru: "Скрыто"
 flow:
   en: "flow"
   fr: "flux"
   tr: "akış"
+  ru: "поток"
 flows:
   en: "flows"
   fr: "flux"
   tr: "akışlar"
+  ru: "потоки"
 target:
   en: "Target"
   fr: "Cible"
   tr: "Hedef"
+  ru: "Цель"
 config:
   en: "Config"
   fr: "Config"
   tr: "Konfigurasyon"
+  ru: "Конфиг"
 status:
   en: "Status"
   fr: "Statut"
   tr: "Durum"
+  ru: "Статус"
 protocol:
   en: "protocol"
   fr: "protocole"
   tr: "protokol"
+  ru: "протокол"
 as-info:
   en: "as-info"
   fr: "info-as"
   tr: "AS bilgisi"
+  ru: "as-info"
 details:
   en: "details"
   fr: "détails"
   tr: "ayrıntılar"
+  ru: "детали"
 max-hosts:
   en: "max-hosts"
   fr: "nombre d'hôtes maximum"
   tr: "maksimum hostlar"
+  ru: "максимальное количество хостов"
 privacy:
   en: "privacy"
   fr: "confidentialité"
   tr: "gizlilik"
+  ru: "конфиденциальность"
 privileged:
   en: "privileged"
   fr: "privilégié"
   tr: "ayrıcalıklı"
+  ru: "привилегированный"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
   tr: "ayrıcalıksız"
+  ru: "непривилегированный"
 na:
   en: "n/a"
   fr: "non disponible"
   tr: "yok"
+  ru: "н/д"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
   tr: "%{hop_count} atlanan keşfedildi"
+  ru: "обнаружено %{hop_count} прыжков"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
   tr: "%{hop_count} atlanan ve %{flow_count} benzersiz %{plural_flows} keşfedildi"
+  ru: "обнаружено %{hop_count} прыжков и %{flow_count} уникальных %{plural_flows}"
 unknown:
   en: "unknown"
   fr: "inconnu"
   tr: "bilinmeyen"
+  ru: "неизвестно"
 icmp:
   en: "icmp"
   fr: "icmp"
   tr: "icmp"
+  ru: "icmp"
 udp:
   en: "udp"
   fr: "udp"
   tr: "udp"
+  ru: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
   tr: "tcp"
+  ru: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
   tr: "%{failure_count} / %{total_probes} (%{failure_rate}%) sondajın başarısız olması"
+  ru: "%{failure_count} из %{total_probes} (%{failure_rate}%) зондов не удалось"
 status_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  ru: "Не удалось"
 status_running:
   en: "Running"
   fr: "En cours"
   tr: "Çalışıyor"
+  ru: "Запущен"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
   tr: "Dondurulmuş"
+  ru: "Заморожен"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
   tr: "Veri bekleniyor..."
+  ru: "Ожидание данных..."
 header_help:
   en: "elp"
   fr: "Aide"
   tr: "Yardım"
+  ru: "Помощь"
 header_settings:
   en: "ettings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  ru: "Настройки"
 header_quit:
   en: "uit"
   fr: "Quitter"
   tr: "Çıkış"
+  ru: "Выход"
 title_hops:
   en: "Hops"
   fr: "Sauts"
   tr: "Atlananlar"
+  ru: "Прыжки"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
   tr: "Sıklık"
+  ru: "Частота"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  ru: "Образцы"
 title_traces:
   en: "Traces"
   fr: "Traces"
   tr: "İzler"
+  ru: "Следы"
 title_flows:
   en: "Flows"
   fr: "Flux"
   tr: "Akışlar"
+  ru: "Потоки"
 title_map:
   en: "Map"
   fr: "Carte"
   tr: "Harita"
+  ru: "Карта"
 title_help:
   en: "Help"
   fr: "Aide"
   tr: "Yardım"
+  ru: "Помощь"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  ru: "Настройки"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
   tr: "Trippy Başarısız :("
+  ru: "Trippy не удалось :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
   tr: "Çıkmak için q tuşuna basın"
+  ru: "Нажмите q для выхода"
 hop:
   en: "Hop"
   fr: "Saut"
   tr: "Atla"
+  ru: "Прыжок"
 rtt:
   en: "RTT"
   fr: "RTT"
   tr: "RTT"
+  ru: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
   tr: "Grafik"
+  ru: "Диаграмма"
 samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  ru: "Образцы"
 host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  ru: "Хост"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
   tr: "Yanıt yok"
+  ru: "Нет ответа"
 dns_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  ru: "Не удалось"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
   tr: "Zaman aşımı"
+  ru: "Тайм-аут"
 labels:
   en: "labels"
   fr: "étiquettes"
   tr: "etiketler"
+  ru: "метки"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
   tr: "etkin değil"
+  ru: "не активирован"
 not_found:
   en: "not found"
   fr: "non trouvé"
   tr: "bulunamadı"
+  ru: "не найдено"
 awaited:
   en: "awaited"
   fr: "attendu"
   tr: "beklenen"
+  ru: "ожидаемый"
 name:
   en: "Name"
   fr: "Nom"
   tr: "Ad"
+  ru: "Имя"
 info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  ru: "Информация"
 geo:
   en: "Geo"
   fr: "Géo"
   tr: "Coğrafi"
+  ru: "Гео"
 pos:
   en: "Pos"
   fr: "Pos"
   tr: "Poz"
+  ru: "Поз"
 ext:
   en: "Ext"
   fr: "Ext"
   tr: "Uzantı"
+  ru: "Расширение"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
   tr: "Bir ağ analiz aracı"
+  ru: "Сетевой диагностический инструмент"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
   tr: "Tüm ayarları görmek için [%{key}] tuşuna basın"
+  ru: "Нажмите [%{key}], чтобы показать все настройки"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
   tr: "Tüm bağlantıları görmek için [%{key}] tuşuna basın"
+  ru: "Нажмите [%{key}], чтобы показать все привязки"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
   tr: "Tüm sütunları görmek için [%{key}] tuşuna basın"
+  ru: "Нажмите [%{key}], чтобы показать все столбцы"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
   tr: "Apache Lisansı 2.0 altında dağıtılmıştır"
+  ru: "Распространяется под лицензией Apache 2.0"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
   tr: "Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar"
+  ru: "Авторское право 2022 Участники Trippy"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
   tr: "GeoIp etkin değil"
+  ru: "GeoIp не активирован"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
   tr: "Hop için GeoIp verisi yok"
+  ru: "Нет данных GeoIp для прыжка"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
   tr: "Hop için birden fazla GeoIp konumu"
+  ru: "Несколько местоположений GeoIp для прыжка"
 kilometer:
   en: "km"
   fr: "km"
   tr: "km"
+  ru: "km"
 settings_info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  ru: "Информация"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
   tr: "Tui"
+  ru: "Tui"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
   tr: "İz"
+  ru: "След"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
   tr: "DNS"
+  ru: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
   tr: "GeoIp"
+  ru: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
   tr: "Bağlantılar"
+  ru: "Привязки"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
   tr: "Tema"
+  ru: "Тема"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
   tr: "Sütunlar"
+  ru: "Столбцы"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
   tr: "Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar"
+  ru: "Настройки, которые контролируют, как данные отображаются в этом Tui"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
   tr: "İzleme stratejisini kontrol eden ayarlar"
+  ru: "Настройки, которые контролируют стратегию трассировки"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
   tr: "DNS aramalarının nasıl yapıldığını kontrol eden ayarlar"
+  ru: "Настройки, которые контролируют, как выполняются DNS-запросы"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
   tr: "GeoIp ile ilgili ayarlar"
+  ru: "Настройки, касающиеся GeoIp"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
   tr: "Tui tuş ayarları"
+  ru: "Привязки клавиш Tui"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
   tr: "Tui tema renkleri"
+  ru: "Цвета темы Tui"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
   tr: "Tui tablo sütunları. Bir sütunu açmak veya kapatmak için [%{c}] tuşuna basın ve sütun sırasını değiştirmek için [%{d}] ve [%{u}] tuşlarını kullanın."
+  ru: "Столбцы таблицы Tui. Нажмите [%{c}], чтобы включить или отключить столбец, и используйте клавиши [%{d}] и [%{u}], чтобы изменить порядок столбцов."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
   tr: "Ayar"
+  ru: "Настройка"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
   tr: "Değer"
+  ru: "Значение"
 column_host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  ru: "Хост"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
   tr: "Kayıp%"
+  ru: "Потери%"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
   tr: "Gönderilen"
+  ru: "Отпр"
 column_recv:
   en: "Recv"
   fr: "Reçus"
   tr: "Alınan"
+  ru: "Получ"
 column_last:
   en: "Last"
   fr: "Dernier"
   tr: "Son"
+  ru: "Посл"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
   tr: "Ort"
+  ru: "Ср"
 column_best:
   en: "Best"
   fr: "Meilleur"
   tr: "En iyi"
+  ru: "Луч"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
   tr: "En kötü"
+  ru: "Худ"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
   tr: "StDev"
+  ru: "СКО"
 column_sts:
   en: "Sts"
   fr: "État"
   tr: "Sts"
+  ru: "Статус"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
   tr: "Jttr"
+  ru: "Джитр"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
   tr: "Javg"
+  ru: "СреднДжитр"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
   tr: "Jmax"
+  ru: "МаксДжитр"
 column_jint:
   en: "Jint"
   fr: "GigInt"
   tr: "Jint"
+  ru: "ИнтДжитр"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
+  ru: "Порт"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
   tr: "Dprt"
+  ru: "Порт"
 column_seq:
   en: "Seq"
   fr: "Seq"
   tr: "Seq"
+  ru: "Посл"
 column_type:
   en: "Type"
   fr: "Type"
   tr: "Type"
+  ru: "Тип"
 column_code:
   en: "Code"
   fr: "Code"
   tr: "Code"
+  ru: "Код"
 column_nat:
   en: "Nat"
   fr: "Nat"
   tr: "Nat"
+  ru: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
   tr: "Başarısız"
+  ru: "Неуд"
