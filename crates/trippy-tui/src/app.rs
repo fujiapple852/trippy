@@ -1,7 +1,7 @@
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
-use crate::locale::set_locale;
+use crate::locale::{locale, set_locale};
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
@@ -18,7 +18,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     set_locale(cfg.tui_locale.as_deref());
     let _guard = configure_logging(cfg);
     let resolver = start_dns_resolver(cfg)?;
-    let geoip_lookup = create_geoip_lookup(cfg)?;
+    let geoip_lookup = create_geoip_lookup(cfg, locale())?;
     let addrs = resolve_targets(cfg, &resolver)?;
     if addrs.is_empty() {
         return Err(anyhow!(
@@ -141,9 +141,9 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     ))?)
 }
 
-fn create_geoip_lookup(cfg: &TrippyConfig) -> anyhow::Result<GeoIpLookup> {
+fn create_geoip_lookup(cfg: &TrippyConfig, locale: String) -> anyhow::Result<GeoIpLookup> {
     if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
-        GeoIpLookup::from_file(path)
+        GeoIpLookup::from_file(path, locale)
     } else {
         Ok(GeoIpLookup::empty())
     }
