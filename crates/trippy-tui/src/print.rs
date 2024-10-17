@@ -1,6 +1,8 @@
 use crate::config::{Args, TuiCommandItem, TuiThemeItem};
+use crate::locale::available_locales;
 use clap::CommandFactory;
 use clap_complete::Shell;
+use itertools::Itertools;
 use std::process;
 use strum::VariantNames;
 
@@ -26,6 +28,11 @@ pub fn print_shell_completions(shell: Shell) -> anyhow::Result<()> {
 
 pub fn print_man_page() -> anyhow::Result<()> {
     println!("{}", man_page()?);
+    process::exit(0);
+}
+
+pub fn print_locales() {
+    println!("TUI locales: {}", available_locales().iter().join(", "));
     process::exit(0);
 }
 

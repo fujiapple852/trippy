@@ -35,6 +35,7 @@ pub fn trippy() -> anyhow::Result<()> {
         TrippyAction::PrintConfigTemplate => print::print_config_template(),
         TrippyAction::PrintManPage => print::print_man_page()?,
         TrippyAction::PrintShellCompletions(shell) => print::print_shell_completions(shell)?,
+        TrippyAction::PrintLocales => print::print_locales(),
     }
     Ok(())
 }

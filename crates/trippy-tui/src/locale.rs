@@ -21,6 +21,11 @@ pub fn locale() -> String {
     rust_i18n::locale().to_string()
 }
 
+/// Get all available locales.
+pub fn available_locales() -> Vec<&'static str> {
+    rust_i18n::available_locales!()
+}
+
 fn set_locale_inner(locale: &str) {
     let all_locales = rust_i18n::available_locales!();
     if all_locales.contains(&locale) {

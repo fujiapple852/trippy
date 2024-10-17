@@ -256,6 +256,8 @@ pub enum TrippyAction {
     PrintShellCompletions(Shell),
     /// Generate a man page and exit.
     PrintManPage,
+    /// Print all available locales and exit.
+    PrintLocales,
 }
 
 impl TrippyAction {
@@ -270,6 +272,8 @@ impl TrippyAction {
             Self::PrintShellCompletions(shell)
         } else if args.generate_man {
             Self::PrintManPage
+        } else if args.print_locales {
+            Self::PrintLocales
         } else {
             Self::Trippy(TrippyConfig::from(args, privilege, pid)?)
         })
@@ -1645,6 +1649,7 @@ mod tests {
     #[test_case("trip --generate bash", Ok(TrippyAction::PrintShellCompletions(Shell::Bash)); "generate bash shell completions")]
     #[test_case("trip --generate foo", Err(anyhow!("error: invalid value 'foo' for '--generate <GENERATE>' [possible values: bash, elvish, fish, powershell, zsh] For more information, try '--help'.")); "generate invalid shell completions")]
     #[test_case("trip --generate-man", Ok(TrippyAction::PrintManPage); "generate man page")]
+    #[test_case("trip --print-locales", Ok(TrippyAction::PrintLocales); "print all locales")]
     fn test_action(cmd: &str, expected: anyhow::Result<TrippyAction>) {
         compare(parse_action(cmd), expected);
     }
