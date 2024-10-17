@@ -3,439 +3,549 @@ trippy:
   en: "trippy"
   fr: "trippy"
   tr: "trippy"
+  ko: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
   tr: "otomatik"
+  ko: "자동"
 on:
   en: "on"
   fr: "activé"
   tr: "açık"
+  ko: "~에"
 off:
   en: "off"
   fr: "désactivé"
   tr: "kapalı"
+  ko: "끄다"
 yes:
   en: "Yes"
   fr: "Oui"
   tr: "Evet"
+  ko: "예"
 no:
   en: "No"
   fr: "Non"
   tr: "Hayır"
+  ko: "아니"
 none:
   en: "none"
   fr: "aucun"
   tr: "hiçbiri"
+  ko: "없음"
 hidden:
   en: "Hidden"
   fr: "Caché"
   tr: "Gizli"
+  ko: "숨겨진"
 flow:
   en: "flow"
   fr: "flux"
   tr: "akış"
+  ko: "흐름"
 flows:
   en: "flows"
   fr: "flux"
   tr: "akışlar"
+  ko: "흐름"
 target:
   en: "Target"
   fr: "Cible"
   tr: "Hedef"
+  ko: "대상"
 config:
   en: "Config"
   fr: "Config"
   tr: "Konfigurasyon"
+  ko: "구성"
 status:
   en: "Status"
   fr: "Statut"
   tr: "Durum"
+  ko: "상태"
 protocol:
   en: "protocol"
   fr: "protocole"
   tr: "protokol"
+  ko: "프로토콜"
 as-info:
   en: "as-info"
   fr: "info-as"
   tr: "AS bilgisi"
+  ko: "as-info"
 details:
   en: "details"
   fr: "détails"
   tr: "ayrıntılar"
+  ko: "세부 정보"
 max-hosts:
   en: "max-hosts"
   fr: "nombre d'hôtes maximum"
   tr: "maksimum hostlar"
+  ko: "최대 호스트"
 privacy:
   en: "privacy"
   fr: "confidentialité"
   tr: "gizlilik"
+  ko: "개인 정보 보호"
 privileged:
   en: "privileged"
   fr: "privilégié"
   tr: "ayrıcalıklı"
+  ko: "특권"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
   tr: "ayrıcalıksız"
+  ko: "비특권"
 na:
   en: "n/a"
   fr: "non disponible"
   tr: "yok"
+  ko: "해당 없음"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
   tr: "%{hop_count} atlanan keşfedildi"
+  ko: "%{hop_count}개의 점프 발견"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
   tr: "%{hop_count} atlanan ve %{flow_count} benzersiz %{plural_flows} keşfedildi"
+  ko: "%{hop_count}개의 점프와 %{flow_count}개의 고유한 %{plural_flows} 발견"
 unknown:
   en: "unknown"
   fr: "inconnu"
   tr: "bilinmeyen"
+  ko: "알 수 없음"
 icmp:
   en: "icmp"
   fr: "icmp"
   tr: "icmp"
+  ko: "icmp"
 udp:
   en: "udp"
   fr: "udp"
   tr: "udp"
+  ko: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
   tr: "tcp"
+  ko: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
   tr: "%{failure_count} / %{total_probes} (%{failure_rate}%) sondajın başarısız olması"
+  ko: "%{failure_count}개 중 %{total_probes}개의 (%{failure_rate}%) 프로브 실패"
 status_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  ko: "실패"
 status_running:
   en: "Running"
   fr: "En cours"
   tr: "Çalışıyor"
+  ko: "실행 중"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
   tr: "Dondurulmuş"
+  ko: "동결"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
   tr: "Veri bekleniyor..."
+  ko: "데이터 대기 중..."
 header_help:
   en: "elp"
   fr: "Aide"
   tr: "Yardım"
+  ko: "도움말"
 header_settings:
   en: "ettings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  ko: "설정"
 header_quit:
   en: "uit"
   fr: "Quitter"
   tr: "Çıkış"
+  ko: "종료"
 title_hops:
   en: "Hops"
   fr: "Sauts"
   tr: "Atlananlar"
+  ko: "점프"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
   tr: "Sıklık"
+  ko: "빈도"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  ko: "샘플"
 title_traces:
   en: "Traces"
   fr: "Traces"
   tr: "İzler"
+  ko: "추적"
 title_flows:
   en: "Flows"
   fr: "Flux"
   tr: "Akışlar"
+  ko: "흐름"
 title_map:
   en: "Map"
   fr: "Carte"
   tr: "Harita"
+  ko: "지도"
 title_help:
   en: "Help"
   fr: "Aide"
   tr: "Yardım"
+  ko: "도움말"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  ko: "설정"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
   tr: "Trippy Başarısız :("
+  ko: "Trippy 실패 :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
   tr: "Çıkmak için q tuşuna basın"
+  ko: "종료하려면 q를 누르세요"
 hop:
   en: "Hop"
   fr: "Saut"
   tr: "Atla"
+  ko: "점프"
 rtt:
   en: "RTT"
   fr: "RTT"
   tr: "RTT"
+  ko: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
   tr: "Grafik"
+  ko: "차트"
 samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  ko: "샘플"
 host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  ko: "호스트"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
   tr: "Yanıt yok"
+  ko: "응답 없음"
 dns_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  ko: "실패"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
   tr: "Zaman aşımı"
+  ko: "시간 초과"
 labels:
   en: "labels"
   fr: "étiquettes"
   tr: "etiketler"
+  ko: "라벨"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
   tr: "etkin değil"
+  ko: "사용 안 됨"
 not_found:
   en: "not found"
   fr: "non trouvé"
   tr: "bulunamadı"
+  ko: "찾을 수 없음"
 awaited:
   en: "awaited"
   fr: "attendu"
   tr: "beklenen"
+  ko: "기다리는 중"
 name:
   en: "Name"
   fr: "Nom"
   tr: "Ad"
+  ko: "이름"
 info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  ko: "정보"
 geo:
   en: "Geo"
   fr: "Géo"
   tr: "Coğrafi"
+  ko: "지리"
 pos:
   en: "Pos"
   fr: "Pos"
   tr: "Poz"
+  ko: "위치"
 ext:
   en: "Ext"
   fr: "Ext"
   tr: "Uzantı"
+  ko: "확장"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
   tr: "Bir ağ analiz aracı"
+  ko: "네트워크 진단 도구"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
   tr: "Tüm ayarları görmek için [%{key}] tuşuna basın"
+  ko: "모든 설정을 보려면 [%{key}]를 누르세요"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
   tr: "Tüm bağlantıları görmek için [%{key}] tuşuna basın"
+  ko: "모든 바인딩을 보려면 [%{key}]를 누르세요"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
   tr: "Tüm sütunları görmek için [%{key}] tuşuna basın"
+  ko: "모든 열을 보려면 [%{key}]를 누르세요"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
   tr: "Apache Lisansı 2.0 altında dağıtılmıştır"
+  ko: "Apache 라이선스 2.0에 따라 배포됨"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
   tr: "Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar"
+  ko: "저작권 2022 Trippy 기여자"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
   tr: "GeoIp etkin değil"
+  ko: "GeoIp가 활성화되지 않았습니다"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
   tr: "Hop için GeoIp verisi yok"
+  ko: "점프에 대한 GeoIp 데이터가 없습니다"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
   tr: "Hop için birden fazla GeoIp konumu"
+  ko: "점프에 대한 여러 GeoIp 위치"
 kilometer:
   en: "km"
   fr: "km"
   tr: "km"
+  ko: "km"
 settings_info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  ko: "정보"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
   tr: "Tui"
+  ko: "투이"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
   tr: "İz"
+  ko: "추적"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
   tr: "DNS"
+  ko: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
   tr: "GeoIp"
+  ko: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
   tr: "Bağlantılar"
+  ko: "바인딩"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
   tr: "Tema"
+  ko: "테마"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
   tr: "Sütunlar"
+  ko: "열"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
   tr: "Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar"
+  ko: "이 Tui에서 데이터가 표시되는 방식을 제어하는 설정"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
   tr: "İzleme stratejisini kontrol eden ayarlar"
+  ko: "추적 전략을 제어하는 설정"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
   tr: "DNS aramalarının nasıl yapıldığını kontrol eden ayarlar"
+  ko: "DNS 조회가 수행되는 방식을 제어하는 설정"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
   tr: "GeoIp ile ilgili ayarlar"
+  ko: "GeoIp와 관련된 설정"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
   tr: "Tui tuş ayarları"
+  ko: "Tui 키 바인딩"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
   tr: "Tui tema renkleri"
+  ko: "Tui 테마 색상"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
   tr: "Tui tablo sütunları. Bir sütunu açmak veya kapatmak için [%{c}] tuşuna basın ve sütun sırasını değiştirmek için [%{d}] ve [%{u}] tuşlarını kullanın."
+  ko: "Tui 테이블 열. 열을 켜거나 끄려면 [%{c}]를 누르고 열 순서를 변경하려면 [%{d}] 및 [%{u}] 키를 사용하세요."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
   tr: "Ayar"
+  ko: "설정"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
   tr: "Değer"
+  ko: "값"
 column_host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  ko: "호스트"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
   tr: "Kayıp%"
+  ko: "손실 %"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
   tr: "Gönderilen"
+  ko: "보낸"
 column_recv:
   en: "Recv"
   fr: "Reçus"
   tr: "Alınan"
+  ko: "받은"
 column_last:
   en: "Last"
   fr: "Dernier"
   tr: "Son"
+  ko: "마지막"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
   tr: "Ort"
+  ko: "평균"
 column_best:
   en: "Best"
   fr: "Meilleur"
   tr: "En iyi"
+  ko: "최고"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
   tr: "En kötü"
+  ko: "최악"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
   tr: "StDev"
+  ko: "표준편차"
 column_sts:
   en: "Sts"
   fr: "État"
   tr: "Sts"
+  ko: "상태"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
   tr: "Jttr"
+  ko: "지터"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
   tr: "Javg"
+  ko: "평균 지터"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
   tr: "Jmax"
+  ko: "최대 지터"
 column_jint:
   en: "Jint"
   fr: "GigInt"
   tr: "Jint"
+  ko: "지터 간격"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
+  ko: "출발지"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
   tr: "Dprt"
+  ko: "도착지"
 column_seq:
   en: "Seq"
   fr: "Seq"
   tr: "Seq"
+  ko: "순서"
 column_type:
   en: "Type"
   fr: "Type"
   tr: "Type"
+  ko: "유형"
 column_code:
   en: "Code"
   fr: "Code"
   tr: "Code"
+  ko: "코드"
 column_nat:
   en: "Nat"
   fr: "Nat"
   tr: "Nat"
+  ko: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
   tr: "Başarısız"
+  ko: "실패"
