@@ -3,439 +3,549 @@ trippy:
   en: "trippy"
   fr: "trippy"
   tr: "trippy"
+  zh: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
   tr: "otomatik"
+  zh: "自动"
 on:
   en: "on"
   fr: "activé"
   tr: "açık"
+  zh: "开"
 off:
   en: "off"
   fr: "désactivé"
   tr: "kapalı"
+  zh: "关"
 yes:
   en: "Yes"
   fr: "Oui"
   tr: "Evet"
+  zh: "是"
 no:
   en: "No"
   fr: "Non"
   tr: "Hayır"
+  zh: "否"
 none:
   en: "none"
   fr: "aucun"
   tr: "hiçbiri"
+  zh: "无"
 hidden:
   en: "Hidden"
   fr: "Caché"
   tr: "Gizli"
+  zh: "隐藏"
 flow:
   en: "flow"
   fr: "flux"
   tr: "akış"
+  zh: "流量"
 flows:
   en: "flows"
   fr: "flux"
   tr: "akışlar"
+  zh: "流量"
 target:
   en: "Target"
   fr: "Cible"
   tr: "Hedef"
+  zh: "目标"
 config:
   en: "Config"
   fr: "Config"
   tr: "Konfigurasyon"
+  zh: "配置"
 status:
   en: "Status"
   fr: "Statut"
   tr: "Durum"
+  zh: "状态"
 protocol:
   en: "protocol"
   fr: "protocole"
   tr: "protokol"
+  zh: "协议"
 as-info:
   en: "as-info"
   fr: "info-as"
   tr: "AS bilgisi"
+  zh: "AS-信息"
 details:
   en: "details"
   fr: "détails"
   tr: "ayrıntılar"
+  zh: "详情"
 max-hosts:
   en: "max-hosts"
   fr: "nombre d'hôtes maximum"
   tr: "maksimum hostlar"
+  zh: "最大主机数"
 privacy:
   en: "privacy"
   fr: "confidentialité"
   tr: "gizlilik"
+  zh: "隐私"
 privileged:
   en: "privileged"
   fr: "privilégié"
   tr: "ayrıcalıklı"
+  zh: "特权"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
   tr: "ayrıcalıksız"
+  zh: "非特权"
 na:
   en: "n/a"
   fr: "non disponible"
   tr: "yok"
+  zh: "无"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
   tr: "%{hop_count} atlanan keşfedildi"
+  zh: "发现 %{hop_count} 跳"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
   tr: "%{hop_count} atlanan ve %{flow_count} benzersiz %{plural_flows} keşfedildi"
+  zh: "发现 %{hop_count} 跳和 %{flow_count} 个唯一 %{plural_flows}"
 unknown:
   en: "unknown"
   fr: "inconnu"
   tr: "bilinmeyen"
+  zh: "未知"
 icmp:
   en: "icmp"
   fr: "icmp"
   tr: "icmp"
+  zh: "icmp"
 udp:
   en: "udp"
   fr: "udp"
   tr: "udp"
+  zh: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
   tr: "tcp"
+  zh: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
   tr: "%{failure_count} / %{total_probes} (%{failure_rate}%) sondajın başarısız olması"
+  zh: "%{failure_count} 个失败，共 %{total_probes} 个探测（%{failure_rate}%"
 status_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  zh: "失败"
 status_running:
   en: "Running"
   fr: "En cours"
   tr: "Çalışıyor"
+  zh: "运行中"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
   tr: "Dondurulmuş"
+  zh: "冻结"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
   tr: "Veri bekleniyor..."
+  zh: "等待数据..."
 header_help:
   en: "elp"
   fr: "Aide"
   tr: "Yardım"
+  zh: "帮助"
 header_settings:
   en: "ettings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  zh: "设置"
 header_quit:
   en: "uit"
   fr: "Quitter"
   tr: "Çıkış"
+  zh: "退出"
 title_hops:
   en: "Hops"
   fr: "Sauts"
   tr: "Atlananlar"
+  zh: "跳"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
   tr: "Sıklık"
+  zh: "频率"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  zh: "样本"
 title_traces:
   en: "Traces"
   fr: "Traces"
   tr: "İzler"
+  zh: "跟踪"
 title_flows:
   en: "Flows"
   fr: "Flux"
   tr: "Akışlar"
+  zh: "流量"
 title_map:
   en: "Map"
   fr: "Carte"
   tr: "Harita"
+  zh: "地图"
 title_help:
   en: "Help"
   fr: "Aide"
   tr: "Yardım"
+  zh: "帮助"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
   tr: "Ayarlar"
+  zh: "设置"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
   tr: "Trippy Başarısız :("
+  zh: "Trippy 失败 :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
   tr: "Çıkmak için q tuşuna basın"
+  zh: "按 q 退出"
 hop:
   en: "Hop"
   fr: "Saut"
   tr: "Atla"
+  zh: "跳"
 rtt:
   en: "RTT"
   fr: "RTT"
   tr: "RTT"
+  zh: "往返时间"
 title_chart:
   en: "Chart"
   fr: "Graphique"
   tr: "Grafik"
+  zh: "图表"
 samples:
   en: "Samples"
   fr: "Échantillons"
   tr: "Örnekler"
+  zh: "样本"
 host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  zh: "主机"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
   tr: "Yanıt yok"
+  zh: "无响应"
 dns_failed:
   en: "Failed"
   fr: "Échec"
   tr: "Başarısız"
+  zh: "失败"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
   tr: "Zaman aşımı"
+  zh: "超时"
 labels:
   en: "labels"
   fr: "étiquettes"
   tr: "etiketler"
+  zh: "标签"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
   tr: "etkin değil"
+  zh: "未启用"
 not_found:
   en: "not found"
   fr: "non trouvé"
   tr: "bulunamadı"
+  zh: "未找到"
 awaited:
   en: "awaited"
   fr: "attendu"
   tr: "beklenen"
+  zh: "等待"
 name:
   en: "Name"
   fr: "Nom"
   tr: "Ad"
+  zh: "名称"
 info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  zh: "信息"
 geo:
   en: "Geo"
   fr: "Géo"
   tr: "Coğrafi"
+  zh: "地理"
 pos:
   en: "Pos"
   fr: "Pos"
   tr: "Poz"
+  zh: "位置"
 ext:
   en: "Ext"
   fr: "Ext"
   tr: "Uzantı"
+  zh: "扩展"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
   tr: "Bir ağ analiz aracı"
+  zh: "网络诊断工具"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
   tr: "Tüm ayarları görmek için [%{key}] tuşuna basın"
+  zh: "按 [%{key}] 显示所有设置"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
   tr: "Tüm bağlantıları görmek için [%{key}] tuşuna basın"
+  zh: "按 [%{key}] 显示所有绑定"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
   tr: "Tüm sütunları görmek için [%{key}] tuşuna basın"
+  zh: "按 [%{key}] 显示所有列"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
   tr: "Apache Lisansı 2.0 altında dağıtılmıştır"
+  zh: "根据 Apache 许可证 2.0 发布"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
   tr: "Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar"
+  zh: "版权所有 2022 Trippy 贡献者"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
   tr: "GeoIp etkin değil"
+  zh: "GeoIp 未启用"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
   tr: "Hop için GeoIp verisi yok"
+  zh: "无 GeoIp 数据"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
   tr: "Hop için birden fazla GeoIp konumu"
+  zh: "多个 GeoIp 位置"
 kilometer:
   en: "km"
   fr: "km"
   tr: "km"
+  zh: "公里"
 settings_info:
   en: "Info"
   fr: "Information"
   tr: "Bilgi"
+  zh: "信息"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
   tr: "Tui"
+  zh: "终端用户界面"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
   tr: "İz"
+  zh: "跟踪"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
   tr: "DNS"
+  zh: "域名系统"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
   tr: "GeoIp"
+  zh: "地理位置 IP"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
   tr: "Bağlantılar"
+  zh: "绑定"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
   tr: "Tema"
+  zh: "主题"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
   tr: "Sütunlar"
+  zh: "列"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
   tr: "Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar"
+  zh: "终端用户界面设置"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
   tr: "İzleme stratejisini kontrol eden ayarlar"
+  zh: "跟踪设置"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
   tr: "DNS aramalarının nasıl yapıldığını kontrol eden ayarlar"
+  zh: "域名系统设置"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
   tr: "GeoIp ile ilgili ayarlar"
+  zh: "地理位置 IP 设置"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
   tr: "Tui tuş ayarları"
+  zh: "终端用户界面键绑定"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
   tr: "Tui tema renkleri"
+  zh: "终端用户界面主题颜色"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
   tr: "Tui tablo sütunları. Bir sütunu açmak veya kapatmak için [%{c}] tuşuna basın ve sütun sırasını değiştirmek için [%{d}] ve [%{u}] tuşlarını kullanın."
+  zh: "终端用户界面表格列。按 [%{c}] 切换列的显示和隐藏，使用 [%{d}] 和 [%{u}] 键更改列的顺序。"
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
   tr: "Ayar"
+  zh: "设置"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
   tr: "Değer"
+  zh: "值"
 column_host:
   en: "Host"
   fr: "Hôte"
   tr: "Ana bilgisayar"
+  zh: "主机"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
   tr: "Kayıp%"
+  zh: "丢包率 %"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
   tr: "Gönderilen"
+  zh: "发送"
 column_recv:
   en: "Recv"
   fr: "Reçus"
   tr: "Alınan"
+  zh: "接收"
 column_last:
   en: "Last"
   fr: "Dernier"
   tr: "Son"
+  zh: "最后"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
   tr: "Ort"
+  zh: "平均"
 column_best:
   en: "Best"
   fr: "Meilleur"
   tr: "En iyi"
+  zh: "最佳"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
   tr: "En kötü"
+  zh: "最差"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
   tr: "StDev"
+  zh: "标准差"
 column_sts:
   en: "Sts"
   fr: "État"
   tr: "Sts"
+  zh: "状态"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
   tr: "Jttr"
+  zh: "抖动"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
   tr: "Javg"
+  zh: "均抖"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
   tr: "Jmax"
+  zh: "最大抖"
 column_jint:
   en: "Jint"
   fr: "GigInt"
   tr: "Jint"
+  zh: "抖动间隔"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
+  zh: "源端"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
   tr: "Dprt"
+  zh: "目端"
 column_seq:
   en: "Seq"
   fr: "Seq"
   tr: "Seq"
+  zh: "序列"
 column_type:
   en: "Type"
   fr: "Type"
   tr: "Type"
+  zh: "类型"
 column_code:
   en: "Code"
   fr: "Code"
   tr: "Code"
+  zh: "代码"
 column_nat:
   en: "Nat"
   fr: "Nat"
   tr: "Nat"
+  zh: "网络地址转换"
 column_fail:
   en: "Fail"
   fr: "Échec"
   tr: "Başarısız"
+  zh: "失败"
