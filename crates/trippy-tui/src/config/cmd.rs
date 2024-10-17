@@ -19,7 +19,7 @@ use std::time::Duration;
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
-    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate", "generate_man"]))]
+    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate", "generate_man", "print_locales"]))]
     pub targets: Vec<String>,
 
     /// Config file
@@ -259,6 +259,10 @@ pub struct Args {
     /// Print a template toml config file and exit
     #[arg(long)]
     pub print_config_template: bool,
+
+    /// Print all available TUI locales and exit
+    #[arg(long)]
+    pub print_locales: bool,
 
     /// The debug log format [default: pretty]
     #[arg(long)]
