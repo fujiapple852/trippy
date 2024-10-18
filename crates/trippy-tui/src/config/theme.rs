@@ -119,7 +119,7 @@ impl Default for TuiTheme {
 }
 
 impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_lines, clippy::or_fun_call)]
     fn from(value: (HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)) -> Self {
         let (color_map, cfg) = value;
         Self {

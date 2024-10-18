@@ -203,7 +203,7 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
         for addr in hop.addrs() {
             if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
                 if let Some((latitude, longitude, radius)) = geo.coordinates() {
-                    let entry = geo_map.entry(geo.long_name()).or_insert(MapEntry {
+                    let entry = geo_map.entry(geo.long_name()).or_insert_with(|| MapEntry {
                         long_name: geo.long_name(),
                         location: format!("{latitude}, {longitude} ~{radius}{}", t!("kilometer")),
                         latitude,
