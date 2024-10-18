@@ -174,7 +174,7 @@ impl TuiBindings {
 }
 
 impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindings {
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_lines, clippy::or_fun_call)]
     fn from(value: (HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)) -> Self {
         let (cmd_items, cfg) = value;
         Self {
