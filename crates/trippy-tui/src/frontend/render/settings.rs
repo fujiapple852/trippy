@@ -99,7 +99,7 @@ fn render_settings_table(
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         )
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+        .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED));
     f.render_stateful_widget(table, rect, &mut app.setting_table_state);
 }
 
