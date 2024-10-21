@@ -1,9 +1,8 @@
-use crate::frontend::render::widgets::sparkline::{EmptyBarSymbol, Sparkline};
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
-use ratatui::widgets::{Block, BorderType, Borders};
+use ratatui::widgets::{Block, BorderType, Borders, Sparkline};
 use ratatui::Frame;
 
 /// Render the ping history for the final hop which is typically the target.
@@ -40,11 +39,11 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.samples_chart),
         )
-        .empty_bar_style(
+        .absent_value_style(
             Style::default()
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.samples_chart_lost),
         )
-        .empty_bar_symbol(EmptyBarSymbol::Full);
+        .absent_value_symbol(ratatui::symbols::bar::FULL);
     f.render_widget(history, rect);
 }

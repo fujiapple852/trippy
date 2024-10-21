@@ -72,7 +72,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         )
-        .highlight_style(selected_style)
+        .row_highlight_style(selected_style)
         .column_spacing(1);
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }

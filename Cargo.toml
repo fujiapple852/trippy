@@ -60,7 +60,7 @@ paste = "1.0.15"
 petgraph = "0.6.5"
 pretty_assertions = "1.4.1"
 rand = "0.8.5"
-ratatui = "0.28.1"
+ratatui = "0.29.0"
 rust-i18n = "3.1.2"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
