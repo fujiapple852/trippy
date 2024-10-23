@@ -6,6 +6,7 @@ trippy:
   it: "trippy"
   pt: "trippy"
   zh: "trippy"
+  ko: "trippy"
 auto:
   en: "auto"
   fr: "automatique"
@@ -13,6 +14,7 @@ auto:
   it: "auto"
   pt: "automático"
   zh: "自动"
+  ko: "자동"
 on:
   en: "on"
   fr: "activé"
@@ -20,6 +22,7 @@ on:
   it: "on"
   pt: "ligado"
   zh: "开"
+  ko: "~에"
 off:
   en: "off"
   fr: "désactivé"
@@ -27,6 +30,7 @@ off:
   it: "off"
   pt: "desligado"
   zh: "关"
+  ko: "끄다"
 yes:
   en: "Yes"
   fr: "Oui"
@@ -34,6 +38,7 @@ yes:
   it: "Sì"
   pt: "Sim"
   zh: "是"
+  ko: "예"
 no:
   en: "No"
   fr: "Non"
@@ -41,6 +46,7 @@ no:
   it: "No"
   pt: "Não"
   zh: "否"
+  ko: "아니"
 none:
   en: "none"
   fr: "aucun"
@@ -48,6 +54,7 @@ none:
   it: "nessuno"
   pt: "nenhum"
   zh: "无"
+  ko: "없음"
 hidden:
   en: "Hidden"
   fr: "Caché"
@@ -55,6 +62,7 @@ hidden:
   it: "Nascosto"
   pt: "Oculto"
   zh: "隐藏"
+  ko: "숨겨진"
 flow:
   en: "flow"
   fr: "flux"
@@ -62,6 +70,7 @@ flow:
   it: "flusso"
   pt: "fluxo"
   zh: "流量"
+  ko: "흐름"
 flows:
   en: "flows"
   fr: "flux"
@@ -69,6 +78,7 @@ flows:
   it: "flussi"
   pt: "fluxos"
   zh: "流量"
+  ko: "흐름"
 target:
   en: "Target"
   fr: "Cible"
@@ -76,6 +86,7 @@ target:
   it: "Target"
   pt: "Alvo"
   zh: "目标"
+  ko: "대상"
 status:
   en: "Status"
   fr: "Statut"
@@ -83,6 +94,7 @@ status:
   it: "Stato"
   pt: "Estado"
   zh: "状态"
+  ko: "상태"
 details:
   en: "detail"
   fr: "détail"
@@ -90,6 +102,7 @@ details:
   it: "dettagli"
   pt: "detalhe"
   zh: "详情"
+  ko: "세부 정보"
 privileged:
   en: "privileged"
   fr: "privilégié"
@@ -97,6 +110,7 @@ privileged:
   it: "privilegiato"
   pt: "privilegiado"
   zh: "特权"
+  ko: "특권"
 unprivileged:
   en: "unprivileged"
   fr: "non privilégié"
@@ -104,6 +118,7 @@ unprivileged:
   it: "non privilegiato"
   pt: "não privilegiado"
   zh: "非特权"
+  ko: "비특권"
 na:
   en: "n/a"
   fr: "non disponible"
@@ -111,6 +126,7 @@ na:
   it: "n/d"
   pt: "n/d"
   zh: "无"
+  ko: "해당 없음"
 discovered:
   en: "discovered %{hop_count} hops"
   fr: "%{hop_count} sauts découverts"
@@ -118,6 +134,7 @@ discovered:
   it: "%{hop_count} salti trovati"
   pt: "descobriu %{hop_count} saltos"
   zh: "发现 %{hop_count} 跳"
+  ko: "%{hop_count}개의 점프 발견"
 discovered_flows:
   en: "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
   fr: "%{hop_count} sauts et %{flow_count} %{plural_flows} uniques découverts"
@@ -125,6 +142,7 @@ discovered_flows:
   it: "scoperti %{hop_count} salti e %{flow_count} %{plural_flows} unici"
   pt: "descobriu %{hop_count} saltos e %{flow_count} %{plural_flows} únicos"
   zh: "发现 %{hop_count} 跳，%{flow_count} 个唯一%{plural_flow}"
+  ko: "%{hop_count}개의 점프와 %{flow_count}개의 고유한 %{plural_flows} 발견"
 unknown:
   en: "unknown"
   fr: "inconnu"
@@ -132,6 +150,7 @@ unknown:
   it: "sconosciuto"
   pt: "desconhecido"
   zh: "未知"
+  ko: "알 수 없음"
 icmp:
   en: "icmp"
   fr: "icmp"
@@ -139,6 +158,7 @@ icmp:
   it: "icmp"
   pt: "icmp"
   zh: "icmp"
+  ko: "icmp"
 udp:
   en: "udp"
   fr: "udp"
@@ -146,6 +166,7 @@ udp:
   it: "udp"
   pt: "udp"
   zh: "udp"
+  ko: "udp"
 tcp:
   en: "tcp"
   fr: "tcp"
@@ -153,6 +174,7 @@ tcp:
   it: "tcp"
   pt: "tcp"
   zh: "tcp"
+  ko: "tcp"
 status_failures:
   en: "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
   fr: "%{failure_count} sur %{total_probes} (%{failure_rate}%) sondes ont échoué"
@@ -160,6 +182,7 @@ status_failures:
   it: "%{failure_count} di %{total_probes} (%{failure_rate}%) prove fallite"
   pt: "%{failure_count} de %{total_probes} (%{failure_rate}%) sondas falharam"
   zh: "%{failure_count} 个失败，共探测到 %{total_probes} 个（%{failure_rate}%）"
+  ko: "%{failure_count}개 중 %{total_probes}개의 (%{failure_rate}%) 프로브 실패"
 status_failed:
   en: "Failed"
   fr: "Échec"
@@ -167,6 +190,7 @@ status_failed:
   it: "Fallito"
   pt: "Falhou"
   zh: "失败"
+  ko: "실패"
 status_running:
   en: "Running"
   fr: "En cours"
@@ -174,6 +198,7 @@ status_running:
   it: "In esecuzione"
   pt: "Executando"
   zh: "运行中"
+  ko: "실행 중"
 status_frozen:
   en: "Frozen"
   fr: "Gelé"
@@ -181,6 +206,7 @@ status_frozen:
   it: "Congelato"
   pt: "Congelado"
   zh: "冻结"
+  ko: "동결"
 awaiting_data:
   en: "Awaiting data..."
   fr: "En attente de données..."
@@ -188,6 +214,7 @@ awaiting_data:
   it: "In attesa di dati..."
   pt: "Aguardando dados..."
   zh: "等待数据……"
+  ko: "데이터 대기 중..."
 header_help:
   en: "help"
   fr: "aide"
@@ -195,6 +222,7 @@ header_help:
   it: "aiuto"
   pt: "ajuda"
   zh: "帮助"
+  ko: "도움말"
 header_settings:
   en: "settings"
   fr: "paramètres"
@@ -202,6 +230,7 @@ header_settings:
   it: "impostazioni"
   pt: "configurações"
   zh: "设置"
+  ko: "설정"
 header_quit:
   en: "quit"
   fr: "quitter"
@@ -209,6 +238,7 @@ header_quit:
   it: "uscita"
   pt: "sair"
   zh: "退出"
+  ko: "종료"
 title_hops:
   en: "Hops"
   fr: "Sauts"
@@ -216,6 +246,7 @@ title_hops:
   it: "Salti"
   pt: "Saltos"
   zh: "跳"
+  ko: "점프"
 title_frequency:
   en: "Frequency"
   fr: "Fréquence"
@@ -223,6 +254,7 @@ title_frequency:
   it: "Frequenza"
   pt: "Frequência"
   zh: "频率"
+  ko: "빈도"
 title_samples:
   en: "Samples"
   fr: "Échantillons"
@@ -230,6 +262,7 @@ title_samples:
   it: "Campioni"
   pt: "Amostras"
   zh: "样本"
+  ko: "샘플"
 title_traces:
   en: "Traces"
   fr: "Traces"
@@ -237,6 +270,7 @@ title_traces:
   it: "Tracce"
   pt: "Rastreios"
   zh: "跟踪"
+  ko: "추적"
 title_flows:
   en: "Flows"
   fr: "Flux"
@@ -244,6 +278,7 @@ title_flows:
   it: "Flussi"
   pt: "Fluxos"
   zh: "流量"
+  ko: "흐름"
 title_map:
   en: "Map"
   fr: "Carte"
@@ -251,6 +286,7 @@ title_map:
   it: "Mappa"
   pt: "Mapa"
   zh: "地图"
+  ko: "지도"
 title_help:
   en: "Help"
   fr: "Aide"
@@ -258,6 +294,7 @@ title_help:
   it: "Aiuto"
   pt: "Ajuda"
   zh: "帮助"
+  ko: "도움말"
 title_settings:
   en: "Settings"
   fr: "Paramètres"
@@ -265,6 +302,7 @@ title_settings:
   it: "Impostazioni"
   pt: "Configurações"
   zh: "设置"
+  ko: "설정"
 bsod_failed:
   en: "Trippy Failed :("
   fr: "Trippy a échoué :("
@@ -272,6 +310,7 @@ bsod_failed:
   it: "Trippy ha avuto un problema :("
   pt: "Trippy falhou :("
   zh: "Trippy 失败 :("
+  ko: "Trippy 실패 :("
 bsod_quit:
   en: "Press q to quit"
   fr: "Appuyez sur q pour quitter"
@@ -279,6 +318,7 @@ bsod_quit:
   it: "Premi q per uscire"
   pt: "Pressione q para sair"
   zh: "按 q 退出"
+  ko: "종료하려면 q를 누르세요"
 hop:
   en: "Hop"
   fr: "Saut"
@@ -286,6 +326,7 @@ hop:
   it: "Salto"
   pt: "Salto"
   zh: "跳"
+  ko: "점프"
 rtt:
   en: "RTT"
   fr: "RTT"
@@ -293,6 +334,7 @@ rtt:
   it: "RTT"
   pt: "RTT"
   zh: "往返时间"
+  ko: "RTT"
 title_chart:
   en: "Chart"
   fr: "Graphique"
@@ -300,6 +342,7 @@ title_chart:
   it: "Grafico"
   pt: "Gráfico"
   zh: "图表"
+  ko: "차트"
 samples:
   en: "Samples"
   fr: "Échantillons"
@@ -307,6 +350,7 @@ samples:
   it: "Campioni"
   pt: "Amostras"
   zh: "样本"
+  ko: "샘플"
 host:
   en: "Host"
   fr: "Hôte"
@@ -314,6 +358,7 @@ host:
   it: "Host"
   pt: "Host"
   zh: "主机"
+  ko: "호스트"
 no_response:
   en: "No response"
   fr: "Pas de réponse"
@@ -321,6 +366,7 @@ no_response:
   it: "Nessuna risposta"
   pt: "Sem resposta"
   zh: "无响应"
+  ko: "응답 없음"
 dns_failed:
   en: "Failed"
   fr: "Échec"
@@ -328,6 +374,7 @@ dns_failed:
   it: "Fallito"
   pt: "Falhou"
   zh: "失败"
+  ko: "실패"
 dns_timeout:
   en: "Timeout"
   fr: "Délai dépassé"
@@ -335,6 +382,7 @@ dns_timeout:
   it: "Tempo scaduto"
   pt: "Tempo esgotado"
   zh: "超时"
+  ko: "시간 초과"
 labels:
   en: "labels"
   fr: "étiquettes"
@@ -342,6 +390,7 @@ labels:
   it: "etichette"
   pt: "etiquetas"
   zh: "标签"
+  ko: "라벨"
 not_enabled:
   en: "not enabled"
   fr: "non activé"
@@ -349,6 +398,7 @@ not_enabled:
   it: "non abilitato"
   pt: "não ativado"
   zh: "未启用"
+  ko: "사용 안 됨"
 not_found:
   en: "not found"
   fr: "non trouvé"
@@ -356,6 +406,7 @@ not_found:
   it: "non trovato"
   pt: "não encontrado"
   zh: "未找到"
+  ko: "찾을 수 없음"
 awaited:
   en: "awaited"
   fr: "attendu"
@@ -363,6 +414,7 @@ awaited:
   it: "atteso"
   pt: "aguardado"
   zh: "等待"
+  ko: "기다리는 중"
 name:
   en: "Name"
   fr: "Nom"
@@ -370,6 +422,7 @@ name:
   it: "Nome"
   pt: "Nome"
   zh: "名称"
+  ko: "이름"
 info:
   en: "Info"
   fr: "Information"
@@ -377,6 +430,7 @@ info:
   it: "Info"
   pt: "Informação"
   zh: "信息"
+  ko: "정보"
 geo:
   en: "Geo"
   fr: "Géo"
@@ -384,6 +438,7 @@ geo:
   it: "Geo"
   pt: "Geo"
   zh: "地理坐标"
+  ko: "지리"
 pos:
   en: "Pos"
   fr: "Pos"
@@ -391,6 +446,7 @@ pos:
   it: "Pos"
   pt: "Pos"
   zh: "位置"
+  ko: "위치"
 ext:
   en: "Ext"
   fr: "Ext"
@@ -398,6 +454,7 @@ ext:
   it: "Est"
   pt: "Ext"
   zh: "扩展"
+  ko: "확장"
 help_tagline:
   en: "A network diagnostic tool"
   fr: "Un outil de diagnostic réseau"
@@ -405,6 +462,7 @@ help_tagline:
   it: "Uno strumento diagnostico di rete"
   pt: "Uma ferramenta de diagnóstico de rede"
   zh: "网络诊断工具"
+  ko: "네트워크 진단 도구"
 help_show_settings:
   en: "Press [%{key}] to show all settings"
   fr: "Appuyez sur [%{key}] pour afficher tous les paramètres"
@@ -412,6 +470,7 @@ help_show_settings:
   it: "Premi [%{key}] per visualizzare tutte le impostazioni"
   pt: "Pressione [%{key}] para mostrar todas as configurações"
   zh: "按 [%{key}] 显示所有设置"
+  ko: "모든 설정을 보려면 [%{key}]를 누르세요"
 help_show_bindings:
   en: "Press [%{key}] to show all bindings"
   fr: "Appuyez sur [%{key}] pour afficher tous les raccourcis clavier"
@@ -419,6 +478,7 @@ help_show_bindings:
   it: "Premi [%{key}] per visualizzare tutti i collegamenti"
   pt: "Pressione [%{key}] para mostrar todos os atalhos"
   zh: "按 [%{key}] 显示所有绑定"
+  ko: "모든 바인딩을 보려면 [%{key}]를 누르세요"
 help_show_columns:
   en: "Press [%{key}] to show all columns"
   fr: "Appuyez sur [%{key}] pour afficher toutes les colonnes"
@@ -426,6 +486,7 @@ help_show_columns:
   it: "Premi [%{key}] per visualizzare tutte le colonne"
   pt: "Pressione [%{key}] para mostrar todas as colunas"
   zh: "按 [%{key}] 显示所有列"
+  ko: "모든 열을 보려면 [%{key}]를 누르세요"
 help_license:
   en: "Distributed under the Apache License 2.0"
   fr: "Distribué sous licence Apache 2.0"
@@ -433,6 +494,7 @@ help_license:
   it: "Distribuito con licenza Apache 2.0"
   pt: "Distribuído sob a licença Apache 2.0"
   zh: "以 Apache-2.0 许可分发"
+  ko: "Apache 라이선스 2.0에 따라 배포됨"
 help_copyright:
   en: "Copyright 2022 Trippy Contributors"
   fr: "Copyright 2022 Contributeurs de Trippy"
@@ -440,6 +502,7 @@ help_copyright:
   it: "Copyright 2022 - Collaboratori di Trippy"
   pt: "Direitos autorais 2022 Colaboradores do Trippy"
   zh: "版权所有 2022 Trippy 贡献者"
+  ko: "저작권 2022 Trippy 기여자"
 geoip_not_enabled:
   en: "GeoIp not enabled"
   fr: "GeoIp non activé"
@@ -447,6 +510,7 @@ geoip_not_enabled:
   it: "GeoIp non abilitato"
   pt: "GeoIp não ativado"
   zh: "GeoIp 未启用"
+  ko: "GeoIp가 활성화되지 않았습니다"
 geoip_no_data_for_hop:
   en: "No GeoIp data for hop"
   fr: "Pas de données GeoIp pour le saut"
@@ -454,6 +518,7 @@ geoip_no_data_for_hop:
   it: "Nessun dato GeoIp per il salto"
   pt: "Nenhum dado GeoIp para o salto"
   zh: "无 GeoIp 数据"
+  ko: "점프에 대한 GeoIp 데이터가 없습니다"
 geoip_multiple_data_for_hop:
   en: "Multiple GeoIp locations for hop"
   fr: "Emplacements GeoIp multiples pour le saut"
@@ -461,6 +526,7 @@ geoip_multiple_data_for_hop:
   it: "Posizioni GeoIp multiple per il salto"
   pt: "Múltiplas localizações GeoIp para o salto"
   zh: "多个 GeoIp 位置"
+  ko: "점프에 대한 여러 GeoIp 위치"
 kilometer:
   en: "km"
   fr: "km"
@@ -468,6 +534,7 @@ kilometer:
   it: "km"
   pt: "km"
   zh: "公里"
+  ko: "km"
 settings_info:
   en: "Info"
   fr: "Information"
@@ -475,6 +542,7 @@ settings_info:
   it: "Info"
   pt: "Informação"
   zh: "信息"
+  ko: "정보"
 settings_tab_tui_title:
   en: "Tui"
   fr: "Tui"
@@ -482,6 +550,7 @@ settings_tab_tui_title:
   it: "Tui"
   pt: "Tui"
   zh: "终端用户界面"
+  ko: "투이"
 settings_tab_trace_title:
   en: "Trace"
   fr: "Tracer"
@@ -489,6 +558,7 @@ settings_tab_trace_title:
   it: "Traccia"
   pt: "Rastrear"
   zh: "跟踪"
+  ko: "추적"
 settings_tab_dns_title:
   en: "DNS"
   fr: "DNS"
@@ -496,6 +566,7 @@ settings_tab_dns_title:
   it: "DNS"
   pt: "DNS"
   zh: "DNS"
+  ko: "DNS"
 settings_tab_geoip_title:
   en: "GeoIp"
   fr: "GeoIp"
@@ -503,6 +574,7 @@ settings_tab_geoip_title:
   it: "GeoIp"
   pt: "GeoIp"
   zh: "GeoIp"
+  ko: "GeoIp"
 settings_tab_bindings_title:
   en: "Bindings"
   fr: "Raccourcis clavier"
@@ -510,6 +582,7 @@ settings_tab_bindings_title:
   it: "Collegamenti"
   pt: "Atalhos"
   zh: "绑定"
+  ko: "바인딩"
 settings_tab_theme_title:
   en: "Theme"
   fr: "Thème"
@@ -517,6 +590,7 @@ settings_tab_theme_title:
   it: "Tema"
   pt: "Tema"
   zh: "主题"
+  ko: "테마"
 settings_tab_columns_title:
   en: "Columns"
   fr: "Colonnes"
@@ -524,6 +598,7 @@ settings_tab_columns_title:
   it: "Colonne"
   pt: "Colunas"
   zh: "列"
+  ko: "열"
 settings_tab_tui_desc:
   en: "Settings which control how data is displayed in this Tui"
   fr: "Paramètres qui contrôlent la façon dont les données sont affichées dans ce Tui"
@@ -531,6 +606,7 @@ settings_tab_tui_desc:
   it: "Impostazioni che controllano come i dati vengono visualizzati in questo Tui"
   pt: "Configurações que controlam como os dados são exibidos neste Tui"
   zh: "数据显示方式设置"
+  ko: "이 Tui에서 데이터가 표시되는 방식을 제어하는 설정"
 settings_tab_trace_desc:
   en: "Settings which control the tracing strategy"
   fr: "Paramètres qui contrôlent la stratégie de traçage"
@@ -538,6 +614,7 @@ settings_tab_trace_desc:
   it: "Impostazioni che controllano la strategia di tracciamento"
   pt: "Configurações que controlam a estratégia de rastreamento"
   zh: "跟踪策略设置"
+  ko: "추적 전략을 제어하는 설정"
 settings_tab_dns_desc:
   en: "Settings which control how DNS lookups are performed"
   fr: "Paramètres qui contrôlent la façon dont les recherches DNS sont effectuées"
@@ -545,6 +622,7 @@ settings_tab_dns_desc:
   it: "Impostazioni che controllano come vengono eseguite le ricerche DNS"
   pt: "Configurações que controlam como as pesquisas DNS são realizadas"
   zh: "DNS 查询设置"
+  ko: "DNS 조회가 수행되는 방식을 제어하는 설정"
 settings_tab_geoip_desc:
   en: "Settings relating to GeoIp"
   fr: "Paramètres relatifs à GeoIp"
@@ -552,6 +630,7 @@ settings_tab_geoip_desc:
   it: "Impostazioni relative a GeoIp"
   pt: "Configurações relacionadas ao GeoIp"
   zh: "GeoIp 设置"
+  ko: "GeoIp와 관련된 설정"
 settings_tab_bindings_desc:
   en: "Tui key bindings"
   fr: "Raccourcis clavier Tui"
@@ -559,6 +638,7 @@ settings_tab_bindings_desc:
   it: "Collegamenti chiave Tui"
   pt: "Atalhos de teclado Tui"
   zh: "按键绑定设置"
+  ko: "Tui 키 바인딩"
 settings_tab_theme_desc:
   en: "Tui theme colors"
   fr: "Couleurs du thème Tui"
@@ -566,6 +646,7 @@ settings_tab_theme_desc:
   it: "Colori del tema Tui"
   pt: "Cores do tema Tui"
   zh: "主题颜色设置"
+  ko: "Tui 테마 색상"
 settings_tab_columns_desc:
   en: "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
   fr: "Colonnes de table Tui. Appuyez sur [%{c}] pour activer ou désactiver une colonne et utilisez les touches [%{d}] et [%{u}] pour changer l'ordre des colonnes."
@@ -573,6 +654,7 @@ settings_tab_columns_desc:
   it: "Colonne della tabella Tui. Premi [%{c}] per attivare o disattivare una colonna e usa i tasti [%{d}] e [%{u}] per cambiare l'ordine delle colonne."
   pt: "Colunas da tabela Tui. Pressione [%{c}] para ativar ou desativar uma coluna e use as teclas [%{d}] e [%{u}] para alterar a ordem das colunas."
   zh: "终端用户界面表格列。按 [%{c}] 切换列的显示和隐藏，使用 [%{d}] 和 [%{u}] 键更改列的顺序。"
+  ko: "Tui 테이블 열. 열을 켜거나 끄려면 [%{c}]를 누르고 열 순서를 변경하려면 [%{d}] 및 [%{u}] 키를 사용하세요."
 settings_table_header_setting:
   en: "Setting"
   fr: "Paramètres"
@@ -580,6 +662,7 @@ settings_table_header_setting:
   it: "Impostazione"
   pt: "Configuração"
   zh: "设置"
+  ko: "설정"
 settings_table_header_value:
   en: "Value"
   fr: "Valeur"
@@ -587,6 +670,7 @@ settings_table_header_value:
   it: "Valore"
   pt: "Valor"
   zh: "值"
+  ko: "값"
 column_host:
   en: "Host"
   fr: "Hôte"
@@ -594,6 +678,7 @@ column_host:
   it: "Host"
   pt: "Host"
   zh: "主机"
+  ko: "호스트"
 column_loss_pct:
   en: "Loss%"
   fr: "% Perdus"
@@ -601,6 +686,7 @@ column_loss_pct:
   it: "Persi%"
   pt: "% Perdidos"
   zh: "丢包率"
+  ko: "손실 %"
 column_snd:
   en: "Snd"
   fr: "Envoyés"
@@ -608,6 +694,7 @@ column_snd:
   it: "Snd"
   pt: "Enviados"
   zh: "发出"
+  ko: "보낸"
 column_recv:
   en: "Recv"
   fr: "Reçus"
@@ -615,6 +702,7 @@ column_recv:
   it: "Recv"
   pt: "Recebidos"
   zh: "接收"
+  ko: "받은"
 column_last:
   en: "Last"
   fr: "Dernier"
@@ -622,6 +710,7 @@ column_last:
   it: "Ultimo"
   pt: "Último"
   zh: "最后"
+  ko: "마지막"
 column_avg:
   en: "Avg"
   fr: "Moyenne"
@@ -629,6 +718,7 @@ column_avg:
   it: "Media"
   pt: "Média"
   zh: "平均"
+  ko: "평균"
 column_best:
   en: "Best"
   fr: "Meilleur"
@@ -636,6 +726,7 @@ column_best:
   it: "Migliore"
   pt: "Melhor"
   zh: "最佳"
+  ko: "최고"
 column_wrst:
   en: "Wrst"
   fr: "Pire"
@@ -643,6 +734,7 @@ column_wrst:
   it: "Peggiore"
   pt: "Pior"
   zh: "最差"
+  ko: "최악"
 column_stdev:
   en: "StDev"
   fr: "ÉcTyp"
@@ -650,6 +742,7 @@ column_stdev:
   it: "StDev"
   pt: "DesvPad"
   zh: "标准差"
+  ko: "표준편차"
 column_sts:
   en: "Sts"
   fr: "État"
@@ -657,6 +750,7 @@ column_sts:
   it: "Stato"
   pt: "Est"
   zh: "状态"
+  ko: "상태"
 column_jttr:
   en: "Jttr"
   fr: "Gigue"
@@ -664,6 +758,7 @@ column_jttr:
   it: "Jttr"
   pt: "Jttr"
   zh: "抖动"
+  ko: "지터"
 column_javg:
   en: "Javg"
   fr: "GigMoy"
@@ -671,6 +766,7 @@ column_javg:
   it: "Javg"
   pt: "Javg"
   zh: "均抖"
+  ko: "평균 지터"
 column_jmax:
   en: "Jmax"
   fr: "GigMax"
@@ -678,6 +774,7 @@ column_jmax:
   it: "Jmax"
   pt: "Jmax"
   zh: "最大抖"
+  ko: "최대 지터"
 column_jint:
   en: "Jint"
   fr: "GigInt"
@@ -685,12 +782,14 @@ column_jint:
   it: "Jint"
   pt: "Jint"
   zh: "抖动间隔"
+  ko: "지터 간격"
 column_sprt:
   en: "Sprt"
   fr: "Psrc"
   tr: "Sprt"
   it: "Sprt"
   zh: "源端"
+  ko: "출발지"
 column_dprt:
   en: "Dprt"
   fr: "Pdest"
@@ -698,6 +797,7 @@ column_dprt:
   it: "Dprt"
   pt: "Dprt"
   zh: "目标"
+  ko: "도착지"
 column_seq:
   en: "Seq"
   fr: "Seq"
@@ -705,6 +805,7 @@ column_seq:
   it: "Seq"
   pt: "Seq"
   zh: "序列"
+  ko: "순서"
 column_type:
   en: "Type"
   fr: "Type"
@@ -712,6 +813,7 @@ column_type:
   it: "Tipo"
   pt: "Tipo"
   zh: "类型"
+  ko: "유형"
 column_code:
   en: "Code"
   fr: "Code"
@@ -719,6 +821,7 @@ column_code:
   it: "Codice"
   pt: "Código"
   zh: "代码"
+  ko: "코드"
 column_nat:
   en: "Nat"
   fr: "Nat"
@@ -726,6 +829,7 @@ column_nat:
   it: "Nat"
   pt: "Nat"
   zh: "网络地址转换"
+  ko: "Nat"
 column_fail:
   en: "Fail"
   fr: "Échec"
@@ -733,3 +837,4 @@ column_fail:
   it: "Falliti"
   pt: "Falha"
   zh: "失败"
+  ko: "실패"
