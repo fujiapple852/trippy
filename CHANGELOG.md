@@ -13,6 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Added information bar to Tui ([#1349](https://github.com/fujiapple852/trippy/issues/1349))
 - [BREAKING CHANGE] Remove `Timestamp` from all `DnsEntry`
   variants ([#1296](https://github.com/fujiapple852/trippy/issues/1296))
 - [BREAKING CHANGE] Replace `toggle-privacy` key binding with `expand-privacy` and
