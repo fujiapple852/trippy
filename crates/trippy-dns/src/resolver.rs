@@ -93,6 +93,33 @@ pub enum DnsEntry {
     Timeout(IpAddr),
 }
 
+/// The resolved hostnames of a `DnsEntry`.
+#[derive(Debug, Clone)]
+pub struct ResolvedHostnames<'a>(pub(super) &'a [String]);
+
+impl<'a> Iterator for ResolvedHostnames<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.iter().next().map(String::as_str)
+    }
+}
+
+impl DnsEntry {
+    /// The resolved hostnames.
+    #[must_use]
+    pub fn hostnames(&self) -> ResolvedHostnames<'_> {
+        match self {
+            Self::Resolved(Resolved::WithAsInfo(_, hosts, _) | Resolved::Normal(_, hosts)) => {
+                ResolvedHostnames(hosts)
+            }
+            Self::Pending(_) | Self::Timeout(_) | Self::NotFound(_) | Self::Failed(_) => {
+                ResolvedHostnames(&[])
+            }
+        }
+    }
+}
+
 /// Information about a resolved `IpAddr`.
 #[derive(Debug, Clone)]
 pub enum Resolved {
