@@ -18,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   variants ([#1296](https://github.com/fujiapple852/trippy/issues/1296))
 - [BREAKING CHANGE] Replace `toggle-privacy` key binding with `expand-privacy` and
   `contract-privacy` ([#1347](https://github.com/fujiapple852/trippy/issues/1347))
+- Only show hostnames if different from IPs ([#1363](https://github.com/fujiapple852/trippy/issues/1363))
 
 ### Fixed
 
