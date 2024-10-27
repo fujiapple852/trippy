@@ -381,14 +381,22 @@ impl TuiApp {
 
     pub fn expand_privacy(&mut self) {
         let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
-        if usize::from(self.tui_config.privacy_max_ttl) < hop_count {
-            self.tui_config.privacy_max_ttl += 1;
+        if let Some(privacy_max_ttl) = self.tui_config.privacy_max_ttl {
+            if usize::from(privacy_max_ttl) < hop_count {
+                self.tui_config.privacy_max_ttl = Some(privacy_max_ttl + 1);
+            }
+        } else {
+            self.tui_config.privacy_max_ttl = Some(0);
         }
     }
 
     pub fn contract_privacy(&mut self) {
-        if self.tui_config.privacy_max_ttl > 0 {
-            self.tui_config.privacy_max_ttl -= 1;
+        if let Some(privacy_max_ttl) = self.tui_config.privacy_max_ttl {
+            if privacy_max_ttl > 0 {
+                self.tui_config.privacy_max_ttl = Some(privacy_max_ttl - 1);
+            } else {
+                self.tui_config.privacy_max_ttl = None;
+            }
         }
     }
 

@@ -190,7 +190,9 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "tui-privacy-max-ttl",
-            format!("{}", app.tui_config.privacy_max_ttl),
+            app.tui_config
+                .privacy_max_ttl
+                .map_or_else(|| t!("off").to_string(), |m| m.to_string()),
         ),
         SettingsItem::new(
             "tui-address-mode",

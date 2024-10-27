@@ -43,9 +43,6 @@ pub const DEFAULT_TUI_ADDRESS_MODE: AddressMode = AddressMode::Host;
 /// The default value for `tui-refresh-rate`.
 pub const DEFAULT_TUI_REFRESH_RATE: Duration = Duration::from_millis(100);
 
-/// The default value for `tui-privacy-max-ttl`.
-pub const DEFAULT_TUI_PRIVACY_MAX_TTL: u8 = 0;
-
 /// The default value for `dns-resolve-method`.
 pub const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethodConfig = DnsResolveMethodConfig::System;
 

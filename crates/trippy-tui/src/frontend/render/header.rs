@@ -173,7 +173,9 @@ fn render_source(app: &TuiApp) -> String {
             }
         }
     }
-    if let Some(addr) = app.tracer_config().data.source_addr() {
+    if app.tui_config.privacy_max_ttl.is_some() {
+        format!("**{}**", t!("hidden"))
+    } else if let Some(addr) = app.tracer_config().data.source_addr() {
         let entry = app.resolver.lazy_reverse_lookup_with_asinfo(addr);
         if let Some(hostname) = entry.hostnames().next() {
             format_both(app, hostname, addr)
