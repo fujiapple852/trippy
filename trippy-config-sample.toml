@@ -324,8 +324,8 @@ tui-preserve-screen = false
 # The Tui refresh rate [default: 100ms]
 tui-refresh-rate = "100ms"
 
-# The maximum ttl of hops which will be masked for privacy [default: 0]
-tui-privacy-max-ttl = 0
+# The maximum ttl of hops which will be masked for privacy [default: none]
+#tui-privacy-max-ttl = 0
 
 # The locale to use for Tui [default: auto]
 #tui-locale = "en-US"

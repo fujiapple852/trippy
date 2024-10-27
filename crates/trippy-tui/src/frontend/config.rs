@@ -11,7 +11,7 @@ pub struct TuiConfig {
     /// Refresh rate.
     pub refresh_rate: Duration,
     /// The maximum ttl of hops which will be masked for privacy.
-    pub privacy_max_ttl: u8,
+    pub privacy_max_ttl: Option<u8>,
     /// Preserve screen on exit.
     pub preserve_screen: bool,
     /// How to render addresses.
@@ -42,7 +42,7 @@ impl TuiConfig {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         refresh_rate: Duration,
-        privacy_max_ttl: u8,
+        privacy_max_ttl: Option<u8>,
         preserve_screen: bool,
         address_mode: AddressMode,
         lookup_as_info: bool,

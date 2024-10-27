@@ -216,7 +216,9 @@ pub struct Args {
     #[arg(long, value_parser = parse_duration)]
     pub tui_refresh_rate: Option<Duration>,
 
-    /// The maximum ttl of hops which will be masked for privacy [default: 0]
+    /// The maximum ttl of hops which will be masked for privacy [default: none]
+    ///
+    /// If set, the source IP address and hostname will also be hidden.
     #[arg(long)]
     pub tui_privacy_max_ttl: Option<u8>,
 

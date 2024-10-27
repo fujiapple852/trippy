@@ -259,7 +259,7 @@ impl Default for ConfigTui {
         Self {
             tui_preserve_screen: Some(super::constants::DEFAULT_TUI_PRESERVE_SCREEN),
             tui_refresh_rate: Some(super::constants::DEFAULT_TUI_REFRESH_RATE),
-            tui_privacy_max_ttl: Some(super::constants::DEFAULT_TUI_PRIVACY_MAX_TTL),
+            tui_privacy_max_ttl: None,
             tui_address_mode: Some(super::constants::DEFAULT_TUI_ADDRESS_MODE),
             tui_as_mode: Some(super::constants::DEFAULT_TUI_AS_MODE),
             tui_custom_columns: Some(String::from(super::constants::DEFAULT_CUSTOM_COLUMNS)),

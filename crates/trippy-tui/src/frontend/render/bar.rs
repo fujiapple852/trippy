@@ -57,8 +57,8 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         Span::raw("%: -")
     };
 
-    let privacy = if app.tui_config.privacy_max_ttl > 0 {
-        Span::raw(format!("»:{:2}", app.tui_config.privacy_max_ttl))
+    let privacy = if let Some(ttl) = app.tui_config.privacy_max_ttl {
+        Span::raw(format!("»:{ttl:2}"))
     } else {
         Span::raw("»: -")
     };
