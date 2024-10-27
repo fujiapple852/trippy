@@ -7,6 +7,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
+use std::net::IpAddr;
+use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{Hop, PortDirection};
 use trippy_dns::Resolver;
@@ -145,18 +147,38 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
 
 /// Render the source address of the trace.
 fn render_source(app: &TuiApp) -> String {
-    if let Some(src_addr) = app.tracer_config().data.source_addr() {
-        let src_hostname = app.resolver.lazy_reverse_lookup(src_addr);
+    fn format_ip(app: &TuiApp, src_addr: IpAddr) -> String {
         match app.tracer_config().data.port_direction() {
             PortDirection::None => {
-                format!("{src_hostname} ({src_addr})")
+                format!("{src_addr}")
             }
             PortDirection::FixedDest(_) => {
-                format!("{src_hostname}:* ({src_addr}:*)")
+                format!("{src_addr}:*")
             }
             PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
-                format!("{src_hostname}:{} ({src_addr}:{})", src.0, src.0)
+                format!("{src_addr}:{}", src.0)
             }
+        }
+    }
+    fn format_both(app: &TuiApp, src_hostname: &str, src_addr: IpAddr) -> String {
+        match app.tracer_config().data.port_direction() {
+            PortDirection::None => {
+                format!("{src_addr} ({src_hostname})")
+            }
+            PortDirection::FixedDest(_) => {
+                format!("{src_addr}:* ({src_hostname})")
+            }
+            PortDirection::FixedSrc(src) | PortDirection::FixedBoth(src, _) => {
+                format!("{src_addr}:{} ({src_hostname})", src.0)
+            }
+        }
+    }
+    if let Some(addr) = app.tracer_config().data.source_addr() {
+        let entry = app.resolver.lazy_reverse_lookup_with_asinfo(addr);
+        if let Some(hostname) = entry.hostnames().next() {
+            format_both(app, hostname, addr)
+        } else {
+            format_ip(app, addr)
         }
     } else {
         String::from(t!("unknown"))
@@ -165,18 +187,44 @@ fn render_source(app: &TuiApp) -> String {
 
 /// Render the destination address.
 fn render_destination(app: &TuiApp) -> String {
-    let dest_hostname = &app.tracer_config().target_hostname;
+    fn format_ip(app: &TuiApp, dest_addr: IpAddr) -> String {
+        match app.tracer_config().data.port_direction() {
+            PortDirection::None => {
+                format!("{dest_addr}")
+            }
+            PortDirection::FixedSrc(_) => {
+                format!("{dest_addr}:*")
+            }
+            PortDirection::FixedDest(dest) | PortDirection::FixedBoth(_, dest) => {
+                format!("{dest_addr}:{}", dest.0)
+            }
+        }
+    }
+    fn format_both(app: &TuiApp, dest_hostname: &str, dest_addr: IpAddr) -> String {
+        match app.tracer_config().data.port_direction() {
+            PortDirection::None => {
+                format!("{dest_addr} ({dest_hostname})")
+            }
+            PortDirection::FixedSrc(_) => {
+                format!("{dest_addr}:* ({dest_hostname})")
+            }
+            PortDirection::FixedDest(dest) | PortDirection::FixedBoth(_, dest) => {
+                format!("{dest_addr}:{} ({dest_hostname})", dest.0)
+            }
+        }
+    }
     let dest_addr = app.tracer_config().data.target_addr();
-    match app.tracer_config().data.port_direction() {
-        PortDirection::None => {
-            format!("{dest_hostname} ({dest_addr})")
+    let target_hostname = &app.tracer_config().target_hostname;
+    if let Ok(addr) = IpAddr::from_str(target_hostname) {
+        let entry = app.resolver.lazy_reverse_lookup_with_asinfo(addr);
+        let hostname = entry.hostnames().next().unwrap_or_else(|| target_hostname);
+        if hostname == target_hostname {
+            format_ip(app, addr)
+        } else {
+            format_both(app, hostname, addr)
         }
-        PortDirection::FixedSrc(_) => {
-            format!("{dest_hostname}:* ({dest_addr}:*)")
-        }
-        PortDirection::FixedDest(dest) | PortDirection::FixedBoth(_, dest) => {
-            format!("{dest_hostname}:{} ({dest_addr}:{})", dest.0, dest.0)
-        }
+    } else {
+        format_both(app, target_hostname, dest_addr)
     }
 }
 
