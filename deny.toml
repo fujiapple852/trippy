@@ -1,6 +1,6 @@
 [licenses]
 version = 2
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "ISC", "BSD-2-Clause", "BSD-3-Clause", "WTFPL", "Unicode-3.0" ]
+allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "ISC", "BSD-2-Clause", "BSD-3-Clause", "WTFPL", "Unicode-3.0", "Zlib" ]
 confidence-threshold = 0.8
 exceptions = []
 
