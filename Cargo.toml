@@ -77,7 +77,7 @@ toml = { version = "0.8.19", default-features = false }
 tracing = "0.1.40"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.18", default-features = false }
-tun2 = "2.0.9"
+tun2 = "4.0.0"
 unicode-width = "0.2.0"
 widestring = "1.0.2"
 windows-sys = "0.52.0"
