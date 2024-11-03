@@ -11,6 +11,21 @@ issues.
 
 <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/trippy.gif" alt="trippy"/>
 
+> [!NOTE]  
+> TUI translations - *HELP NEEDED!*
+>
+> The next release of Trippy supports showing the TUI in a variety of languages and several translations have already
+> been added, including `en`, `fr`, `tr`, `zh`, `pt`, `sv` and `it`.
+>
+> Machine generated translations have been created for several other languages, including `es`, `de`, `nl`, `ko`, `jp`,
+`hi`, `ar` and `ru`, but these need to be validated by a native speaker before they can be included.
+>
+> If you are able to help validate translations for Trippy, or if you wish to add translations for any additional
+> languages, please see the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for details of how to
+> contribute.
+>
+> Thank you for your help!
+
 ## Navigation
 
 <!-- TOC -->
