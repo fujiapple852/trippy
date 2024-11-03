@@ -1,7 +1,6 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
-use crate::types::Checksum;
 use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, RoundId, TimeToLive};
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -467,98 +466,7 @@ impl FlowState {
     }
 
     fn update_from_round(&mut self, round: &Round<'_>) {
-        self.round_count += 1;
-        self.highest_ttl = std::cmp::max(self.highest_ttl, round.largest_ttl.0);
-        self.highest_ttl_for_round = round.largest_ttl.0;
-        let mut prev_hop_checksum = None;
-        for probe in round.probes {
-            self.update_from_probe(probe, &mut prev_hop_checksum);
-        }
-    }
-
-    fn update_from_probe(&mut self, probe: &ProbeStatus, prev_hop_checksum: &mut Option<u16>) {
-        match probe {
-            ProbeStatus::Complete(complete) => {
-                self.update_lowest_ttl(complete.ttl);
-                self.update_round(complete.round);
-                let index = usize::from(complete.ttl.0) - 1;
-                let hop = &mut self.hops[index];
-                hop.ttl = complete.ttl.0;
-                hop.total_sent += 1;
-                hop.total_recv += 1;
-                let dur = complete
-                    .received
-                    .duration_since(complete.sent)
-                    .unwrap_or_default();
-                let dur_ms = dur.as_secs_f64() * 1000_f64;
-                hop.total_time += dur;
-                // Before last is set use it to calc jitter
-                let last_ms = hop.last_ms().unwrap_or_default();
-                let jitter_ms = (dur_ms - last_ms).abs();
-                let jitter_dur = Duration::from_secs_f64(jitter_ms / 1000_f64);
-                hop.jitter = hop.last.and(Some(jitter_dur));
-                hop.javg += (jitter_ms - hop.javg) / hop.total_recv as f64;
-                // algorithm is from rfc1889, A.8 or rfc3550
-                hop.jinta += jitter_ms.max(0.5) - ((hop.jinta + 8.0) / 16.0);
-                hop.jmax = hop
-                    .jmax
-                    .map_or(Some(jitter_dur), |d| Some(d.max(jitter_dur)));
-                hop.last = Some(dur);
-                hop.samples.insert(0, dur);
-                hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
-                hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
-                hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
-                hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
-                if hop.samples.len() > self.max_samples {
-                    hop.samples.pop();
-                }
-                let host = complete.host;
-                *hop.addrs.entry(host).or_default() += 1;
-                hop.extensions.clone_from(&complete.extensions);
-                hop.last_src_port = complete.src_port.0;
-                hop.last_dest_port = complete.dest_port.0;
-                hop.last_sequence = complete.sequence.0;
-                hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
-
-                if let (Some(expected), Some(actual)) =
-                    (complete.expected_udp_checksum, complete.actual_udp_checksum)
-                {
-                    let (nat_status, checksum) = nat_status(expected, actual, *prev_hop_checksum);
-                    hop.last_nat_status = nat_status;
-                    *prev_hop_checksum = Some(checksum);
-                }
-            }
-            ProbeStatus::Awaited(awaited) => {
-                self.update_lowest_ttl(awaited.ttl);
-                self.update_round(awaited.round);
-                let index = usize::from(awaited.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].ttl = awaited.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
-                }
-                self.hops[index].last_src_port = awaited.src_port.0;
-                self.hops[index].last_dest_port = awaited.dest_port.0;
-                self.hops[index].last_sequence = awaited.sequence.0;
-            }
-            ProbeStatus::Failed(failed) => {
-                self.update_lowest_ttl(failed.ttl);
-                self.update_round(failed.round);
-                let index = usize::from(failed.ttl.0) - 1;
-                self.hops[index].total_sent += 1;
-                self.hops[index].total_failed += 1;
-                self.hops[index].ttl = failed.ttl.0;
-                self.hops[index].samples.insert(0, Duration::default());
-                if self.hops[index].samples.len() > self.max_samples {
-                    self.hops[index].samples.pop();
-                }
-                self.hops[index].last_src_port = failed.src_port.0;
-                self.hops[index].last_dest_port = failed.dest_port.0;
-                self.hops[index].last_sequence = failed.sequence.0;
-            }
-            ProbeStatus::NotSent | ProbeStatus::Skipped => {}
-        }
+        state_updater::StateUpdater::new(self, round).apply();
     }
 
     fn update_round(&mut self, round: RoundId) {
@@ -577,33 +485,171 @@ impl FlowState {
     }
 }
 
-/// Determine the NAT detection status.
-///
-/// Returns a tuple of the NAT detection status and the checksum to use for the next hop.
-const fn nat_status(
-    expected: Checksum,
-    actual: Checksum,
-    prev_hop_checksum: Option<u16>,
-) -> (NatStatus, u16) {
-    if let Some(prev_hop_checksum) = prev_hop_checksum {
-        // If the actual checksum matches the checksum of the previous probe
-        // then we can assume NAT has not occurred.  Note that it is perfectly
-        // valid for the expected checksum to differ from the actual checksum
-        // in this case as the NAT'ed checksum "carries forward" throughout the
-        // remainder of the hops on the path.
-        if prev_hop_checksum == actual.0 {
-            (NatStatus::NotDetected, prev_hop_checksum)
-        } else {
-            (NatStatus::Detected, actual.0)
+mod state_updater {
+    use crate::state::FlowState;
+    use crate::types::Checksum;
+    use crate::{NatStatus, ProbeStatus, Round};
+    use std::time::Duration;
+
+    /// Update the `FlowState` from a `Round`.
+    pub(super) struct StateUpdater<'a> {
+        /// The state to update.
+        state: &'a mut FlowState,
+        /// The `Round` being processed.
+        round: &'a Round<'a>,
+        /// The checksum of the previous hop, if any.
+        prev_hop_checksum: Option<u16>,
+    }
+    impl<'a> StateUpdater<'a> {
+        pub(super) fn new(state: &'a mut FlowState, round: &'a Round<'_>) -> Self {
+            Self {
+                state,
+                round,
+                prev_hop_checksum: None,
+            }
         }
-    } else {
-        // If we have no prior checksum (i.e. this is the first probe that
-        // responded) and the expected and actual checksums do not match then
-        // we can assume NAT has occurred.
-        if expected.0 == actual.0 {
-            (NatStatus::NotDetected, actual.0)
+
+        pub(super) fn apply(&mut self) {
+            self.state.round_count += 1;
+            self.state.highest_ttl =
+                std::cmp::max(self.state.highest_ttl, self.round.largest_ttl.0);
+            self.state.highest_ttl_for_round = self.round.largest_ttl.0;
+            for probe in self.round.probes {
+                self.update_for_probe(probe);
+            }
+        }
+
+        fn update_for_probe(&mut self, probe: &ProbeStatus) {
+            let state = &mut *self.state;
+            match probe {
+                ProbeStatus::Complete(complete) => {
+                    state.update_lowest_ttl(complete.ttl);
+                    state.update_round(complete.round);
+                    let index = usize::from(complete.ttl.0) - 1;
+                    let hop = &mut state.hops[index];
+                    hop.ttl = complete.ttl.0;
+                    hop.total_sent += 1;
+                    hop.total_recv += 1;
+                    let dur = complete
+                        .received
+                        .duration_since(complete.sent)
+                        .unwrap_or_default();
+                    let dur_ms = dur.as_secs_f64() * 1000_f64;
+                    hop.total_time += dur;
+                    // Before last is set use it to calc jitter
+                    let last_ms = hop.last_ms().unwrap_or_default();
+                    let jitter_ms = (dur_ms - last_ms).abs();
+                    let jitter_dur = Duration::from_secs_f64(jitter_ms / 1000_f64);
+                    hop.jitter = hop.last.and(Some(jitter_dur));
+                    hop.javg += (jitter_ms - hop.javg) / hop.total_recv as f64;
+                    // algorithm is from rfc1889, A.8 or rfc3550
+                    hop.jinta += jitter_ms.max(0.5) - ((hop.jinta + 8.0) / 16.0);
+                    hop.jmax = hop
+                        .jmax
+                        .map_or(Some(jitter_dur), |d| Some(d.max(jitter_dur)));
+                    hop.last = Some(dur);
+                    hop.samples.insert(0, dur);
+                    hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
+                    hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
+                    hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
+                    hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
+                    if hop.samples.len() > state.max_samples {
+                        hop.samples.pop();
+                    }
+                    let host = complete.host;
+                    *hop.addrs.entry(host).or_default() += 1;
+                    hop.extensions.clone_from(&complete.extensions);
+                    hop.last_src_port = complete.src_port.0;
+                    hop.last_dest_port = complete.dest_port.0;
+                    hop.last_sequence = complete.sequence.0;
+                    hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
+
+                    if let (Some(expected), Some(actual)) =
+                        (complete.expected_udp_checksum, complete.actual_udp_checksum)
+                    {
+                        let (nat_status, checksum) =
+                            nat_status(expected, actual, self.prev_hop_checksum);
+                        hop.last_nat_status = nat_status;
+                        self.prev_hop_checksum = Some(checksum);
+                    }
+                }
+                ProbeStatus::Awaited(awaited) => {
+                    state.update_lowest_ttl(awaited.ttl);
+                    state.update_round(awaited.round);
+                    let index = usize::from(awaited.ttl.0) - 1;
+                    state.hops[index].total_sent += 1;
+                    state.hops[index].ttl = awaited.ttl.0;
+                    state.hops[index].samples.insert(0, Duration::default());
+                    if state.hops[index].samples.len() > state.max_samples {
+                        state.hops[index].samples.pop();
+                    }
+                    state.hops[index].last_src_port = awaited.src_port.0;
+                    state.hops[index].last_dest_port = awaited.dest_port.0;
+                    state.hops[index].last_sequence = awaited.sequence.0;
+                }
+                ProbeStatus::Failed(failed) => {
+                    state.update_lowest_ttl(failed.ttl);
+                    state.update_round(failed.round);
+                    let index = usize::from(failed.ttl.0) - 1;
+                    state.hops[index].total_sent += 1;
+                    state.hops[index].total_failed += 1;
+                    state.hops[index].ttl = failed.ttl.0;
+                    state.hops[index].samples.insert(0, Duration::default());
+                    if state.hops[index].samples.len() > state.max_samples {
+                        state.hops[index].samples.pop();
+                    }
+                    state.hops[index].last_src_port = failed.src_port.0;
+                    state.hops[index].last_dest_port = failed.dest_port.0;
+                    state.hops[index].last_sequence = failed.sequence.0;
+                }
+                ProbeStatus::NotSent | ProbeStatus::Skipped => {}
+            }
+        }
+    }
+
+    /// Determine the NAT detection status.
+    ///
+    /// Returns a tuple of the NAT detection status and the checksum to use for the next hop.
+    const fn nat_status(
+        expected: Checksum,
+        actual: Checksum,
+        prev_hop_checksum: Option<u16>,
+    ) -> (NatStatus, u16) {
+        if let Some(prev_hop_checksum) = prev_hop_checksum {
+            // If the actual checksum matches the checksum of the previous probe
+            // then we can assume NAT has not occurred.  Note that it is perfectly
+            // valid for the expected checksum to differ from the actual checksum
+            // in this case as the NAT'ed checksum "carries forward" throughout the
+            // remainder of the hops on the path.
+            if prev_hop_checksum == actual.0 {
+                (NatStatus::NotDetected, prev_hop_checksum)
+            } else {
+                (NatStatus::Detected, actual.0)
+            }
         } else {
-            (NatStatus::Detected, actual.0)
+            // If we have no prior checksum (i.e. this is the first probe that
+            // responded) and the expected and actual checksums do not match then
+            // we can assume NAT has occurred.
+            if expected.0 == actual.0 {
+                (NatStatus::NotDetected, actual.0)
+            } else {
+                (NatStatus::Detected, actual.0)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use test_case::test_case;
+
+        #[test_case(123, 123, None => (NatStatus::NotDetected, 123); "first hop matching checksum")]
+        #[test_case(123, 321, None => (NatStatus::Detected, 321); "first hop non-matching checksum")]
+        #[test_case(123, 123, Some(123) => (NatStatus::NotDetected, 123); "non-first hop matching checksum match previous")]
+        #[test_case(999, 999, Some(321) => (NatStatus::Detected, 999); "non-first hop matching checksum not match previous")]
+        #[test_case(777, 888, Some(321) => (NatStatus::Detected, 888); "non-first hop non-matching checksum not match previous")]
+        const fn test_nat(expected: u16, actual: u16, prev: Option<u16>) -> (NatStatus, u16) {
+            nat_status(Checksum(expected), Checksum(actual), prev)
         }
     }
 }
@@ -623,15 +669,6 @@ mod tests {
     use std::str::FromStr;
     use std::time::SystemTime;
     use test_case::test_case;
-
-    #[test_case(123, 123, None => (NatStatus::NotDetected, 123); "first hop matching checksum")]
-    #[test_case(123, 321, None => (NatStatus::Detected, 321); "first hop non-matching checksum")]
-    #[test_case(123, 123, Some(123) => (NatStatus::NotDetected, 123); "non-first hop matching checksum match previous")]
-    #[test_case(999, 999, Some(321) => (NatStatus::Detected, 999); "non-first hop matching checksum not match previous")]
-    #[test_case(777, 888, Some(321) => (NatStatus::Detected, 888); "non-first hop non-matching checksum not match previous")]
-    const fn test_nat(expected: u16, actual: u16, prev: Option<u16>) -> (NatStatus, u16) {
-        nat_status(Checksum(expected), Checksum(actual), prev)
-    }
 
     /// A test scenario.
     #[derive(Deserialize, Debug)]
