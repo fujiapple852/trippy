@@ -68,7 +68,7 @@ serde_with = { version = "3.11.0", default-features = false, features = ["macros
 serde_yml = "0.0.12"
 socket2 = "0.5.7"
 strum = { version = "0.26.3", default-features = false }
-sys-locale = "0.3.1"
+sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "1.0.60"
 tokio = "1.41.0"
