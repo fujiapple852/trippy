@@ -398,6 +398,7 @@ pub struct ConfigBindings {
     pub toggle_as_info: Option<TuiKeyBinding>,
     pub toggle_hop_details: Option<TuiKeyBinding>,
     pub quit: Option<TuiKeyBinding>,
+    pub quit_preserve_screen: Option<TuiKeyBinding>,
 }
 
 impl Default for ConfigBindings {
@@ -442,6 +443,7 @@ impl Default for ConfigBindings {
             toggle_as_info: Some(bindings.toggle_as_info),
             toggle_hop_details: Some(bindings.toggle_hop_details),
             quit: Some(bindings.quit),
+            quit_preserve_screen: Some(bindings.quit_preserve_screen),
         }
     }
 }

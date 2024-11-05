@@ -43,6 +43,7 @@ pub struct Bindings {
     pub toggle_as_info: KeyBinding,
     pub toggle_hop_details: KeyBinding,
     pub quit: KeyBinding,
+    pub quit_preserve_screen: KeyBinding,
 }
 
 impl From<TuiBindings> for Bindings {
@@ -85,6 +86,7 @@ impl From<TuiBindings> for Bindings {
             toggle_as_info: KeyBinding::from(value.toggle_as_info),
             toggle_hop_details: KeyBinding::from(value.toggle_hop_details),
             quit: KeyBinding::from(value.quit),
+            quit_preserve_screen: KeyBinding::from(value.quit_preserve_screen),
         }
     }
 }

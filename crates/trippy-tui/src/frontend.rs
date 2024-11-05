@@ -47,7 +47,7 @@ pub fn run_frontend(
     let mut app = TuiApp::new(tui_config, resolver, geoip_lookup, traces);
     let res = run_app(&mut terminal, &mut app);
     disable_raw_mode()?;
-    if preserve_screen {
+    if preserve_screen || matches!(res, Ok(ExitAction::PreserveScreen)) {
         terminal.set_cursor_position(Position::new(0, terminal.size()?.height))?;
         terminal.backend_mut().append_lines(1)?;
     } else {
@@ -60,8 +60,16 @@ pub fn run_frontend(
     Ok(())
 }
 
+/// The exit action to take when the frontend exits.
+enum ExitAction {
+    /// Exit the frontend normally.
+    Normal,
+    /// Preserve the screen on exit.
+    PreserveScreen,
+}
+
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<()> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<ExitAction> {
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
@@ -221,7 +229,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Resu
                     } else if bindings.toggle_hop_details.check(key) {
                         app.toggle_hop_details();
                     } else if bindings.quit.check(key) || CTRL_C.check(key) {
-                        return Ok(());
+                        return Ok(ExitAction::Normal);
+                    } else if bindings.quit_preserve_screen.check(key) {
+                        return Ok(ExitAction::PreserveScreen);
                     }
                 }
             }
