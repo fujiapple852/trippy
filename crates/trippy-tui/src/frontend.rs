@@ -43,7 +43,8 @@ pub fn run_frontend(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let preserve_screen = tui_config.preserve_screen;
-    let res = run_app(&mut terminal, traces, tui_config, resolver, geoip_lookup);
+    let mut app = TuiApp::new(tui_config, resolver, geoip_lookup, traces);
+    let res = run_app(&mut terminal, &mut app);
     disable_raw_mode()?;
     if !preserve_screen {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -56,21 +57,14 @@ pub fn run_frontend(
 }
 
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    trace_info: Vec<TraceInfo>,
-    tui_config: TuiConfig,
-    resolver: DnsResolver,
-    geoip_lookup: GeoIpLookup,
-) -> io::Result<()> {
-    let mut app = TuiApp::new(tui_config, resolver, geoip_lookup, trace_info);
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<()> {
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
             app.clamp_selected_hop();
             app.update_order_flow_counts();
         };
-        terminal.draw(|f| render::app::render(f, &mut app))?;
+        terminal.draw(|f| render::app::render(f, app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
