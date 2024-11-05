@@ -47,6 +47,7 @@ pub struct TuiBindings {
     pub toggle_as_info: TuiKeyBinding,
     pub toggle_hop_details: TuiKeyBinding,
     pub quit: TuiKeyBinding,
+    pub quit_preserve_screen: TuiKeyBinding,
 }
 
 impl Default for TuiBindings {
@@ -98,6 +99,10 @@ impl Default for TuiBindings {
             toggle_as_info: TuiKeyBinding::new(KeyCode::Char('z')),
             toggle_hop_details: TuiKeyBinding::new(KeyCode::Char('d')),
             quit: TuiKeyBinding::new(KeyCode::Char('q')),
+            quit_preserve_screen: TuiKeyBinding::new_with_modifier(
+                KeyCode::Char('q'),
+                KeyModifiers::SHIFT,
+            ),
         }
     }
 }
@@ -151,6 +156,10 @@ impl TuiBindings {
             (self.toggle_as_info, TuiCommandItem::ToggleASInfo),
             (self.toggle_hop_details, TuiCommandItem::ToggleHopDetails),
             (self.quit, TuiCommandItem::Quit),
+            (
+                self.quit_preserve_screen,
+                TuiCommandItem::QuitPreserveScreen,
+            ),
         ]
         .iter()
         .fold(
@@ -326,6 +335,10 @@ impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindi
                 .get(&TuiCommandItem::Quit)
                 .or(cfg.quit.as_ref())
                 .unwrap_or(&Self::default().quit),
+            quit_preserve_screen: *cmd_items
+                .get(&TuiCommandItem::QuitPreserveScreen)
+                .or(cfg.quit_preserve_screen.as_ref())
+                .unwrap_or(&Self::default().quit_preserve_screen),
         }
     }
 }
@@ -628,4 +641,6 @@ pub enum TuiCommandItem {
     ToggleHopDetails,
     /// Quit the application.
     Quit,
+    /// Quit the application and preserve the screen.
+    QuitPreserveScreen,
 }

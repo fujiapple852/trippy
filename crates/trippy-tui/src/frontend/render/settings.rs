@@ -393,6 +393,10 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
             format!("{}", binds.toggle_hop_details),
         ),
         SettingsItem::new("quit", format!("{}", binds.quit)),
+        SettingsItem::new(
+            "quit-preserve-screen",
+            format!("{}", binds.quit_preserve_screen),
+        ),
     ]
 }
 
