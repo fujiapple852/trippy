@@ -9,6 +9,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ratatui::layout::Position;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     Terminal,
@@ -46,7 +47,10 @@ pub fn run_frontend(
     let mut app = TuiApp::new(tui_config, resolver, geoip_lookup, traces);
     let res = run_app(&mut terminal, &mut app);
     disable_raw_mode()?;
-    if !preserve_screen {
+    if preserve_screen {
+        terminal.set_cursor_position(Position::new(0, terminal.size()?.height))?;
+        terminal.backend_mut().append_lines(1)?;
+    } else {
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     }
     terminal.show_cursor()?;
