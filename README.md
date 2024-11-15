@@ -886,6 +886,7 @@ command line option or in the `bindings` section of the configuration file.
 | `toggle-as-info`           | Toggle AS info display                          | `z`      |
 | `toggle-hop-details`       | Toggle hop details                              | `d`      |
 | `quit`                     | Quit the application                            | `q`      |
+| `quit-preserve-screen`     | Quit the application and preserve the screen    | `shift+q`|
 
 The supported modifiers are: `shift`, `ctrl`, `alt`, `super`, `hyper` & `meta`. Multiple modifiers may be specified, for
 example `ctrl+shift+b`.
