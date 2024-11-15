@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Highlight lost probes in sample history ([#1247](https://github.com/fujiapple852/trippy/issues/1247))
+- Added `quit-preserve-screen` (default: `shift+q`) key binding to quit Tui without clearing the
+  screen ([#1382](https://github.com/fujiapple852/trippy/issues/1382))
 
 ### Changed
 
@@ -26,6 +28,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Reverse dns enqueued multiple times when dns-ttl expires ([#1290](https://github.com/fujiapple852/trippy/issues/1290))
 - Fixed panic for icmp extensions with malformed length ([#1287](https://github.com/fujiapple852/trippy/issues/1287))
+- Cursor not moved to the bottom on exit when using
+  `--tui-preserve-screen` ([#1375](https://github.com/fujiapple852/trippy/issues/1375))
 
 ## [0.11.0] - 2024-08-11
 
