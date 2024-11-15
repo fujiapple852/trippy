@@ -37,7 +37,7 @@ chrono = { version = "0.4.38", default-features = false }
 clap = { version = "4.5.20", default-features = false }
 clap_complete = "4.4.9"
 clap_mangen = "0.2.20"
-comfy-table = { version = "7.1.2", default-features = false }
+comfy-table = { version = "7.1.3", default-features = false }
 crossbeam = "0.8.4"
 crossterm = { version = "0.28.1",  default-features = false }
 csv = "1.3.1"
