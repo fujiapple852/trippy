@@ -2445,6 +2445,7 @@ dependencies = [
  "trippy-core",
  "trippy-dns",
  "trippy-privilege",
+ "unicode-bidi",
  "unicode-width 0.2.0",
 ]
 
