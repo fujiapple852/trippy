@@ -129,6 +129,17 @@ documentation:
 cargo install trippy --locked
 ```
 
+### APT (Debian)
+
+[![Debian 13 package](https://repology.org/badge/version-for-repo/debian_13/trippy.svg)](https://tracker.debian.org/pkg/trippy)
+
+```shell
+apt install trippy
+```
+
+> [!NOTE]
+> Only available for Debian 13 (`trixie`) and later.
+
 ### PPA (Ubuntu)
 
 [![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.11.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
