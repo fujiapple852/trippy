@@ -149,6 +149,9 @@ add-apt-repository ppa:fujiapple/trippy
 apt update && apt install trippy
 ```
 
+> [!NOTE]
+> Only available for Ubuntu 24.04 (`Noble`) and 22.04 (`Jammy`).
+
 ### Snap (Linux)
 
 [![trippy](https://snapcraft.io/trippy/badge.svg)](https://snapcraft.io/trippy)
