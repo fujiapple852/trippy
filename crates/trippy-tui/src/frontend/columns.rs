@@ -257,6 +257,7 @@ impl Display for ColumnType {
 
 impl ColumnType {
     /// The name of the column in the current locale.
+    #[allow(clippy::cognitive_complexity)]
     pub(self) fn name(&self) -> Cow<'_, str> {
         match self {
             Self::Ttl => Cow::Borrowed("#"),

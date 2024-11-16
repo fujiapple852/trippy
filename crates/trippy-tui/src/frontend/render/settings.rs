@@ -121,6 +121,7 @@ fn render_settings_info(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, info: &str)
 }
 
 /// Format all settings.
+#[allow(clippy::cognitive_complexity)]
 fn format_all_settings(app: &TuiApp) -> Vec<(String, String, Vec<SettingsItem>)> {
     let tui_settings = format_tui_settings(app);
     let trace_settings = format_trace_settings(app);

@@ -1,4 +1,9 @@
+use std::borrow::Cow;
+use unicode_bidi::BidiInfo;
+
 const FALLBACK_LOCALE: &str = "en";
+
+const RTL_LOCALES: &[&str] = &["ar"];
 
 /// Set the locale for the application.
 ///
@@ -48,12 +53,37 @@ fn split_locale(locale: &str) -> String {
         .to_string()
 }
 
-// A macro for translating a text string.
+/// A macro for translating a text string.
+///
+/// If the current locale is right-to-left, the text is reordered.
 #[macro_export]
 macro_rules! t {
     ($($all:tt)*) => {
-        rust_i18n::t!($($all)*)
+        {
+            let translated = rust_i18n::t!($($all)*);
+            if $crate::locale::__is_rtl_locale() {
+                $crate::locale::__bidi_reorder_line(&translated)
+            } else {
+                translated
+            }
+        }
     }
+}
+
+/// Check if the current locale is right-to-left.
+pub fn __is_rtl_locale() -> bool {
+    let binding = rust_i18n::locale();
+    let locale = &*binding;
+    RTL_LOCALES.contains(&locale)
+}
+
+/// Reorder a line of text according to the current locale.
+pub fn __bidi_reorder_line<'a>(translated: &str) -> Cow<'a, str> {
+    let bidi_info = BidiInfo::new(translated, None);
+    let para = &bidi_info.paragraphs[0];
+    let line = para.range.clone();
+    let display = bidi_info.reorder_line(para, line).to_string();
+    display.into()
 }
 
 #[cfg(test)]
