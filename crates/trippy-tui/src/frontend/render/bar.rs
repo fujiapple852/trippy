@@ -52,15 +52,15 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let max_hosts = if let Some(m) = app.tui_config.max_addrs {
-        Span::raw(format!("%:{m:2}"))
+        Span::raw(format!("»:{m:2}"))
     } else {
-        Span::raw("%: -")
+        Span::raw("»: -")
     };
 
     let privacy = if let Some(ttl) = app.tui_config.privacy_max_ttl {
-        Span::raw(format!("»:{ttl:2}"))
+        Span::raw(format!("{}:{ttl:2}", t!("privacy")))
     } else {
-        Span::raw("»: -")
+        Span::raw(format!("{}: -", t!("privacy")))
     };
 
     let address_mode = match app.tui_config.address_mode {

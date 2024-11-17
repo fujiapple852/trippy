@@ -164,6 +164,17 @@ unprivileged:
   ru: "непривилегированный"
   es: "no privilegiado"
   de: "unprivilegiert"
+privacy:
+  en: "privacy"
+  fr: "confidentialité"
+  tr: "gizlilik"
+  it: "privacy"
+  pt: "privacidade"
+  zh: "隐私"
+  sv: "integritet"
+  ru: "конфиденциальность"
+  es: "privacidad"
+  de: "datenschutz"
 na:
   en: "n/a"
   fr: "non disponible"
