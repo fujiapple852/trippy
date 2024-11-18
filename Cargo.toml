@@ -53,7 +53,7 @@ insta =  "1.41.1"
 ipnetwork = "0.20.0"
 itertools = "0.13.0"
 maxminddb = "0.24.0"
-mockall = "0.13.0"
+mockall = "0.13.1"
 nix = { version = "0.29.0", default-features = false }
 parking_lot = "0.12.3"
 paste = "1.0.15"
