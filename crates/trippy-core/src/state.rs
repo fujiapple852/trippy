@@ -577,30 +577,32 @@ mod state_updater {
                     state.update_lowest_ttl(awaited.ttl);
                     state.update_round(awaited.round);
                     let index = usize::from(awaited.ttl.0) - 1;
-                    state.hops[index].total_sent += 1;
-                    state.hops[index].ttl = awaited.ttl.0;
-                    state.hops[index].samples.insert(0, Duration::default());
-                    if state.hops[index].samples.len() > state.max_samples {
-                        state.hops[index].samples.pop();
+                    let hop = &mut state.hops[index];
+                    hop.total_sent += 1;
+                    hop.ttl = awaited.ttl.0;
+                    hop.samples.insert(0, Duration::default());
+                    if hop.samples.len() > state.max_samples {
+                        hop.samples.pop();
                     }
-                    state.hops[index].last_src_port = awaited.src_port.0;
-                    state.hops[index].last_dest_port = awaited.dest_port.0;
-                    state.hops[index].last_sequence = awaited.sequence.0;
+                    hop.last_src_port = awaited.src_port.0;
+                    hop.last_dest_port = awaited.dest_port.0;
+                    hop.last_sequence = awaited.sequence.0;
                 }
                 ProbeStatus::Failed(failed) => {
                     state.update_lowest_ttl(failed.ttl);
                     state.update_round(failed.round);
                     let index = usize::from(failed.ttl.0) - 1;
-                    state.hops[index].total_sent += 1;
-                    state.hops[index].total_failed += 1;
-                    state.hops[index].ttl = failed.ttl.0;
-                    state.hops[index].samples.insert(0, Duration::default());
-                    if state.hops[index].samples.len() > state.max_samples {
-                        state.hops[index].samples.pop();
+                    let hop = &mut state.hops[index];
+                    hop.total_sent += 1;
+                    hop.total_failed += 1;
+                    hop.ttl = failed.ttl.0;
+                    hop.samples.insert(0, Duration::default());
+                    if hop.samples.len() > state.max_samples {
+                        hop.samples.pop();
                     }
-                    state.hops[index].last_src_port = failed.src_port.0;
-                    state.hops[index].last_dest_port = failed.dest_port.0;
-                    state.hops[index].last_sequence = failed.sequence.0;
+                    hop.last_src_port = failed.src_port.0;
+                    hop.last_dest_port = failed.dest_port.0;
+                    hop.last_sequence = failed.sequence.0;
                 }
                 ProbeStatus::NotSent | ProbeStatus::Skipped => {}
             }
