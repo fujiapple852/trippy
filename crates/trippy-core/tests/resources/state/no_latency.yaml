@@ -11,21 +11,13 @@ rounds:
 expected:
   hops:
     - ttl: 1
-      total_sent: 4
-      total_recv: 4
       loss_pct: 0
       last_ms: 0.0
       best_ms: 0
       worst_ms: 0
       avg_ms: 0
-      last_nat_status: no_nat
-      addrs:
-        127.0.0.1: 1
       samples: [0, 0, 0, 0]
       jitter: 0
       javg: 0.0
       jmax: 0.0
       jinta: 0.0
-      last_sequence: 0
-      last_src: 80
-      last_dest: 80

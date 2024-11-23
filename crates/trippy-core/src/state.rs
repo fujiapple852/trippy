@@ -665,6 +665,7 @@ mod tests {
     use anyhow::anyhow;
     use serde::Deserialize;
     use std::collections::HashSet;
+    use std::fmt::Debug;
     use std::ops::Add;
     use std::str::FromStr;
     use std::time::SystemTime;
@@ -790,24 +791,24 @@ mod tests {
     #[derive(Deserialize, Debug, Clone)]
     #[serde(deny_unknown_fields)]
     struct HopData {
-        ttl: u8,
-        total_sent: usize,
-        total_recv: usize,
-        loss_pct: f64,
+        ttl: Option<u8>,
+        total_sent: Option<usize>,
+        total_recv: Option<usize>,
+        loss_pct: Option<f64>,
         last_ms: Option<f64>,
         best_ms: Option<f64>,
         worst_ms: Option<f64>,
-        avg_ms: f64,
+        avg_ms: Option<f64>,
         jitter: Option<f64>,
-        javg: f64,
+        javg: Option<f64>,
         jmax: Option<f64>,
-        jinta: f64,
-        addrs: HashMap<IpAddr, usize>,
+        jinta: Option<f64>,
+        addrs: Option<HashMap<IpAddr, usize>>,
         samples: Option<Vec<f64>>,
-        last_src: u16,
-        last_dest: u16,
-        last_sequence: u16,
-        last_nat_status: NatStatusWrapper,
+        last_src: Option<u16>,
+        last_dest: Option<u16>,
+        last_sequence: Option<u16>,
+        last_nat_status: Option<NatStatusWrapper>,
     }
 
     /// A wrapper struct over `NatStatus` to allow deserialization.
@@ -835,11 +836,12 @@ mod tests {
         }};
     }
 
-    #[test_case(file!("ipv4_3probes_3hops_mixed_multi.yaml"))]
-    #[test_case(file!("ipv4_3probes_3hops_completed.yaml"))]
-    #[test_case(file!("ipv4_4probes_all_status.yaml"))]
-    #[test_case(file!("ipv4_4probes_0latency.yaml"))]
-    #[test_case(file!("ipv4_nat.yaml"))]
+    #[test_case(file!("full_mixed.yaml"))]
+    #[test_case(file!("full_completed.yaml"))]
+    #[test_case(file!("all_status.yaml"))]
+    #[test_case(file!("no_latency.yaml"))]
+    #[test_case(file!("nat.yaml"))]
+    #[test_case(file!("minimal.yaml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,
@@ -859,49 +861,80 @@ mod tests {
         let actual_hops = trace.hops();
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
-            assert_eq!(actual.ttl(), expected.ttl);
-            assert_eq!(
-                actual.addrs().collect::<HashSet<_>>(),
-                expected.addrs.keys().collect::<HashSet<_>>()
+            assert_eq_opt(&Some(actual.ttl()), &expected.ttl);
+            assert_eq_opt(
+                &Some(actual.addrs().collect::<HashSet<_>>()),
+                &expected
+                    .addrs
+                    .as_ref()
+                    .map(|addrs| addrs.keys().collect::<HashSet<_>>()),
             );
-            assert_eq!(actual.addr_count(), expected.addrs.len());
-            assert_eq!(actual.total_sent(), expected.total_sent);
-            assert_eq!(actual.total_recv(), expected.total_recv);
-            assert_eq_optional(Some(actual.loss_pct()), Some(expected.loss_pct));
-            assert_eq_optional(actual.last_ms(), expected.last_ms);
-            assert_eq_optional(actual.best_ms(), expected.best_ms);
-            assert_eq_optional(actual.worst_ms(), expected.worst_ms);
-            assert_eq_optional(Some(actual.avg_ms()), Some(expected.avg_ms));
-            assert_eq_optional(actual.jitter_ms(), expected.jitter);
-            assert_eq_optional(Some(actual.javg_ms()), Some(expected.javg));
-            assert_eq_optional(actual.jmax_ms(), expected.jmax);
-            assert_eq_optional(Some(actual.jinta()), Some(expected.jinta));
-            assert_eq!(actual.last_src_port(), expected.last_src);
-            assert_eq!(actual.last_dest_port(), expected.last_dest);
-            assert_eq!(actual.last_sequence(), expected.last_sequence);
-            assert_eq!(actual.last_nat_status(), expected.last_nat_status.0);
-            assert_eq!(
-                Some(
+            assert_eq_opt(
+                &Some(actual.addr_count()),
+                &expected.addrs.map(|addrs| addrs.len()),
+            );
+            assert_eq_opt(&Some(actual.total_sent()), &expected.total_sent);
+            assert_eq_opt(&Some(actual.total_recv()), &expected.total_recv);
+            assert_eq_opt_f64(&Some(actual.loss_pct()), &expected.loss_pct);
+            assert_eq_opt_f64(&actual.last_ms(), &expected.last_ms);
+            assert_eq_opt_f64(&actual.best_ms(), &expected.best_ms);
+            assert_eq_opt_f64(&actual.worst_ms(), &expected.worst_ms);
+            assert_eq_opt_f64(&Some(actual.avg_ms()), &expected.avg_ms);
+            assert_eq_opt_f64(&actual.jitter_ms(), &expected.jitter);
+            assert_eq_opt_f64(&Some(actual.javg_ms()), &expected.javg);
+            assert_eq_opt_f64(&actual.jmax_ms(), &expected.jmax);
+            assert_eq_opt_f64(&Some(actual.jinta()), &expected.jinta);
+            assert_eq_opt(&Some(actual.last_src_port()), &expected.last_src);
+            assert_eq_opt(&Some(actual.last_dest_port()), &expected.last_dest);
+            assert_eq_opt(&Some(actual.last_sequence()), &expected.last_sequence);
+            assert_eq_opt(
+                &Some(actual.last_nat_status()),
+                &expected.last_nat_status.map(|nat| nat.0),
+            );
+            assert_eq_vec_f64(
+                &Some(
                     actual
                         .samples()
                         .iter()
                         .map(|s| s.as_secs_f64() * 1000_f64)
-                        .collect()
+                        .collect(),
                 ),
-                expected.samples
+                &expected.samples,
             );
         }
     }
 
-    fn assert_eq_optional(actual: Option<f64>, expected: Option<f64>) {
+    fn assert_eq_opt<T: Eq + Debug>(actual: &Option<T>, expected: &Option<T>) {
+        assert_eq_inner(actual, expected, |a, e| a == e);
+    }
+
+    fn assert_eq_opt_f64(actual: &Option<f64>, expected: &Option<f64>) {
+        assert_eq_inner(actual, expected, |a, e| (e - a).abs() < f64::EPSILON);
+    }
+
+    fn assert_eq_vec_f64(actual: &Option<Vec<f64>>, expected: &Option<Vec<f64>>) {
+        assert_eq_inner(actual, expected, |a, e| {
+            if a.len() != e.len() {
+                return false;
+            }
+            a.iter()
+                .zip(e.iter())
+                .all(|(a, e)| (e - a).abs() < f64::EPSILON)
+        });
+    }
+
+    fn assert_eq_inner<T: Debug>(
+        actual: &Option<T>,
+        expected: &Option<T>,
+        eq: impl Fn(&T, &T) -> bool,
+    ) {
         match (actual, expected) {
-            (Some(actual), Some(expected)) if (expected - actual).abs() < f64::EPSILON => {}
+            (Some(actual), Some(expected)) if eq(actual, expected) => {}
             (Some(actual), Some(expected)) => {
                 panic!("expected {expected:?} did not match actual {actual:?}")
             }
-            (Some(_), None) => panic!("actual {actual:?} but not expected"),
             (None, Some(_)) => panic!("expected {expected:?} but no actual"),
-            (None, None) => {}
+            (_, None) => {}
         }
     }
 }

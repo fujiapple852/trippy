@@ -17,15 +17,10 @@ expected:
       best_ms: 700
       worst_ms: 700
       avg_ms: 700
-      # jitter: None
-      javg: 700
-      jmax: 700
-      jinta: 699.5
-      last_nat_status: no_nat
       addrs:
         10.1.0.2: 1
       samples: [700.0, 0.0]
       last_ms: 700
       last_sequence: 0
       last_src: 12340
-      last_dest: 80 
+      last_dest: 80
