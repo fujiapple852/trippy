@@ -34,7 +34,6 @@ clap_mangen.workspace = true
 comfy-table.workspace = true
 crossterm = { workspace = true,  default-features = false, features = [ "events", "windows" ] }
 csv.workspace = true
-derive_more.workspace = true
 encoding_rs_io.workspace = true
 etcetera.workspace = true
 humantime.workspace = true
@@ -48,7 +47,6 @@ serde_json.workspace = true
 serde_with.workspace = true
 strum = { workspace = true, default-features = false, features = [ "std", "derive" ] }
 sys-locale.workspace = true
-thiserror.workspace = true
 toml = { workspace = true, default-features = false, features = [ "parse" ] }
 tracing-chrome.workspace = true
 tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "json" ] }
@@ -58,7 +56,6 @@ unicode-width.workspace = true
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }
 pretty_assertions.workspace = true
-serde_yml.workspace = true
 test-case.workspace = true
 
 [lints]
