@@ -13,6 +13,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `quit-preserve-screen` (default: `shift+q`) key binding to quit Tui without clearing the
   screen ([#1382](https://github.com/fujiapple852/trippy/issues/1382))
 - Added forward add backward loss heuristics ([#860](https://github.com/fujiapple852/trippy/issues/860))
+- Added `--tui-locale` flag to support i18n ([#1319](https://github.com/fujiapple852/trippy/issues/1319))
+- Added translations for locales `en`, `fr`, `tr`, `zh`, `pt`, `sv`, `it`, `ru`, `es` &
+  `de` ([#506](https://github.com/fujiapple852/trippy/issues/506))
+- Added `--print-locales` flag to print all available
+  locales ([#1357](https://github.com/fujiapple852/trippy/issues/1357))
+- Added Debian package ([#1312](https://github.com/fujiapple852/trippy/issues/1312))
 
 ### Changed
 
@@ -24,6 +30,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [BREAKING CHANGE] Hide source address when `--tui-privacy-max-ttl` is
   set ([#1365](https://github.com/fujiapple852/trippy/issues/1365))
 - Only show hostnames if different from IPs ([#1363](https://github.com/fujiapple852/trippy/issues/1363))
+- Lookup GeoIp with current locale ([#1336](https://github.com/fujiapple852/trippy/issues/1336))
 
 ### Fixed
 
@@ -31,6 +38,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixed panic for icmp extensions with malformed length ([#1287](https://github.com/fujiapple852/trippy/issues/1287))
 - Cursor not moved to the bottom on exit when using
   `--tui-preserve-screen` ([#1375](https://github.com/fujiapple852/trippy/issues/1375))
+- Config item `tui-address-mode` does not accept `ip` ([#1327](https://github.com/fujiapple852/trippy/issues/1327))
+- Icmp extension mode not shown in Tui settings ([#1289](https://github.com/fujiapple852/trippy/issues/1289))
 
 ## [0.11.0] - 2024-08-11
 
