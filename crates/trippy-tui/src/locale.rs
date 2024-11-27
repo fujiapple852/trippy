@@ -9,7 +9,7 @@ const FALLBACK_LOCALE: &str = "en";
 pub fn set_locale(locale: Option<&str>) {
     if let Some(locale) = locale {
         set_locale_inner(locale);
-    } else if let Some(locale) = sys_locale::get_locale().as_ref() {
+    } else if let Some(locale) = best_match() {
         set_locale_inner(locale);
     } else {
         set_locale_inner(FALLBACK_LOCALE);
@@ -38,6 +38,12 @@ fn set_locale_inner(locale: &str) {
             rust_i18n::set_locale(FALLBACK_LOCALE);
         }
     }
+}
+
+fn best_match() -> Option<&'static str> {
+    let available_locales = rust_i18n::available_locales!();
+    let user_locales = sys_locale::get_locales();
+    locale_match::bcp47::best_matching_locale(available_locales, user_locales)
 }
 
 fn split_locale(locale: &str) -> String {

@@ -1310,6 +1310,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "language-tags"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4345964bb142484797b161f473a503a434de77149dd8c7427788c6e13379388"
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1364,6 +1370,15 @@ name = "litemap"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
+
+[[package]]
+name = "locale-match"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac4b9122a2cef171ad08c1d3a20b52b5e96ece4eaedd748dea0a5640729c59ef"
+dependencies = [
+ "language-tags",
+]
 
 [[package]]
 name = "lock_api"
@@ -2615,6 +2630,7 @@ dependencies = [
  "humantime",
  "insta",
  "itertools 0.13.0",
+ "locale-match",
  "maxminddb",
  "petgraph",
  "pretty_assertions",
