@@ -2551,7 +2551,7 @@ dependencies = [
  "serde_yml 0.0.12",
  "socket2",
  "test-case",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tokio",
  "tokio-util",
  "tracing",
@@ -2573,7 +2573,7 @@ dependencies = [
  "hickory-resolver",
  "itertools 0.13.0",
  "parking_lot",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -2583,7 +2583,7 @@ dependencies = [
  "anyhow",
  "hex-literal",
  "itertools 0.13.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -2594,7 +2594,7 @@ dependencies = [
  "caps",
  "nix",
  "paste",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "windows-sys 0.52.0",
 ]
 
