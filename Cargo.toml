@@ -74,7 +74,7 @@ thiserror = "1.0.60"
 tokio = "1.41.1"
 tokio-util = "0.7.12"
 toml = { version = "0.8.19", default-features = false }
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.18", default-features = false }
 tun2 = "4.0.0"
