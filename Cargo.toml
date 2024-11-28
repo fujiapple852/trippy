@@ -70,7 +70,7 @@ socket2 = "0.5.7"
 strum = { version = "0.26.3", default-features = false }
 sys-locale = "0.3.2"
 test-case = "3.3.1"
-thiserror = "1.0.60"
+thiserror = "2.0.3"
 tokio = "1.41.1"
 tokio-util = "0.7.12"
 toml = { version = "0.8.19", default-features = false }
