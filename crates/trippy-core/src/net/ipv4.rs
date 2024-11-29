@@ -111,8 +111,8 @@ impl Ipv4 {
         icmp_send_socket
             .send_to(ipv4.packet(), remote_addr)
             .map_err(Error::IoError)
-            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable))
-            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))
+            .map_err(|err| ErrorMapper::probe_failed(err, HOST_UNREACHABLE_KIND))
+            .map_err(|err| ErrorMapper::probe_failed(err, NETWORK_UNREACHABLE_KIND))
             .map_err(|err| ErrorMapper::probe_failed(err, INVALID_INPUT_KIND))?;
         Ok(())
     }
@@ -176,8 +176,8 @@ impl Ipv4 {
         raw_send_socket
             .send_to(ipv4.packet(), remote_addr)
             .map_err(Error::IoError)
-            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable))
-            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))?;
+            .map_err(|err| ErrorMapper::probe_failed(err, HOST_UNREACHABLE_KIND))
+            .map_err(|err| ErrorMapper::probe_failed(err, NETWORK_UNREACHABLE_KIND))?;
         Ok(())
     }
 
@@ -217,7 +217,7 @@ impl Ipv4 {
             .map_err(Error::IoError)
             .or_else(ErrorMapper::in_progress)
             .map_err(|err| ErrorMapper::addr_in_use(err, remote_addr))
-            .map_err(|err| ErrorMapper::probe_failed(err, ErrorKind::NetUnreachable))?;
+            .map_err(|err| ErrorMapper::probe_failed(err, NETWORK_UNREACHABLE_KIND))?;
         Ok(socket)
     }
 
@@ -477,6 +477,8 @@ impl Ipv4 {
 
 const ADDR_NOT_AVAILABLE_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::AddrNotAvailable);
 const INVALID_INPUT_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::InvalidInput);
+const HOST_UNREACHABLE_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::HostUnreachable);
+const NETWORK_UNREACHABLE_KIND: ErrorKind = ErrorKind::Std(io::ErrorKind::NetworkUnreachable);
 
 const fn icmp_payload_size(packet_size: usize) -> usize {
     let ip_header_size = Ipv4Packet::minimum_packet_size();
