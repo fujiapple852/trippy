@@ -922,66 +922,70 @@ mod tests {
         let actual_hops = trace.hops();
         let expected_hops = scenario.expected.hops;
         for (actual, expected) in actual_hops.iter().zip(expected_hops) {
-            assert_eq_opt(&Some(actual.ttl()), &expected.ttl);
+            assert_eq_opt(Some(&actual.ttl()), expected.ttl.as_ref());
             assert_eq_opt(
-                &Some(actual.addrs().collect::<HashSet<_>>()),
-                &expected
+                Some(actual.addrs().collect::<HashSet<_>>()),
+                expected
                     .addrs
                     .as_ref()
                     .map(|addrs| addrs.keys().collect::<HashSet<_>>()),
             );
             assert_eq_opt(
-                &Some(actual.addr_count()),
-                &expected.addrs.map(|addrs| addrs.len()),
+                Some(actual.addr_count()),
+                expected.addrs.as_ref().map(HashMap::len),
             );
-            assert_eq_opt(&Some(actual.total_sent()), &expected.total_sent);
-            assert_eq_opt(&Some(actual.total_recv()), &expected.total_recv);
-            assert_eq_opt_f64(&Some(actual.loss_pct()), &expected.loss_pct);
+            assert_eq_opt(Some(&actual.total_sent()), expected.total_sent.as_ref());
+            assert_eq_opt(Some(&actual.total_recv()), expected.total_recv.as_ref());
+            assert_eq_opt_f64(Some(&actual.loss_pct()), expected.loss_pct.as_ref());
             assert_eq_opt(
-                &Some(actual.total_forward_loss()),
-                &expected.total_forward_loss,
+                Some(&actual.total_forward_loss()),
+                expected.total_forward_loss.as_ref(),
             );
             assert_eq_opt(
-                &Some(actual.total_backward_loss()),
-                &expected.total_backward_loss,
+                Some(&actual.total_backward_loss()),
+                expected.total_backward_loss.as_ref(),
             );
-            assert_eq_opt_f64(&actual.last_ms(), &expected.last_ms);
-            assert_eq_opt_f64(&actual.best_ms(), &expected.best_ms);
-            assert_eq_opt_f64(&actual.worst_ms(), &expected.worst_ms);
-            assert_eq_opt_f64(&Some(actual.avg_ms()), &expected.avg_ms);
-            assert_eq_opt_f64(&actual.jitter_ms(), &expected.jitter);
-            assert_eq_opt_f64(&Some(actual.javg_ms()), &expected.javg);
-            assert_eq_opt_f64(&actual.jmax_ms(), &expected.jmax);
-            assert_eq_opt_f64(&Some(actual.jinta()), &expected.jinta);
-            assert_eq_opt(&Some(actual.last_src_port()), &expected.last_src);
-            assert_eq_opt(&Some(actual.last_dest_port()), &expected.last_dest);
-            assert_eq_opt(&Some(actual.last_sequence()), &expected.last_sequence);
+            assert_eq_opt_f64(actual.last_ms().as_ref(), expected.last_ms.as_ref());
+            assert_eq_opt_f64(actual.best_ms().as_ref(), expected.best_ms.as_ref());
+            assert_eq_opt_f64(actual.worst_ms().as_ref(), expected.worst_ms.as_ref());
+            assert_eq_opt_f64(Some(&actual.avg_ms()), expected.avg_ms.as_ref());
+            assert_eq_opt_f64(actual.jitter_ms().as_ref(), expected.jitter.as_ref());
+            assert_eq_opt_f64(Some(&actual.javg_ms()), expected.javg.as_ref());
+            assert_eq_opt_f64(actual.jmax_ms().as_ref(), expected.jmax.as_ref());
+            assert_eq_opt_f64(Some(&actual.jinta()), expected.jinta.as_ref());
+            assert_eq_opt(Some(&actual.last_src_port()), expected.last_src.as_ref());
+            assert_eq_opt(Some(&actual.last_dest_port()), expected.last_dest.as_ref());
             assert_eq_opt(
-                &Some(actual.last_nat_status()),
-                &expected.last_nat_status.map(|nat| nat.0),
+                Some(&actual.last_sequence()),
+                expected.last_sequence.as_ref(),
+            );
+            assert_eq_opt(
+                Some(&actual.last_nat_status()),
+                expected.last_nat_status.as_ref().map(|nat| &nat.0),
             );
             assert_eq_vec_f64(
-                &Some(
-                    actual
+                Some(
+                    &actual
                         .samples()
                         .iter()
                         .map(|s| s.as_secs_f64() * 1000_f64)
                         .collect(),
                 ),
-                &expected.samples,
+                expected.samples.as_ref(),
             );
         }
     }
 
-    fn assert_eq_opt<T: Eq + Debug>(actual: &Option<T>, expected: &Option<T>) {
-        assert_eq_inner(actual, expected, |a, e| a == e);
+    #[allow(clippy::needless_pass_by_value)]
+    fn assert_eq_opt<T: Eq + Debug>(actual: Option<T>, expected: Option<T>) {
+        assert_eq_inner(actual.as_ref(), expected.as_ref(), |a, e| a == e);
     }
 
-    fn assert_eq_opt_f64(actual: &Option<f64>, expected: &Option<f64>) {
+    fn assert_eq_opt_f64(actual: Option<&f64>, expected: Option<&f64>) {
         assert_eq_inner(actual, expected, |a, e| (e - a).abs() < f64::EPSILON);
     }
 
-    fn assert_eq_vec_f64(actual: &Option<Vec<f64>>, expected: &Option<Vec<f64>>) {
+    fn assert_eq_vec_f64(actual: Option<&Vec<f64>>, expected: Option<&Vec<f64>>) {
         assert_eq_inner(actual, expected, |a, e| {
             if a.len() != e.len() {
                 return false;
@@ -993,8 +997,8 @@ mod tests {
     }
 
     fn assert_eq_inner<T: Debug>(
-        actual: &Option<T>,
-        expected: &Option<T>,
+        actual: Option<&T>,
+        expected: Option<&T>,
         eq: impl Fn(&T, &T) -> bool,
     ) {
         match (actual, expected) {
