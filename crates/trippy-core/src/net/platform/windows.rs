@@ -433,7 +433,7 @@ impl Socket for SocketImpl {
     #[instrument(skip(self))]
     fn set_header_included(&mut self, is_header_included: bool) -> IoResult<()> {
         self.inner
-            .set_header_included(is_header_included)
+            .set_header_included_v4(is_header_included)
             .map_err(|err| IoError::Other(err, IoOperation::SetHeaderIncluded))
     }
 

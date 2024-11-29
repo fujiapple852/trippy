@@ -356,7 +356,7 @@ mod socket {
         #[instrument(skip(self))]
         fn set_header_included(&mut self, included: bool) -> IoResult<()> {
             self.inner
-                .set_header_included(included)
+                .set_header_included_v4(included)
                 .map_err(|err| IoError::Other(err, IoOperation::SetHeaderIncluded))
         }
         #[instrument(skip(self))]
