@@ -101,9 +101,7 @@ pub struct KeyBinding {
 impl KeyBinding {
     pub fn check(&self, event: KeyEvent) -> bool {
         let code_match = match (event.code, self.code) {
-            (KeyCode::Char(c1), KeyCode::Char(c2)) => {
-                c1.to_ascii_lowercase() == c2.to_ascii_lowercase()
-            }
+            (KeyCode::Char(c1), KeyCode::Char(c2)) => c1.eq_ignore_ascii_case(&c2),
             (c1, c2) => c1 == c2,
         };
         code_match && self.modifiers == event.modifiers
