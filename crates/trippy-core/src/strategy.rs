@@ -1596,7 +1596,5 @@ mod state {
 
 /// Returns true if the duration between start and end is grater than a duration, false otherwise.
 fn exceeds(start: Option<SystemTime>, end: SystemTime, dur: Duration) -> bool {
-    start.map_or(false, |start| {
-        end.duration_since(start).unwrap_or_default() > dur
-    })
+    start.is_some_and(|start| end.duration_since(start).unwrap_or_default() > dur)
 }
