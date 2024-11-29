@@ -5,7 +5,7 @@ pub enum Buffer<'a> {
     Mutable(&'a mut [u8]),
 }
 
-impl<'a> Buffer<'a> {
+impl Buffer<'_> {
     /// access the buffer as an immutable slice of bytes.
     pub fn as_slice(&self) -> &[u8] {
         match &self {

@@ -16,7 +16,7 @@ pub struct UdpPacket<'a> {
     buf: Buffer<'a>,
 }
 
-impl<'a> UdpPacket<'a> {
+impl UdpPacket<'_> {
     pub fn new(packet: &mut [u8]) -> Result<UdpPacket<'_>> {
         if packet.len() >= UdpPacket::minimum_packet_size() {
             Ok(UdpPacket {

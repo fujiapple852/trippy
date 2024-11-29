@@ -22,7 +22,7 @@ pub struct TcpPacket<'a> {
     buf: Buffer<'a>,
 }
 
-impl<'a> TcpPacket<'a> {
+impl TcpPacket<'_> {
     pub fn new(packet: &mut [u8]) -> Result<TcpPacket<'_>> {
         if packet.len() >= Self::minimum_packet_size() {
             Ok(TcpPacket {
