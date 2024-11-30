@@ -11,26 +11,12 @@ issues.
 
 <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/trippy.gif" alt="trippy"/>
 
-> [!NOTE]  
-> TUI translations - *HELP NEEDED!*
->
-> The next release of Trippy supports showing the TUI in a variety of languages and several translations have already
-> been added, including `en`, `fr`, `tr`, `zh`, `pt`, `sv` and `it`.
->
-> Machine generated translations have been created for several other languages, including `es`, `de`, `nl`, `ko`, `jp`,
-`hi`, `ar` and `ru`, but these need to be validated by a native speaker before they can be included.
->
-> If you are able to help validate translations for Trippy, or if you wish to add translations for any additional
-> languages, please see the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for details of how to
-> contribute.
->
-> Thank you for your help!
-
 ## Navigation
 
 <!-- TOC -->
 
 * [Trippy](#trippy)
+    * [Navigation](#navigation)
     * [Features](#features)
     * [Versions](#versions)
     * [Distributions](#distributions)
@@ -39,9 +25,10 @@ issues.
     * [Usage Examples](#usage-examples)
     * [Command Reference](#command-reference)
     * [Theme Reference](#theme-reference)
-    * [Column Reference](#column-reference)
     * [Key Bindings Reference](#key-bindings-reference)
+    * [Column Reference](#column-reference)
     * [Configuration Reference](#configuration-reference)
+    * [Locale Reference](#locale-reference)
     * [Frequently Asked Questions](#frequently-asked-questions)
     * [Acknowledgements](#acknowledgements)
     * [License](#license)
@@ -84,6 +71,7 @@ issues.
     - Freeze/unfreeze the Tui, reset the stats, flush the cache, preserve screen on exit
     - Responsive UI with adjustable refresh rate
     - Hop privacy
+    - Multiple language support
 - DNS:
     - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
     - Lazy reverse DNS queries
@@ -529,6 +517,18 @@ Generate `ROFF` man page:
 trip --generate-man
 ```
 
+Use the `de` Tui locale:
+
+```shell
+trip example.com --tui-locale de
+```
+
+List supported Tui locales:
+
+```shell
+trip --print-locales
+```
+
 Run in `silent` tracing mode and output `compact` trace logging with `full` span events:
 
 ```shell
@@ -702,7 +702,7 @@ Options:
           - both: Show both IP address and reverse-lookup DNS hostname
 
       --tui-as-mode <TUI_AS_MODE>
-          How to render AS information [default: asn]
+          How to render autonomous system (AS) information [default: asn]
 
           Possible values:
           - asn:          Show the ASN
@@ -741,10 +741,15 @@ Options:
           Preserve the screen on exit [default: false]
 
       --tui-refresh-rate <TUI_REFRESH_RATE>
-          The Tui refresh rate [default: 100ms]
+          The TUI refresh rate [default: 100ms]
 
       --tui-privacy-max-ttl <TUI_PRIVACY_MAX_TTL>
-          The maximum ttl of hops which will be masked for privacy [default: 0]
+          The maximum ttl of hops which will be masked for privacy [default: none]
+
+          If set, the source IP address and hostname will also be hidden.
+
+      --tui-locale <TUI_LOCALE>
+          The locale to use for the TUI [default: auto]
 
       --tui-theme-colors <TUI_THEME_COLORS>
           The TUI theme colors [item=color,item=color,..]
@@ -774,6 +779,9 @@ Options:
 
       --print-config-template
           Print a template toml config file and exit
+
+      --print-locales
+          Print all available TUI locales and exit
 
       --log-format <LOG_FORMAT>
           The debug log format [default: pretty]
@@ -844,6 +852,8 @@ line option or in the `theme-colors` section of the configuration file.
 | `map-info-panel-border-color`        | The color of border of the map info panel                 | `gray`       |
 | `map-info-panel-bg-color`            | The background color of the map info panel                | `black`      |
 | `map-info-panel-text-color`          | The color of text in the map info panel                   | `gray`       |
+| `info-bar-bg-color`                  | The background color of the information bar               | `white`      |
+| `info-bar-text-color`                | The color of text in the information bar                  | `black`      |
 
 The supported [ANSI colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) are:
 
@@ -907,7 +917,7 @@ example `ctrl+shift+b`.
 
 ## Column Reference
 
-The below table lists the columns that are available for display in the Tui. These can be overridden with the
+The following table lists the columns that are available for display in the Tui. These can be overridden with the
 `--tui-custom-columns` command line option or in the `tui-custom-columns` attribute in the `tui` section of the
 configuration file.
 
@@ -966,6 +976,29 @@ Trippy (version `0.9.0` or later) can generate a template configuration file:
 ```shell
 trip --print-config-template > trippy.toml
 ```
+
+## Locale Reference
+
+The following table lists the supported locales for the Tui. These can be overridden with the `--tui-locale` command
+line option or in the `tui-locale` attribute in the `tui` section of the configuration file.
+
+| Locale | Language   | Region |
+|--------|------------|--------|
+| `zh`   | Chinese    | all    |
+| `en`   | English    | all    |
+| `fr`   | French     | all    |
+| `de`   | German     | all    |
+| `it`   | Italian    | all    |
+| `pt`   | Portuguese | all    |
+| `ru`   | Russian    | all    |
+| `es`   | Spanish    | all    |
+| `sv`   | Swedish    | all    |
+| `tr`   | Turkish    | all    |
+
+> [!NOTE]  
+> If you are able to help validate translations for Trippy, or if you wish to add translations for any additional
+> languages, please see the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for details of how to
+> contribute.
 
 ## Frequently Asked Questions
 
