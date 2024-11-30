@@ -6,66 +6,351 @@ Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
 ## Highlights
 
-Draft release note follows.
+The latest release of Trippy brings several improvements to the Text User Interface (TUI), including a simplified header
+and a new "information bar" at the bottom of the screen.
+
+The sample history display has been enhanced to highlight missing probes, and the presentation of source and target
+addresses has been simplified. Users can now adjust the hop privacy mode dynamically and exit Trippy while preserving
+the screen.
+
+Trippy now supports internationalization (i18n) and has been translated into ten languages, with additional translations
+planned for future releases.
+
+This release also introduces three new columns that provide heuristics to measure _forward_ and _backward_ packet loss,
+helping users better understand the status of each hop and the overall trace.
+
+Finally, this update includes a new distribution package for Debian and addresses a small number of bugs.
+
+### TUI Information Bar
+
+The Trippy Text User Interface (TUI) now includes an "information bar" at the bottom of the screen, replacing the
+previous "Config" line in the header. This change shortens the header by one line, optimizing space usage while keeping
+the overall vertical space of the TUI unchanged.
+
+The main TUI screen now appears as shown below (120x40 terminal size):
+
+<img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/main_screen.png"/>
+
+The left-hand side of the information bar displays a selection of static configuration items (in order):
+
+- The address family and tracing protocol, e.g., `IPv4/ICMP`
+- The privilege level, either `privileged` or `unprivileged`
+- The locale, e.g., English (`en`), French (`fr`), etc.
+
+The right-hand side of the information bar displays a selection of adjustable configuration items (in order):
+
+- A toggle controlling whether `ASN` information is displayed (`□ ASN` for disabled, `■ ASN` for enabled)
+- A toggle controlling whether hop detail mode is enabled (`□ detail` for disabled, `■ detail` for enabled)
+- A toggle controlling whether hostnames, IP addresses, or both are displayed (`host`, `ip`, or `both`)
+- The maximum `ttl` value for hop privacy, shown as `-` (privacy disabled) or a number (0, 1, 2, etc.)
+- The maximum number of hosts displayed per hop, shown as `-` (automatic) or a number (1, 2, etc.)
+
+In the above screenshot, the information bar indicates the trace is using `IPv4/ICMP`, is running in `privileged` mode,
+the locale is English (`en`), `ASN` information is displayed, hop detail mode is disabled, hostnames are displayed, the
+hop privacy maximum `ttl` is 2, and the maximum number of hosts per hop is set to automatic.
+
+> **Note**: The information bar displays only a small number of important settings. All other settings can be viewed in
+> the settings dialog, which can be opened by pressing `s` (default key binding).
+
+The theme colors of the information bar can be customized using the `info-bar-bg-color` and `info-bar-text-color` theme
+items. Refer to the [Theme Reference](https://github.com/fujiapple852/trippy#theme-reference) for more details.
+
+Thanks to @c-git for their valuable feedback in refining the design of the information bar.
+
+See [#1349](https://github.com/fujiapple852/trippy/issues/1349) for details.
 
 ### Sample History Missing Probes
 
-Trippy shows a history of samples for each hop as a chart at the bottom of the TUI display. Each vertical line in the
-chart corresponds with one sample, which is the value of `Last` column.
+Trippy displays a history of samples for each hop as a chart at the bottom of the TUI display. Each vertical line in the
+chart corresponds to one sample, representing the value in the `Last` column.
 
-If a probe is lost, then the sample for that round will be shown as a blank line. Starting from this release, Trippy
-will instead show a full vertical line in red (default theme colour) for lost probes to make them stand out.
+Previously, if a probe was lost, the sample for that round would be shown as a blank vertical line. Starting with this
+release, Trippy now highlights lost probes using a full vertical line in red (default theme color), making them easier
+to identify.
 
 <img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/lost_probes.png"/>
 
-The theme color of regular samples can be configured using the existing `samples-chart-color` configuration option and
-the theme color of lost probes can be configured using the new `samples-chart-lost-color` configuration option.
+The theme color for regular samples can be configured using the existing `samples-chart-color` configuration option.
+Additionally, the theme color for lost probes can now be customized using the new `samples-chart-lost-color`
+configuration option. For more details, see
+the [Theme Reference](https://github.com/fujiapple852/trippy#theme-reference).
 
-To set the theme color of lost probes to blue for a single run:
+See [#1247](https://github.com/fujiapple852/trippy/issues/1247) for further details.
 
-```shell
-trip example.com --tui-theme-colors samples-chart-lost-color=blue
+### Source and Target Address Display Improvements
+
+This release improves the display of the source and target addresses in the "Target" line in the header of the TUI.
+
+The "Target" line has been updated such that, for both the source and destination addresses, the hostname is only shown
+if it differs from the IP address.
+
+For the destination address:
+
+- If the user supplies a target hostname, it is resolved to an IP address, and both the IP address and the _provided_
+  hostname are shown.
+- If the user supplies an IP address, a reverse DNS hostname lookup is attempted. If successful, both the IP address and
+  the _first resolved_ hostname are shown; otherwise, only the IP address is displayed.
+
+For the source address:
+
+- A reverse DNS hostname lookup is attempted. If successful, both the IP address and the _first resolved_ hostname are
+  shown; otherwise, only the IP address is displayed.
+
+For example, when the user supplies an IP address as the tracing target, the "Target" line in the header is now shown as
+follows:
+
+```
+Target: 192.168.1.21 -> 93.184.215.14 (example.com)
 ```
 
-This can be made permanent by setting the `samples-chart-lost-color` value in the `theme-colors` section of the
-configuration file:
-
-```toml
-[theme-colors]
-samples-chart-lost-color = "blue"
-```
-
-See [1247](https://github.com/fujiapple852/trippy/issues/1247) for more details.
+See [#1363](https://github.com/fujiapple852/trippy/issues/1363) for details.
 
 ### Adjustable Hop Privacy Mode Settings
 
-Trippy has a privacy feature which can be used to hide sensitive information, such as IP address and GeoIp, for all hops
-up to a configurable `tui-privacy-max-ttl`.
+Trippy includes a privacy feature designed to hide sensitive information, such as IP addresses and GeoIP data, for all
+hops up to a configurable maximum `ttl` via the `tui-privacy-max-ttl` configuration option.
 
-Today, the privacy feature can be toggled on and off from within the TUI using the `toggle-privacy` TUI command (bound
-to the `p` key by default), but only when `tui-privacy-max-ttl` is set to be greater than the default value of 0. If
-`tui-privacy-max-ttl` is set to be greater than 0, then the privacy mode will be enabled by default when Trippy
-starts. This behaviour is inconvenient for users who wish to enable privacy mode _after_ starting Trippy, as there is no
-way to enable it without first setting `tui-privacy-max-ttl` to be greater than 0 and restarting Trippy.
+Previously, the privacy feature could only be toggled on or off within the TUI using the `toggle-privacy` command (bound
+to the `p` key by default) and only if `tui-privacy-max-ttl` was set to a value greater than the default of `0`. When
+`tui-privacy-max-ttl` was greater than `0`, privacy mode would be enabled by default when Trippy started. However, users
+who wanted to enable privacy mode after starting Trippy faced an inconvenience, as they first had to set
+`tui-privacy-max-ttl` to a value greater than `0` and restart the application.
 
-Starting from this release, the `toggle-privacy` TUI command has been deprecated and replaced with the `expand-privacy`
-(bound to the `p` key by default) and `contract-privacy` (bound to the `o` key by default) TUI commands. The
-`expand-privacy` command will increase the `tui-privacy-max-ttl` value up to the maximum number of hops in the current
-trace, and the `contract-privacy` command will decrease the `tui-privacy-max-ttl` value down to 0.
+Starting with this release, the `toggle-privacy` command has been deprecated and replaced by two new TUI commands:
+`expand-privacy` (bound to the `p` key by default) and `contract-privacy` (bound to the `o` key by default).
 
-This allows users to adjust the number of hop that will be hidden at any time during a trace without needing to restart
-Trippy.
+- The `expand-privacy` command increases the `tui-privacy-max-ttl` value up to the maximum number of hops in the current
+  trace.
+- The `contract-privacy` command decreases the `tui-privacy-max-ttl` value to the minimum value, which disables privacy
+  mode.
 
-See the [Key Bindings Reference](https://github.com/fujiapple852/trippy#key-bindings-reference) for details of how to
-adjust the default key bindings.
+These new commands allow users to adjust the number of hops that are hidden at any point during a trace without
+requiring a restart of Trippy.
 
 See [#1347](https://github.com/fujiapple852/trippy/issues/1347) for more details.
 
+This release also repurposes the meaning of `tui-privacy-max-ttl` when set to `0`. Previously, a value of `0` indicated
+that no hops should be hidden. Starting from this release, a value of `0` will indicate that the source of the trace, as
+shown in the "Target" line of the header, should be hidden.
+
+Values of `1` or greater retain their existing behavior but will now also hide the source of the trace in addition to
+the specified number of hops.
+
+As a result of this change, the default value for `tui-privacy-max-ttl` has been updated:
+
+- If not explicitly set (via a command-line argument or the configuration file), nothing will be hidden by default.
+- If explicitly set to `0` (the previous default), the source of the trace will be hidden.
+
+See [#1365](https://github.com/fujiapple852/trippy/issues/1365) for details.
+
+### Preserve Screen on Exit
+
+Trippy previously supported the `--tui-preserve-screen` command-line flag, which could be used to prevent the terminal
+screen from being cleared when Trippy exits. This feature is useful for users who wish to review trace results after
+exiting the application. However, the flag had to be set before starting Trippy and could not be toggled during a trace.
+
+This release introduces the `quit-preserve-screen` TUI command (bound to the `shift+q` key by default). This command
+allows users to quit Trippy without clearing the terminal screen, regardless of whether the `--tui-preserve-screen` flag
+is set.
+
+See [#1382](https://github.com/fujiapple852/trippy/issues/1382) for details.
+
+### TUI Internationalization (i18n)
+
+The Trippy TUI has been translated into multiple languages. This includes all text displayed in the TUI across all
+screens and dialogs, as well as GeoIP location data shown on the world map.
+
+The TUI will automatically detect the system locale and use the corresponding translations if available. The locale can
+be overridden using the `--tui-locale` configuration option.
+
+Locales can be specified for a language or a combination of language and region. For example a general locale can be
+created for English (`en`) and specific regional locales can be created, such as United Kingdom English (`en-UK`) and
+United States English (`en-US`).
+
+If the user's chosen full locale (`language-region`) is not available, Trippy will fall back to using the locale for the
+language only, if it exists. For example if the user sets the locale to `en-AU`, which is not currently defined in
+Trippy, it will fall back to the `en` locale, which is defined.
+
+If the user's chosen locale does not exist at all, Trippy will fall back to English (`en`).
+
+Locales are generally added for the language only unless there is a specific need for region-based translations.
+
+Some caveats to be aware of:
+
+- The configuration file, command-line options, and most error messages are not translated.
+- Many common abbreviated technical terms, such as `IPv4` and `ASN`, are not translated.
+
+The following example sets the TUI locale to be Chinese (`zh`):
+
+```shell
+trip example.com --tui-locale zh
+```
+
+This can be made permanent by setting the `tui-locale` value in the `tui` section of the configuration file:
+
+```toml
+[tui]
+tui-locale = "zh"
+```
+
+The following screenshot shows the TUI with the locale set to Chinese (`zh`):
+
+<img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/help_screen_zh.png"/>
+
+The list of available locales can be printed using the `--print-locales` flag:
+
+```shell
+trip --print-locales
+```
+
+As of this release, the following locales are available:
+
+- Chinese (`zh`)
+- English (`en`)
+- French (`fr`)
+- German (`de`)
+- Italian (`it`)
+- Portuguese (`pt`)
+- Russian (`ru`)
+- Spanish (`es`)
+- Swedish (`sv`)
+- Turkish (`tr`)
+
+See [#1319](https://github.com/fujiapple852/trippy/issues/1319), [#1357](https://github.com/fujiapple852/trippy/issues/1357), [#1336](https://github.com/fujiapple852/trippy/issues/1336)
+and the [Locale Reference](https://github.com/fujiapple852/trippy#locale-reference) for more details.
+
+Corrections to existing translations or the addition of new translations are always welcome. See
+the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for the status of each translation and details
+on how to contribute.
+
+Adding these translations has been a significant effort and I would like to express a huge _thank you_ (谢谢! Merci!
+Danke! Grazie! Obrigado! Спасибо! Gracias! Tack! Teşekkürler!) to @0323pin, @arda-guler, @histrio, @josueBarretogit,
+@one, @orhun, @peshay, @ricott1, @sxyazi, @ulissesf, and @zarkdav for all of their time and effort adding and reviewing
+translations for this release.
+
+### Forward and Backward Packet Loss Heuristics
+
+In line with most classic traceroute tools, Trippy displays the number of probes sent (`Snd`), received (`Recv`), and a
+loss percentage (`Loss%`) for each hop. However, many routers are configured to rate-limit ICMP traffic or to not
+respond to ICMP traffic at all. This can lead to false positives for packet loss, particularly for intermediate hops, as
+the lack of a response from such hops does not necessarily indicate packet loss. This is a common source of confusion
+for users interpreting trace results.
+
+Trippy already tries to mitigate this confusion by introducing a color-coded status column (`Sts`) that considers both
+packet loss percentage and whether the hop is the target of the trace. While this feature is helpful, it does not always
+make it clear why a hop has a particular status nor how to interpret the overall status of the trace.
+
+To further assist users, this release introduces novel heuristics to measure _forward_ and _backward_ packet loss,
+providing a clearer understanding of the true status of the trace.
+
+Informally, _forward loss_ indicates whether the loss of a probe is the _cause_ of subsequent losses and _backward loss_
+indicates whether the loss of a probe is the _result_ of a prior loss on the path.
+
+More formally:
+
+- _forward loss_ for probe `P` in round `R` occurs when probe `P` is lost in round `R` and _all_ subsequent probes
+  within round `R` are also lost.
+- _backward loss_ for probe `P` in round `R` occurs when probe `P` is lost in round `R` and _any_ prior probe within
+  round `R` has _forward loss_.
+
+This release adds three new columns:
+
+- `Floss` (`F`): The number of probes with _forward loss_
+- `Bloss` (`B`): The number of probes with _backward loss_
+- `Floss%` (`D`): The percentage of probes with _forward loss_
+
+These columns are hidden by default but can be enabled as needed. For more details, see
+the [Column Reference](https://github.com/fujiapple852/trippy#column-reference).
+
+The following screenshot shows an example trace with the new columns enabled:
+
+<img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/floss_bloss.png"/>
+
+In the following (contrived) example, after initially discovering the target (`10.0.0.105`) during the first round,
+genuine packet loss occurs in _all_ subsequent rounds at the third hop. This means that no probes on the common path are
+able to get beyond the third hop.
+
+```
+╭Hops───────────────────────────────────────────────────────────────╮
+│#    Host         Loss%    Snd     Recv    Floss   Bloss   Floss%  │
+│1    10.0.0.101   0.0%     96      96      0       0       0.0%    │
+│2    10.0.0.102   0.0%     96      96      0       0       0.0%    │
+│3    No response  100.0%   96      0       95      0       98.9%   │
+│4    No response  100.0%   96      0       0       95      0.0%    │
+│5    10.0.0.105   99.0%    96      1       0       95      0.0%    │
+```
+
+From this, we can determine:
+
+- The loss at the third hop is classified as _forward loss_ because all subsequent probes (4th and 5th) in the same
+  round are also lost.
+- The 4th and 5th hops have _backward loss_ starting from round two, as in those rounds a prior hop (the third hop)
+  has "forward loss."
+
+Note the difference between the traditional `Loss%` column and the new `Floss%` column. The `Loss%` column indicates
+packet loss at several hops (3rd, 4th, and 5th). In contrast, the `Floss%` column helps us determine that the true
+packet loss most likely occurs at the 3rd hop.
+
+It is important to stress that this technique is a _heuristic_, and both _false positives_ and _false negatives_ are
+possible. Some specific caveats to be aware of include:
+
+- Every probe sent in every round is an _independent trial_, meaning there is no guarantee that all probes within a
+  given round will follow the same path (or "flow"). The concept of "forward loss" and "backward loss" assumes that all
+  probes followed a single path. This assumption is typically met (but not guaranteed) when using tracing strategies
+  such as ICMP, UDP/Dublin, or UDP/Paris.
+- Any given host on the path may drop packets for only a subset of probes sent within a round, either due to rate
+  limiting or genuine intermittent packet loss. This could result in a false positive for "forward loss" at a given hop
+  if all subsequent hops in the round exhibit packet loss that is not genuine. For example, in the scenario above, the
+  hop with `ttl=3` could be incorrectly deemed to have "forward loss" if observed loss from hops `ttl=4` and `ttl=5` is
+  not genuine (e.g., caused by rate limiting).
+- A false positive for "backward loss" could occur at a hop experiencing genuine packet loss if a previous hop on the
+  path has "forward loss" that is not genuine. In the scenario above, if the hop with `ttl=4` has genuine packet loss,
+  it will still be marked with "backward loss" due to the "forward loss" at `ttl=3`.
+
+Despite these caveats, the addition of _forward loss_ and _backward loss_ heuristics aims to help users more accurately
+interpret trace outputs. However, these heuristics should be considered experimental and may be subject to change in
+future releases.
+
+See [#860](https://github.com/fujiapple852/trippy/issues/860) for details.
+
+### Bug Fixes
+
+The previous release of Trippy introduced a bug ([#1290](https://github.com/fujiapple852/trippy/issues/1290)) that
+caused reverse DNS lookups to be enqueued multiple times when the `dns-ttl` expired, potentially leading to the hostname
+being displayed as `Timeout: xxx` for a brief period.
+
+This release fixes a bug ([#1287](https://github.com/fujiapple852/trippy/issues/1287)) that caused a tracer panic when
+parsing certain ICMP extensions with malformed lengths.
+
+It also resolves an issue ([#1289](https://github.com/fujiapple852/trippy/issues/1289)) where the ICMP extensions mode
+was not being displayed in the TUI settings dialog.
+
+A bug ([#1375](https://github.com/fujiapple852/trippy/issues/1375)) that caused the cursor to not move to the bottom of
+the screen when exiting while preserving the screen has also been fixed.
+
+Finally, this release fixes a bug ([#1327](https://github.com/fujiapple852/trippy/issues/1327)) that caused Trippy to
+incorrectly reject the value `ip` for the `tui-address-mode` configuration option (thanks to @c-git).
+
+### New Distribution Packages
+
+Trippy is now also available in Debian 13 (`trixie`) and later (with thanks to @nc7s!).
+
+[![Debian 13 package](https://repology.org/badge/version-for-repo/debian_13/trippy.svg)](https://tracker.debian.org/pkg/trippy)
+
+```shell
+apt install trippy
+```
+
+You can find the full list of [distributions](https://github.com/fujiapple852/trippy/tree/master#distributions) in the
+documentation.
+
+See ([#1312](https://github.com/fujiapple852/trippy/issues/1312)) for details.
+
 ### Thanks
 
-My thanks to all Trippy contributors, package maintainers and community members.
+My thanks to all Trippy contributors, package maintainers, translators and community members.
 
-Feel free to drop by the new Trippy Zulip room for a chat:
+Feel free to drop by the Trippy Zulip room for a chat:
 
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
 
@@ -282,8 +567,7 @@ target-port = 33434
 ```
 
 As the default behavior in Trippy leads to these confusing issues, this release modifies the default sequence number to
-
-33434. This is a **breaking change** and will impact users who rely on the old default initial sequence number.
+be 33434. This is a **breaking change** and will impact users who rely on the old default initial sequence number.
 
 This change introduces a new problem, albeit a lesser one: UDP traces will now begin with a destination port of 33434
 and so `DestinationUnreachable` ICMP errors will typically be returned by the target immediately. However, eventually
@@ -507,7 +791,7 @@ To customize the columns from the TUI you must open the settings dialog (`s` key
 tab (left and right arrow keys). From this tab you can select the desired column (up and down arrow keys) and toggle the
 column visibility on and off (`c` key) or move it left (`,` key) or right (`.` key) in the list of columns.
 
-<img width="60%" alt="columns" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.10.0/columns_settings.png">
+<img width="60%" alt="columns" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.10.0/columns_settings.png">
 
 You can supply the full list of columns, in the desired order, using the new `--tui-custom-columns` command line
 argument. The following example specifies the standard list of columns in the default order:
@@ -528,7 +812,7 @@ Note that the value of `tui-custom-columns` can be seen in the corresponding fie
 dialog and will reflect any changes made to the column order and visibility via the Tui. This can be useful as you may
 copy this value and use it in the configuration file directly.
 
-<img width="60%" alt="tui-custom-columns" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.10.0/tui_settings.png">
+<img width="60%" alt="tui-custom-columns" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.10.0/tui_settings.png">
 
 #### New Columns
 
@@ -563,7 +847,7 @@ These values are always calculated and are included in the `json` report. These 
 TUI, however they are not shown by default. To enabled these columns in the TUI, please see
 the [Column Reference](https://github.com/fujiapple852/trippy#column-reference).
 
-<img width="60%" alt="jitter" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.10.0/jitter_columns.png">
+<img width="60%" alt="jitter" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.10.0/jitter_columns.png">
 
 ### Dublin Tracing Strategy for IPv6/UDP
 
@@ -593,7 +877,7 @@ round will likely follow the same network path but probes _between_ round will f
 useful in conjunction with flows (`f` key) to visualize the various paths packet flow through the network. See
 this [issue](https://github.com/fujiapple852/trippy/issues/1007) for more details.
 
-<img width="60%" alt="ipv6_dublin" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.10.0/dublin_ipv6_src_dest_seq_columns.png">
+<img width="60%" alt="ipv6_dublin" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.10.0/dublin_ipv6_src_dest_seq_columns.png">
 
 With UDP support for the Paris and Dublin tracing strategies now complete, what remains is adding support for these for
 the TCP protocol. Refer to the [ECMP tracking issue](https://github.com/fujiapple852/trippy/issues/274) for details.
@@ -727,7 +1011,7 @@ which a given flow id was observed, with the most frequent flow ids shown on the
 is selected automatically. The selected flow acts as a filter for the other parts of the TUI, including the hops table,
 chart and maps views which only show data relevant to that specific flow.
 
-<img width="60%" alt="flows" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/flows.png">
+<img width="60%" alt="flows" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/flows.png">
 
 When toggled off, Trippy behaves as it did in previous versions where aggregated statistics (across all flows) are
 shown. Note that per-flow data is always recorded, the toggle only influences how the data is displayed.
@@ -777,7 +1061,7 @@ trip example.com --tcp -m dot -C 10 | dot -Tpng > path.png
 
 Sample output:
 
-<img width="60%" alt="dot" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/dot.png">
+<img width="60%" alt="dot" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/dot.png">
 
 ### ICMP Extensions
 
@@ -821,14 +1105,14 @@ shows `class`, `subtype` and `bytes` for unknown extension objects).
 
 The following screenshot shows ICMP extensions in normal mode with `tui-icmp-extension-mode` set to be `mpls`:
 
-<img width="60%" alt="extensions" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/extensions.png">
+<img width="60%" alt="extensions" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/extensions.png">
 
 In hop detail mode, the full details of all ICMP extension objects are always shown if parsing of ICMP extensions is
 enabled.
 
 The following screenshot shows ICMP extensions in hop detail mode:
 
-<img width="60%" alt="extensions_detail" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/extensions_detail.png">
+<img width="60%" alt="extensions_detail" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/extensions_detail.png">
 
 #### ICMP Extensions in Reports
 
@@ -938,7 +1222,7 @@ with a list of IP addresses and hostnames.
 Trippy `0.9.0` combined these features and introduces a convenience flag `--dns-resolve-all` which resolves a given
 hostname to all IP addresses and will begin to trace to all of them simultaneously.
 
-<img width="60%" alt="dns_resolve_all" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/dns_resolve_all.png">
+<img width="60%" alt="dns_resolve_all" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/dns_resolve_all.png">
 
 ### Hop Privacy
 
@@ -951,7 +1235,7 @@ the hops table, chart and GeoIP world map.
 
 The following screenshot shows the world map view with the sensitive information of some hops hidden:
 
-<img width="60%" alt="privacy" src="https://github.com/fujiapple852/trippy/blob/master/assets/0.9.0/privacy.png">
+<img width="60%" alt="privacy" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.9.0/privacy.png">
 
 The following command will hide all sensitive information for the first 3 hops (ttl 1, 2 & 3) in the TUI:
 
@@ -1069,7 +1353,7 @@ and off by pressing `d` (default key binding). This mode displays multiline info
 including IP, hostname, AS, and GeoIP details about a single host for the hop. Users can navigate forward and backward
 between hosts in a given hop by pressing `,` and `.` (default key bindings), respectively.
 
-<img src="https://github.com/fujiapple852/trippy/blob/master/assets/0.8.0/hop_details.png" width="60%">
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/hop_details.png" width="60%">
 
 In addition to visualizing ECMP, Trippy also supports alternative tracing strategies to assist with ECMP routing, which
 are described below.
@@ -1119,7 +1403,7 @@ Additionally, Trippy features a new interactive map screen that can be toggled o
 binding). This screen displays a world map and plots the location of all hosts for all hops in the current trace, as
 well as highlighting the location of the selected hop.
 
-<img src="https://github.com/fujiapple852/trippy/blob/master/assets/0.8.0/world_map.png" width="60%">
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/world_map.png" width="60%">
 
 #### Autonomous System Display Enhancements
 
@@ -1127,7 +1411,7 @@ Trippy has long offered the ability to look up and display AS information. This 
 by allowing different AS details to be shown in the hops table, including AS number, AS name, prefix CIDR, and registry
 details.
 
-<img src="https://github.com/fujiapple852/trippy/blob/master/assets/0.8.0/as_info.png" width="60%">
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/as_info.png" width="60%">
 
 The following command enables AS lookup and will display the prefix CIDR for each host in the TUI:
 
@@ -1149,7 +1433,7 @@ to display all configured parameters. The TUI header has also been cleaned up to
 information, specifically the protocol and address family, the AS info toggle, the hop details toggle, and the max-hosts
 setting.
 
-<img src="https://github.com/fujiapple852/trippy/blob/master/assets/0.8.0/settings.png" width="60%">
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.8.0/settings.png" width="60%">
 
 #### Configuration File
 
@@ -1190,8 +1474,8 @@ help with the diagnosis of issues.
 #### New Distribution Packages
 
 Trippy is now also available as a Nix package (@figsoda), a FreeBSD port (@ehaupt) and a Windows Scoop package. This
-release also reenables support for a `musl` binary which was disabled in `0.7.0` due to a bug in a critical library used
-by Trippy.
+release also re-enables support for a `musl` binary which was disabled in `0.7.0` due to a bug in a critical library
+used by Trippy.
 
 See [distributions](https://github.com/fujiapple852/trippy#distributions) for the full list of available packages.
 
