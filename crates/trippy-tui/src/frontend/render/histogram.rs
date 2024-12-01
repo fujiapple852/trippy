@@ -43,7 +43,7 @@ fn sample_frequency(samples: &[Duration]) -> Vec<(String, u64)> {
     let sample_count = samples.len();
     let mut count_by_duration: BTreeMap<u128, u64> = BTreeMap::new();
     for sample in samples {
-        if sample.as_millis() > 0 {
+        if !sample.is_zero() {
             *count_by_duration.entry(sample.as_millis()).or_default() += 1;
         }
     }

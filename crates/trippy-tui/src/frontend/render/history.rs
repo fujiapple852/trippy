@@ -13,10 +13,10 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .iter()
         .take(rect.width as usize)
         .map(|s| {
-            if s.as_secs_f64() > 0_f64 {
-                Some((s.as_secs_f64() * 1000_f64) as u64)
-            } else {
+            if s.is_zero() {
                 None
+            } else {
+                Some(s.as_micros() as u64)
             }
         })
         .collect::<Vec<_>>();
