@@ -19,6 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `--print-locales` flag to print all available
   locales ([#1357](https://github.com/fujiapple852/trippy/issues/1357))
 - Added Debian package ([#1312](https://github.com/fujiapple852/trippy/issues/1312))
+- Added Ubuntu `noble` PPA package ([#1308](https://github.com/fujiapple852/trippy/issues/1308))
 
 ### Changed
 
