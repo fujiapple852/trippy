@@ -31,6 +31,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   set ([#1365](https://github.com/fujiapple852/trippy/issues/1365))
 - Only show hostnames if different from IPs ([#1363](https://github.com/fujiapple852/trippy/issues/1363))
 - Lookup GeoIp with current locale ([#1336](https://github.com/fujiapple852/trippy/issues/1336))
+- Enable Link-Time Optimization (LTO) for release builds ([#1341](https://github.com/fujiapple852/trippy/issues/1341))
 
 ### Fixed
 
