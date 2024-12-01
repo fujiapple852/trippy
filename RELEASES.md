@@ -19,7 +19,7 @@ planned for future releases.
 This release also introduces three new columns that provide heuristics to measure _forward_ and _backward_ packet loss,
 helping users better understand the status of each hop and the overall trace.
 
-Finally, this update includes a new distribution package for Debian and addresses a small number of bugs.
+Finally, this update includes new distribution packages for Debian and Ubuntu and also addresses a number of bugs.
 
 ### TUI Information Bar
 
@@ -344,10 +344,21 @@ Trippy is now also available in Debian 13 (`trixie`) and later (with thanks to @
 apt install trippy
 ```
 
+See ([#1312](https://github.com/fujiapple852/trippy/issues/1312)) for details.
+
+The official Trippy PPA for Ubuntu is now also available for the `noble` distribution.
+
+[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.12.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
+
+```shell
+sudo add-apt-repository ppa:fujiapple/trippy
+sudo apt update && apt install trippy
+```
+
+See ([#1308](https://github.com/fujiapple852/trippy/issues/1308)) for details.
+
 You can find the full list of [distributions](https://github.com/fujiapple852/trippy/tree/master#distributions) in the
 documentation.
-
-See ([#1312](https://github.com/fujiapple852/trippy/issues/1312)) for details.
 
 ### Thanks
 
