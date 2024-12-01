@@ -40,6 +40,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `--tui-preserve-screen` ([#1375](https://github.com/fujiapple852/trippy/issues/1375))
 - Config item `tui-address-mode` does not accept `ip` ([#1327](https://github.com/fujiapple852/trippy/issues/1327))
 - Icmp extension mode not shown in Tui settings ([#1289](https://github.com/fujiapple852/trippy/issues/1289))
+- Sample history and frequency charts ignore sub-millisecond
+  samples ([#1398](https://github.com/fujiapple852/trippy/issues/1398))
 
 ## [0.11.0] - 2024-08-11
 
