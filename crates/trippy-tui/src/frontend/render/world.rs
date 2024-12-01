@@ -50,7 +50,7 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
                 let any_show = entry
                     .hops
                     .iter()
-                    .any(|hop| Some(*hop) >= app.tui_config.privacy_max_ttl);
+                    .any(|hop| Some(*hop) > app.tui_config.privacy_max_ttl);
                 if any_show {
                     render_map_canvas_pin(ctx, entry);
                     render_map_canvas_radius(ctx, entry, theme.map_radius);
