@@ -21,9 +21,7 @@ impl Buffer<'_> {
 
     /// Set N bytes in the packet at a given offset.
     pub fn set_bytes<const N: usize>(&mut self, offset: usize, bytes: [u8; N]) {
-        for (i, b) in bytes.into_iter().enumerate() {
-            *self.write(offset + i) = b;
-        }
+        self.as_slice_mut()[offset..offset + N].copy_from_slice(&bytes);
     }
 
     /// Get the value at a given offset.
