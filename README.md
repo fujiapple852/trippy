@@ -1,5 +1,5 @@
 [![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.11.0)
+[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.12.0-rc.1)
 [![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
 [![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
 [![#trippy-dev:matrix.org](https://img.shields.io/badge/matrix/trippy-dev:matrix.org-blue)](https://matrix.to/#/#trippy-dev:matrix.org)
@@ -92,15 +92,15 @@ issues.
 The following table lists ths versions of Trippy that are available and links to the corresponding release note and
 documentation:
 
-| Version    | Release Date | Status      | Release Note                                                       | Documentation                                              |
-|------------|--------------|-------------|--------------------------------------------------------------------|------------------------------------------------------------|
-| 0.12.0-dev | n/a          | Development | n/a                                                                | [docs](https://github.com/fujiapple852/trippy/tree/master) |
-| 0.11.0     | 2024-08-11   | Current     | [note](https://github.com/fujiapple852/trippy/releases/tag/0.11.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.11.0) |
-| 0.10.0     | 2024-03-31   | Previous    | [note](https://github.com/fujiapple852/trippy/releases/tag/0.10.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.10.0) |
-| 0.9.0      | 2023-11-30   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.9.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.9.0)  |
-| 0.8.0      | 2023-05-15   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.8.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.8.0)  |
-| 0.7.0      | 2023-03-25   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.7.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.7.0)  | 
-| 0.6.0      | 2022-08-19   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.6.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.6.0)  | 
+| Version     | Release Date | Status      | Release Note                                                       | Documentation                                              |
+|-------------|--------------|-------------|--------------------------------------------------------------------|------------------------------------------------------------|
+| 0.12.0-rc.1 | n/a          | Development | n/a                                                                | [docs](https://github.com/fujiapple852/trippy/tree/master) |
+| 0.11.0      | 2024-08-11   | Current     | [note](https://github.com/fujiapple852/trippy/releases/tag/0.11.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.11.0) |
+| 0.10.0      | 2024-03-31   | Previous    | [note](https://github.com/fujiapple852/trippy/releases/tag/0.10.0) | [docs](https://github.com/fujiapple852/trippy/tree/0.10.0) |
+| 0.9.0       | 2023-11-30   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.9.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.9.0)  |
+| 0.8.0       | 2023-05-15   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.8.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.8.0)  |
+| 0.7.0       | 2023-03-25   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.7.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.7.0)  | 
+| 0.6.0       | 2022-08-19   | Deprecated  | [note](https://github.com/fujiapple852/trippy/releases/tag/0.6.0)  | [docs](https://github.com/fujiapple852/trippy/tree/0.6.0)  | 
 
 > [!NOTE]
 > Only the _latest patch versions_ of both the _current_ and _previous_ releases of Trippy are supported.
@@ -111,7 +111,7 @@ documentation:
 
 ### Cargo
 
-[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.11.0)
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.12.0-rc.1)
 
 ```shell
 cargo install trippy --locked
