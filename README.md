@@ -967,11 +967,9 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
 - the Windows data directory (Windows only): `%APPDATA%`
 
-An annotated template configuration file is available
-for [0.9.0](https://github.com/fujiapple852/trippy/blob/0.9.0/trippy-config-sample.toml), [0.10.0](https://github.com/fujiapple852/trippy/blob/0.10.0/trippy-config-sample.toml)
-and [0.11.0](https://github.com/fujiapple852/trippy/blob/0.11.0/trippy-config-sample.toml).
-
-Trippy (version `0.9.0` or later) can generate a template configuration file:
+A template configuration file
+for [0.12.0-rc.1](https://github.com/fujiapple852/trippy/blob/0.12.0-rc.1/trippy-config-sample.toml) is available to
+download, or can be generated with the following command:
 
 ```shell
 trip --print-config-template > trippy.toml
