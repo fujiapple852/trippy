@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.12.0] - 2024-12-04
+
+### Added
+
 - Highlight lost probes in sample history ([#1247](https://github.com/fujiapple852/trippy/issues/1247))
 - Added `quit-preserve-screen` (default: `shift+q`) key binding to quit Tui without clearing the
   screen ([#1382](https://github.com/fujiapple852/trippy/issues/1382))
@@ -398,7 +406,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.11.0...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.12.0...master
+
+[0.12.0]: https://github.com/fujiapple852/trippy/compare/0.11.0...0.12.0
 
 [0.11.0]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0
 
