@@ -6,26 +6,26 @@ Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
 ## Highlights
 
-The latest release of Trippy brings several improvements to the Text User Interface (TUI), including a simplified header
-and a new "information bar" at the bottom of the screen.
+The latest release of Trippy brings both cosmetic and functional improvements to the TUI, new columns, new distribution
+packages, and a number of bug fixes.
 
-The sample history display has been enhanced to highlight missing probes, and the presentation of source and target
-addresses has been simplified. Users can now adjust the hop privacy mode dynamically and exit Trippy while preserving
-the screen.
+The TUI has been updated to include a new _information bar_ at the bottom of the screen which allows for the header to
+be shortened and simplified. The sample history chart has been enhanced to highlight missing probes and the presentation
+of source and target addresses has also been simplified.
 
-Trippy now supports internationalization (i18n) and has been translated into ten languages, with additional translations
-planned for future releases.
+As well as these cosmetic changes, the TUI has gained support for internationalization (i18n) and the ability to
+adjust the hop privacy setting dynamically.
 
-This release also introduces three new columns that provide heuristics to measure _forward_ and _backward_ packet loss,
-helping users better understand the status of each hop and the overall trace.
+This release introduces three new columns, which provide novel heuristics for measuring _forward loss_ and _backward
+loss_, that are designed to assist users in interpreting the status of the trace.
 
-Finally, this update includes new distribution packages for Debian and Ubuntu and also addresses a number of bugs.
+Finally, this update includes new distribution packages for Debian and Ubuntu and addresses a number of bugs.
 
 ### TUI Information Bar
 
-The Trippy Text User Interface (TUI) now includes an "information bar" at the bottom of the screen, replacing the
-previous "Config" line in the header. This change shortens the header by one line, optimizing space usage while keeping
-the overall vertical space of the TUI unchanged.
+The TUI now includes an _information bar_ at the bottom of the screen, replacing the previous `Config` line in the
+header. This change shortens the header by one line, optimizing space usage while keeping the overall vertical space of
+the TUI unchanged.
 
 The main TUI screen now appears as shown below (120x40 terminal size):
 
@@ -62,7 +62,7 @@ See [#1349](https://github.com/fujiapple852/trippy/issues/1349) for details.
 ### Sample History Missing Probes
 
 Trippy displays a history of samples for each hop as a chart at the bottom of the TUI display. Each vertical line in the
-chart corresponds to one sample, representing the value in the `Last` column.
+chart corresponds to one sample, representing the value of the `Last` column.
 
 Previously, if a probe was lost, the sample for that round would be shown as a blank vertical line. Starting with this
 release, Trippy now highlights lost probes using a full vertical line in red (default theme color), making them easier
@@ -79,9 +79,9 @@ See [#1247](https://github.com/fujiapple852/trippy/issues/1247) for further deta
 
 ### Source and Target Address Display Improvements
 
-This release improves the display of the source and target addresses in the "Target" line in the header of the TUI.
+This release simplifies the display of the source and target addresses in the `Target` line in the header of the TUI.
 
-The "Target" line has been updated such that, for both the source and destination addresses, the hostname is only shown
+The `Target` line has been updated such that, for both the source and destination addresses, the hostname is only shown
 if it differs from the IP address.
 
 For the destination address:
@@ -96,7 +96,7 @@ For the source address:
 - A reverse DNS hostname lookup is attempted. If successful, both the IP address and the _first resolved_ hostname are
   shown; otherwise, only the IP address is displayed.
 
-For example, when the user supplies an IP address as the tracing target, the "Target" line in the header is now shown as
+For example, when the user supplies an IP address as the tracing target, the `Target` line in the header is now shown as
 follows:
 
 ```
@@ -110,28 +110,21 @@ See [#1363](https://github.com/fujiapple852/trippy/issues/1363) for details.
 Trippy includes a privacy feature designed to hide sensitive information, such as IP addresses and GeoIP data, for all
 hops up to a configurable maximum `ttl` via the `tui-privacy-max-ttl` configuration option.
 
-Previously, the privacy feature could only be toggled on or off within the TUI using the `toggle-privacy` command (bound
-to the `p` key by default) and only if `tui-privacy-max-ttl` was set to a value greater than the default of `0`. When
-`tui-privacy-max-ttl` was greater than `0`, privacy mode would be enabled by default when Trippy started. However, users
-who wanted to enable privacy mode after starting Trippy faced an inconvenience, as they first had to set
-`tui-privacy-max-ttl` to a value greater than `0` and restart the application.
+Previously, the privacy feature could only be toggled on or off within the TUI using the `toggle-privacy` command and
+only if `tui-privacy-max-ttl` was configured _before_ Trippy was started.
 
-Starting with this release, the `toggle-privacy` command has been deprecated and replaced by two new TUI commands:
+In this release, the `toggle-privacy` command has been deprecated and replaced by two new TUI commands,
 `expand-privacy` (bound to the `p` key by default) and `contract-privacy` (bound to the `o` key by default).
 
-- The `expand-privacy` command increases the `tui-privacy-max-ttl` value up to the maximum number of hops in the current
-  trace.
-- The `contract-privacy` command decreases the `tui-privacy-max-ttl` value to the minimum value, which disables privacy
-  mode.
-
-These new commands allow users to adjust the number of hops that are hidden at any point during a trace without
-requiring a restart of Trippy.
+The `expand-privacy` command increases the `tui-privacy-max-ttl` value up to the maximum number of hops in the current
+trace and the `contract-privacy` command decreases the `tui-privacy-max-ttl` value to the minimum value, which disables
+privacy mode.
 
 See [#1347](https://github.com/fujiapple852/trippy/issues/1347) for more details.
 
 This release also repurposes the meaning of `tui-privacy-max-ttl` when set to `0`. Previously, a value of `0` indicated
 that no hops should be hidden. Starting from this release, a value of `0` will indicate that the source of the trace, as
-shown in the "Target" line of the header, should be hidden.
+shown in the `Target` line of the header, should be hidden.
 
 Values of `1` or greater retain their existing behavior but will now also hide the source of the trace in addition to
 the specified number of hops.
@@ -231,29 +224,28 @@ translations for this release.
 ### Forward and Backward Packet Loss Heuristics
 
 In line with most classic traceroute tools, Trippy displays the number of probes sent (`Snd`), received (`Recv`), and a
-loss percentage (`Loss%`) for each hop. However, many routers are configured to rate-limit ICMP traffic or to not
-respond to ICMP traffic at all. This can lead to false positives for packet loss, particularly for intermediate hops, as
-the lack of a response from such hops does not necessarily indicate packet loss. This is a common source of confusion
-for users interpreting trace results.
+loss percentage (`Loss%`) for each hop. However, many routers are configured to rate-limit or even drop ICMP traffic.
+This can lead to false positives for packet loss, particularly for intermediate hops, as the lack of a response from
+such hops does not typically indicate genuine packet loss. This is a common source of confusion for users interpreting
+trace results.
 
-Trippy already tries to mitigate this confusion by introducing a color-coded status column (`Sts`) that considers both
-packet loss percentage and whether the hop is the target of the trace. While this feature is helpful, it does not always
-make it clear why a hop has a particular status nor how to interpret the overall status of the trace.
+Trippy already provides a color-coded status column (`Sts`), that considers both packet loss percentage and whether the
+hop is the target of the trace, to try and assist users in interpreting the status of each hop. While this feature is
+helpful, it does not make it clear _why_ a hop has a particular status nor help users interpret the overall status of
+the trace.
 
-To further assist users, this release introduces novel heuristics to measure _forward_ and _backward_ packet loss,
-providing a clearer understanding of the true status of the trace.
+To further assist users, this release of Trippy introduces a pair of novel heuristics to measure _forward loss_ and
+_backward loss_. Informally, _forward loss_ indicates whether the loss of a probe is the _cause_ of subsequent losses
+and _backward loss_ indicates whether the loss of a probe is the _result_ of a prior loss on the path.
 
-Informally, _forward loss_ indicates whether the loss of a probe is the _cause_ of subsequent losses and _backward loss_
-indicates whether the loss of a probe is the _result_ of a prior loss on the path.
-
-More formally:
+More precisely:
 
 - _forward loss_ for probe `P` in round `R` occurs when probe `P` is lost in round `R` and _all_ subsequent probes
   within round `R` are also lost.
 - _backward loss_ for probe `P` in round `R` occurs when probe `P` is lost in round `R` and _any_ prior probe within
   round `R` has _forward loss_.
 
-This release adds three new columns:
+These heuristics are encoded in three new columns:
 
 - `Floss` (`F`): The number of probes with _forward loss_
 - `Bloss` (`B`): The number of probes with _backward loss_
@@ -280,12 +272,9 @@ able to get beyond the third hop.
 │5    10.0.0.105   99.0%    96      1       0       95      0.0%    │
 ```
 
-From this, we can determine:
-
-- The loss at the third hop is classified as _forward loss_ because all subsequent probes (4th and 5th) in the same
-  round are also lost.
-- The 4th and 5th hops have _backward loss_ starting from round two, as in those rounds a prior hop (the third hop)
-  has "forward loss."
+From this we can determine that the loss at the third hop is classified as _forward loss_ because all subsequent
+probes (4th and 5th) in the same round are also lost. We can also conclude that the 4th and 5th hops have _backward
+loss_ starting from round two, as in those rounds a prior hop (the third hop) has _forward loss_.
 
 Note the difference between the traditional `Loss%` column and the new `Floss%` column. The `Loss%` column indicates
 packet loss at several hops (3rd, 4th, and 5th). In contrast, the `Floss%` column helps us determine that the true
@@ -302,7 +291,7 @@ possible. Some specific caveats to be aware of include:
   limiting or genuine intermittent packet loss. This could result in a false positive for "forward loss" at a given hop
   if all subsequent hops in the round exhibit packet loss that is not genuine. For example, in the scenario above, the
   hop with `ttl=3` could be incorrectly deemed to have "forward loss" if observed loss from hops `ttl=4` and `ttl=5` is
-  not genuine (e.g., caused by rate limiting).
+  not genuine (e.g., caused by rate-limiting).
 - A false positive for "backward loss" could occur at a hop experiencing genuine packet loss if a previous hop on the
   path has "forward loss" that is not genuine. In the scenario above, if the hop with `ttl=4` has genuine packet loss,
   it will still be marked with "backward loss" due to the "forward loss" at `ttl=3`.
@@ -322,8 +311,8 @@ being displayed as `Timeout: xxx` for a brief period.
 A long standing bug ([#1398](https://github.com/fujiapple852/trippy/issues/1398)) which caused the TUI sample history
 and frequency charts to ignore sub-millisecond samples has been fixed.
 
-This release fixes a bug ([#1287](https://github.com/fujiapple852/trippy/issues/1287)) that caused a tracer panic when
-parsing certain ICMP extensions with malformed lengths.
+This release fixes a bug ([#1287](https://github.com/fujiapple852/trippy/issues/1287)) that caused the tracer to panic
+when parsing certain ICMP extensions with malformed lengths.
 
 It also resolves an issue ([#1289](https://github.com/fujiapple852/trippy/issues/1289)) where the ICMP extensions mode
 was not being displayed in the TUI settings dialog.
@@ -336,7 +325,7 @@ incorrectly reject the value `ip` for the `tui-address-mode` configuration optio
 
 ### New Distribution Packages
 
-Trippy is now also available in Debian 13 (`trixie`) and later (with thanks to @nc7s!).
+Trippy is now available in Debian 13 (`trixie`) and later (with thanks to @nc7s!).
 
 [![Debian 13 package](https://repology.org/badge/version-for-repo/debian_13/trippy.svg)](https://tracker.debian.org/pkg/trippy)
 
