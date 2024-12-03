@@ -2,7 +2,7 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
-# 0.12.0 - UNRELEASED
+# 0.12.0
 
 ## Highlights
 
