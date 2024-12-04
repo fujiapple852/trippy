@@ -2,8 +2,12 @@
 
 ## Prerequisites
 
-The script will download the src tar ball from the github release page. Ensure the version number is updated in the
-`release.sh` script.
+- update the `cargo-1.xx` version in `ubuntu-ppa/Dockerfile` (note: both `cargo` and `cargo-1.xx` are needed)
+- update the `cargo-1.xx` and `rust-1.xx` versions in `control`
+- update the `cargo-1.xx` versions in `rules`
+- update the `cargo-1.xx` versions in `release.sh`
+- update the trippy `VERSION` in the `release.sh` script
+- reset the `REVISION` to `1` in the `release.sh` script
 
 ## Build and release the debian package
 
