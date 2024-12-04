@@ -6,10 +6,10 @@ set -o errexit -o pipefail -o nounset
 VERSION="0.12.0"
 
 # The revision number for the PPA
-REVISION=1
+REVISION=2
 
 # The Ubuntu series to build for
-SERIES=("noble" "jammy" "focal" "bionic")
+SERIES=("noble" "jammy")
 
 TARBALL="trippy_${VERSION}.orig.tar.gz"
 PACKAGE="trippy"
@@ -41,7 +41,7 @@ if gpg --list-keys --with-colons "${GPG_KEY_ID}" | grep '^pub' | grep '[e]'; the
 fi
 
 # Vendor the cargo dependencies
-cargo vendor
+cargo-1.76 vendor
 tar cJf ubuntu-ppa/vendor.tar.xz vendor
 
 for series in "${SERIES[@]}"; do
