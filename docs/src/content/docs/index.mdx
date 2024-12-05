@@ -1,0 +1,90 @@
+---
+title: "Trippy: a network diagnostic tool"
+description: a network diagnostic tool.
+template: splash
+hero:
+  tagline: Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking issues.
+  image:
+    alt: Trippy, man!
+    light: ../../assets/trippy-logo-emblem-light.svg
+    dark: ../../assets/trippy-logo-emblem-dark.svg
+  actions:
+    - text: Get Started
+      link: /start/getting-started/
+      icon: right-arrow
+    - text: Read the docs
+      link: /reference/cli/
+      icon: open-book
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/fujiapple852/trippy
+      icon: github
+      variant: secondary
+banner:
+  content: This website is under construction. See <a href="https://github.com/fujiapple852/trippy">GitHub</a> for the latest information.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Icon } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="Powerful tracing features" icon="rocket">
+	    - `ICMP`, `UDP` & `TCP` over `IPv4` & `IPv6` protocols
+	    - Fully customizable tracing options
+	    - `dublin` 🇮🇪 and `paris` 🇫🇷 ECMP algorithms
+	    - `ICMP` extensions (e.g. `MPLS`)
+	    - Reverse `DNS` and `ASN` lookups
+	    - `NAT` detection
+	    - Run in unprivileged mode
+
+		![Trippy main screen](../../assets/main_screen.png)
+	</Card>
+
+	<Card title="Visualize GeoIp on a world map" icon="star">
+        - Lookup GeoIp information and show on world map
+        - Support for both `MaxMind` and `IPinfo` databases
+
+		![Trippy GeoIp world map](../../assets/world_map.png)
+	</Card>
+
+    <Card title="Run on your platform" icon="star">
+        - Runs on `Linux`, `macOS`, `Windows`, `*BSD`
+        - Supports `x86_64`, `aarch64`, `arm7` architectures
+        - Available from most native package managers
+        <CardGrid>
+          <Card title="Linux">
+            <Icon name="linux" size="8rem"/>
+          </Card>
+          <Card title="macOS">
+            <Icon name="apple" size="8rem"/>
+          </Card>
+          <Card title="Windows">
+            <Icon name="seti:windows" size="8rem"/>
+          </Card>
+          <Card title="*BSD">
+            <Icon name="heart" size="8rem"/>
+          </Card>
+        </CardGrid>
+    </Card>
+
+	<Card title="Highly customization TUI" icon="seti:config">
+	    - Customizable columns, color themes and key bindings
+	    - Hop detail navigation mode
+	    - Hop privacy mode
+	    - Show individual tracing flows
+	    - Various charts and statistics
+	    - Persist configuration to file
+
+		![Trippy settings](../../assets/settings.png)
+	</Card>
+
+	<Card title="Trace in your language" icon="translate">
+	    TUI translated into 10 languages:
+	    - Chinese 🇨🇳, English 🇺🇸, French 🇫🇷, German 🇩🇪
+	    - Italian 🇮🇹, Portuguese 🇵🇹, Russian 🇷🇺, Spanish 🇪🇸
+	    - Swedish 🇸🇪 and Turkish 🇹🇷
+
+		![Trippy main screen in Chinese](../../assets/help_screen_zh.png)
+	</Card>
+
+</CardGrid>
