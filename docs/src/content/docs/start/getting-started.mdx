@@ -1,0 +1,45 @@
+---
+title: Getting Started
+description: Get started with Trippy.
+sidebar:
+  order: 1
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+The following steps will guide you through the process of installing and running Trippy.
+
+<Steps>
+
+1. Install Trippy:
+
+   ```shell
+   cargo install trippy --locked
+   ```
+
+   See the [installation guide](/start/installation/) for details of how to install Trippy on your system.
+
+
+2. Run Trippy:
+
+   To run an ICMP trace to `example.com`, use the following command:
+
+   ```shell
+   sudo trippy example.com
+   ```
+
+   See the [usage examples](/guides/usage/) and the [CLI reference](/reference/cli/) for details of how to use Trippy.  To use Trippy without elevated privileges, see the [privileges guide](/guides/privileges/).
+
+3. Customize the key bindings, theme and columns:
+
+   See the [key bindings](/reference/bindings/), [theme reference](/reference/theme/) and [column reference](/reference/column/) for details of how to customize the appearance and behavior of Trippy.
+
+   These settings can be made permanent by adding them to the Trippy configuration file, see the [configuration guide](/reference/configuration/) for details.
+
+4. Review the tracing recommendations:
+
+   To get the most out of Trippy, review the [recommended tracing settings](/guides/recommendation/) for guidance on how to configure Trippy for different types of analysis.
+
+</Steps>
+
+Happy tracing!
