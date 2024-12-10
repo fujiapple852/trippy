@@ -2,6 +2,20 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
+# 0.13.0
+
+## Highlights
+
+### Thanks
+
+My thanks to all Trippy contributors, package maintainers, translators and community members.
+
+Feel free to drop by the Trippy Zulip room for a chat:
+
+[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
+
+Happy Tracing!
+
 # 0.12.0
 
 ## Highlights
