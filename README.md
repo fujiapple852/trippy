@@ -1,13 +1,23 @@
-[![Continuous integration](https://github.com/fujiapple852/trippy/workflows/CI/badge.svg)](https://github.com/fujiapple852/trippy/actions/workflows/ci.yml)
-[![Crate](https://img.shields.io/crates/v/trippy.svg)](https://crates.io/crates/trippy/0.12.0)
-[![Packaging status](https://repology.org/badge/tiny-repos/trippy.svg)](https://repology.org/project/trippy/versions)
-[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
-[![#trippy-dev:matrix.org](https://img.shields.io/badge/matrix/trippy-dev:matrix.org-blue)](https://matrix.to/#/#trippy-dev:matrix.org)
-
-# Trippy
-
-Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-dark.png#gh-dark-mode-only" width="300"></a>
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-light.png#gh-light-mode-only" width="300"></a>
+  <br>
+  <br>
+  <a href="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml">
+    <img src="https://github.com/fujiapple852/trippy/workflows/CI/badge.svg"></a>
+  <a href="https://crates.io/crates/trippy/0.12.0">
+    <img src="https://img.shields.io/crates/v/trippy.svg"></a>
+  <a href="https://repology.org/project/trippy/versions">
+    <img src="https://repology.org/badge/tiny-repos/trippy.svg"></a>
+  <a href="https://trippy.zulipchat.com">
+    <img src="https://img.shields.io/badge/zulip-join_chat-brightgreen.svg"></a>
+  <a href="https://matrix.to/#/#trippy-dev:matrix.org">
+    <img src="https://img.shields.io/badge/matrix/trippy-dev:matrix.org-blue"></a>
+  <br>
+  <br>
+  Trippy combines the functionality of traceroute and ping and is designed to assist with the analysis of networking
 issues.
+</p>
 
 <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.12.0/demo.gif" alt="trippy"/>
 
@@ -1240,6 +1250,8 @@ by [Team Cymru](https://team-cymru.com).
 The [trippy.cli.rs](https://trippy.cli.rs) CNAME hosting is provided by [cli.rs](https://cli.rs).
 
 The Trippy chat room is sponsored by [Zulip](https://zulip.com).
+
+Trippy logo designed by [Harun Ocaksiz Design](https://www.instagram.com/harunocaksiz).
 
 ## License
 
