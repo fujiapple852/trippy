@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-dark.png#gh-dark-mode-only" width="300"></a>
-  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-light.png#gh-light-mode-only" width="300"></a>
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-dark.png#gh-dark-mode-only" width="300">
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-light.png#gh-light-mode-only" width="300">
   <br>
   <br>
   <a href="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml">
@@ -24,25 +24,21 @@ issues.
 ## Navigation
 
 <!-- TOC -->
-
-* [Trippy](#trippy)
-    * [Navigation](#navigation)
-    * [Features](#features)
-    * [Versions](#versions)
-    * [Distributions](#distributions)
-    * [Crates](#crates)
-    * [Privileges](#privileges)
-    * [Usage Examples](#usage-examples)
-    * [Command Reference](#command-reference)
-    * [Theme Reference](#theme-reference)
-    * [Key Bindings Reference](#key-bindings-reference)
-    * [Column Reference](#column-reference)
-    * [Configuration Reference](#configuration-reference)
-    * [Locale Reference](#locale-reference)
-    * [Frequently Asked Questions](#frequently-asked-questions)
-    * [Acknowledgements](#acknowledgements)
-    * [License](#license)
-
+  * [Features](#features)
+  * [Versions](#versions)
+  * [Distributions](#distributions)
+  * [Crates](#crates)
+  * [Privileges](#privileges)
+  * [Usage Examples](#usage-examples)
+  * [Command Reference](#command-reference)
+  * [Theme Reference](#theme-reference)
+  * [Key Bindings Reference](#key-bindings-reference)
+  * [Column Reference](#column-reference)
+  * [Configuration Reference](#configuration-reference)
+  * [Locale Reference](#locale-reference)
+  * [Frequently Asked Questions](#frequently-asked-questions)
+  * [Acknowledgements](#acknowledgements)
+  * [License](#license)
 <!-- TOC -->
 
 ## Features
