@@ -295,7 +295,7 @@ fn render_hostname(
             }
         }
     } else {
-        (format!("{}", t!("no_response")), 1)
+        (t!("no_response"), 1)
     };
     (Cell::from(hostname), count)
 }
@@ -522,7 +522,7 @@ fn render_hostname_with_details(
             format_details(hop, index, dns, geoip_lookup, config)
         }
     } else {
-        format!("{}", t!("no_response"))
+        t!("no_response")
     };
     (Cell::from(rendered), 7)
 }

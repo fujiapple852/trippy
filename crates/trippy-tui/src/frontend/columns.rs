@@ -136,8 +136,8 @@ pub enum ColumnStatus {
 impl Display for ColumnStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Shown => write!(f, "{}", t!("on")),
-            Self::Hidden => write!(f, "{}", t!("off")),
+            Self::Shown => f.write_str(&t!("on")),
+            Self::Hidden => f.write_str(&t!("off")),
         }
     }
 }
@@ -271,8 +271,11 @@ impl ColumnType {
     /// The name of the column in the current locale.
     #[allow(clippy::cognitive_complexity)]
     pub(self) fn name(&self) -> Cow<'_, str> {
+        if self == &Self::Ttl {
+            return "#".into();
+        }
         match self {
-            Self::Ttl => Cow::Borrowed("#"),
+            Self::Ttl => unreachable!(),
             Self::Host => t!("column_host"),
             Self::LossPct => t!("column_loss_pct"),
             Self::Sent => t!("column_snd"),
@@ -298,6 +301,7 @@ impl ColumnType {
             Self::Bloss => t!("column_bloss"),
             Self::FlossPct => t!("column_floss_pct"),
         }
+        .into()
     }
 
     /// The width of the column.
@@ -426,6 +430,7 @@ mod tests {
     #[test_case(ColumnType::StdDev, "StDev")]
     #[test_case(ColumnType::Status, "Sts")]
     fn test_column_display_formatting(c: ColumnType, heading: &'static str) {
+        let _ = crate::locale::init(Some("en"));
         assert_eq!(format!("{c}"), heading);
     }
 
@@ -438,6 +443,7 @@ mod tests {
 
     #[test]
     fn test_column_constraints() {
+        let _ = crate::locale::init(Some("en"));
         let columns = Columns::from(TuiColumns::default());
         let constraints = columns.constraints(Rect::new(0, 0, 80, 0));
         assert_eq!(

@@ -110,14 +110,15 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         let flow_count = app.tracer_data().flows().len();
         format!(
             ", {}",
-            t!("discovered_flows",
-                "hop_count" => hop_count,
-                "flow_count" => flow_count,
-                "plural_flows" => plural_flows
+            t!(
+                "discovered_flows",
+                hop_count = hop_count,
+                flow_count = flow_count,
+                plural_flows = plural_flows,
             )
         )
     } else {
-        format!(", {}", t!("discovered", "hop_count" => hop_count))
+        format!(", {}", t!("discovered", hop_count = hop_count))
     };
     let left_line = vec![
         Line::from(vec![
@@ -183,7 +184,7 @@ fn render_source(app: &TuiApp) -> String {
             format_ip(app, addr)
         }
     } else {
-        String::from(t!("unknown"))
+        t!("unknown")
     }
 }
 
@@ -253,16 +254,18 @@ fn render_status(app: &TuiApp) -> String {
         let failure_rate = format!("{failure_rate:.1}");
         format!(
             " [{}❗]",
-            t!("status_failures",
-                    "failure_count" => failure_count,
-                    "total_probes" => total_probes,
-                    "failure_rate" => failure_rate)
+            t!(
+                "status_failures",
+                failure_count = failure_count,
+                total_probes = total_probes,
+                failure_rate = failure_rate
+            )
         )
     } else {
         String::new()
     };
     if app.selected_tracer_data.error().is_some() {
-        String::from(t!("status_failed"))
+        t!("status_failed")
     } else if let Some(start) = app.frozen_start {
         let frozen = format_duration(Duration::from_secs(
             start.elapsed().unwrap_or_default().as_secs(),

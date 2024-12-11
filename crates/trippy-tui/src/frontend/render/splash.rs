@@ -32,7 +32,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         r#"  |_||_| |_| .__/ .__/\_, |"#.into(),
         r#"           |_|  |_|   |__/ "#.into(),
         "".into(),
-        t!("awaiting_data"),
+        t!("awaiting_data").into(),
     ];
     let line: Vec<_> = splash
         .into_iter()

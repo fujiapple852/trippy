@@ -41,7 +41,9 @@ itertools.workspace = true
 maxminddb.workspace = true
 petgraph.workspace = true
 ratatui.workspace = true
-rust-i18n.workspace = true
+rust-embed.workspace = true
+i18n-embed.workspace = true
+i18n-embed-fl.workspace = true
 serde = { workspace = true, default-features = false, features = [ "derive" ] }
 serde_json.workspace = true
 serde_with.workspace = true

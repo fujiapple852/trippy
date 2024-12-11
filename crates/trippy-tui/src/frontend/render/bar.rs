@@ -15,18 +15,18 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         Protocol::Icmp => format!(
             "{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("ICMP"),
+            "ICMP",
         ),
         Protocol::Udp => format!(
             "{}/{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("UDP"),
+            "UDP",
             app.tracer_config().data.multipath_strategy(),
         ),
         Protocol::Tcp => format!(
             "{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("TCP"),
+            "TCP",
         ),
     });
 
@@ -113,8 +113,8 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
 
 fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
     match privilege_mode {
-        PrivilegeMode::Privileged => t!("privileged"),
-        PrivilegeMode::Unprivileged => t!("unprivileged"),
+        PrivilegeMode::Privileged => t!("privileged").into(),
+        PrivilegeMode::Unprivileged => t!("unprivileged").into(),
     }
 }
 

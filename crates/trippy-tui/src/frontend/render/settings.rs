@@ -134,44 +134,43 @@ fn format_all_settings(app: &TuiApp) -> Vec<(String, String, Vec<SettingsItem>)>
     let move_up = app.tui_config.bindings.previous_hop_address.to_string();
     vec![
         (
-            t!("settings_tab_tui_title").to_string(),
-            t!("settings_tab_tui_desc").to_string(),
+            t!("settings_tab_tui_title"),
+            t!("settings_tab_tui_desc"),
             tui_settings,
         ),
         (
-            t!("settings_tab_trace_title").to_string(),
-            t!("settings_tab_trace_desc").to_string(),
+            t!("settings_tab_trace_title"),
+            t!("settings_tab_trace_desc"),
             trace_settings,
         ),
         (
-            t!("settings_tab_dns_title").to_string(),
-            t!("settings_tab_dns_desc").to_string(),
+            t!("settings_tab_dns_title"),
+            t!("settings_tab_dns_desc"),
             dns_settings,
         ),
         (
-            t!("settings_tab_geoip_title").to_string(),
-            t!("settings_tab_geoip_desc").to_string(),
+            t!("settings_tab_geoip_title"),
+            t!("settings_tab_geoip_desc"),
             geoip_settings,
         ),
         (
-            t!("settings_tab_bindings_title").to_string(),
-            t!("settings_tab_bindings_desc").to_string(),
+            t!("settings_tab_bindings_title"),
+            t!("settings_tab_bindings_desc"),
             bindings_settings,
         ),
         (
-            t!("settings_tab_theme_title").to_string(),
-            t!("settings_tab_theme_desc").to_string(),
+            t!("settings_tab_theme_title"),
+            t!("settings_tab_theme_desc"),
             theme_settings,
         ),
         (
-            t!("settings_tab_columns_title").to_string(),
+            t!("settings_tab_columns_title"),
             t!(
                 "settings_tab_columns_desc",
                 c = toggle_column,
                 d = move_down,
                 u = move_up
-            )
-            .to_string(),
+            ),
             columns_settings,
         ),
     ]
@@ -192,7 +191,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-privacy-max-ttl",
             app.tui_config
                 .privacy_max_ttl
-                .map_or_else(|| t!("off").to_string(), |m| m.to_string()),
+                .map_or_else(|| t!("off"), |m| m.to_string()),
         ),
         SettingsItem::new(
             "tui-address-mode",
@@ -211,7 +210,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-max-addrs",
             app.tui_config
                 .max_addrs
-                .map_or_else(|| t!("auto").to_string(), |m| m.to_string()),
+                .map_or_else(|| t!("auto"), |m| m.to_string()),
         ),
         SettingsItem::new(
             "tui-custom-columns",
@@ -226,12 +225,12 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let interface = if let Some(iface) = cfg.data.interface() {
         iface.to_string()
     } else {
-        t!("auto").to_string()
+        t!("auto")
     };
     let (src_port, dst_port) = match cfg.data.port_direction() {
-        PortDirection::None => (t!("na").to_string(), t!("na").to_string()),
-        PortDirection::FixedDest(dst) => (t!("auto").to_string(), format!("{}", dst.0)),
-        PortDirection::FixedSrc(src) => (format!("{}", src.0), t!("auto").to_string()),
+        PortDirection::None => (t!("na"), t!("na")),
+        PortDirection::FixedDest(dst) => (t!("auto"), format!("{}", dst.0)),
+        PortDirection::FixedSrc(src) => (format!("{}", src.0), t!("auto")),
         PortDirection::FixedBoth(src, dst) => (format!("{}", src.0), format!("{}", dst.0)),
     };
     vec![
@@ -318,7 +317,7 @@ fn format_geoip_settings(app: &TuiApp) -> Vec<SettingsItem> {
         app.tui_config
             .geoip_mmdb_file
             .as_deref()
-            .map_or_else(|| t!("none").to_string(), ToString::to_string),
+            .map_or_else(|| t!("none"), ToString::to_string),
     )]
 }
 
@@ -528,21 +527,21 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 /// The name and number of items for each tabs in the setting dialog.
 pub fn settings_tabs() -> [(String, usize); 7] {
     [
-        (t!("settings_tab_tui_title").to_string(), 9),
-        (t!("settings_tab_trace_title").to_string(), 17),
-        (t!("settings_tab_dns_title").to_string(), 5),
-        (t!("settings_tab_geoip_title").to_string(), 1),
-        (t!("settings_tab_bindings_title").to_string(), 37),
-        (t!("settings_tab_theme_title").to_string(), 33),
-        (t!("settings_tab_columns_title").to_string(), 0),
+        (t!("settings_tab_tui_title"), 9),
+        (t!("settings_tab_trace_title"), 17),
+        (t!("settings_tab_dns_title"), 5),
+        (t!("settings_tab_geoip_title"), 1),
+        (t!("settings_tab_bindings_title"), 37),
+        (t!("settings_tab_theme_title"), 33),
+        (t!("settings_tab_columns_title"), 0),
     ]
 }
 
 /// The settings table header.
 pub fn settings_table_header() -> [String; 2] {
     [
-        t!("settings_table_header_setting").to_string(),
-        t!("settings_table_header_value").to_string(),
+        t!("settings_table_header_setting"),
+        t!("settings_table_header_value"),
     ]
 }
 
