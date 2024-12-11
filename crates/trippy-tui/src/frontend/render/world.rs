@@ -150,7 +150,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
         format!("**{}**", t!("hidden"))
     } else {
         match locations.as_slice() {
-            _ if app.tui_config.geoip_mmdb_file.is_none() => t!("geoip_not_enabled").to_string(),
+            _ if app.tui_config.geoip_mmdb_file.is_none() => t!("geoip_not_enabled"),
             [] if selected_hop.addr_count() > 0 => format!(
                 "{} {} ({})",
                 t!("geoip_no_data_for_hop"),

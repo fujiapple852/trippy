@@ -61,13 +61,14 @@ petgraph = "0.6.5"
 pretty_assertions = "1.4.1"
 rand = "0.8.5"
 ratatui = "0.29.0"
-rust-i18n = "3.1.2"
+rust-embed = "8.5"
+i18n-embed = { version = "0.15", features = ["fluent-system", "desktop-requester"] }
+i18n-embed-fl = "0.9"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = { version = "3.11.0", default-features = false, features = ["macros"] }
 socket2 = "0.5.8"
 strum = { version = "0.26.3", default-features = false }
-sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "2.0.3"
 tokio = "1.41.1"

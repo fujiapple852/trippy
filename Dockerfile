@@ -16,6 +16,8 @@ COPY crates/trippy-dns/Cargo.toml /app/crates/trippy-dns/Cargo.toml
 COPY crates/trippy-packet/Cargo.toml /app/crates/trippy-packet/Cargo.toml
 COPY crates/trippy-privilege/Cargo.toml /app/crates/trippy-privilege/Cargo.toml
 COPY examples/ /app/examples/
+COPY crates/trippy-tui/i18n/ /app/crates/trippy-tui/i18n/
+COPY crates/trippy-tui/i18n.toml /app/crates/trippy-tui/i18n.toml
 
 # dummy build to cache dependencies
 RUN echo "fn main() {}" > /app/crates/trippy/src/main.rs

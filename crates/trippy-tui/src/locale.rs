@@ -1,58 +1,57 @@
-const FALLBACK_LOCALE: &str = "en";
-
-/// Set the locale for the application.
-///
-/// If the given locale is `None` or unsupported, the system locale is tried. If the system locale
-/// is not supported, the fallback locale is used.
-///
-/// In both cases, the language part of the locale is used if the full locale is not supported.
-pub fn set_locale(locale: Option<&str>) {
-    if let Some(locale) = locale {
-        set_locale_inner(locale);
-    } else if let Some(locale) = sys_locale::get_locale().as_ref() {
-        set_locale_inner(locale);
-    } else {
-        set_locale_inner(FALLBACK_LOCALE);
-    }
-}
-
-/// Get the current locale.
-pub fn locale() -> String {
-    rust_i18n::locale().to_string()
-}
+use anyhow::Context;
+use i18n_embed::unic_langid::LanguageIdentifier;
+use i18n_embed::{
+    fluent::{fluent_language_loader, FluentLanguageLoader},
+    DesktopLanguageRequester, LanguageLoader, LanguageRequester,
+};
+use std::str::FromStr;
+use std::sync::OnceLock;
 
 /// Get all available locales.
-pub fn available_locales() -> Vec<&'static str> {
-    rust_i18n::available_locales!()
+pub fn available_languages() -> anyhow::Result<Vec<String>> {
+    Ok(__language_loader()
+        .available_languages(&Localizations)?
+        .iter()
+        .map(ToString::to_string)
+        .collect())
 }
 
-fn set_locale_inner(locale: &str) {
-    let all_locales = rust_i18n::available_locales!();
-    if all_locales.contains(&locale) {
-        rust_i18n::set_locale(locale);
-    } else {
-        let language = split_locale(locale);
-        if all_locales.contains(&language.as_str()) {
-            rust_i18n::set_locale(&language);
-        } else {
-            rust_i18n::set_locale(FALLBACK_LOCALE);
-        }
-    }
+/// Initialize the locale.
+pub fn init(cfg_locale: Option<&str>) -> anyhow::Result<String> {
+    let cfg_locale = cfg_locale
+        .map(LanguageIdentifier::from_str)
+        .transpose()
+        .context("failed to parse locale")?;
+    let requested = cfg_locale
+        .into_iter()
+        .chain(DesktopLanguageRequester::new().requested_languages())
+        .collect::<Vec<_>>();
+    let selected = i18n_embed::select(__language_loader(), &Localizations, &requested)?;
+    Ok(selected
+        .first()
+        .map_or_else(|| String::from(FALLBACK_LOCALE), ToString::to_string))
 }
 
-fn split_locale(locale: &str) -> String {
-    let mut parts = locale.split(['-', '_']);
-    parts
-        .next()
-        .map_or_else(|| FALLBACK_LOCALE, |lang| lang)
-        .to_string()
+const FALLBACK_LOCALE: &str = "en";
+
+static LANGUAGE_LOADER: OnceLock<FluentLanguageLoader> = OnceLock::new();
+
+#[derive(rust_embed::RustEmbed)]
+#[folder = "i18n"]
+struct Localizations;
+
+// this needs to be public for the macro to work, however it should be considered private and not
+// used directly.
+#[doc(hidden)]
+pub fn __language_loader() -> &'static FluentLanguageLoader {
+    LANGUAGE_LOADER.get_or_init(|| fluent_language_loader!())
 }
 
-// A macro for translating a text string.
+// A wrapper macro for translating a text string.
 #[macro_export]
 macro_rules! t {
     ($($all:tt)*) => {
-        rust_i18n::t!($($all)*)
+        i18n_embed_fl::fl!($crate::locale::__language_loader(), $($all)*)
     }
 }
 
@@ -61,20 +60,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_split_locale_dash() {
-        let language = split_locale("en-US");
-        assert_eq!(language, "en");
+    fn test_available_languages() {
+        assert_eq!(
+            available_languages().unwrap(),
+            vec!["de", "en", "es", "fr", "it", "pt", "ru", "sv", "tr", "zh"]
+        );
     }
 
     #[test]
-    fn test_split_locale_underscore() {
-        let language = split_locale("en_US");
-        assert_eq!(language, "en");
-    }
-
-    #[test]
-    fn test_split_locale_no_region() {
-        let language = split_locale("en");
-        assert_eq!(language, "en");
+    fn test_init() {
+        assert!(init(None).is_ok());
+        assert_eq!(init(Some("en")).unwrap(), "en");
+        assert_eq!(init(Some("zh")).unwrap(), "zh");
+        assert_eq!(init(Some("en-US")).unwrap(), "en");
+        assert_eq!(init(Some("en-xx")).unwrap(), "en");
+        assert_eq!(init(Some("zh_hk")).unwrap(), "zh");
+        assert_eq!(init(Some("zh_xx")).unwrap(), "zh");
+        assert!(init(Some("en-x")).is_err());
+        assert!(init(Some("en-")).is_err());
     }
 }

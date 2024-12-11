@@ -1,7 +1,7 @@
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
-use crate::locale::{locale, set_locale};
+use crate::locale;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
@@ -15,8 +15,7 @@ use trippy_privilege::Privilege;
 
 /// Run the trippy application.
 pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
-    set_locale(cfg.tui_locale.as_deref());
-    let locale = locale();
+    let locale = locale::init(cfg.tui_locale.as_deref())?;
     let _guard = configure_logging(cfg);
     let resolver = start_dns_resolver(cfg)?;
     let geoip_lookup = create_geoip_lookup(cfg, &locale)?;

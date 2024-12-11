@@ -5,7 +5,6 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use ratatui::Frame;
-use std::borrow::Cow;
 
 /// Render the splash screen.
 ///
@@ -25,13 +24,13 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .fg(app.tui_config.theme.text),
         );
     #[allow(clippy::needless_raw_string_hashes)]
-    let splash: Vec<Cow<'static, str>> = vec![
+    let splash: Vec<String> = vec![
         r#" _____    _                "#.into(),
         r#"|_   _| _(_)_ __ _ __ _  _ "#.into(),
         r#"  | || '_| | '_ \ '_ \ || |"#.into(),
         r#"  |_||_| |_| .__/ .__/\_, |"#.into(),
         r#"           |_|  |_|   |__/ "#.into(),
-        "".into(),
+        String::new(),
         t!("awaiting_data"),
     ];
     let line: Vec<_> = splash

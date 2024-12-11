@@ -1,5 +1,4 @@
 use crate::config::{Args, TuiCommandItem, TuiThemeItem};
-use crate::locale::available_locales;
 use clap::CommandFactory;
 use clap_complete::Shell;
 use itertools::Itertools;
@@ -31,8 +30,9 @@ pub fn print_man_page() -> anyhow::Result<()> {
     process::exit(0);
 }
 
-pub fn print_locales() {
-    println!("TUI locales: {}", available_locales().iter().join(", "));
+pub fn print_locales() -> anyhow::Result<()> {
+    let locales = crate::locale::available_languages()?;
+    println!("TUI locales: {}", locales.iter().join(", "));
     process::exit(0);
 }
 

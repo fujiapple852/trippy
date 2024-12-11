@@ -5,7 +5,6 @@ use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Line, Span, Style};
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
-use std::borrow::Cow;
 use std::net::IpAddr;
 use trippy_core::{PrivilegeMode, Protocol};
 use trippy_dns::ResolveMethod;
@@ -15,18 +14,18 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
         Protocol::Icmp => format!(
             "{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("ICMP"),
+            "ICMP",
         ),
         Protocol::Udp => format!(
             "{}/{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("UDP"),
+            "UDP",
             app.tracer_config().data.multipath_strategy(),
         ),
         Protocol::Tcp => format!(
             "{}/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("TCP"),
+            "TCP",
         ),
     });
 
@@ -111,7 +110,7 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     f.render_widget(left, rect);
 }
 
-fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
+fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> String {
     match privilege_mode {
         PrivilegeMode::Privileged => t!("privileged"),
         PrivilegeMode::Unprivileged => t!("unprivileged"),

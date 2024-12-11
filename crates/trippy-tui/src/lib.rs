@@ -20,9 +20,6 @@ mod print;
 mod report;
 mod util;
 
-// initialize the i18n system.
-rust_i18n::i18n!("locales", fallback = "en");
-
 /// Run the Trippy application.
 pub fn trippy() -> anyhow::Result<()> {
     let args = Args::parse();
@@ -35,7 +32,7 @@ pub fn trippy() -> anyhow::Result<()> {
         TrippyAction::PrintConfigTemplate => print::print_config_template(),
         TrippyAction::PrintManPage => print::print_man_page()?,
         TrippyAction::PrintShellCompletions(shell) => print::print_shell_completions(shell)?,
-        TrippyAction::PrintLocales => print::print_locales(),
+        TrippyAction::PrintLocales => print::print_locales()?,
     }
     Ok(())
 }
