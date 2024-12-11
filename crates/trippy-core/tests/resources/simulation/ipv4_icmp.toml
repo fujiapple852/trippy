@@ -1,0 +1,32 @@
+name = "IPv4/ICMP"
+target = "10.0.0.107"
+protocol = "Icmp"
+icmp_identifier = 1
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "10.0.0.101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 30 }
+
+[[hops]]
+ttl = 4
+resp = { tag = "SingleHost", addr = "10.0.0.104", rtt_ms = 40 }
+
+[[hops]]
+ttl = 5
+resp = { tag = "SingleHost", addr = "10.0.0.105", rtt_ms = 50 }
+
+[[hops]]
+ttl = 6
+resp = { tag = "SingleHost", addr = "10.0.0.106", rtt_ms = 60 }
+
+[[hops]]
+ttl = 7
+resp = { tag = "SingleHost", addr = "10.0.0.107", rtt_ms = 70 }

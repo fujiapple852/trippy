@@ -891,18 +891,18 @@ mod tests {
 
     macro_rules! file {
         ($path:expr) => {{
-            let yaml = include_str!(concat!("../tests/resources/state/", $path));
-            serde_yml::from_str(yaml).unwrap()
+            let data = include_str!(concat!("../tests/resources/state/", $path));
+            toml::from_str(data).unwrap()
         }};
     }
 
-    #[test_case(file!("full_mixed.yaml"))]
-    #[test_case(file!("full_completed.yaml"))]
-    #[test_case(file!("all_status.yaml"))]
-    #[test_case(file!("no_latency.yaml"))]
-    #[test_case(file!("nat.yaml"))]
-    #[test_case(file!("minimal.yaml"))]
-    #[test_case(file!("floss_bloss.yaml"))]
+    #[test_case(file!("full_mixed.toml"))]
+    #[test_case(file!("full_completed.toml"))]
+    #[test_case(file!("all_status.toml"))]
+    #[test_case(file!("no_latency.toml"))]
+    #[test_case(file!("nat.toml"))]
+    #[test_case(file!("minimal.toml"))]
+    #[test_case(file!("floss_bloss.toml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,

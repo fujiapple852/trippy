@@ -30,30 +30,30 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
 
 macro_rules! sim {
     ($path:expr) => {{
-        let yaml = include_str!(concat!("../resources/simulation/", $path));
-        serde_yml::from_str(yaml)?
+        let data = include_str!(concat!("../resources/simulation/", $path));
+        toml::from_str(data)?
     }};
 }
 
-#[test_case(sim!("ipv4_icmp.yaml"))]
-#[test_case(sim!("ipv4_icmp_gaps.yaml"))]
-#[test_case(sim!("ipv4_icmp_ooo.yaml"))]
-#[test_case(sim!("ipv4_icmp_min.yaml"))]
-#[test_case(sim!("ipv4_icmp_pattern.yaml"))]
-#[test_case(sim!("ipv4_icmp_quick.yaml"))]
-#[test_case(sim!("ipv4_icmp_wrap.yaml"))]
-#[test_case(sim!("ipv4_udp_classic_fixed_src.yaml"))]
-#[test_case(sim!("ipv4_udp_classic_fixed_dest.yaml"))]
-#[test_case(sim!("ipv4_udp_paris_fixed_both.yaml"))]
-#[test_case(sim!("ipv4_udp_dublin_fixed_both.yaml"))]
-#[test_case(sim!("ipv4_tcp_fixed_dest.yaml"))]
+#[test_case(sim!("ipv4_icmp.toml"))]
+#[test_case(sim!("ipv4_icmp_gaps.toml"))]
+#[test_case(sim!("ipv4_icmp_ooo.toml"))]
+#[test_case(sim!("ipv4_icmp_min.toml"))]
+#[test_case(sim!("ipv4_icmp_pattern.toml"))]
+#[test_case(sim!("ipv4_icmp_quick.toml"))]
+#[test_case(sim!("ipv4_icmp_wrap.toml"))]
+#[test_case(sim!("ipv4_udp_classic_fixed_src.toml"))]
+#[test_case(sim!("ipv4_udp_classic_fixed_dest.toml"))]
+#[test_case(sim!("ipv4_udp_paris_fixed_both.toml"))]
+#[test_case(sim!("ipv4_udp_dublin_fixed_both.toml"))]
+#[test_case(sim!("ipv4_tcp_fixed_dest.toml"))]
 fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }
 
 // unprivileged mode is only supported on macOS
 #[cfg(target_os = "macos")]
-#[test_case(sim!("ipv4_udp_classic_unprivileged.yaml"))]
+#[test_case(sim!("ipv4_udp_classic_unprivileged.toml"))]
 fn test_simulation_macos(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }

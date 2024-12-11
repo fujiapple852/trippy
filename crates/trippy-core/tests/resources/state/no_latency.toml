@@ -1,0 +1,26 @@
+largest_ttl = 1
+
+[[rounds]]
+probes = ["1 C 0 127.0.0.1 0 80 80 0 0"]
+
+[[rounds]]
+probes = ["1 C 0 127.0.0.1 0 80 80 0 0"]
+
+[[rounds]]
+probes = ["1 C 0 127.0.0.1 0 80 80 0 0"]
+
+[[rounds]]
+probes = ["1 C 0 127.0.0.1 0 80 80 0 0"]
+
+[[expected.hops]]
+ttl = 1
+loss_pct = 0
+last_ms = 0.0
+best_ms = 0
+worst_ms = 0
+avg_ms = 0
+samples = [0, 0, 0, 0]
+jitter = 0
+javg = 0.0
+jmax = 0.0
+jinta = 0.0

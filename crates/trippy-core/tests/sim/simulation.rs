@@ -47,6 +47,7 @@ pub struct Hop {
 
 /// A simulated probe response.
 #[derive(Debug, Deserialize)]
+#[serde(tag = "tag")]
 pub enum Response {
     /// Simulate a hop which does not response to probes.
     NoResponse,
@@ -97,6 +98,7 @@ impl From<Protocol> for trippy_core::Protocol {
 }
 
 #[derive(Copy, Clone, Debug, Default, Deserialize)]
+#[serde(tag = "tag", content = "value")]
 pub enum PortDirection {
     #[default]
     None,
