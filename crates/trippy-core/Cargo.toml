@@ -49,10 +49,10 @@ ipnetwork.workspace = true
 mockall.workspace = true
 rand.workspace = true
 serde = { workspace = true, default-features = false, features = [ "derive" ] }
-serde_yml.workspace = true
 test-case.workspace = true
 tokio-util.workspace = true
 tokio = { workspace = true, features = [ "full" ] }
+toml.workspace = true
 tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "fmt" ] }
 
 # see https://github.com/meh/rust-tun/pull/74

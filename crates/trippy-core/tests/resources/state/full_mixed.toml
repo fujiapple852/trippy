@@ -1,0 +1,69 @@
+largest_ttl = 3
+
+[[rounds]]
+probes = [
+    "1 C 10 10.0.0.1 0 12345 80 0 0",
+    "2 A 12 10.0.0.2 1 12345 80 0 0",
+    "3 C 11 10.0.0.3 2 12345 80 0 0",
+]
+
+[[rounds]]
+probes = [
+    "1 C 101 10.0.0.1 3 12345 80 0 0",
+    "2 A 121 10.0.0.2 4 12345 80 0 0",
+    "3 C 111 10.0.0.4 5 12345 80 0 0",
+]
+
+[[expected.hops]]
+ttl = 1
+total_sent = 2
+total_recv = 2
+loss_pct = 0
+best_ms = 10
+worst_ms = 101
+avg_ms = 55.5
+jitter = 91
+javg = 50.5
+jinta = 99.40625
+jmax = 91
+last_nat_status = "no_nat"
+samples = [101, 10]
+last_ms = 101
+last_src = 12345
+last_dest = 80
+last_sequence = 3
+addrs = { "10.0.0.1" = 2 }
+
+[[expected.hops]]
+ttl = 2
+total_sent = 2
+total_recv = 0
+loss_pct = 100
+avg_ms = 0
+javg = 0
+jinta = 0
+last_nat_status = "none"
+samples = [0, 0]
+last_src = 12345
+last_dest = 80
+last_sequence = 4
+
+[[expected.hops]]
+ttl = 3
+total_sent = 2
+total_recv = 2
+loss_pct = 0
+best_ms = 11
+worst_ms = 111
+avg_ms = 61
+jitter = 100
+javg = 55.5
+jinta = 109.34375
+jmax = 100
+last_nat_status = "no_nat"
+samples = [111, 11]
+last_ms = 111
+last_src = 12345
+last_dest = 80
+last_sequence = 5
+addrs = { "10.0.0.3" = 1, "10.0.0.4" = 1 }

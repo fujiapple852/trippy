@@ -1,0 +1,47 @@
+name = "IPv4/ICMP wih min/max round duration 250ms and grace 50ms"
+target = "10.0.0.110"
+protocol = "Icmp"
+icmp_identifier = 7
+min_round_duration = 250
+max_round_duration = 250
+grace_period = 50
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "10.0.0.101", rtt_ms = 1 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 2 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 3 }
+
+[[hops]]
+ttl = 4
+resp = { tag = "SingleHost", addr = "10.0.0.104", rtt_ms = 4 }
+
+[[hops]]
+ttl = 5
+resp = { tag = "SingleHost", addr = "10.0.0.105", rtt_ms = 5 }
+
+[[hops]]
+ttl = 6
+resp = { tag = "SingleHost", addr = "10.0.0.106", rtt_ms = 6 }
+
+[[hops]]
+ttl = 7
+resp = { tag = "SingleHost", addr = "10.0.0.107", rtt_ms = 7 }
+
+[[hops]]
+ttl = 8
+resp = { tag = "SingleHost", addr = "10.0.0.108", rtt_ms = 8 }
+
+[[hops]]
+ttl = 9
+resp = { tag = "SingleHost", addr = "10.0.0.109", rtt_ms = 9 }
+
+[[hops]]
+ttl = 10
+resp = { tag = "SingleHost", addr = "10.0.0.110", rtt_ms = 10 }

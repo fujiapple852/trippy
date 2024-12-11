@@ -1,0 +1,36 @@
+largest_ttl = 1
+
+[[rounds]]
+probes = [
+    "1 A 300 10.1.0.2 0 12340 80 0 0",
+]
+
+[[rounds]]
+probes = [
+    "1 C 700 10.1.0.2 0 12340 80 0 0",
+]
+
+[[rounds]]
+probes = [
+    "1 N 300 10.1.0.2 0 12340 80 0 0",
+]
+
+[[rounds]]
+probes = [
+    "1 S 300 10.1.0.2 0 12340 80 0 0",
+]
+
+[[expected.hops]]
+ttl = 1
+total_sent = 2
+total_recv = 1
+loss_pct = 50
+best_ms = 700
+worst_ms = 700
+avg_ms = 700
+samples = [700.0, 0.0]
+last_ms = 700
+last_sequence = 0
+last_src = 12340
+last_dest = 80
+addrs = { "10.1.0.2" = 1 }

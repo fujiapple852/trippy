@@ -1,0 +1,17 @@
+name = "IPv4/UDP Paris with a fixed src and dest port"
+target = "10.0.0.103"
+protocol = "Udp"
+multipath_strategy = "Paris"
+port_direction = { tag = "FixedBoth", value = { src = 5000, dest = 33434 } }
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "10.0.0.101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 20 }

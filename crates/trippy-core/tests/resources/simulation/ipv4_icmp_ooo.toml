@@ -1,0 +1,25 @@
+name = "IPv4/ICMP with out of order responses"
+target = "10.0.0.105"
+protocol = "Icmp"
+icmp_identifier = 4
+grace_period = 300
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "10.0.0.101", rtt_ms = 20 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 15 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 10 }
+
+[[hops]]
+ttl = 4
+resp = { tag = "SingleHost", addr = "10.0.0.104", rtt_ms = 5 }
+
+[[hops]]
+ttl = 5
+resp = { tag = "SingleHost", addr = "10.0.0.105", rtt_ms = 0 }

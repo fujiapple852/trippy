@@ -1,0 +1,18 @@
+name = "IPv4/UDP classic unprivileged"
+privilege_mode = "Unprivileged"
+target = "10.0.0.103"
+protocol = "Udp"
+port_direction = { tag = "FixedDest", value = 33434 }
+multipath_strategy = "Classic"
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "10.0.0.101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 20 }
