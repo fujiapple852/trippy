@@ -1,21 +1,19 @@
-use i18n_embed::{
-    fluent::{fluent_language_loader, FluentLanguageLoader},
-    DesktopLanguageRequester, LanguageRequester,
-};
+use i18n_embed::{fluent::FluentLanguageLoader, DesktopLanguageRequester, LanguageRequester};
 use rust_embed::RustEmbed;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
+
+pub use i18n_embed::fluent::fluent_language_loader;
 
 #[derive(RustEmbed)]
 #[folder = "i18n"]
 pub struct Localizations;
 
-pub static LANGUAGE_LOADER: LazyLock<FluentLanguageLoader> =
-    LazyLock::new(|| fluent_language_loader!());
+pub static LANGUAGE_LOADER: OnceLock<FluentLanguageLoader> = OnceLock::new();
 
 #[macro_export]
 macro_rules! t {
     ($($all:tt)*) => {
-        i18n_embed_fl::fl!($crate::locale::LANGUAGE_LOADER, $($all)*)
+        i18n_embed_fl::fl!($crate::locale::LANGUAGE_LOADER.get_or_init(|| $crate::locale::fluent_language_loader!()), $($all)*)
     }
 }
 
@@ -27,13 +25,14 @@ pub fn init(cfg_locale: Option<&str>) -> anyhow::Result<String> {
     if let Some(cfg_locale) = cfg_locale {
         requested_languages.insert(0, cfg_locale.parse().expect("unsupported locale in config"));
     };
-    let selected_languages =
-        i18n_embed::select(&*LANGUAGE_LOADER, &Localizations, &requested_languages)
-            .expect("failed to load locales");
+    let selected_languages = i18n_embed::select(
+        LANGUAGE_LOADER.get_or_init(|| fluent_language_loader!()),
+        &Localizations,
+        &requested_languages,
+    )
+    .expect("failed to load locales");
     let Some(locale) = selected_languages.first().map(ToString::to_string) else {
         anyhow::bail!("failed to select a locale")
     };
     Ok(locale)
 }
-
-
