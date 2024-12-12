@@ -2320,15 +2320,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sys-locale"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eab9a99a024a169fe8a903cf9d4a3b3601109bcc13bd9e3c6fff259138626c4"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "terminal_size"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2740,7 +2731,6 @@ dependencies = [
  "serde_json",
  "serde_with",
  "strum",
- "sys-locale",
  "test-case",
  "toml 0.8.19",
  "tracing",
