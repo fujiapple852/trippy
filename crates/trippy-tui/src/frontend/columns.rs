@@ -1,7 +1,6 @@
 use crate::config::{TuiColumn, TuiColumns};
 use crate::t;
 use ratatui::layout::{Constraint, Rect};
-use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use strum::{EnumIter, IntoEnumIterator};
 use unicode_width::UnicodeWidthStr;
@@ -270,12 +269,9 @@ impl Display for ColumnType {
 impl ColumnType {
     /// The name of the column in the current locale.
     #[allow(clippy::cognitive_complexity)]
-    pub(self) fn name(&self) -> Cow<'_, str> {
-        if self == &Self::Ttl {
-            return "#".into();
-        }
+    pub(self) fn name(self) -> String {
         match self {
-            Self::Ttl => unreachable!(),
+            Self::Ttl => String::from('#'),
             Self::Host => t!("column_host"),
             Self::LossPct => t!("column_loss_pct"),
             Self::Sent => t!("column_snd"),
@@ -301,7 +297,6 @@ impl ColumnType {
             Self::Bloss => t!("column_bloss"),
             Self::FlossPct => t!("column_floss_pct"),
         }
-        .into()
     }
 
     /// The width of the column.

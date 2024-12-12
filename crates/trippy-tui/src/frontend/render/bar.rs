@@ -5,7 +5,6 @@ use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Line, Span, Style};
 use ratatui::widgets::Paragraph;
 use ratatui::Frame;
-use std::borrow::Cow;
 use std::net::IpAddr;
 use trippy_core::{PrivilegeMode, Protocol};
 use trippy_dns::ResolveMethod;
@@ -111,10 +110,10 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     f.render_widget(left, rect);
 }
 
-fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
+fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> String {
     match privilege_mode {
-        PrivilegeMode::Privileged => t!("privileged").into(),
-        PrivilegeMode::Unprivileged => t!("unprivileged").into(),
+        PrivilegeMode::Privileged => t!("privileged"),
+        PrivilegeMode::Unprivileged => t!("unprivileged"),
     }
 }
 
