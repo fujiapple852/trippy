@@ -6,7 +6,7 @@ use rust_embed::RustEmbed;
 use std::sync::LazyLock;
 
 #[derive(RustEmbed)]
-#[folder = "../../i18n"]
+#[folder = "i18n"]
 pub struct Localizations;
 
 pub static LANGUAGE_LOADER: LazyLock<FluentLanguageLoader> =
@@ -35,3 +35,5 @@ pub fn init(cfg_locale: Option<&str>) -> anyhow::Result<String> {
     };
     Ok(locale)
 }
+
+
