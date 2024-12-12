@@ -15,7 +15,16 @@ export default defineConfig({
               dark: './src/assets/trippy-logo-horizontal-dark-1x.png',
               replacesTitle: true,
             },
-
+            head: [
+              {
+                tag: 'link',
+                attrs: {
+                  rel: 'icon',
+                  href: './public/favicon.png',
+                  sizes: '32x32',
+                },
+              },
+            ],
 			social: {
 				'github': 'https://github.com/fujiapple852/trippy',
 				'zulip': 'https://trippy.zulipchat.com',
