@@ -1,7 +1,7 @@
 use crate::config::{LogFormat, LogSpanEvents, Mode, TrippyConfig};
 use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
-use crate::locale::{locale, set_locale};
+use crate::locale;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
@@ -15,8 +15,7 @@ use trippy_privilege::Privilege;
 
 /// Run the trippy application.
 pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
-    set_locale(cfg.tui_locale.as_deref());
-    let locale = locale();
+    let locale = locale::set_locale(cfg.tui_locale.as_deref());
     let _guard = configure_logging(cfg);
     let resolver = start_dns_resolver(cfg)?;
     let geoip_lookup = create_geoip_lookup(cfg, &locale)?;
@@ -30,7 +29,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     }
     let traces = start_tracers(cfg, &addrs, pid)?;
     Privilege::drop_privileges()?;
-    run_frontend(cfg, locale, resolver, geoip_lookup, traces)
+    run_frontend(cfg, &locale, resolver, geoip_lookup, traces)
 }
 
 /// Start all tracers.
@@ -88,7 +87,7 @@ fn start_tracer(
 /// Run the TUI, stream or report.
 fn run_frontend(
     args: &TrippyConfig,
-    locale: String,
+    locale: &str,
     resolver: DnsResolver,
     geoip_lookup: GeoIpLookup,
     traces: Vec<TraceInfo>,
@@ -96,7 +95,7 @@ fn run_frontend(
     match args.mode {
         Mode::Tui => frontend::run_frontend(
             traces,
-            make_tui_config(args, locale),
+            make_tui_config(args, locale.to_string()),
             resolver,
             geoip_lookup,
         )?,
