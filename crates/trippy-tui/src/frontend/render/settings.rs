@@ -170,8 +170,7 @@ fn format_all_settings(app: &TuiApp) -> Vec<(String, String, Vec<SettingsItem>)>
                 c = toggle_column,
                 d = move_down,
                 u = move_up
-            )
-            .to_string(),
+            ),
             columns_settings,
         ),
     ]

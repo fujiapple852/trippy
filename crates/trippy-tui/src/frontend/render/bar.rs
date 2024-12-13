@@ -13,20 +13,17 @@ use trippy_dns::ResolveMethod;
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     let protocol = Span::raw(match app.tracer_config().data.protocol() {
         Protocol::Icmp => format!(
-            "{}/{}",
+            "{}/ICMP",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("ICMP"),
         ),
         Protocol::Udp => format!(
-            "{}/{}/{}",
+            "{}/UDP/{}",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("UDP"),
             app.tracer_config().data.multipath_strategy(),
         ),
         Protocol::Tcp => format!(
-            "{}/{}",
+            "{}/TCP",
             fmt_target_family(app.tracer_config().data.target_addr()),
-            t!("TCP"),
         ),
     });
 
