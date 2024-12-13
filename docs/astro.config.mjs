@@ -19,9 +19,8 @@ export default defineConfig({
               {
                 tag: 'link',
                 attrs: {
-                  rel: 'icon',
-                  href: './public/favicon.png',
-                  sizes: '32x32',
+                  rel: 'apple-touch-icon',
+                  href: './public/apple-touch-icon.png',
                 },
               },
             ],
