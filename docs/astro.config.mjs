@@ -3,7 +3,7 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-    site: 'https://trippy.cli.rs',
+    site: 'https://trippy.rs',
 	integrations: [
 		starlight({
 			title: 'Trippy',
