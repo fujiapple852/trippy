@@ -1,7 +1,7 @@
 //! Trippy - A network tracing library.
 //!
 //! This crate provides the core network tracing facility used by the
-//! standalone [Trippy](https://trippy.cli.rs) application.
+//! standalone [Trippy](https://trippy.rs) application.
 //!
 //! Note: the public API is not stable and is highly likely to change
 //! in the future.
