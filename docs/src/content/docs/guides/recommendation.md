@@ -45,7 +45,7 @@ custom-columns = "hosavbwdt"
 
 :::note
 The `Sts` column shows different color codes to reflect packet loss at intermediate vs the target hop, see the
-[Column Reference](#column-reference) for more information.
+[Column Reference](/reference/column) for more information.
 :::
 
 #### UDP/Dublin with fixed ports
@@ -153,7 +153,7 @@ Therefore the `dublin` strategy is recommended when NAT is present.
 
 :::note
 Trippy can detect the presence of NAT devices in some circumstances when using the `dublin` strategy and the `Nat`
-column can be shown in the Tui to indicate when NAT is detected. See the [Column Reference](#column-reference) for more
+column can be shown in the Tui to indicate when NAT is detected. See the [Column Reference](/reference/column) for more
 information.
 :::
 

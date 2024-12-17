@@ -50,7 +50,7 @@ socket type. See [#101](https://github.com/fujiapple852/trippy/issues/101) for f
 :::
 
 The unprivileged mode can be enabled by adding the `--unprivileged` (`-u`) command line flag or by adding the
-`unprivileged` entry in the `trippy` section of the [configuration file](#configuration-reference):
+`unprivileged` entry in the `trippy` section of the [configuration file](/reference/configuration):
 
 ```toml
 [trippy]
