@@ -31,11 +31,10 @@ import { Icon } from '@astrojs/starlight/components';
 	<Card title="Powerful tracing features" icon="rocket">
 	    - `ICMP`, `UDP` & `TCP` over `IPv4` & `IPv6` protocols
 	    - Fully customizable tracing options
-	    - `dublin` 🇮🇪 and `paris` 🇫🇷 ECMP algorithms
-	    - `ICMP` extensions (e.g. `MPLS`)
+	    - `dublin` and `paris` `ECMP` strategies
+	    - `ICMP` extensions objects (i.e. `MPLS`)
 	    - Reverse `DNS` and `ASN` lookups
 	    - `NAT` detection
-	    - Run in unprivileged mode
 
 		![Trippy main screen](../../assets/main_screen.png)
 	</Card>
@@ -51,18 +50,20 @@ import { Icon } from '@astrojs/starlight/components';
         - Runs on `Linux`, `macOS`, `Windows`, `*BSD`
         - Supports `x86_64`, `aarch64`, `arm7` architectures
         - Available from most native package managers
+        - Run in unprivileged mode
+
         <CardGrid>
           <Card title="Linux">
-            <Icon name="linux" size="8rem"/>
+            <Icon name="linux" size="4rem"/>
           </Card>
           <Card title="macOS">
-            <Icon name="apple" size="8rem"/>
+            <Icon name="apple" size="4rem"/>
           </Card>
           <Card title="Windows">
-            <Icon name="seti:windows" size="8rem"/>
+            <Icon name="seti:windows" size="4rem"/>
           </Card>
           <Card title="*BSD">
-            <Icon name="heart" size="8rem"/>
+            <Icon name="heart" size="4rem"/>
           </Card>
         </CardGrid>
     </Card>
@@ -79,10 +80,8 @@ import { Icon } from '@astrojs/starlight/components';
 	</Card>
 
 	<Card title="Trace in your language" icon="translate">
-	    TUI translated into 10 languages:
-	    - Chinese 🇨🇳, English 🇺🇸, French 🇫🇷, German 🇩🇪
-	    - Italian 🇮🇹, Portuguese 🇵🇹, Russian 🇷🇺, Spanish 🇪🇸
-	    - Swedish 🇸🇪 and Turkish 🇹🇷
+	    TUI available in 10 languages:
+	    - Chinese 🇨🇳, English 🇺🇸, French 🇫🇷, German 🇩🇪, Italian 🇮🇹, Portuguese 🇵🇹, Russian 🇷🇺, Spanish 🇪🇸, Swedish 🇸🇪 and Turkish 🇹🇷
 
 		![Trippy main screen in Chinese](../../assets/help_screen_zh.png)
 	</Card>
