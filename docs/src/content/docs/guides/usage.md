@@ -11,7 +11,7 @@ Basic usage with default parameters:
 trip example.com
 ```
 
-Trace without requiring elevated privileges (supported platforms only, see [privileges](#privileges)):
+Trace without requiring elevated privileges (supported platforms only, see [privileges](/guides/privileges)):
 
 ```shell
 trip example.com --unprivileged
@@ -139,7 +139,7 @@ Hide the IP address, hostname and GeoIp for the first two hops:
 trip example.com --tui-privacy-max-ttl 2
 ```
 
-Customize Tui columns (see [Column Reference](#column-reference)):
+Customize Tui columns (see [Column Reference](/reference/column)):
 
 ```shell
 trip example.com --tui-custom-columns holsravbwdt
