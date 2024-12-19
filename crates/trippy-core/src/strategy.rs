@@ -1191,7 +1191,7 @@ mod state {
             self.buffer[usize::from(resp.sequence - self.round_sequence)] =
                 ProbeStatus::Complete(completed);
 
-            // If this `ProbeStatus` found the target then we set the `target_tll` if not already
+            // If this `ProbeStatus` found the target then we set the `target_ttl` if not already
             // set, being careful to account for `Probes` being received out-of-order.
             //
             // If this `ProbeStatus` did not find the target but has a ttl that is greater or equal

@@ -1270,7 +1270,7 @@ pub mod extension_splitter {
                 assert!(mpls_stack_member_iter.next().is_none());
             }
 
-            // Real Ipv6 example with a rfc4884 length of 16 (16 * 8 = 128
+            // Real IPv6 example with a rfc4884 length of 16 (16 * 8 = 128
             // octets for) but the total payload is only 84 octets and
             // therefore this is a malformed packet.
             //

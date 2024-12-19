@@ -1286,7 +1286,7 @@ mod tests {
     #[test_case("trip example.com -t 5", Ok(cfg().max_ttl(5).build()); "custom max ttl short")]
     #[test_case("trip example.com --max-ttl 0", Err(anyhow!("max-ttl (0) must be in the range 1..254")); "invalid low max ttl")]
     #[test_case("trip example.com --max-ttl 500", Err(anyhow!("error: invalid value '500' for '--max-ttl <MAX_TTL>': 500 is not in 0..=255 For more information, try '--help'.")); "invalid high max ttl")]
-    #[test_case("trip example.com --first-ttl 3 --max-ttl 2", Err(anyhow!("first-ttl (3) must be less than or equal to max-ttl (2)")); "first ttl higher than max ttl")]
+    #[test_case("trip example.com --first-ttl 3 --max-ttl 2", Err(anyhow!("first-ttl (3) must be less than or equal to max-ttl (2)")); "first ttl greater than max ttl")]
     #[test_case("trip example.com --first-ttl 5 --max-ttl 5", Ok(cfg().first_ttl(5).max_ttl(5).build()); "custom first and max ttl")]
     fn test_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);

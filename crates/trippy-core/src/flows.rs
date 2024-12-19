@@ -112,7 +112,7 @@ impl Flow {
     /// Check if a given `Flow` matches this `Flow`.
     ///
     /// Two flows are said to match _unless_ they contain different IP
-    /// addresses for the _same_ position (i.e. the `tll`).
+    /// addresses for the _same_ position (i.e. the same `ttl`).
     ///
     /// This is true even for flows of differing lengths.
     ///

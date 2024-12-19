@@ -315,7 +315,7 @@ The previous release of Trippy introduced a bug ([#1290](https://github.com/fuji
 caused reverse DNS lookups to be enqueued multiple times when the `dns-ttl` expired, potentially leading to the hostname
 being displayed as `Timeout: xxx` for a brief period.
 
-A long standing bug ([#1398](https://github.com/fujiapple852/trippy/issues/1398)) which caused the TUI sample history
+A long-standing bug ([#1398](https://github.com/fujiapple852/trippy/issues/1398)) which caused the TUI sample history
 and frequency charts to ignore sub-millisecond samples has been fixed.
 
 This release fixes a bug ([#1287](https://github.com/fujiapple852/trippy/issues/1287)) that caused the tracer to panic
@@ -993,7 +993,7 @@ more. Additionally, this release includes several important bug fixes along with
 
 ### Tracing Flows
 
-#### Flow Id
+#### Flow ID
 
 A tracing flow represents the sequence of hosts traversed from the source to the target. Trippy is now able to identify
 individual flows within a trace and assign each a unique flow id. Trippy calculate a flow id for each round of tracing,
@@ -1126,7 +1126,7 @@ The following screenshot shows ICMP extensions in hop detail mode:
 
 #### ICMP Extensions in Reports
 
-ICMP extension information is also included the the `json` and `stream` report modes.
+ICMP extension information is also included the `json` and `stream` report modes.
 
 Sample output for a single hop from the `json` report:
 
