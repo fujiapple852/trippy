@@ -1,4 +1,4 @@
-name = "IPv4/ICMP wih min/max round duration 250ms and grace 50ms"
+name = "IPv4/ICMP with min/max round duration 250ms and grace 50ms"
 target = "10.0.0.110"
 protocol = "Icmp"
 icmp_identifier = 7

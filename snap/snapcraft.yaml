@@ -58,7 +58,7 @@ description: |
     - `network`: to allow general outgoing network access
     - `network-bind`: to allow binding to local ports
     - `network-observe`: to allow enabling `CAP_NET_RAW` for using raw sockets
-    - `home`: to allow access to /home for reading the configuraton file
+    - `home`: to allow access to /home for reading the configuration file
 contact: mailto:fujiapple852@gmail.com
 issues: https://github.com/fujiapple852/trippy/issues
 license: Apache-2.0

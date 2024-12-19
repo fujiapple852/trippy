@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-The following table lists ths versions of Trippy that are available and links to the corresponding release note and
+The following table lists this versions of Trippy that are available and links to the corresponding release note and
 documentation:
 
 | Version    | Release Date | Status      | Release Note                                                       | Documentation                                              |

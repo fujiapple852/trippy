@@ -77,10 +77,10 @@ protocol = "icmp"
 # The address family.
 #
 # Allowed values are:
-#   ipv4            - Lookup Ipv4 only
-#   ipv6            - Lookup Ipv6 only
-#   ipv6-then-ipv4  - Lookup Ipv6 with a fallback to Ipv4
-#   ipv4-then-ipv6  - Lookup Ipv4 with a fallback to Ipv6 [default]
+#   ipv4            - Lookup IPv4 only
+#   ipv6            - Lookup IPv6 only
+#   ipv6-then-ipv4  - Lookup IPv6 with a fallback to IPv4
+#   ipv4-then-ipv6  - Lookup IPv4 with a fallback to IPv6 [default]
 addr-family = "ipv4-then-ipv6"
 
 # The target port (TCP & UDP only) [default: 80]

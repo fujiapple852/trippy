@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
     let max_ttl = args.max_ttl.unwrap_or(64);
     let nqueries = args.nqueries.unwrap_or(3);
     let tos = args.tos.unwrap_or(0);
-    let pausemecs = args.pausemsecs.unwrap_or(100);
+    let pausemsecs = args.pausemsecs.unwrap_or(100);
     let port_direction = if args.evasion {
         PortDirection::new_fixed_dest(port)
     } else {
@@ -79,8 +79,8 @@ fn main() -> anyhow::Result<()> {
         .tos(tos)
         .max_flows(1)
         .max_rounds(Some(nqueries))
-        .min_round_duration(Duration::from_millis(pausemecs))
-        .max_round_duration(Duration::from_millis(pausemecs))
+        .min_round_duration(Duration::from_millis(pausemsecs))
+        .max_round_duration(Duration::from_millis(pausemsecs))
         .build()?;
     println!(
         "traceroute to {} ({}), {} hops max, {} byte packets",

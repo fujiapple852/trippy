@@ -57,10 +57,10 @@ Options:
           The address family [default: Ipv4thenIpv6]
 
           Possible values:
-          - ipv4:           Ipv4 only
-          - ipv6:           Ipv6 only
-          - ipv6-then-ipv4: Ipv6 with a fallback to Ipv4
-          - ipv4-then-ipv6: Ipv4 with a fallback to Ipv6
+          - ipv4:           IPv4 only
+          - ipv6:           IPv6 only
+          - ipv6-then-ipv4: IPv6 with a fallback to IPv4
+          - ipv4-then-ipv6: IPv4 with a fallback to IPv6
 
   -4, --ipv4
           Use IPv4 only

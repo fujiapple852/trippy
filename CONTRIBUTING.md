@@ -165,7 +165,7 @@ maintainers:
 - Crates.io
 - Docker
 - Snapcraft
-- Winget
+- WinGet
 - Ubuntu PPA
 
 ### Prerequisites
@@ -191,7 +191,7 @@ maintainers:
 Trippy is tested extensively in CI on Linux, Windows and macOS for every pull request. However, it is recommended to
 test the release binaries on all platforms before release.
 
-### Github Releases
+### GitHub Releases
 
 - Tag the release with the version number `0.xx.0` and push the tag to GitHub:
 
@@ -233,7 +233,7 @@ docker push fujiapple/trippy:latest
 - Promote the first `0.xx.0` build to the `latest/stable` channel from the
   Snapcraft [releases](https://snapcraft.io/trippy/releases) page
 
-### Winget
+### WinGet
 
 - Download the latest release Windows `zip` from
   the [GitHub releases page](https://github.com/fujiapple852/trippy/releases/latest)
