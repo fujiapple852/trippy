@@ -11,8 +11,8 @@ export default defineConfig({
                baseUrl: 'https://github.com/fujiapple852/trippy/edit/master/docs/',
              },
             logo: {
-              light: './src/assets/trippy-logo-horizontal-light-1x.png',
-              dark: './src/assets/trippy-logo-horizontal-dark-1x.png',
+              light: './src/assets/Trippy-Horizontal.png',
+              dark: './src/assets/Trippy-Horizontal-DarkMode.png',
               replacesTitle: true,
             },
             head: [

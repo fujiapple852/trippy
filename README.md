@@ -1,7 +1,6 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-dark.png#gh-dark-mode-only" width="300">
-  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/logo/trippy-logo-light.png#gh-light-mode-only" width="300">
-  <br>
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/docs/src/assets/Trippy-Vertical-DarkMode.png#gh-dark-mode-only" width="300">
+  <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/docs/src/assets/Trippy-Vertical.png#gh-light-mode-only" width="300"><br>
   <br>
   <a href="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml">
     <img src="https://github.com/fujiapple852/trippy/workflows/CI/badge.svg"></a>
