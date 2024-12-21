@@ -3,10 +3,10 @@
 set -o errexit -o pipefail -o nounset
 
 # The Trippy version to release
-VERSION="0.12.0"
+VERSION="0.12.1"
 
 # The revision number for the PPA
-REVISION=2
+REVISION=1
 
 # The Ubuntu series to build for
 SERIES=("noble" "jammy")
