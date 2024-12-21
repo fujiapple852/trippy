@@ -480,11 +480,6 @@ mod socket {
         fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
             Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))
         }
-        #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-        #[instrument(skip(self), level = "trace")]
-        fn close(&mut self) -> IoResult<()> {
-            Ok(())
-        }
     }
 
     impl From<&io::Error> for ErrorKind {
