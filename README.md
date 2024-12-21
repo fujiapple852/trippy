@@ -228,7 +228,7 @@ emerge -av net-analyzer/trippy
 
 ### Nix
 
-[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/networking/trippy/default.nix)
+[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/tr/trippy/package.nix)
 
 ```shell
 nix-env -iA trippy
