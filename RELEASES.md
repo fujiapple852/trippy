@@ -2,19 +2,12 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
-# 0.13.0
+# 0.12.1
 
-## Highlights
+This maintenance release of Trippy fixes a bug which prevented translations from working in Docker and also divests all
+internal use of `yaml` dependencies which were problematic to maintain on some platforms (thanks to @nc7s).
 
-### Thanks
-
-My thanks to all Trippy contributors, package maintainers, translators and community members.
-
-Feel free to drop by the Trippy Zulip room for a chat:
-
-[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
-
-Happy Tracing!
+See the main [0.12.0](https://github.com/fujiapple852/trippy/releases/tag/0.12.0) release note.
 
 # 0.12.0
 
