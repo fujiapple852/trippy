@@ -15,13 +15,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.12.1] - 2024-12-21
 
-### Fixed
-
-- Locale data not copied into docker image ([#1431](https://github.com/fujiapple852/trippy/issues/1431))
-
 ### Changed
 
 - Replace use of `yaml` with `toml` dependency ([#1416](https://github.com/fujiapple852/trippy/issues/1416))
+
+### Fixed
+
+- Locale data not copied into docker image ([#1431](https://github.com/fujiapple852/trippy/issues/1431))
 
 ## [0.12.0] - 2024-12-04
 
