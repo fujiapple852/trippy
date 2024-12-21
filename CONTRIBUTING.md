@@ -65,6 +65,7 @@ This will trigger the GitHub Actions workflow to build the release binaries and 
 cargo publish trippy-dns
 cargo publish trippy-packet
 cargo publish trippy-privilege
+cargo publish trippy-core
 cargo publish trippy-tui
 cargo publish trippy
 ```
