@@ -17,7 +17,7 @@ Copy the pgp key to the repo _root_ directory:
 cp /path/to/pgp.key .
 ```
 
-Build the debian ppa builder Docker image from the `debian` directory:
+Build the debian ppa builder Docker image from the `ubuntu-ppa` directory:
 
 ```bash
 docker build . -t fujiapple/trippy-ppa-build:latest
