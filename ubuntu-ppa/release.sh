@@ -62,7 +62,7 @@ for series in "${SERIES[@]}"; do
     cd ..
 done
 
-# The -ss flag is used to simulate the upload, remove to actually upload
+# The -ss flag can be added to simulate the upload
 for changes_file in ./*.changes; do
-    dput -ss ppa:fujiapple/trippy "${changes_file}"
+    dput ppa:fujiapple/trippy "${changes_file}"
 done
