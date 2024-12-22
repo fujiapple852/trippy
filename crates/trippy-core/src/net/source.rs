@@ -34,10 +34,7 @@ impl SourceAddr {
         }?;
         let sock_addr = SocketAddr::new(source_addr, 0);
         match socket.bind(sock_addr) {
-            Ok(()) => {
-                socket.close()?;
-                Ok(source_addr)
-            }
+            Ok(()) => Ok(source_addr),
             Err(_) => Err(InvalidSourceAddr(sock_addr.ip())),
         }
     }
@@ -161,9 +158,6 @@ mod tests {
                 .with(predicate::eq(expected_bind_addr))
                 .times(1)
                 .returning(|_| Ok(()));
-
-            mocket.expect_close().times(1).returning(|| Ok(()));
-
             Ok(mocket)
         });
 
@@ -186,9 +180,6 @@ mod tests {
                 .with(predicate::eq(expected_bind_addr))
                 .times(1)
                 .returning(|_| Ok(()));
-
-            mocket.expect_close().times(1).returning(|| Ok(()));
-
             Ok(mocket)
         });
 
