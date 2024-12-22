@@ -283,7 +283,6 @@ impl SocketImpl {
 #[allow(clippy::redundant_closure_call)]
 impl Drop for SocketImpl {
     fn drop(&mut self) {
-        self.close().unwrap_or_default();
         if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
             syscall!(WSACloseEvent(self.ol.hEvent), |res| { res == 0 }).unwrap_or_default();
         }
@@ -578,15 +577,6 @@ impl Socket for SocketImpl {
                 IoOperation::TcpIcmpErrorInfo,
             )),
         }
-    }
-
-    // Interestingly, Socket2 sockets don't seem to call closesocket on drop??
-    #[instrument(skip(self))]
-    fn close(&mut self) -> IoResult<()> {
-        syscall!(closesocket(self.inner.as_raw_socket() as _), |res| res
-            == SOCKET_ERROR)
-        .map_err(|err| IoError::Other(err, IoOperation::Close))
-        .map(|_| ())
     }
 }
 
