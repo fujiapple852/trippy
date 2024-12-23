@@ -182,7 +182,7 @@ To run a basic trace to `example.com` with default settings, use the following c
 sudo trip example.com
 ```
 
-See the [usage examples](https://trippy.rs/guides/usage) and [command reference](https://trippy.rs/reference/cli) for
+See the [usage examples](https://trippy.rs/guides/usage) and [CLI reference](https://trippy.rs/reference/cli) for
 details of how to use Trippy. To use Trippy without elevated privileges, see
 the [privileges](https://trippy.rs/guides/privileges) guide.
 
