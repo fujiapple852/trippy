@@ -16,15 +16,15 @@ categories.workspace = true
 [[bin]]
 name = "trip"
 path = "src/main.rs"
-required-features = [ "tui" ]
+required-features = ["tui"]
 
 [features]
-default = [ "tui" ]
-tui = [ "trippy-tui", "anyhow" ]
-core = [ "trippy-core" ]
-privilege = [ "trippy-privilege" ]
-dns = [ "trippy-dns" ]
-packet = [ "trippy-packet" ]
+default = ["tui"]
+tui = ["trippy-tui", "anyhow"]
+core = ["trippy-core"]
+privilege = ["trippy-privilege"]
+dns = ["trippy-dns"]
+packet = ["trippy-packet"]
 
 [dependencies]
 trippy-tui = { workspace = true, optional = true }
@@ -39,5 +39,5 @@ workspace = true
 
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
+  { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
 ]

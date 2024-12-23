@@ -19,13 +19,10 @@ thiserror.workspace = true
 caps.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-nix = { workspace = true, default-features = false, features = [ "user" ] }
+nix = { workspace = true, default-features = false, features = ["user"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { workspace = true, features = [
-    "Win32_Foundation",
-    "Win32_System_Threading",
-] }
+windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_System_Threading"] }
 paste.workspace = true
 
 [dev-dependencies]
