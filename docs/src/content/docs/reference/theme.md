@@ -9,7 +9,7 @@ The following table lists the default Tui color theme. These can be overridden w
 line option or in the `theme-colors` section of the configuration file.
 
 | Item                                 | Description                                               | Default      |
-|--------------------------------------|-----------------------------------------------------------|--------------|
+| ------------------------------------ | --------------------------------------------------------- | ------------ |
 | `bg-color`                           | The default background color                              | `Black`      |
 | `border-color`                       | The default color of borders                              | `Gray`       |
 | `text-color`                         | The default color of text                                 | `Gray`       |

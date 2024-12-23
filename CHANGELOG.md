@@ -351,13 +351,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Local Ipv4 discovery fails on some platforms ([#133](https://github.com/fujiapple852/trippy/issues/133),
   [#142](https://github.com/fujiapple852/trippy/issues/142))
 - DNS resolution not filtering for `IPv4` addresses ([#148](https://github.com/fujiapple852/trippy/issues/148))
-    - Note: see [#35](https://github.com/fujiapple852/trippy/issues/35) for the status of `IPv6` support
+  - Note: see [#35](https://github.com/fujiapple852/trippy/issues/35) for the status of `IPv6` support
 
 ## [0.3.0] - 2022-05-08
 
 ### Added
 
-- Added ability for `icmp`  tracing to multiple targets simultaneously in
+- Added ability for `icmp` tracing to multiple targets simultaneously in
   Tui ([#72](https://github.com/fujiapple852/trippy/issues/72))
 - Added ability to enable and disable the `AS` lookup from the
   Tui ([#126](https://github.com/fujiapple852/trippy/issues/126))
@@ -417,31 +417,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Initial WIP release of `trippy`
 
 [Unreleased]: https://github.com/fujiapple852/trippy/compare/0.12.1...master
-
 [0.12.1]: https://github.com/fujiapple852/trippy/compare/0.12.0...0.12.1
-
 [0.12.0]: https://github.com/fujiapple852/trippy/compare/0.11.0...0.12.0
-
 [0.11.0]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0
-
 [0.10.0]: https://github.com/fujiapple852/trippy/compare/0.9.0...0.10.0
-
 [0.9.0]: https://github.com/fujiapple852/trippy/compare/0.8.0...0.9.0
-
 [0.8.0]: https://github.com/fujiapple852/trippy/compare/0.7.0...0.8.0
-
 [0.7.0]: https://github.com/fujiapple852/trippy/compare/0.6.0...0.7.0
-
 [0.6.0]: https://github.com/fujiapple852/trippy/compare/0.5.0...0.6.0
-
 [0.5.0]: https://github.com/fujiapple852/trippy/compare/0.4.0...0.5.0
-
 [0.4.0]: https://github.com/fujiapple852/trippy/compare/0.3.1...0.4.0
-
 [0.3.1]: https://github.com/fujiapple852/trippy/compare/0.3.0...0.3.1
-
 [0.3.0]: https://github.com/fujiapple852/trippy/compare/0.2.0...0.3.0
-
 [0.2.0]: https://github.com/fujiapple852/trippy/compare/0.1.0...0.2.0
-
 [0.1.0]: https://github.com/fujiapple852/trippy/compare/0.0.0...0.1.0

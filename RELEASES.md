@@ -419,48 +419,48 @@ To help illustrate the technique, consider sending the following IPv4/UDP packet
 |          Source Port          |        Destination Port       | │             
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ UDP Header  
 |             Length            |            Checksum B         | │             
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                                                                             
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │
 ```
 
 Trippy expect to receive an IPv4/ICMP `TimeExceeded` (or other) error which contains the Original Datagram (OD) IPv4/UDP
 packet that was sent above with `Checksum B'` in the Original Datagram (OD) IPv4/UDP packet:
 
 ```
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |Version|  IHL  |Type of Service|          Total Length         | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |         Identification        |Flags|     Fragment Offset     | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |  Time to Live |    Protocol   |            Checksum C         | │ IPv4 Header                        
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |                         Source Address                        | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |                      Destination Address                      | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
-                                                                                                        
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
- |      Type     |      Code     |            Checksum D         | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ IPv4 Payload (ICMP TE Header)      
- |                             Unused                            | │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
-                                                                   │                                    
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
- |Version|  IHL  |Type of Service|          Total Length         | │ │                                  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
- |         Identification        |Flags|     Fragment Offset     | │ │                                  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
- |  Time to Live |    Protocol   |            Checksum A'        | │ │ ICMP TE Payload (OD IPv4 Header) 
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
- |                         Source Address                        | │ │                                  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
- |                      Destination Address                      | │ │                                  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
-                                                                   │ │                                  
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │                                
- |          Source Port          |        Destination Port       | │ │ │                                
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │ OD IPv4 Payload (UDP header)   
- |             Length            |            Checksum B'        | │ │ │                                
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │                                
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|Version|  IHL  |Type of Service|          Total Length         | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|         Identification        |Flags|     Fragment Offset     | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|  Time to Live |    Protocol   |            Checksum C         | │ IPv4 Header                        
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|                         Source Address                        | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|                      Destination Address                      | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+                                                                                                       
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+|      Type     |      Code     |            Checksum D         | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ IPv4 Payload (ICMP TE Header)      
+|                             Unused                            | │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │                                    
+                                                                  │                                    
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+|Version|  IHL  |Type of Service|          Total Length         | │ │                                  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+|         Identification        |Flags|     Fragment Offset     | │ │                                  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+|  Time to Live |    Protocol   |            Checksum A'        | │ │ ICMP TE Payload (OD IPv4 Header) 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+|                         Source Address                        | │ │                                  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+|                      Destination Address                      | │ │                                  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │                                  
+                                                                  │ │                                  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │                                
+|          Source Port          |        Destination Port       | │ │ │                                
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │ OD IPv4 Payload (UDP header)   
+|             Length            |            Checksum B'        | │ │ │                                
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ │ │ │
 ```
 
 If `Checksum B'` in the UDP packet nested in the ICMP error does not match `Checksum B` in the UDP packet that was sent
@@ -488,7 +488,7 @@ This release introduces the Trippy public API which can be used to build custom 
 The full set of libraries exposed is:
 
 | Crate                                                | Description                                          |
-|------------------------------------------------------|------------------------------------------------------|
+| ---------------------------------------------------- | ---------------------------------------------------- |
 | [trippy](https://docs.rs/trippy)                     | Common entrypoint crate                              |
 | [trippy-core](https://docs.rs/trippy-core)           | The core Trippy tracing functionality                |
 | [trippy-packet](https://docs.rs/trippy-packet)       | Packet wire formats and packet parsing functionality |
@@ -707,12 +707,12 @@ For more information, try '--help'.
 
 This covers all "duration" parameters, namely:
 
-* `min_round_duration`
-* `max_round_duration`
-* `grace_duration`
-* `read_timeout`
-* `dns_timeout`
-* `tui_refresh_rate`
+- `min_round_duration`
+- `max_round_duration`
+- `grace_duration`
+- `read_timeout`
+- `dns_timeout`
+- `tui_refresh_rate`
 
 ### Renamed Configuration
 
@@ -1338,8 +1338,8 @@ Happy Tracing!
 
 ## New Contributors
 
-* @c-git made their first contribution in https://github.com/fujiapple852/trippy/pull/632
-* @trkelly23 made their first contribution in https://github.com/fujiapple852/trippy/pull/788
+- @c-git made their first contribution in https://github.com/fujiapple852/trippy/pull/632
+- @trkelly23 made their first contribution in https://github.com/fujiapple852/trippy/pull/788
 
 # 0.8.0
 
@@ -1493,7 +1493,7 @@ My thanks, as ever, to all Trippy contributors!
 
 ## New Contributors
 
-* @utkarshgupta137 made their first contribution in https://github.com/fujiapple852/trippy/pull/537
+- @utkarshgupta137 made their first contribution in https://github.com/fujiapple852/trippy/pull/537
 
 # 0.7.0
 

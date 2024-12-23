@@ -24,4 +24,3 @@ For deeper diagnostics you can run tools such as https://www.wireshark.org and h
 icmp requests and responses are being send and received.
 
 <a name="windows-defender"></a>
-
