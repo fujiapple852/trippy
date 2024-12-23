@@ -14,12 +14,10 @@
 #
 # All sections and all items within each section are non-mandatory.
 
-
 #
 # General Trippy configuration.
 #
 [trippy]
-
 # The Trippy mode.
 #
 # Allowed values are:
@@ -64,12 +62,10 @@ log-filter = "trippy=debug"
 #  full         - Display all event spans
 log-span-events = "off"
 
-
 #
 # Tracing strategy configuration.
 #
 [strategy]
-
 # The tracing protocol.
 #
 # Allowed values are:
@@ -90,22 +86,22 @@ addr-family = "ipv4-then-ipv6"
 # The target port (TCP & UDP only) [default: 80]
 #
 # Applicable for TCP and UDP protocols only.
-#target-port = 80
+# target-port = 80
 
 # The source port (TCP & UDP only) [default: auto]
 #
 # Applicable for TCP and UDP protocols only.
-#source-port = 1234
+# source-port = 1234
 
 # The source IP address [default: auto]
 #
 # If unspecified the source address will be chosen automatically based on the tracing target.
-#source-address = "1.2.3.4"
+# source-address = "1.2.3.4"
 
 # The network interface [default: auto]
 #
 # If not specified the interface is chosen based on the source-address.
-#interface = "en0"
+# interface = "en0"
 
 # The minimum duration of every round [default: 1s]
 #
@@ -186,12 +182,10 @@ max-samples = 256
 # The maximum number of flows to record [default: 64]
 max-flows = 64
 
-
 #
 # DNS configuration.
 #
 [dns]
-
 # How DNS queries are resolved
 #
 # Allowed values are:
@@ -223,7 +217,6 @@ dns-ttl = "300s"
 # Report generation configuration.
 #
 [report]
-
 # The number of report cycles to run [default: 10]
 #
 # Only applicable for modes pretty, markdown, csv and json.
@@ -233,7 +226,6 @@ report-cycles = 10
 # General Tui Configuration.
 #
 [tui]
-
 # How to render addresses.
 #
 # Allowed values are:
@@ -303,7 +295,7 @@ tui-icmp-extension-mode = "off"
 #   MaxMind "GeoLite2 City"
 #   IPinfo "IP to Country + ASN Database"
 #   IPinfo "IP to Geolocation Extended Database"
-#geoip-mmdb-file = "/path/to/geoip_file.mmdb"
+# geoip-mmdb-file = "/path/to/geoip_file.mmdb"
 
 # How to render GeoIp information.
 #
@@ -328,10 +320,10 @@ tui-preserve-screen = false
 tui-refresh-rate = "100ms"
 
 # The maximum ttl of hops which will be masked for privacy [default: none]
-#tui-privacy-max-ttl = 0
+# tui-privacy-max-ttl = 0
 
 # The locale to use for Tui [default: auto]
-#tui-locale = "en-US"
+# tui-locale = "en-US"
 
 # Tui color theme configuration.
 #
@@ -381,7 +373,6 @@ map-info-panel-bg-color = "black"
 map-info-panel-text-color = "gray"
 info-bar-bg-color = "white"
 info-bar-text-color = "black"
-
 
 # Tui key bindings Configuration.
 #

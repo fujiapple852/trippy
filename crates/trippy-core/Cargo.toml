@@ -17,30 +17,21 @@ trippy-packet.workspace = true
 trippy-privilege.workspace = true
 arrayvec.workspace = true
 bitflags.workspace = true
-derive_more = { workspace = true, default-features = false, features = [ "mul", "add", "add_assign" ] }
-indexmap = { workspace = true, default-features = false, features = [ "std" ] }
+derive_more = { workspace = true, default-features = false, features = ["mul", "add", "add_assign"] }
+indexmap = { workspace = true, default-features = false, features = ["std"] }
 itertools.workspace = true
 parking_lot.workspace = true
-socket2 = { workspace = true, features = [ "all" ] }
+socket2 = { workspace = true, features = ["all"] }
 thiserror.workspace = true
 tracing.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-nix = { workspace = true, default-features = false, features = [ "user", "poll", "net" ] }
+nix = { workspace = true, default-features = false, features = ["user", "poll", "net"] }
 
 [target.'cfg(windows)'.dependencies]
 paste.workspace = true
 widestring.workspace = true
-windows-sys = { workspace = true, features = [
-    "Win32_Foundation",
-    "Win32_Networking_WinSock",
-    "Win32_System_IO",
-    "Win32_NetworkManagement_IpHelper",
-    "Win32_NetworkManagement_Ndis",
-    "Win32_System_IO",
-    "Win32_System_Threading",
-    "Win32_Security",
-] }
+windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Networking_WinSock", "Win32_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_System_IO", "Win32_System_Threading", "Win32_Security"] }
 
 [dev-dependencies]
 anyhow.workspace = true
@@ -48,16 +39,16 @@ hex-literal.workspace = true
 ipnetwork.workspace = true
 mockall.workspace = true
 rand.workspace = true
-serde = { workspace = true, default-features = false, features = [ "derive" ] }
+serde = { workspace = true, default-features = false, features = ["derive"] }
 test-case.workspace = true
 tokio-util.workspace = true
-tokio = { workspace = true, features = [ "full" ] }
+tokio = { workspace = true, features = ["full"] }
 toml.workspace = true
-tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "fmt" ] }
+tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "fmt"] }
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun2 = { workspace = true, features = [ "async" ] }
+tun2 = { workspace = true, features = ["async"] }
 
 [features]
 # Enable simulation integration tests

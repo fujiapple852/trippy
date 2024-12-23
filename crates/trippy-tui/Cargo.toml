@@ -18,21 +18,12 @@ trippy-core.workspace = true
 trippy-privilege.workspace = true
 trippy-dns.workspace = true
 anyhow.workspace = true
-chrono = { workspace = true, default-features = false, features = [ "clock" ] }
-clap = { workspace = true,  default-features = false, features = [
-    "cargo",
-    "derive",
-    "wrap_help",
-    "usage",
-    "unstable-styles",
-    "color",
-    "suggestions",
-    "error-context"
-] }
+chrono = { workspace = true, default-features = false, features = ["clock"] }
+clap = { workspace = true, default-features = false, features = ["cargo", "derive", "wrap_help", "usage", "unstable-styles", "color", "suggestions", "error-context"] }
 clap_complete.workspace = true
 clap_mangen.workspace = true
 comfy-table.workspace = true
-crossterm = { workspace = true,  default-features = false, features = [ "events", "windows" ] }
+crossterm = { workspace = true, default-features = false, features = ["events", "windows"] }
 csv.workspace = true
 encoding_rs_io.workspace = true
 etcetera.workspace = true
@@ -41,14 +32,14 @@ itertools.workspace = true
 maxminddb.workspace = true
 petgraph.workspace = true
 ratatui.workspace = true
-serde = { workspace = true, default-features = false, features = [ "derive" ] }
+serde = { workspace = true, default-features = false, features = ["derive"] }
 serde_json.workspace = true
 serde_with.workspace = true
-strum = { workspace = true, default-features = false, features = [ "std", "derive" ] }
+strum = { workspace = true, default-features = false, features = ["std", "derive"] }
 sys-locale.workspace = true
-toml = { workspace = true, default-features = false, features = [ "parse" ] }
+toml = { workspace = true, default-features = false, features = ["parse"] }
 tracing-chrome.workspace = true
-tracing-subscriber = { workspace = true, default-features = false, features = [ "env-filter", "json" ] }
+tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "json"] }
 tracing.workspace = true
 unicode-width.workspace = true
 
