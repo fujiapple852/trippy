@@ -5,7 +5,10 @@ sidebar:
   order: 2
 ---
 
-Trippy can be installed on a variety of platforms using a variety of package managers. The following sections provide instructions for installing Trippy on your platform.
+The following sections provide instructions for installing Trippy on your platform.
+
+Trippy runs on Linux, BSD, macOS, and Windows. It can be installed from most common package managers, precompiled
+binaries, or source.
 
 ## Distributions
 
@@ -43,7 +46,7 @@ apt update && apt install trippy
 :::note
 Only available for Ubuntu 24.04 (`Noble`) and 22.04 (`Jammy`).
 :::
- 
+
 ### Snap (Linux)
 
 [![trippy](https://snapcraft.io/trippy/badge.svg)](https://snapcraft.io/trippy)
