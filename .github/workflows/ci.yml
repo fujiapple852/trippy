@@ -222,3 +222,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dprint/check@v2.2
+
+  conventional-commits:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conventional Commits Lint
+        uses: webiny/action-conventional-commits@v1.3.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          allowed-commit-types: "feat,fix,chore,docs,style,refactor,test,build,ci,revert"
