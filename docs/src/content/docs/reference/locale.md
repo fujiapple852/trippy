@@ -3,7 +3,7 @@ title: Locale Reference
 description: A reference for customizing the Trippy TUI locale.
 sidebar:
   order: 6
-  badge: 
+  badge:
     text: New
     variant: note
 ---
@@ -12,7 +12,7 @@ The following table lists the supported locales for the Tui. These can be overri
 line option or in the `tui-locale` attribute in the `tui` section of the configuration file.
 
 | Locale | Language   | Region |
-|--------|------------|--------|
+| ------ | ---------- | ------ |
 | `zh`   | Chinese    | all    |
 | `en`   | English    | all    |
 | `fr`   | French     | all    |
@@ -25,7 +25,7 @@ line option or in the `tui-locale` attribute in the `tui` section of the configu
 | `tr`   | Turkish    | all    |
 
 :::note
-If you are able to help validate translations for Trippy, or if you wish to add translations for any additional 
-languages, please see the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for details of how to 
+If you are able to help validate translations for Trippy, or if you wish to add translations for any additional
+languages, please see the [tracking issue](https://github.com/fujiapple852/trippy/issues/506) for details of how to
 contribute.
 :::

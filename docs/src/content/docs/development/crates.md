@@ -6,7 +6,7 @@ description: A reference for the Trippy crates.
 The following table lists the crates that are provided by Trippy. See [crates](crates/README.md) for more information.
 
 | Crate                                                         | Description                                                                         |
-|---------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [trippy](https://crates.io/crates/trippy)                     | A binary crate for the Trippy application and a library crate                       |
 | [trippy-core](https://crates.io/crates/trippy-core)           | A library crate providing the core Trippy tracing functionality                     |
 | [trippy-packet](https://crates.io/crates/trippy-packet)       | A library crate which provides packet wire formats and packet parsing functionality |

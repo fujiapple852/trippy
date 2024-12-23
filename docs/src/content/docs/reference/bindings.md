@@ -9,7 +9,7 @@ The following table lists the default Tui command key bindings. These can be ove
 command line option or in the `bindings` section of the configuration file.
 
 | Command                    | Description                                     | Default   |
-|----------------------------|-------------------------------------------------|-----------|
+| -------------------------- | ----------------------------------------------- | --------- |
 | `toggle-help`              | Toggle help                                     | `h`       |
 | `toggle-help-alt`          | Toggle help (alternative binding)               | `?`       |
 | `toggle-settings`          | Toggle settings                                 | `s`       |
@@ -23,7 +23,7 @@ command line option or in the `bindings` section of the configuration file.
 | `next-hop`                 | Select next hop                                 | `down`    |
 | `previous-hop`             | Select previous hop                             | `up`      |
 | `next-trace`               | Select next trace                               | `right`   |
-| `previous-trace`           | Select previous trace                           | `left`    | 
+| `previous-trace`           | Select previous trace                           | `left`    |
 | `next-hop-address`         | Select next hop address                         | `.`       |
 | `previous-hop-address`     | Select previous hop address                     | `,`       |
 | `address-mode-ip`          | Show IP address only                            | `i`       |

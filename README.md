@@ -56,7 +56,7 @@ apt install trippy
 ```
 
 > ⓘ Note:
-> 
+>
 > Only available for Debian 13 (`trixie`) and later.
 
 ### PPA (Ubuntu)
