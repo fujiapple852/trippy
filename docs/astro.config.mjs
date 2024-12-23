@@ -31,6 +31,7 @@ export default defineConfig({
 			social: {
 				'github': 'https://github.com/fujiapple852/trippy',
 				'zulip': 'https://trippy.zulipchat.com',
+				'matrix': 'https://matrix.to/#/#trippy-dev:matrix.org',
 				'x.com': 'https://x.com/FujiApple852v2',
 			},
 			sidebar: [
