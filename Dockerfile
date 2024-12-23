@@ -1,4 +1,4 @@
-FROM rust:1.76 as build-env
+FROM rust:1.76 AS build-env
 RUN rustup target add x86_64-unknown-linux-musl
 WORKDIR /app
 COPY Cargo.toml /app
@@ -45,4 +45,4 @@ RUN cargo build --release --target=x86_64-unknown-linux-musl
 FROM alpine
 RUN apk update && apk add ncurses
 COPY --from=build-env /app/target/x86_64-unknown-linux-musl/release/trip /
-ENTRYPOINT [ "./trip" ]
+ENTRYPOINT ["./trip"]
