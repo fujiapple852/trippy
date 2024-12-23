@@ -7,6 +7,10 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Trippy',
+            customCss: [
+              // Relative path to your custom CSS file
+              './src/styles/custom.css',
+            ],
              editLink: {
                baseUrl: 'https://github.com/fujiapple852/trippy/edit/master/docs/',
              },
