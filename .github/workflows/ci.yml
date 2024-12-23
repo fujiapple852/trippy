@@ -216,3 +216,9 @@ jobs:
         run: cargo msrv verify --output-format json --manifest-path crates/trippy-dns/Cargo.toml -- cargo check
       - name: check msrv for trippy-privilege
         run: cargo msrv verify --output-format json --manifest-path crates/trippy-privilege/Cargo.toml -- cargo check
+
+  style:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dprint/check@v2.2
