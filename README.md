@@ -24,7 +24,7 @@ issues.
 
 See the [getting started](https://trippy.rs/start/getting-started) guide.
 
-### Install:
+### Install
 
 Trippy runs on Linux, BSD, macOS, and Windows. It can be installed from most package managers, precompiled binaries, or
 source.
@@ -176,7 +176,7 @@ docker run -it fujiapple/trippy
 
 See the [installation](https://trippy.rs/start/installation) guide for details of how to install Trippy on your system.
 
-### Run:
+### Run
 
 To run a basic trace to `example.com` with default settings, use the following command:
 
