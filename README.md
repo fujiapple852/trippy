@@ -55,7 +55,8 @@ cargo install trippy --locked
 apt install trippy
 ```
 
-> [!NOTE]
+> ⓘ Note:
+> 
 > Only available for Debian 13 (`trixie`) and later.
 
 ### PPA (Ubuntu)
@@ -67,7 +68,8 @@ add-apt-repository ppa:fujiapple/trippy
 apt update && apt install trippy
 ```
 
-> [!NOTE]
+> ⓘ Note:
+>
 > Only available for Ubuntu 24.04 (`Noble`) and 22.04 (`Jammy`).
 
 ### Snap (Linux)
