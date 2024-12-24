@@ -13,6 +13,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Incorrect cli help text for `--addr-family` ([#1456](https://github.com/fujiapple852/trippy/issues/1456))
+
 ## [0.12.1] - 2024-12-21
 
 ### Changed
