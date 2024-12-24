@@ -20,13 +20,13 @@ pub enum ResolveMethod {
 /// How to resolve IP addresses.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum IpAddrFamily {
-    /// Lookup Ipv4 only.
+    /// Lookup IPv4 only.
     Ipv4Only,
-    /// Lookup Ipv6 only.
+    /// Lookup IPv6 only.
     Ipv6Only,
-    /// Lookup Ipv6 with a fallback to Ipv4
+    /// Lookup IPv6 with a fallback to IPv4
     Ipv6thenIpv4,
-    /// Lookup Ipv4 with a fallback to Ipv6
+    /// Lookup IPv4 with a fallback to IPv6
     Ipv4thenIpv6,
 }
 
@@ -300,7 +300,7 @@ mod inner {
                 _ => {}
             }
 
-            // If the entry exists but has timed out, then set it as DnsEntry::Pending and enqueue
+            // If the entry exists but has timed out, then set it as `DnsEntry::Pending` and enqueue
             // it again.
             if let DnsEntry::Timeout(addr) = dns_entry.entry {
                 *self
@@ -315,7 +315,7 @@ mod inner {
 
             // If this is a newly added `DnsEntry` then send it to the channel to be resolved in the
             // background.  We do this after the above to ensure we aren't holding the
-            // lock on the cache, which is usd by the resolver and so would deadlock.
+            // lock on the cache, which is used by the resolver and so would deadlock.
             if enqueue {
                 if self
                     .tx

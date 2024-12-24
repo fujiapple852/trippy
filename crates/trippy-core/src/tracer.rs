@@ -389,7 +389,7 @@ impl Tracer {
         self.inner.grace_duration()
     }
 
-    /// The maximum number of inflight probes of the tracer.
+    /// The maximum number of in-flight probes of the tracer.
     #[must_use]
     pub fn max_inflight(&self) -> MaxInflight {
         self.inner.max_inflight()

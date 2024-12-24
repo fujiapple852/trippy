@@ -66,7 +66,7 @@ mod ipinfo {
     use serde::{Deserialize, Serialize};
     use serde_with::serde_as;
 
-    /// ipinfo.io's mmdb database format.
+    /// The IPinfo mmdb database format.
     ///
     /// Support both the "IP to Geolocation Extended" and "IP to Country + ASN" database formats.
     ///
@@ -284,7 +284,7 @@ impl From<(maxminddb::geoip2::City<'_>, &str)> for GeoIpCity {
 /// > and German.
 /// >
 /// > Please note: Not every place name is always available in each language. We recommend checking
-/// > English names as a default for cases where a localized name isn’t available in your preferred
+/// > English names as a default for cases where a localized name is not available in your preferred
 /// > language.
 const FALLBACK_LOCALE: &str = "en";
 

@@ -197,7 +197,7 @@ mod tests {
         assert!(TuiColumn::try_from(c).is_err());
     }
 
-    ///Test for TuiColumn type match of Display
+    ///Test for `TuiColumn` type match of Display
     #[test_case(TuiColumn::Ttl, "h")]
     #[test_case(TuiColumn::Host, "o")]
     #[test_case(TuiColumn::LossPct, "l")]

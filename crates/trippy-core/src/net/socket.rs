@@ -37,7 +37,7 @@ where
     fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> Result<()>;
     /// Returns true if the socket becomes readable before the timeout, false otherwise.
     fn is_readable(&mut self, timeout: Duration) -> Result<bool>;
-    /// Returns true if the socket is currently writeable, false otherwise.
+    /// Returns true if the socket is currently writable, false otherwise.
     fn is_writable(&mut self) -> Result<bool>;
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)>;
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;

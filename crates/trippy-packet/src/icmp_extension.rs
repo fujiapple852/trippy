@@ -1002,7 +1002,7 @@ pub mod extension_splitter {
             use crate::ipv4::Ipv4Packet;
             use std::net::Ipv4Addr;
 
-            // This ICMP TimeExceeded packet which contains single `MPLS` extension
+            // This ICMP `TimeExceeded` packet which contains single `MPLS` extension
             // object with a single member.  The packet does not have a `length`
             // field and is therefore rfc4884 non-complaint.
             #[test]
@@ -1076,7 +1076,7 @@ pub mod extension_splitter {
                 assert_eq!(1, mpls_stack_member.get_ttl());
             }
 
-            // This ICMP TimeExceeded packet does not have any ICMP extensions.
+            // This ICMP `TimeExceeded` packet does not have any ICMP extensions.
             // It has a rfc4884 complaint `length` field.
             #[test]
             fn test_split_extension_ipv4_time_exceeded_compliant_no_extension() {
@@ -1120,7 +1120,7 @@ pub mod extension_splitter {
             // an original datagram if length 68 octet (17 * 4 = 68) but is padded
             // to be 128 octets.
             //
-            // See https://github.com/fujiapple852/trippy/issues/804 for further
+            // See `https://github.com/fujiapple852/trippy/issues/804` for further
             // discussion and analysis of this case.
             #[test]
             fn test_split_extension_ipv4_time_exceeded_compliant_extension() {
