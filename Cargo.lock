@@ -2246,7 +2246,7 @@ dependencies = [
 
 [[package]]
 name = "trippy"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "trippy-core",
@@ -2258,7 +2258,7 @@ dependencies = [
 
 [[package]]
 name = "trippy-core"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -2291,7 +2291,7 @@ dependencies = [
 
 [[package]]
 name = "trippy-dns"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "crossbeam",
@@ -2304,7 +2304,7 @@ dependencies = [
 
 [[package]]
 name = "trippy-packet"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "hex-literal",
@@ -2314,7 +2314,7 @@ dependencies = [
 
 [[package]]
 name = "trippy-privilege"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "caps",
@@ -2326,7 +2326,7 @@ dependencies = [
 
 [[package]]
 name = "trippy-tui"
-version = "0.12.1"
+version = "0.13.0-dev"
 dependencies = [
  "anyhow",
  "chrono",

@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.12.1"
+version = "0.13.0-dev"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 documentation = "https://github.com/fujiapple852/trippy"
 homepage = "https://github.com/fujiapple852/trippy"
@@ -24,11 +24,11 @@ keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
 categories = ["command-line-utilities", "network-programming"]
 
 [workspace.dependencies]
-trippy-tui = { version = "0.12.1", path = "crates/trippy-tui" }
-trippy-core = { version = "0.12.1", path = "crates/trippy-core" }
-trippy-privilege = { version = "0.12.1", path = "crates/trippy-privilege" }
-trippy-dns = { version = "0.12.1", path = "crates/trippy-dns" }
-trippy-packet = { version = "0.12.1", path = "crates/trippy-packet" }
+trippy-tui = { version = "0.13.0-dev", path = "crates/trippy-tui" }
+trippy-core = { version = "0.13.0-dev", path = "crates/trippy-core" }
+trippy-privilege = { version = "0.13.0-dev", path = "crates/trippy-privilege" }
+trippy-dns = { version = "0.13.0-dev", path = "crates/trippy-dns" }
+trippy-packet = { version = "0.13.0-dev", path = "crates/trippy-packet" }
 anyhow = "1.0.91"
 arrayvec = { version = "0.7.6", default-features = false }
 bitflags = "2.6.0"
