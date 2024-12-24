@@ -1,0 +1,9 @@
+dev_comments = true
+skip_readme = false
+
+[Hunspell]
+lang = "en_US"
+search_dirs = ["."]
+extra_dictionaries = ["trippy.dic"]
+skip_os_lookups = false
+use_builtin = true
