@@ -574,7 +574,7 @@ pub enum TuiCommandItem {
     ToggleSettingsTrace,
     /// Toggle the DNS settings dialog tab.
     ToggleSettingsDns,
-    /// Toggle the Geoip settings dialog tab.
+    /// Toggle the `GeoIp` settings dialog tab.
     ToggleSettingsGeoip,
     /// Toggle the bindings settings dialog tab.
     ToggleSettingsBindings,

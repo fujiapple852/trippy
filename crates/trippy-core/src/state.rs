@@ -759,7 +759,7 @@ mod tests {
         type Error = anyhow::Error;
 
         fn try_from(value: String) -> Result<Self, Self::Error> {
-            // format: {ttl} {status} {duration} {host} {sequence} {src_port} {dest_port} {checksum}
+            // format: `{ttl} {status} {duration} {host} {sequence} {src_port} {dest_port} {checksum}`
             let values = value.split_ascii_whitespace().collect::<Vec<_>>();
             if values.len() == 9 {
                 let ttl = TimeToLive(u8::from_str(values[0])?);
@@ -767,7 +767,7 @@ mod tests {
                 let sequence = Sequence(u16::from_str(values[4])?);
                 let src_port = Port(u16::from_str(values[5])?);
                 let dest_port = Port(u16::from_str(values[6])?);
-                let round = RoundId(0); // note we inject this later, see ProbeRound
+                let round = RoundId(0); // note we inject this later, see `ProbeRound`
                 let sent = SystemTime::now();
                 let flags = Flags::empty();
                 let state = match state.as_str() {

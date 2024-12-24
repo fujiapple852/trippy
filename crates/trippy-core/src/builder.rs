@@ -865,7 +865,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(TARGET_ADDR, tracer.target_addr());
-        // note that source_addr is not set until the tracer is run
+        // note that `source_addr` is not set until the tracer is run
         assert_eq!(None, tracer.source_addr());
         assert_eq!(Some("eth0"), tracer.interface());
         assert_eq!(10, tracer.max_samples());

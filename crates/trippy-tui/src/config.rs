@@ -77,14 +77,14 @@ impl From<Protocol> for ProtocolConfig {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressFamilyConfig {
-    /// Ipv4 only.
+    /// IPv4 only.
     Ipv4,
-    /// Ipv6 only.
+    /// IPv6 only.
     Ipv6,
-    /// Ipv6 with a fallback to Ipv4
+    /// IPv6 with a fallback to IPv4
     #[serde(rename = "ipv6-then-ipv4")]
     Ipv6ThenIpv4,
-    /// Ipv4 with a fallback to Ipv6
+    /// IPv4 with a fallback to IPv6
     #[serde(rename = "ipv4-then-ipv6")]
     Ipv4ThenIpv6,
 }

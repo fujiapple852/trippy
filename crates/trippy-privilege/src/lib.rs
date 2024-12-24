@@ -99,7 +99,7 @@ pub enum Error {
     GetTokenInformationError,
 }
 
-/// Runtime platform privilege information.
+/// Run-time platform privilege information.
 #[derive(Debug)]
 pub struct Privilege {
     has_privileges: bool,

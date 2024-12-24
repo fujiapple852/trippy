@@ -1223,7 +1223,7 @@ mod state {
 
         /// Advance to the next round.
         ///
-        /// If, during the rond which just completed, we went above the max sequence number then we
+        /// If, during the round which just completed, we went above the max sequence number then we
         /// reset it here. We do this here to avoid having to deal with the sequence number
         /// wrapping during a round, which is more problematic.
         #[instrument(skip(self))]
@@ -1278,7 +1278,7 @@ mod state {
         fn test_state() {
             let mut state = TracerState::new(cfg(Sequence(33434)));
 
-            // Validate the initial TracerState
+            // Validate the initial `TracerState`
             assert_eq!(state.round, RoundId(0));
             assert_eq!(state.sequence, Sequence(33434));
             assert_eq!(state.round_sequence, Sequence(33434));
@@ -1300,7 +1300,7 @@ mod state {
             assert_eq!(probe_1.round, RoundId(0));
             assert_eq!(probe_1.sent, sent_1);
 
-            // Update the state of the probe 1 after receiving a TimeExceeded
+            // Update the state of the probe 1 after receiving a `TimeExceeded`
             let received_1 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
             state.complete_probe(StrategyResponse {
@@ -1328,7 +1328,7 @@ mod state {
                 IcmpPacketType::TimeExceeded(IcmpPacketCode(1))
             );
 
-            // Validate the TracerState after the update
+            // Validate the `TracerState` after the update
             assert_eq!(state.round, RoundId(0));
             assert_eq!(state.sequence, Sequence(33435));
             assert_eq!(state.round_sequence, Sequence(33434));
@@ -1349,7 +1349,7 @@ mod state {
             // Advance to the next round
             state.advance_round(TimeToLive(1));
 
-            // Validate the TracerState after the round update
+            // Validate the `TracerState` after the round update
             assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33435));
             assert_eq!(state.round_sequence, Sequence(33435));
@@ -1375,7 +1375,7 @@ mod state {
             assert_eq!(probe_3.round, RoundId(1));
             assert_eq!(probe_3.sent, sent_3);
 
-            // Update the state of probe 2 after receiving a TimeExceeded
+            // Update the state of probe 2 after receiving a `TimeExceeded`
             let received_2 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
             state.complete_probe(StrategyResponse {
@@ -1391,7 +1391,7 @@ mod state {
             });
             let probe_2_recv = state.probe_at(Sequence(33435));
 
-            // Validate the TracerState after the update to probe 2
+            // Validate the `TracerState` after the update to probe 2
             assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33437));
             assert_eq!(state.round_sequence, Sequence(33435));
@@ -1410,7 +1410,7 @@ mod state {
                 assert_eq!(ProbeStatus::Awaited(probe_3), probe_next2.clone());
             }
 
-            // Update the state of probe 3 after receiving a EchoReply
+            // Update the state of probe 3 after receiving a `EchoReply`
             let received_3 = SystemTime::now();
             let host = IpAddr::V4(Ipv4Addr::LOCALHOST);
             state.complete_probe(StrategyResponse {
@@ -1426,7 +1426,7 @@ mod state {
             });
             let probe_3_recv = state.probe_at(Sequence(33436));
 
-            // Validate the TracerState after the update to probe 3
+            // Validate the `TracerState` after the update to probe 3
             assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, Sequence(33437));
             assert_eq!(state.round_sequence, Sequence(33435));
@@ -1448,7 +1448,7 @@ mod state {
 
         #[test]
         fn test_sequence_wrap1() {
-            // Start from MAX_SEQUENCE - 1 which is (65279 - 1) == 65278
+            // Start from `MAX_SEQUENCE` - 1 which is (65279 - 1) == 65278
             let initial_sequence = Sequence(65278);
             let mut state = TracerState::new(cfg(initial_sequence));
             assert_eq!(state.round, RoundId(0));
@@ -1478,7 +1478,7 @@ mod state {
                     .for_each(|p| assert!(matches!(p, ProbeStatus::NotSent)));
             }
 
-            // Advance the round, which will wrap the sequence back to initial_sequence
+            // Advance the round, which will wrap the sequence back to `initial_sequence`
             state.advance_round(TimeToLive(1));
             assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, initial_sequence);

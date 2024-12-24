@@ -257,25 +257,25 @@ impl SocketImpl {
 
     #[allow(unsafe_code)]
     const fn new_wsa_data() -> WSADATA {
-        // Safety: an all-zero value is valid for WSADATA.
+        // Safety: an all-zero value is valid for `WSADATA`.
         unsafe { zeroed::<WSADATA>() }
     }
 
     #[allow(unsafe_code)]
     const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
-        // Safety: an all-zero value is valid for SOCKADDR_STORAGE.
+        // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
         unsafe { zeroed::<SOCKADDR_STORAGE>() }
     }
 
     #[allow(unsafe_code)]
     const fn new_overlapped() -> OVERLAPPED {
-        // Safety: an all-zero value is valid for OVERLAPPED.
+        // Safety: an all-zero value is valid for `OVERLAPPED.`
         unsafe { zeroed::<OVERLAPPED>() }
     }
 
     #[allow(unsafe_code)]
     const fn new_icmp_error_info() -> ICMP_ERROR_INFO {
-        // Safety: an all-zero value is valid for ICMP_ERROR_INFO.
+        // Safety: an all-zero value is valid for `ICMP_ERROR_INFO`.
         unsafe { zeroed::<ICMP_ERROR_INFO>() }
     }
 }
@@ -580,7 +580,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    // Interestingly, Socket2 sockets don't seem to call closesocket on drop??
+    // Interestingly, `Socket2` sockets don't seem to call `closesocket` on drop??
     #[instrument(skip(self))]
     fn close(&mut self) -> IoResult<()> {
         syscall!(closesocket(self.inner.as_raw_socket() as _), |res| res
@@ -590,7 +590,7 @@ impl Socket for SocketImpl {
     }
 }
 
-// Note that we handle `WSAENOBUFS`, which can occurs when calling send_to()
+// Note that we handle `WSAENOBUFS`, which can occurs when calling `send_to()`
 // for ICMP and UDP.  We return it as `NetUnreachable` to piggyback on the
 // existing error handling.
 impl From<&StdIoError> for ErrorKind {
@@ -651,7 +651,7 @@ fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
         |res| res == SOCKET_ERROR
     )
     .map_err(|err| IoError::Other(err, IoOperation::SioRoutingInterfaceQuery))?;
-    // Note that the WSAIoctl call potentially returns multiple results (see
+    // Note that the `WSAIoctl` call potentially returns multiple results (see
     // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     // TBD We choose the first one arbitrarily.
     let sockaddr = src.cast::<SOCKADDR_STORAGE>();
@@ -879,7 +879,7 @@ mod adapter {
             if self.next.is_null() {
                 None
             } else {
-                // Safety: `next` is not null and points to a valid IP_ADAPTER_ADDRESSES_LH
+                // Safety: `next` is not null and points to a valid `IP_ADAPTER_ADDRESSES_LH`
                 #[allow(unsafe_code)]
                 unsafe {
                     let friendly_name = WideCString::from_ptr_str((*self.next).FriendlyName)

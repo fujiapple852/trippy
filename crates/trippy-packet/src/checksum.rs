@@ -1,6 +1,6 @@
 //! Checksum implementations for ICMP & UDP over IPv4 and IPV6.
 //!
-//! This code is derived from [`libpnet`] which is available under the Apache 2.0 licence.
+//! This code is derived from [`libpnet`] which is available under the Apache 2.0 license.
 //!
 //! [`libpnet`]: https://github.com/libpnet/libpnet
 

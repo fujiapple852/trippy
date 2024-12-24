@@ -1697,7 +1697,7 @@ mod tests {
         Ok(())
     }
 
-    // This IPv4/ICMP TimeExceeded packet has code 1 ("Fragment reassembly
+    // This IPv4/ICMP `TimeExceeded` packet has code 1 ("Fragment reassembly
     // time exceeded") and must be ignored.
     //
     // Note this is not real packet and so the length and checksum are not
@@ -1726,7 +1726,7 @@ mod tests {
         Ok(())
     }
 
-    // This IPv4/ICMP TimeExceeded packet has an UDP Original Datagram
+    // This IPv4/ICMP `TimeExceeded` packet has an UDP Original Datagram
     // with a bogus length (claimed 2040 vs actual 56).
     //
     // This is a test to ensure that the UDP checksum validation is working for
