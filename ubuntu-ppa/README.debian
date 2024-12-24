@@ -39,11 +39,11 @@ The provided `debian` directory targets the Ubuntu Jammy 22.04 LTS
 distribution. It is possible to target other distributions simply
 by editing the `debian/changelog` file and changing the version and
 distribution fields:
-    trippy (0.12.1-1ubuntu0.1~jammy1) jammy; urgency=medium
-    trippy (0.12.1-1ubuntu0.1~mantis1) mantis; urgency=medium
-    trippy (0.12.1-1ubuntu0.1~noble1) noble; urgency=medium
+    trippy (0.13.0-1ubuntu0.1~jammy1) jammy; urgency=medium
+    trippy (0.13.0-1ubuntu0.1~mantis1) mantis; urgency=medium
+    trippy (0.13.0-1ubuntu0.1~noble1) noble; urgency=medium
 It is preferable to use `debchange` for this, eg:
-    debchange --distribution noble --newversion 0.12.1-1ubuntu0.1~noble1
+    debchange --distribution noble --newversion 0.13.0-1ubuntu0.1~noble1
 
 ---
 
