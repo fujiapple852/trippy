@@ -43,7 +43,7 @@ serde = { workspace = true, default-features = false, features = ["derive"] }
 test-case.workspace = true
 tokio-util.workspace = true
 tokio = { workspace = true, features = ["full"] }
-toml.workspace = true
+toml = { workspace = true, default-features = false, features = ["parse"] }
 tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "fmt"] }
 
 # see https://github.com/meh/rust-tun/pull/74
