@@ -98,6 +98,7 @@ mod inner {
     use hickory_resolver::error::{ResolveError, ResolveErrorKind};
     use hickory_resolver::proto::error::ProtoError;
     use hickory_resolver::proto::rr::RecordType;
+    use hickory_resolver::system_conf::read_system_conf;
     use hickory_resolver::{Name, Resolver};
     use itertools::{Either, Itertools};
     use parking_lot::RwLock;
@@ -166,15 +167,21 @@ mod inner {
                 DnsProvider::DnsLookup
             } else {
                 let mut options = ResolverOpts::default();
-                options.timeout = config.timeout;
-                options.ip_strategy = match config.addr_family {
+                let ip_strategy = match config.addr_family {
                     IpAddrFamily::Ipv4Only => LookupIpStrategy::Ipv4Only,
                     IpAddrFamily::Ipv6Only => LookupIpStrategy::Ipv6Only,
                     IpAddrFamily::Ipv6thenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
                     IpAddrFamily::Ipv4thenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
                 };
+                options.timeout = config.timeout;
+                options.ip_strategy = ip_strategy;
                 let res = match config.resolve_method {
-                    ResolveMethod::Resolv => Resolver::from_system_conf(),
+                    ResolveMethod::Resolv => {
+                        let (resolver_cfg, mut options) = read_system_conf()?;
+                        options.timeout = config.timeout;
+                        options.ip_strategy = ip_strategy;
+                        Resolver::new(resolver_cfg, options)
+                    }
                     ResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
                     ResolveMethod::Cloudflare => {
                         Resolver::new(ResolverConfig::cloudflare(), options)
