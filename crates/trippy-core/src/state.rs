@@ -528,7 +528,7 @@ impl FlowState {
 mod state_updater {
     use crate::state::FlowState;
     use crate::types::Checksum;
-    use crate::{NatStatus, ProbeStatus, Round};
+    use crate::{NatStatus, ProbeStatus, Round, TimeToLive};
     use std::time::Duration;
 
     /// Update the state of a `FlowState` from a `Round`.
@@ -632,16 +632,9 @@ mod state_updater {
                     hop.last_sequence = awaited.sequence.0;
                     if self.forward_loss {
                         hop.total_backward_lost += 1;
-                    } else {
-                        let remaining = &self.round.probes[index..];
-                        let all_awaited = remaining
-                            .iter()
-                            .skip(1)
-                            .all(|p| matches!(p, ProbeStatus::Awaited(_) | ProbeStatus::Skipped));
-                        if all_awaited {
-                            hop.total_forward_lost += 1;
-                            self.forward_loss = true;
-                        }
+                    } else if is_forward_loss(self.round.probes, awaited.ttl) {
+                        hop.total_forward_lost += 1;
+                        self.forward_loss = true;
                     }
                 }
                 ProbeStatus::Failed(failed) => {
@@ -663,6 +656,28 @@ mod state_updater {
                 ProbeStatus::NotSent | ProbeStatus::Skipped => {}
             }
         }
+    }
+
+    /// Determine if forward loss has occurred at a given time-to-live.
+    ///
+    /// This is determined by checking if all probes after the awaited probe are all also awaited.
+    fn is_forward_loss(probes: &[ProbeStatus], awaited_ttl: TimeToLive) -> bool {
+        // Skip all probes that have a ttl less than or equal to the awaited ttl. What remains
+        // are the probes we are interested in.
+        let mut remaining = probes
+            .iter()
+            .skip_while(|p| match p {
+                ProbeStatus::Awaited(a) => a.ttl <= awaited_ttl,
+                ProbeStatus::Complete(c) => c.ttl <= awaited_ttl,
+                ProbeStatus::Failed(f) => f.ttl <= awaited_ttl,
+                ProbeStatus::NotSent | ProbeStatus::Skipped => true,
+            })
+            .peekable();
+        let is_empty = remaining.peek().is_none();
+        let all_awaited =
+            remaining.all(|p| matches!(p, ProbeStatus::Awaited(_) | ProbeStatus::Skipped));
+        // If there is at least one probe remaining and all are awaited then we have forward loss.
+        !is_empty && all_awaited
     }
 
     /// Determine the NAT detection status.
@@ -699,7 +714,80 @@ mod state_updater {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use crate::probe::ProbeFailed;
+        use crate::{
+            Flags, IcmpPacketType, Port, Probe, ProbeComplete, RoundId, Sequence, TimeToLive,
+            TraceId,
+        };
+        use std::net::{IpAddr, Ipv4Addr};
+        use std::time::SystemTime;
         use test_case::test_case;
+
+        #[test_case(false, &[], 1; "no forward loss no probes ttl 1")]
+        #[test_case(true, &[('a', 1), ('a', 2)], 1; "forward loss AA ttl 1")]
+        #[test_case(false, &[('a', 1), ('c', 2)], 1; "no forward loss AC ttl 1")]
+        #[test_case(false, &[('a', 1), ('f', 2)], 1; "no forward loss AF ttl 1")]
+        #[test_case(false, &[('a', 1), ('n', 2)], 1; "no forward loss AN ttl 1")]
+        #[test_case(false, &[('a', 1), ('c', 2), ('a', 3), ('a', 4)], 1; "no forward loss ACAA ttl 1")]
+        #[test_case(true, &[('a', 1), ('c', 2), ('a', 3), ('a', 4)], 3; "forward loss ACAA ttl 3")]
+        #[test_case(false, &[('a', 1), ('c', 2), ('a', 3), ('a', 4)], 4; "no forward loss ACAA ttl 4")]
+        #[test_case(false, &[('a', 1), ('f', 2), ('n', 3), ('a', 4)], 4; "no forward loss AFAN ttl 1")]
+        #[test_case(true, &[('a', 4), ('a', 5)], 4; "forward loss AA non-default minimum ttl 4")]
+        #[test_case(false, &[('a', 4), ('c', 5)], 4; "no forward loss AC non-default minimum ttl 4")]
+        #[test_case(false, &[('a', 4), ('c', 5), ('a', 6), ('a', 7)], 4; "no forward loss ACAA non-default minimum ttl 4")]
+        #[test_case(true, &[('a', 4), ('c', 5), ('a', 6), ('a', 7)], 6; "forward loss ACAA non-default minimum ttl 6")]
+        fn test_is_forward_loss(expected: bool, probes: &[(char, u8)], awaited_ttl: u8) {
+            assert!(awaited_ttl > 0);
+            let probes = probes
+                .iter()
+                .map(|(typ, ttl)| {
+                    assert!(matches!(typ, 'n' | 's' | 'f' | 'a' | 'c'));
+                    if *ttl == awaited_ttl {
+                        assert!(matches!(typ, 'a'));
+                    }
+                    match typ {
+                        'n' => ProbeStatus::NotSent,
+                        's' => ProbeStatus::Skipped,
+                        'f' => ProbeStatus::Failed(ProbeFailed {
+                            sequence: Sequence::default(),
+                            identifier: TraceId::default(),
+                            src_port: Port::default(),
+                            dest_port: Port::default(),
+                            ttl: TimeToLive(*ttl),
+                            round: RoundId::default(),
+                            sent: SystemTime::now(),
+                        }),
+                        'a' => ProbeStatus::Awaited(Probe {
+                            sequence: Sequence::default(),
+                            identifier: TraceId::default(),
+                            src_port: Port::default(),
+                            dest_port: Port::default(),
+                            ttl: TimeToLive(*ttl),
+                            round: RoundId(0),
+                            sent: SystemTime::now(),
+                            flags: Flags::empty(),
+                        }),
+                        'c' => ProbeStatus::Complete(ProbeComplete {
+                            sequence: Sequence::default(),
+                            identifier: TraceId::default(),
+                            src_port: Port::default(),
+                            dest_port: Port::default(),
+                            ttl: TimeToLive(*ttl),
+                            round: RoundId::default(),
+                            sent: SystemTime::now(),
+                            host: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                            received: SystemTime::now(),
+                            icmp_packet_type: IcmpPacketType::NotApplicable,
+                            expected_udp_checksum: None,
+                            actual_udp_checksum: None,
+                            extensions: None,
+                        }),
+                        _ => unreachable!(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(is_forward_loss(&probes, TimeToLive(awaited_ttl)), expected);
+        }
 
         #[test_case(123, 123, None => (NatStatus::NotDetected, 123); "first hop matching checksum")]
         #[test_case(123, 321, None => (NatStatus::Detected, 321); "first hop non-matching checksum")]
@@ -903,6 +991,7 @@ mod tests {
     #[test_case(file!("nat.toml"))]
     #[test_case(file!("minimal.toml"))]
     #[test_case(file!("floss_bloss.toml"))]
+    #[test_case(file!("non_default_minimum_ttl.toml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,
