@@ -9,5 +9,5 @@ publish = false
 [dependencies]
 trippy = { version = "0.13.0-dev", path = "../../crates/trippy", default-features = false, features = ["core", "dns"] }
 anyhow = "1.0.86"
-itertools = "0.13.0"
+itertools = "0.14.0"
 clap = { version = "4.5.7", features = ["derive"] }
