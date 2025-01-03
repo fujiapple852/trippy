@@ -3,7 +3,7 @@
 set -o errexit -o pipefail -o nounset
 
 # The Trippy version to release
-VERSION="0.13.0"
+VERSION="0.12.2"
 
 # The revision number for the PPA
 REVISION=1

@@ -501,7 +501,7 @@ This release introduces the Trippy public API which can be used to build custom 
 The full set of libraries exposed is:
 
 | Crate                                                | Description                                          |
-|------------------------------------------------------|------------------------------------------------------|
+| ---------------------------------------------------- | ---------------------------------------------------- |
 | [trippy](https://docs.rs/trippy)                     | Common entrypoint crate                              |
 | [trippy-core](https://docs.rs/trippy-core)           | The core Trippy tracing functionality                |
 | [trippy-packet](https://docs.rs/trippy-packet)       | Packet wire formats and packet parsing functionality |
