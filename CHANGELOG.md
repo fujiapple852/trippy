@@ -13,6 +13,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+## [0.12.2] - 2025-01-03
+
+### Fixed
+
+- Tracer panic when `--first-ttl` is greater than 1 ([#1460](https://github.com/fujiapple852/trippy/issues/1460))
+- IP `--addr-family` not respected for
+  `--dns-resolve-method resolv` ([#1461](https://github.com/fujiapple852/trippy/issues/1461))
 - Incorrect cli help text for `--addr-family` ([#1456](https://github.com/fujiapple852/trippy/issues/1456))
 
 ## [0.12.1] - 2024-12-21
@@ -418,7 +425,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.12.1...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.12.2...master
+[0.12.2]: https://github.com/fujiapple852/trippy/compare/0.12.1...0.12.2
 [0.12.1]: https://github.com/fujiapple852/trippy/compare/0.12.0...0.12.1
 [0.12.0]: https://github.com/fujiapple852/trippy/compare/0.11.0...0.12.0
 [0.11.0]: https://github.com/fujiapple852/trippy/compare/0.10.0...0.11.0
