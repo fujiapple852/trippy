@@ -2,7 +2,20 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
+# 0.12.2
+
+## Highlights
+
+This maintenance release of Trippy fixes a bug introduced in 0.12.0 which causes a tracer panic if `--first-ttl` is
+set to be greater than one. The release also addresses a longstanding bug which causes `--dns-resolve-method resolv` to
+ignore any value provided for `--addr-family` and therefore always use the default value of `ipv4`. Finally the help
+text for `--addr-family` has been corrected.
+
+See the main [0.12.0](https://github.com/fujiapple852/trippy/releases/tag/0.12.0) release note.
+
 # 0.12.1
+
+## Highlights
 
 This maintenance release of Trippy fixes a bug which prevented translations from working in Docker and also divests all
 internal use of `yaml` dependencies which were problematic to maintain on some platforms (thanks to @nc7s).
@@ -488,7 +501,7 @@ This release introduces the Trippy public API which can be used to build custom 
 The full set of libraries exposed is:
 
 | Crate                                                | Description                                          |
-| ---------------------------------------------------- | ---------------------------------------------------- |
+|------------------------------------------------------|------------------------------------------------------|
 | [trippy](https://docs.rs/trippy)                     | Common entrypoint crate                              |
 | [trippy-core](https://docs.rs/trippy-core)           | The core Trippy tracing functionality                |
 | [trippy-packet](https://docs.rs/trippy-packet)       | Packet wire formats and packet parsing functionality |
