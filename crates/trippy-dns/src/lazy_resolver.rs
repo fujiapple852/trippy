@@ -24,10 +24,13 @@ pub enum IpAddrFamily {
     Ipv4Only,
     /// Lookup IPv6 only.
     Ipv6Only,
-    /// Lookup IPv6 with a fallback to IPv4
+    /// Lookup IPv6 with a fallback to IPv4.
     Ipv6thenIpv4,
-    /// Lookup IPv4 with a fallback to IPv6
+    /// Lookup IPv4 with a fallback to IPv6.
     Ipv4thenIpv6,
+    /// Use the first IP address returned by the OS resolver when using `ResolveMethod::System`,
+    /// otherwise lookup IPv6 with a fallback to IPv4.
+    System,
 }
 
 impl Display for IpAddrFamily {
@@ -37,6 +40,7 @@ impl Display for IpAddrFamily {
             Self::Ipv6Only => write!(f, "Ipv6Only"),
             Self::Ipv6thenIpv4 => write!(f, "Ipv6thenIpv4"),
             Self::Ipv4thenIpv6 => write!(f, "Ipv4thenIpv6"),
+            Self::System => write!(f, "System"),
         }
     }
 }
@@ -167,11 +171,14 @@ mod inner {
                 DnsProvider::DnsLookup
             } else {
                 let mut options = ResolverOpts::default();
+                #[allow(clippy::match_same_arms)]
                 let ip_strategy = match config.addr_family {
                     IpAddrFamily::Ipv4Only => LookupIpStrategy::Ipv4Only,
                     IpAddrFamily::Ipv6Only => LookupIpStrategy::Ipv6Only,
                     IpAddrFamily::Ipv6thenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
                     IpAddrFamily::Ipv4thenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
+                    // see issue #1469
+                    IpAddrFamily::System => LookupIpStrategy::Ipv6thenIpv4,
                 };
                 options.timeout = config.timeout;
                 options.ip_strategy = ip_strategy;
@@ -211,6 +218,12 @@ mod inner {
         }
 
         pub(super) fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
+            fn partition(all: Vec<IpAddr>) -> (Vec<IpAddr>, Vec<IpAddr>) {
+                all.into_iter().partition_map(|ip| match ip {
+                    IpAddr::V4(_) => Either::Left(ip),
+                    IpAddr::V6(_) => Either::Right(ip),
+                })
+            }
             match &self.provider {
                 DnsProvider::TrustDns(resolver) => Ok(resolver
                     .lookup_ip(hostname)
@@ -218,15 +231,11 @@ mod inner {
                     .iter()
                     .collect::<Vec<_>>()),
                 DnsProvider::DnsLookup => {
-                    let (ipv4, ipv6): (Vec<_>, Vec<_>) = dns_lookup::lookup_host(hostname)
-                        .map_err(|err| Error::LookupFailed(Box::new(err)))?
-                        .into_iter()
-                        .partition_map(|ip| match ip {
-                            IpAddr::V4(_) => Either::Left(ip),
-                            IpAddr::V6(_) => Either::Right(ip),
-                        });
+                    let all = dns_lookup::lookup_host(hostname)
+                        .map_err(|err| Error::LookupFailed(Box::new(err)))?;
                     Ok(match self.config.addr_family {
                         IpAddrFamily::Ipv4Only => {
+                            let (ipv4, _) = partition(all);
                             if ipv4.is_empty() {
                                 vec![]
                             } else {
@@ -234,6 +243,7 @@ mod inner {
                             }
                         }
                         IpAddrFamily::Ipv6Only => {
+                            let (_, ipv6) = partition(all);
                             if ipv6.is_empty() {
                                 vec![]
                             } else {
@@ -241,6 +251,7 @@ mod inner {
                             }
                         }
                         IpAddrFamily::Ipv6thenIpv4 => {
+                            let (ipv4, ipv6) = partition(all);
                             if ipv6.is_empty() {
                                 ipv4
                             } else {
@@ -248,12 +259,14 @@ mod inner {
                             }
                         }
                         IpAddrFamily::Ipv4thenIpv6 => {
+                            let (ipv4, ipv6) = partition(all);
                             if ipv4.is_empty() {
                                 ipv6
                             } else {
                                 ipv4
                             }
                         }
+                        IpAddrFamily::System => all,
                     })
                 }
             }
