@@ -81,12 +81,15 @@ pub enum AddressFamilyConfig {
     Ipv4,
     /// IPv6 only.
     Ipv6,
-    /// IPv6 with a fallback to IPv4
+    /// IPv6 with a fallback to IPv4.
     #[serde(rename = "ipv6-then-ipv4")]
     Ipv6ThenIpv4,
-    /// IPv4 with a fallback to IPv6
+    /// IPv4 with a fallback to IPv6.
     #[serde(rename = "ipv4-then-ipv6")]
     Ipv4ThenIpv6,
+    /// Use the first IP address returned by the OS resolver when using
+    /// `DnsResolveMethodConfig::System`, otherwise lookup IPv6 with a fallback to IPv4.
+    System,
 }
 
 impl From<IpAddrFamily> for AddressFamilyConfig {
@@ -96,6 +99,7 @@ impl From<IpAddrFamily> for AddressFamilyConfig {
             IpAddrFamily::Ipv6Only => Self::Ipv6,
             IpAddrFamily::Ipv6thenIpv4 => Self::Ipv6ThenIpv4,
             IpAddrFamily::Ipv4thenIpv6 => Self::Ipv4ThenIpv6,
+            IpAddrFamily::System => Self::System,
         }
     }
 }
@@ -577,6 +581,7 @@ impl TrippyConfig {
             (false, false, AddressFamilyConfig::Ipv6, _) => IpAddrFamily::Ipv6Only,
             (false, false, AddressFamilyConfig::Ipv4ThenIpv6, _) => IpAddrFamily::Ipv4thenIpv6,
             (false, false, AddressFamilyConfig::Ipv6ThenIpv4, _) => IpAddrFamily::Ipv6thenIpv4,
+            (false, false, AddressFamilyConfig::System, _) => IpAddrFamily::System,
             (true, _, _, _) => IpAddrFamily::Ipv4Only,
             (_, true, _, _) => IpAddrFamily::Ipv6Only,
         };
@@ -779,6 +784,7 @@ const fn dns_resolve_family(dns_resolve_family: AddressFamilyConfig) -> IpAddrFa
         AddressFamilyConfig::Ipv6 => IpAddrFamily::Ipv6Only,
         AddressFamilyConfig::Ipv6ThenIpv4 => IpAddrFamily::Ipv6thenIpv4,
         AddressFamilyConfig::Ipv4ThenIpv6 => IpAddrFamily::Ipv4thenIpv6,
+        AddressFamilyConfig::System => IpAddrFamily::System,
     }
 }
 
@@ -1023,9 +1029,10 @@ fn validate_grace_duration(grace_duration: Duration) -> anyhow::Result<()> {
 fn validate_packet_size(address_family: IpAddrFamily, packet_size: u16) -> anyhow::Result<()> {
     let min_size = match address_family {
         IpAddrFamily::Ipv4Only => constants::MIN_PACKET_SIZE_IPV4,
-        IpAddrFamily::Ipv6Only | IpAddrFamily::Ipv6thenIpv4 | IpAddrFamily::Ipv4thenIpv6 => {
-            constants::MIN_PACKET_SIZE_IPV6
-        }
+        IpAddrFamily::Ipv6Only
+        | IpAddrFamily::Ipv6thenIpv4
+        | IpAddrFamily::Ipv4thenIpv6
+        | IpAddrFamily::System => constants::MIN_PACKET_SIZE_IPV6,
     };
     if (min_size..=constants::MAX_PACKET_SIZE).contains(&packet_size) {
         Ok(())
@@ -1260,8 +1267,9 @@ mod tests {
     #[test_case("trip example.com --addr-family ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family")]
     #[test_case("trip example.com --addr-family ipv4-then-ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "ipv4 then ipv6 address family")]
     #[test_case("trip example.com --addr-family ipv6-then-ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv6thenIpv4).build()); "ipv6 then ipv4 address family")]
+    #[test_case("trip example.com --addr-family system", Ok(cfg().addr_family(IpAddrFamily::System).build()); "system address family")]
     #[test_case("trip example.com -F ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "custom address family short")]
-    #[test_case("trip example.com --addr-family foo", Err(anyhow!("error: invalid value 'foo' for '--addr-family <ADDR_FAMILY>' [possible values: ipv4, ipv6, ipv6-then-ipv4, ipv4-then-ipv6] For more information, try '--help'.")); "invalid address family")]
+    #[test_case("trip example.com --addr-family foo", Err(anyhow!("error: invalid value 'foo' for '--addr-family <ADDR_FAMILY>' [possible values: ipv4, ipv6, ipv6-then-ipv4, ipv4-then-ipv6, system] For more information, try '--help'.")); "invalid address family")]
     #[test_case("trip example.com -4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family shortcut")]
     #[test_case("trip example.com -6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family shortcut")]
     #[test_case("trip example.com -5", Err(anyhow!("error: unexpected argument '-5' found tip: to pass '-5' as a value, use '-- -5' Usage: trip [OPTIONS] [TARGETS]... For more information, try '--help'.")); "invalid address family shortcut")]
