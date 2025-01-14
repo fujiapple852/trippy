@@ -1,5 +1,5 @@
 name: trippy
-version: '0.12.2'
+version: '0.13.0-dev'
 summary: A network diagnostic tool
 description: |
   Trippy combines the functionality of traceroute and ping and is designed to 
