@@ -575,13 +575,6 @@ impl TrippyConfig {
         ) {
             (false, false, AddressFamilyConfig::Ipv4, _) => IpAddrFamily::Ipv4Only,
             (false, false, AddressFamilyConfig::Ipv6, _) => IpAddrFamily::Ipv6Only,
-            // we "downgrade" to `Ipv4Only` for `Dublin` rather than fail.
-            (false, false, AddressFamilyConfig::Ipv4ThenIpv6, MultipathStrategyConfig::Dublin) => {
-                IpAddrFamily::Ipv4Only
-            }
-            (false, false, AddressFamilyConfig::Ipv6ThenIpv4, MultipathStrategyConfig::Dublin) => {
-                IpAddrFamily::Ipv4Only
-            }
             (false, false, AddressFamilyConfig::Ipv4ThenIpv6, _) => IpAddrFamily::Ipv4thenIpv6,
             (false, false, AddressFamilyConfig::Ipv6ThenIpv4, _) => IpAddrFamily::Ipv6thenIpv4,
             (true, _, _, _) => IpAddrFamily::Ipv4Only,
@@ -1216,7 +1209,7 @@ mod tests {
     #[test_case("trip example.com --multipath-strategy classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy")]
     #[test_case("trip example.com -R classic", Ok(cfg().multipath_strategy(MultipathStrategy::Classic).build()); "classic strategy short")]
     #[test_case("trip example.com --multipath-strategy paris --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "paris strategy")]
-    #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
+    #[test_case("trip example.com --multipath-strategy dublin --udp", Ok(cfg().multipath_strategy(MultipathStrategy::Dublin).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "dublin strategy")]
     #[test_case("trip example.com --multipath-strategy tokyo", Err(anyhow!("error: invalid value 'tokyo' for '--multipath-strategy <MULTIPATH_STRATEGY>' [possible values: classic, paris, dublin] For more information, try '--help'.")); "invalid strategy")]
     #[test_case("trip example.com --icmp --multipath-strategy paris", Err(anyhow!("Paris multipath strategy not support for icmp")); "paris with invalid protocol icmp")]
     #[test_case("trip example.com --icmp --multipath-strategy dublin", Err(anyhow!("Dublin multipath strategy not support for icmp")); "dublin with invalid protocol icmp")]
@@ -1253,10 +1246,10 @@ mod tests {
     #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33434", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedSrc(Port(33434))).build()); "udp protocol paris strategy custom src port")]
     #[test_case("trip example.com --udp --multipath-strategy paris --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol paris strategy custom target port")]
     #[test_case("trip example.com --udp --multipath-strategy paris --source-port 33434 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Paris).port_direction(PortDirection::FixedBoth(Port(33434), Port(5000))).build()); "udp protocol paris strategy custom both ports")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol dublin strategy default ports")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedSrc(Port(33434))).build()); "udp protocol dublin strategy custom src port")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
-    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).addr_family(IpAddrFamily::Ipv4Only).port_direction(PortDirection::FixedBoth(Port(33434), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "udp protocol dublin strategy default ports")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedSrc(Port(33434))).build()); "udp protocol dublin strategy custom src port")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedDest(Port(5000))).build()); "udp protocol dublin strategy custom target port")]
+    #[test_case("trip example.com --udp --multipath-strategy dublin --source-port 33434 --target-port 5000", Ok(cfg().protocol(Protocol::Udp).multipath_strategy(MultipathStrategy::Dublin).port_direction(PortDirection::FixedBoth(Port(33434), Port(5000))).build()); "udp protocol dublin strategy custom both ports")]
     #[test_case("trip example.com --udp --source-port 33434 --target-port 5000", Err(anyhow!("only one of source-port and target-port may be fixed (except IPv4/udp protocol with dublin or paris strategy)")); "udp protocol custom both ports with invalid strategy")]
     fn test_ports(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
