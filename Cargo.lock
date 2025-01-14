@@ -1181,6 +1181,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf370abdafd54d13e54a620e8c3e1145f28e46cc9d704bc6d94414559df41763"
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1315,7 +1321,7 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6087e5d8ea14861bb7c7f573afbc7be3798d3ef0fae87ec4fd9a4de9a127c3c"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "log",
  "memchr",
  "serde",
@@ -2275,7 +2281,7 @@ dependencies = [
  "derive_more",
  "hex-literal",
  "indexmap",
- "ipnetwork",
+ "ipnetwork 0.21.1",
  "itertools 0.14.0",
  "mockall",
  "nix",
