@@ -51,7 +51,7 @@ humantime = "2.1.0"
 indexmap = { version = "2.6.0", default-features = false }
 insta = "1.42.0"
 ipnetwork = "0.20.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 maxminddb = "0.24.0"
 mockall = "0.13.1"
 nix = { version = "0.29.0", default-features = false }
