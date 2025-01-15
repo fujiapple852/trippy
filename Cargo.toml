@@ -31,7 +31,7 @@ trippy-dns = { version = "0.13.0-dev", path = "crates/trippy-dns" }
 trippy-packet = { version = "0.13.0-dev", path = "crates/trippy-packet" }
 anyhow = "1.0.91"
 arrayvec = { version = "0.7.6", default-features = false }
-bitflags = "2.7.0"
+bitflags = "2.8.0"
 caps = "0.5.5"
 chrono = { version = "0.4.38", default-features = false }
 clap = { version = "4.5.20", default-features = false }
