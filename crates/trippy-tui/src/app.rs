@@ -5,6 +5,7 @@ use crate::locale;
 use crate::{frontend, report};
 use anyhow::{anyhow, Error};
 use std::net::IpAddr;
+use tracing::instrument;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -17,6 +18,7 @@ use trippy_privilege::Privilege;
 pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     let locale = locale::set_locale(cfg.tui_locale.as_deref());
     let _guard = configure_logging(cfg);
+    tracing::debug!(?cfg);
     let resolver = start_dns_resolver(cfg)?;
     let geoip_lookup = create_geoip_lookup(cfg, &locale)?;
     let addrs = resolve_targets(cfg, &resolver)?;
@@ -33,6 +35,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
 }
 
 /// Start all tracers.
+#[instrument(skip(cfg), level = "trace")]
 fn start_tracers(
     cfg: &TrippyConfig,
     addrs: &[TargetInfo],
@@ -48,6 +51,7 @@ fn start_tracers(
 }
 
 /// Start a tracer to a given target.
+#[instrument(skip(cfg), level = "trace")]
 fn start_tracer(
     cfg: &TrippyConfig,
     target_host: &str,
@@ -85,6 +89,7 @@ fn start_tracer(
 }
 
 /// Run the TUI, stream or report.
+#[instrument(skip_all, level = "trace")]
 fn run_frontend(
     args: &TrippyConfig,
     locale: &str,
@@ -112,6 +117,7 @@ fn run_frontend(
 }
 
 /// Resolve targets.
+#[instrument(skip_all, level = "trace")]
 fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result<Vec<TargetInfo>> {
     cfg.targets
         .iter()
@@ -138,6 +144,7 @@ fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result
 }
 
 /// Start the DNS resolver.
+#[instrument(skip_all, level = "trace")]
 fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     Ok(DnsResolver::start(trippy_dns::Config::new(
         cfg.dns_resolve_method,
@@ -147,6 +154,7 @@ fn start_dns_resolver(cfg: &TrippyConfig) -> anyhow::Result<DnsResolver> {
     ))?)
 }
 
+#[instrument(skip_all, level = "trace")]
 fn create_geoip_lookup(cfg: &TrippyConfig, locale: &str) -> anyhow::Result<GeoIpLookup> {
     if let Some(path) = cfg.geoip_mmdb_file.as_ref() {
         GeoIpLookup::from_file(path, String::from(locale))
