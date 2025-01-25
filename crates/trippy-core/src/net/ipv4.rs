@@ -82,7 +82,7 @@ impl Default for Ipv4 {
 
 impl Ipv4 {
     /// Dispatch an ICMP probe.
-    #[instrument(skip(self, icmp_send_socket, probe))]
+    #[instrument(skip(self, icmp_send_socket), level = "trace")]
     pub fn dispatch_icmp_probe<S: Socket>(
         &self,
         icmp_send_socket: &mut S,
@@ -118,7 +118,7 @@ impl Ipv4 {
     }
 
     /// Dispatch a UDP probe.
-    #[instrument(skip(self, raw_send_socket, probe))]
+    #[instrument(skip(self, raw_send_socket), level = "trace")]
     pub fn dispatch_udp_probe<S: Socket>(
         &self,
         raw_send_socket: &mut S,
@@ -142,7 +142,7 @@ impl Ipv4 {
     ///
     /// As `IP_HDRINCL` is set we must supply the IP and UDP headers which allows us to set custom
     /// values for certain fields such as the checksum as required by the Paris tracing strategy.
-    #[instrument(skip(self, raw_send_socket, probe))]
+    #[instrument(skip(self, raw_send_socket), level = "trace")]
     fn dispatch_udp_probe_raw<S: Socket>(
         &self,
         raw_send_socket: &mut S,
@@ -182,7 +182,7 @@ impl Ipv4 {
     }
 
     /// Dispatch a UDP probe using a new UDP datagram socket.
-    #[instrument(skip(self, probe))]
+    #[instrument(skip(self), level = "trace")]
     fn dispatch_udp_probe_non_raw<S: Socket>(&self, probe: Probe, payload: &[u8]) -> Result<()> {
         let local_addr = SocketAddr::new(IpAddr::V4(self.src_addr), probe.src_port.0);
         let remote_addr = SocketAddr::new(IpAddr::V4(self.dest_addr), probe.dest_port.0);
@@ -199,7 +199,7 @@ impl Ipv4 {
     }
 
     /// Dispatch a TCP probe.
-    #[instrument(skip(self, probe))]
+    #[instrument(skip(self), level = "trace")]
     pub fn dispatch_tcp_probe<S: Socket>(&self, probe: &Probe) -> Result<S> {
         let mut socket = S::new_stream_socket_ipv4()?;
         let local_addr = SocketAddr::new(IpAddr::V4(self.src_addr), probe.src_port.0);
@@ -222,7 +222,7 @@ impl Ipv4 {
     }
 
     /// Receive an ICMP probe response.
-    #[instrument(skip(self, recv_socket))]
+    #[instrument(skip(self, recv_socket), level = "trace")]
     pub fn recv_icmp_probe<S: Socket>(&self, recv_socket: &mut S) -> Result<Option<Response>> {
         let mut buf = [0_u8; MAX_PACKET_SIZE];
         match recv_socket.read(&mut buf) {
@@ -238,7 +238,7 @@ impl Ipv4 {
     }
 
     /// Receive a TCP probe response.
-    #[instrument(skip(self, tcp_socket))]
+    #[instrument(skip(self, tcp_socket), level = "trace")]
     pub fn recv_tcp_socket<S: Socket>(
         &self,
         tcp_socket: &mut S,
@@ -282,7 +282,7 @@ impl Ipv4 {
         Ok(None)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn extract_probe_resp(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<Response>> {
         let recv = SystemTime::now();
         let src = IpAddr::V4(ipv4.get_source());
@@ -349,7 +349,7 @@ impl Ipv4 {
         })
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn extract_probe_resp_seq(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<ResponseSeq>> {
         Ok(match (self.protocol, ipv4.get_protocol()) {
             (Protocol::Icmp, IpProtocol::Icmp) => {
@@ -490,13 +490,13 @@ const fn udp_payload_size(packet_size: usize) -> usize {
     packet_size - udp_header_size - ip_header_size
 }
 
-#[instrument]
+#[instrument(level = "trace")]
 fn extract_echo_request<'a>(ipv4: &'a Ipv4Packet<'a>) -> Result<EchoRequestPacket<'a>> {
     Ok(EchoRequestPacket::new_view(ipv4.payload())?)
 }
 
 /// Get the src and dest ports from the original `UdpPacket` packet embedded in the payload.
-#[instrument]
+#[instrument(level = "trace")]
 fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16, u16, u16, u16)> {
     let nested = UdpPacket::new_view(ipv4.payload())?;
     Ok((
@@ -519,7 +519,7 @@ fn extract_udp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16, u16, u16, u16)
 ///
 /// We therefore have to detect this situation and ensure we provide buffer a large enough for a
 /// complete TCP packet header.
-#[instrument]
+#[instrument(level = "trace")]
 fn extract_tcp_packet(ipv4: &Ipv4Packet<'_>) -> Result<(u16, u16)> {
     let nested_tcp = ipv4.payload();
     if nested_tcp.len() < TcpPacket::minimum_packet_size() {

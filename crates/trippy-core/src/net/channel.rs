@@ -36,7 +36,7 @@ impl<S: Socket> Channel<S> {
     /// Create an `IcmpChannel`.
     ///
     /// This operation requires the `CAP_NET_RAW` capability on Linux.
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "trace")]
     pub fn connect(config: &ChannelConfig) -> Result<Self> {
         tracing::debug!(?config);
         if usize::from(config.packet_size.0) > MAX_PACKET_SIZE {
@@ -88,15 +88,16 @@ impl<S: Socket> Channel<S> {
 }
 
 impl<S: Socket> Network for Channel<S> {
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn send_probe(&mut self, probe: Probe) -> Result<()> {
+        tracing::debug!(?probe);
         match self.protocol {
             Protocol::Icmp => self.dispatch_icmp_probe(probe),
             Protocol::Udp => self.dispatch_udp_probe(probe),
             Protocol::Tcp => self.dispatch_tcp_probe(probe),
         }
     }
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "trace")]
     fn recv_probe(&mut self) -> Result<Option<Response>> {
         let prob_response = match self.protocol {
             Protocol::Icmp | Protocol::Udp => self.recv_icmp_probe(),
@@ -114,7 +115,7 @@ impl<S: Socket> Network for Channel<S> {
 
 impl<S: Socket> Channel<S> {
     /// Dispatch a ICMP probe.
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "trace")]
     fn dispatch_icmp_probe(&mut self, probe: Probe) -> Result<()> {
         match (&self.family_config, self.send_socket.as_mut()) {
             (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_icmp_probe(socket, probe),
@@ -124,7 +125,7 @@ impl<S: Socket> Channel<S> {
     }
 
     /// Dispatch a UDP probe.
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "trace")]
     fn dispatch_udp_probe(&mut self, probe: Probe) -> Result<()> {
         match (&self.family_config, self.send_socket.as_mut()) {
             (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_udp_probe(socket, probe),
@@ -134,7 +135,7 @@ impl<S: Socket> Channel<S> {
     }
 
     /// Dispatch a TCP probe.
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "trace")]
     fn dispatch_tcp_probe(&mut self, probe: Probe) -> Result<()> {
         let socket = match &self.family_config {
             FamilyConfig::V4(ipv4) => ipv4.dispatch_tcp_probe(&probe),
@@ -150,7 +151,7 @@ impl<S: Socket> Channel<S> {
     }
 
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn recv_icmp_probe(&mut self) -> Result<Option<Response>> {
         if self.recv_socket.is_readable(self.read_timeout)? {
             match &self.family_config {
@@ -166,7 +167,7 @@ impl<S: Socket> Channel<S> {
     /// refused.
     ///
     /// Any TCP socket which has not connected or failed after a timeout will be removed.
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn recv_tcp_sockets(&mut self) -> Result<Option<Response>> {
         self.tcp_probes
             .retain(|probe| probe.start.elapsed().unwrap_or_default() < self.tcp_connect_timeout);
@@ -217,7 +218,7 @@ impl<S: Socket> TcpProbe<S> {
 }
 
 /// Make a socket for sending raw `ICMP` packets.
-#[instrument]
+#[instrument(level = "trace")]
 fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(_) => S::new_icmp_send_socket_ipv4(raw),
@@ -226,7 +227,7 @@ fn make_icmp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
 }
 
 /// Make a socket for sending `UDP` packets.
-#[instrument]
+#[instrument(level = "trace")]
 fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(_) => S::new_udp_send_socket_ipv4(raw),
@@ -235,7 +236,7 @@ fn make_udp_send_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
 }
 
 /// Make a socket for receiving raw `ICMP` packets.
-#[instrument]
+#[instrument(level = "trace")]
 fn make_recv_socket<S: Socket>(addr: IpAddr, raw: bool) -> Result<S> {
     Ok(match addr {
         IpAddr::V4(ipv4addr) => S::new_recv_socket_ipv4(ipv4addr, raw),

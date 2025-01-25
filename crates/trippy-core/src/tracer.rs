@@ -528,13 +528,13 @@ mod inner {
             }
         }
 
-        #[instrument(skip_all)]
+        #[instrument(skip_all, level = "trace")]
         pub(super) fn run(&self) -> Result<()> {
             self.run_internal(|_| ())
                 .map_err(|err| self.handle_error(err))
         }
 
-        #[instrument(skip_all)]
+        #[instrument(skip_all, level = "trace")]
         pub(super) fn run_with<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
             self.run_internal(func)
                 .map_err(|err| self.handle_error(err))
@@ -645,7 +645,7 @@ mod inner {
             self.max_round_duration
         }
 
-        #[instrument(skip_all)]
+        #[instrument(skip_all, level = "trace")]
         fn run_internal<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
             // if we are given a source address, validate it otherwise
             // discover it based on the target address and interface.

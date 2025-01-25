@@ -2,6 +2,7 @@ use derive_more::{Add, AddAssign, Sub, SubAssign};
 use itertools::{EitherOrBoth, Itertools};
 use std::fmt::{Debug, Display, Formatter};
 use std::net::IpAddr;
+use tracing::instrument;
 
 /// Identifies a tracing `Flow`.
 #[derive(
@@ -57,6 +58,7 @@ impl FlowRegistry {
     ///
     /// If a flow matches more than one existing flow then only the first
     /// matching flow will be updated.
+    #[instrument(skip(self), level = "trace")]
     pub fn register(&mut self, flow: Flow) -> FlowId {
         for (entry, id) in &mut self.flows {
             let status = entry.check(&flow);
@@ -123,6 +125,7 @@ impl Flow {
     ///
     /// This will also be the case if the flow being checked matches and is
     /// longer than the existing flow.
+    #[instrument(skip(self), level = "trace")]
     pub fn check(&self, flow: &Self) -> CheckStatus {
         let mut additions = 0;
         for (old, new) in self.entries.iter().zip(&flow.entries) {
@@ -142,6 +145,7 @@ impl Flow {
     }
 
     /// Marge the entries from the given `Flow` into our `Flow`.
+    #[instrument(skip(self), level = "trace")]
     fn merge(&mut self, flow: &Self) {
         self.entries = self
             .entries

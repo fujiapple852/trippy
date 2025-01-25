@@ -82,7 +82,7 @@ impl Platform for PlatformImpl {
     }
 }
 
-#[instrument]
+#[instrument(level = "trace")]
 pub fn startup() -> Result<()> {
     SocketImpl::startup().map_err(Error::IoError)
 }
@@ -125,14 +125,14 @@ impl SocketImpl {
         })
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn create_event(&mut self) -> IoResult<()> {
         self.ol.hEvent = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })
             .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn wait_for_event(&self, timeout: Duration) -> IoResult<bool> {
         let millis = timeout.as_millis() as u32;
         let rc = syscall_threading!(WaitForSingleObject(self.ol.hEvent, millis));
@@ -147,14 +147,14 @@ impl SocketImpl {
         Ok(true)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn reset_event(&self) -> IoResult<()> {
         syscall!(WSAResetEvent(self.ol.hEvent), |res| { res == 0 })
             .map_err(|err| IoError::Other(err, IoOperation::WSAResetEvent))
             .map(|_| ())
     }
 
-    #[instrument(skip(self, optval))]
+    #[instrument(skip(self, optval), level = "trace")]
     fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> StdIoResult<T> {
         let mut optlen = size_of::<T>() as i32;
         syscall!(
@@ -170,7 +170,7 @@ impl SocketImpl {
         Ok(optval)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> StdIoResult<()> {
         let bytes = optval.to_ne_bytes();
         let optval = addr_of!(bytes).cast();
@@ -187,18 +187,18 @@ impl SocketImpl {
         .map(|_| ())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> StdIoResult<()> {
         self.setsockopt_u32(level, optname, u32::from(optval))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> IoResult<()> {
         self.setsockopt_bool(IPPROTO_TCP, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
             .map_err(|err| IoError::Other(err, IoOperation::SetTcpFailConnectOnIcmpError))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_non_blocking(&self, is_non_blocking: bool) -> IoResult<()> {
         self.inner
             .set_nonblocking(is_non_blocking)
@@ -206,7 +206,7 @@ impl SocketImpl {
     }
 
     // TODO handle case where `WSARecvFrom` succeeded immediately.
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn post_recv_from(&mut self) -> IoResult<()> {
         fn is_err(res: i32) -> bool {
             res == SOCKET_ERROR
@@ -235,7 +235,7 @@ impl SocketImpl {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn get_overlapped_result(&mut self) -> IoResult<()> {
         let mut bytes_read = 0;
         let mut flags = 0;
@@ -292,7 +292,7 @@ impl Drop for SocketImpl {
 
 #[allow(clippy::cast_possible_wrap, clippy::redundant_closure_call)]
 impl Socket for SocketImpl {
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
             let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
@@ -304,7 +304,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_icmp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
         if raw {
             let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
@@ -315,7 +315,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_udp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
         if raw {
             let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::from(IPPROTO_RAW)))?;
@@ -327,7 +327,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_udp_send_socket_ipv6(raw: bool) -> IoResult<Self> {
         if raw {
             let sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::UDP))?;
@@ -338,7 +338,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_recv_socket_ipv4(src_addr: Ipv4Addr, raw: bool) -> IoResult<Self> {
         if raw {
             let mut sock = Self::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4))?;
@@ -352,7 +352,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_recv_socket_ipv6(src_addr: Ipv6Addr, raw: bool) -> IoResult<Self> {
         if raw {
             let mut sock = Self::new(Domain::IPV6, Type::RAW, Some(Protocol::ICMPV6))?;
@@ -365,7 +365,7 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_stream_socket_ipv4() -> IoResult<Self> {
         let mut sock = Self::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
@@ -373,7 +373,7 @@ impl Socket for SocketImpl {
         Ok(sock)
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_stream_socket_ipv6() -> IoResult<Self> {
         let mut sock = Self::new(Domain::IPV6, Type::STREAM, Some(Protocol::TCP))?;
         sock.set_non_blocking(true)?;
@@ -381,17 +381,17 @@ impl Socket for SocketImpl {
         Ok(sock)
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_udp_dgram_socket_ipv4() -> IoResult<Self> {
         Self::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
     }
 
-    #[instrument]
+    #[instrument(level = "trace")]
     fn new_udp_dgram_socket_ipv6() -> IoResult<Self> {
         Self::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn bind(&mut self, addr: SocketAddr) -> IoResult<()> {
         self.inner
             .bind(&SockAddr::from(addr))
@@ -407,21 +407,21 @@ impl Socket for SocketImpl {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_tos(&mut self, tos: u32) -> IoResult<()> {
         self.inner
             .set_tos(tos)
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
         self.inner
             .set_ttl(ttl)
             .map_err(|err| IoError::Other(err, IoOperation::SetTtl))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_reuse_port(&mut self, is_reuse_port: bool) -> IoResult<()> {
         self.setsockopt_bool(SOL_SOCKET as _, SO_REUSE_UNICASTPORT as _, is_reuse_port)
             .or_else(|_| {
@@ -430,21 +430,21 @@ impl Socket for SocketImpl {
             .map_err(|err| IoError::Other(err, IoOperation::SetReusePort))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_header_included(&mut self, is_header_included: bool) -> IoResult<()> {
         self.inner
             .set_header_included_v4(is_header_included)
             .map_err(|err| IoError::Other(err, IoOperation::SetHeaderIncluded))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn set_unicast_hops_v6(&mut self, max_hops: u8) -> IoResult<()> {
         self.inner
             .set_unicast_hops_v6(max_hops.into())
             .map_err(|err| IoError::Other(err, IoOperation::SetUnicastHopsV6))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn connect(&mut self, addr: SocketAddr) -> IoResult<()> {
         self.set_fail_connect_on_icmp_error(true)?;
         syscall!(
@@ -464,16 +464,16 @@ impl Socket for SocketImpl {
         }
     }
 
-    #[instrument(skip(self, buf))]
+    #[instrument(skip(self, buf), level = "trace")]
     fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> IoResult<()> {
-        tracing::debug!(buf = format!("{:02x?}", buf.iter().format(" ")), ?addr);
+        tracing::trace!(buf = format!("{:02x?}", buf.iter().format(" ")), ?addr);
         self.inner
             .send_to(buf, &SockAddr::from(addr))
             .map_err(|err| IoError::SendTo(err, addr))?;
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
         if !self.wait_for_event(timeout)? {
             return Ok(false);
@@ -488,7 +488,7 @@ impl Socket for SocketImpl {
         Ok(true)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn is_writable(&mut self) -> IoResult<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
@@ -503,12 +503,12 @@ impl Socket for SocketImpl {
         Ok(true)
     }
 
-    #[instrument(skip(self, buf), ret)]
+    #[instrument(skip(self, buf), level = "trace")]
     fn recv_from(&mut self, buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
         let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))
             .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
         let len = self.read(buf)?;
-        tracing::debug!(
+        tracing::trace!(
             buf = format!("{:02x?}", buf[..len].iter().format(" ")),
             len,
             ?addr
@@ -516,23 +516,23 @@ impl Socket for SocketImpl {
         Ok((len, Some(SocketAddr::new(addr, 0))))
     }
 
-    #[instrument(skip(self, buf), ret)]
+    #[instrument(skip(self, buf), ret, level = "trace")]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
         buf.copy_from_slice(self.buf.as_slice());
         let bytes_read = self.bytes_read as usize;
-        tracing::debug!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
+        tracing::trace!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
         self.post_recv_from()?;
         Ok(bytes_read)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn shutdown(&mut self) -> IoResult<()> {
         self.inner
             .shutdown(std::net::Shutdown::Both)
             .map_err(|err| IoError::Other(err, IoOperation::Shutdown))
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret, level = "trace")]
     fn peer_addr(&mut self) -> IoResult<Option<SocketAddr>> {
         Ok(self
             .inner
@@ -541,7 +541,7 @@ impl Socket for SocketImpl {
             .as_socket())
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret, level = "trace")]
     fn take_error(&mut self) -> IoResult<Option<SocketError>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
@@ -555,7 +555,7 @@ impl Socket for SocketImpl {
         .map_err(|err| IoError::Other(err, IoOperation::TakeError))
     }
 
-    #[instrument(skip(self), ret)]
+    #[instrument(skip(self), ret, level = "trace")]
     #[allow(unsafe_code)]
     fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
         let icmp_error_info = self
@@ -581,7 +581,7 @@ impl Socket for SocketImpl {
     }
 
     // Interestingly, `Socket2` sockets don't seem to call `closesocket` on drop??
-    #[instrument(skip(self))]
+    #[instrument(skip(self), level = "trace")]
     fn close(&mut self) -> IoResult<()> {
         syscall!(closesocket(self.inner.as_raw_socket() as _), |res| res
             == SOCKET_ERROR)
@@ -627,7 +627,7 @@ impl From<ErrorKind> for StdIoError {
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
 #[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
-#[instrument]
+#[instrument(level = "trace")]
 fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
     let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
     let mut bytes = 0;
@@ -754,7 +754,7 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
     (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
 }
 
-#[instrument(skip(adapters), ret)]
+#[instrument(skip(adapters), ret, level = "trace")]
 fn lookup_interface_addr(adapters: &Adapters, name: &str) -> Result<IpAddr> {
     adapters
         .iter()
