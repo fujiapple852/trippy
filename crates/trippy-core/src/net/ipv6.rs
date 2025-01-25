@@ -77,7 +77,7 @@ impl Default for Ipv6 {
 
 impl Ipv6 {
     /// Dispatch an ICMP probe.
-    #[instrument(skip(self, icmp_send_socket, probe))]
+    #[instrument(skip(self, icmp_send_socket), level = "trace")]
     pub fn dispatch_icmp_probe<S: Socket>(
         &self,
         icmp_send_socket: &mut S,
@@ -101,7 +101,7 @@ impl Ipv6 {
     }
 
     /// Dispatch a UDP probe.
-    #[instrument(skip(self, raw_send_socket, probe))]
+    #[instrument(skip(self, raw_send_socket), level = "trace")]
     pub fn dispatch_udp_probe<S: Socket>(
         &self,
         raw_send_socket: &mut S,
@@ -121,7 +121,7 @@ impl Ipv6 {
         }
     }
 
-    #[instrument(skip(self, udp_send_socket, probe))]
+    #[instrument(skip(self, udp_send_socket), level = "trace")]
     fn dispatch_udp_probe_raw<S: Socket>(
         &self,
         udp_send_socket: &mut S,
@@ -157,7 +157,7 @@ impl Ipv6 {
         Ok(())
     }
 
-    #[instrument(skip(self, probe))]
+    #[instrument(skip(self), level = "trace")]
     fn dispatch_udp_probe_non_raw<S: Socket>(&self, probe: Probe, payload: &[u8]) -> Result<()> {
         let local_addr = SocketAddr::new(IpAddr::V6(self.src_addr), probe.src_port.0);
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), probe.dest_port.0);
@@ -173,7 +173,7 @@ impl Ipv6 {
     }
 
     /// Dispatch a TCP probe.
-    #[instrument(skip(self, probe))]
+    #[instrument(skip(self), level = "trace")]
     pub fn dispatch_tcp_probe<S: Socket>(&self, probe: &Probe) -> Result<S> {
         let mut socket = S::new_stream_socket_ipv6()?;
         let local_addr = SocketAddr::new(IpAddr::V6(self.src_addr), probe.src_port.0);
@@ -193,7 +193,7 @@ impl Ipv6 {
     }
 
     /// Receive an ICMP probe.
-    #[instrument(skip(self, recv_socket))]
+    #[instrument(skip(self, recv_socket), level = "trace")]
     pub fn recv_icmp_probe<S: Socket>(&self, recv_socket: &mut S) -> Result<Option<Response>> {
         let mut buf = [0_u8; MAX_PACKET_SIZE];
         match recv_socket.recv_from(&mut buf) {
@@ -213,7 +213,7 @@ impl Ipv6 {
     }
 
     /// Receive a TCP probe.
-    #[instrument(skip(self, tcp_socket))]
+    #[instrument(skip(self, tcp_socket), level = "trace")]
     pub fn recv_tcp_socket<S: Socket>(
         &self,
         tcp_socket: &mut S,

@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::iter::once;
 use std::net::IpAddr;
 use std::time::Duration;
+use tracing::instrument;
 
 /// The state of a trace.
 #[derive(Debug, Clone, Default)]
@@ -128,6 +129,7 @@ impl State {
     }
 
     /// Update the tracing state from a `TracerRound`.
+    #[instrument(skip(self, round), level = "trace")]
     pub fn update_from_round(&mut self, round: &Round<'_>) {
         let flow = Flow::from_hops(
             round
@@ -148,6 +150,7 @@ impl State {
         }
     }
 
+    #[instrument(skip(self, round), level = "trace")]
     fn update_trace_flow(&mut self, flow_id: FlowId, round: &Round<'_>) {
         let flow_trace = self
             .state
@@ -530,6 +533,7 @@ mod state_updater {
     use crate::types::Checksum;
     use crate::{NatStatus, ProbeStatus, Round, TimeToLive};
     use std::time::Duration;
+    use tracing::instrument;
 
     /// Update the state of a `FlowState` from a `Round`.
     pub(super) struct StateUpdater<'a> {
@@ -552,6 +556,7 @@ mod state_updater {
             }
         }
 
+        #[instrument(skip(self), level = "trace")]
         pub(super) fn apply(&mut self) {
             self.state.round_count += 1;
             self.state.highest_ttl =
@@ -562,6 +567,7 @@ mod state_updater {
             }
         }
 
+        #[instrument(skip(self), level = "trace")]
         fn update_for_probe(&mut self, probe: &ProbeStatus) {
             let state = &mut *self.state;
             match probe {
