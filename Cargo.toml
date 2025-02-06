@@ -71,7 +71,7 @@ test-case = "3.3.1"
 thiserror = "2.0.3"
 tokio = "1.43.0"
 tokio-util = "0.7.12"
-toml = { version = "0.8.19", default-features = false }
+toml = { version = "0.8.20", default-features = false }
 tracing = "0.1.41"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.18", default-features = false }
