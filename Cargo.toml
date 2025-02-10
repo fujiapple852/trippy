@@ -46,7 +46,7 @@ dns-lookup = "2.0.4"
 encoding_rs_io = "0.1.7"
 etcetera = "0.8.0"
 hex-literal = "0.4.1"
-hickory-resolver = "0.24.1"
+hickory-resolver = "0.24.3"
 humantime = "2.1.0"
 indexmap = { version = "2.7.1", default-features = false }
 insta = "1.42.1"
