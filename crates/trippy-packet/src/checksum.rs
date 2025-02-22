@@ -69,8 +69,8 @@ fn ipv4_checksum(
 
 fn ipv4_word_sum(ip: Ipv4Addr) -> u32 {
     let octets = ip.octets();
-    ((u32::from(octets[0])) << 8 | u32::from(octets[1]))
-        + ((u32::from(octets[2])) << 8 | u32::from(octets[3]))
+    (((u32::from(octets[0])) << 8) | u32::from(octets[1]))
+        + (((u32::from(octets[2])) << 8) | u32::from(octets[3]))
 }
 
 /// Calculate the checksum for a packet built on IPv6.

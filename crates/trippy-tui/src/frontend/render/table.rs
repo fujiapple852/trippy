@@ -282,7 +282,7 @@ fn render_hostname(
                 Some(max_addr) => {
                     let hostnames = hop
                         .addrs_with_counts()
-                        .sorted_unstable_by_key(|(_, &cnt)| cnt)
+                        .sorted_unstable_by_key(|&(_, cnt)| cnt)
                         .rev()
                         .take(max_addr as usize)
                         .map(|(addr, &freq)| {
