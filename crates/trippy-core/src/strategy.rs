@@ -1528,9 +1528,9 @@ mod state {
             let total_rounds = 2000;
             let max_probe_per_round = 20;
             let mut state = TracerState::new(cfg(Sequence(33434)));
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             for _ in 0..total_rounds {
-                for _ in 0..rng.gen_range(0..max_probe_per_round) {
+                for _ in 0..rng.random_range(0..max_probe_per_round) {
                     state.next_probe(SystemTime::now());
                 }
                 state.advance_round(TimeToLive(1));
