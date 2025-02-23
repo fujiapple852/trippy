@@ -94,6 +94,7 @@ submodule
 syscall
 tcp
 timestamp
+tokio
 toml
 traceroute
 trippy
