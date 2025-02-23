@@ -841,7 +841,6 @@ mod state {
     use crate::strategy::{StrategyConfig, StrategyResponse};
     use crate::types::{MaxRounds, Port, RoundId, Sequence, TimeToLive, TraceId};
     use crate::{Flags, MultipathStrategy, PortDirection, Protocol};
-    use std::array::from_fn;
     use std::net::IpAddr;
     use std::time::SystemTime;
     use tracing::instrument;
@@ -877,7 +876,7 @@ mod state {
         /// Tracer configuration.
         config: StrategyConfig,
         /// The state of all `ProbeStatus` requests and responses.
-        buffer: [ProbeStatus; BUFFER_SIZE as usize],
+        buffer: Vec<ProbeStatus>,
         /// An increasing sequence number for every `EchoRequest`.
         sequence: Sequence,
         /// The starting sequence number of the current round.
@@ -903,9 +902,11 @@ mod state {
 
     impl TracerState {
         pub fn new(config: StrategyConfig) -> Self {
+            let mut buffer = Vec::with_capacity(BUFFER_SIZE as usize);
+            buffer.resize_with(BUFFER_SIZE as usize, ProbeStatus::default);
             Self {
                 config,
-                buffer: from_fn(|_| ProbeStatus::default()),
+                buffer,
                 sequence: config.initial_sequence,
                 round_sequence: config.initial_sequence,
                 ttl: config.first_ttl,
