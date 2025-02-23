@@ -21,13 +21,3 @@ updates:
       - dependency-type: "direct"
     open-pull-requests-limit: 10
     rebase-strategy: "disabled"
-
-  # NPM dependencies (docs) - ignore all
-  - package-ecosystem: "npm"
-    directory: "/docs"
-    schedule:
-      interval: "daily"
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "all"
