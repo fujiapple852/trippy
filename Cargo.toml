@@ -49,7 +49,7 @@ hex-literal = "0.4.1"
 hickory-resolver = "0.24.4"
 humantime = "2.1.0"
 indexmap = { version = "2.7.1", default-features = false }
-insta = "1.42.1"
+insta = "1.42.2"
 ipnetwork = "0.21.1"
 itertools = "0.14.0"
 maxminddb = "0.25.0"
