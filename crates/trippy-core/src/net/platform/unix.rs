@@ -491,10 +491,6 @@ mod socket {
         fn from(value: &io::Error) -> Self {
             if value.raw_os_error() == io::Error::from(Error::EINPROGRESS).raw_os_error() {
                 Self::InProgress
-            } else if value.raw_os_error() == io::Error::from(Error::EHOSTUNREACH).raw_os_error() {
-                Self::HostUnreachable
-            } else if value.raw_os_error() == io::Error::from(Error::ENETUNREACH).raw_os_error() {
-                Self::NetUnreachable
             } else {
                 Self::Std(value.kind())
             }
@@ -506,8 +502,6 @@ mod socket {
         fn from(value: ErrorKind) -> Self {
             match value {
                 ErrorKind::InProgress => Self::from(Error::EINPROGRESS),
-                ErrorKind::HostUnreachable => Self::from(Error::EHOSTUNREACH),
-                ErrorKind::NetUnreachable => Self::from(Error::ENETUNREACH),
                 ErrorKind::Std(kind) => Self::from(kind),
             }
         }
