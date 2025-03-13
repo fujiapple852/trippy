@@ -13,10 +13,10 @@ A simple example that demonstrates running a traceroute and printing the output 
 cargo run -p hello-world
 ```
 
-### `traceroute`
+### `toy-traceroute`
 
 A toy clone of the BSD4.3 (macOS) system traceroute tool.
 
 ```shell
-cargo run -p traceroute 1.1.1.1
+cargo run -p toy-traceroute 1.1.1.1
 ```
