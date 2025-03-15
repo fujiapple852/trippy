@@ -9,6 +9,7 @@ sv = "trippy"
 ru = "trippy"
 es = "trippy"
 de = "trippy"
+hi = "trippy"
 
 [auto]
 en = "auto"
@@ -21,6 +22,7 @@ sv = "automatisk"
 ru = "авто"
 es = "automático"
 de = "auto"
+hi = "स्वचालित"
 
 [on]
 en = "on"
@@ -33,6 +35,7 @@ sv = "på"
 ru = "вкл"
 es = "activo"
 de = "an"
+hi = "चालू"
 
 [off]
 en = "off"
@@ -45,6 +48,7 @@ sv = "av"
 ru = "выкл"
 es = "inactivo"
 de = "aus"
+hi = "बंद"
 
 [yes]
 en = "Yes"
@@ -57,6 +61,7 @@ sv = "Ja"
 ru = "Да"
 es = "Sí"
 de = "Ja"
+hi = "हाँ"
 
 [no]
 en = "No"
@@ -69,6 +74,7 @@ sv = "Nej"
 ru = "Нет"
 es = "No"
 de = "Nein"
+hi = "नहीं"
 
 [none]
 en = "none"
@@ -81,6 +87,7 @@ sv = "ingen"
 ru = "нет"
 es = "ninguno"
 de = "keiner"
+hi = "कोई नहीं"
 
 [hidden]
 en = "Hidden"
@@ -93,6 +100,7 @@ sv = "Dold"
 ru = "Скрыто"
 es = "Oculto"
 de = "Versteckt"
+hi = "छिपा हुआ"
 
 [flow]
 en = "flow"
@@ -105,6 +113,7 @@ sv = "flöde"
 ru = "поток"
 es = "flujo"
 de = "fluss"
+hi = "प्रवाह"
 
 [flows]
 en = "flows"
@@ -117,6 +126,7 @@ sv = "flöden"
 ru = "потоки"
 es = "flujos"
 de = "flüsse"
+hi = "प्रवाहित"
 
 [target]
 en = "Target"
@@ -129,6 +139,7 @@ sv = "Mål"
 ru = "Цель"
 es = "Objetivo"
 de = "Ziel"
+hi = "लक्ष्य"
 
 [status]
 en = "Status"
@@ -141,6 +152,7 @@ sv = "Status"
 ru = "Статус"
 es = "Estado"
 de = "Status"
+hi = "स्थिति"
 
 [details]
 en = "detail"
@@ -153,6 +165,7 @@ sv = "detaljer"
 ru = "детали"
 es = "detalles"
 de = "detail"
+hi = "विवरण"
 
 [privileged]
 en = "privileged"
@@ -165,6 +178,7 @@ sv = "privilegierad"
 ru = "привилегированный"
 es = "privilegiado"
 de = "privilegiert"
+hi = "विशेषाधिकार प्राप्त"
 
 [unprivileged]
 en = "unprivileged"
@@ -177,6 +191,7 @@ sv = "oprivilegierad"
 ru = "непривилегированный"
 es = "no privilegiado"
 de = "unprivilegiert"
+hi = "अधिकार रहित"
 
 [privacy]
 en = "privacy"
@@ -189,6 +204,7 @@ sv = "integritet"
 ru = "конфиденциальность"
 es = "privacidad"
 de = "datenschutz"
+hi = "गोपनीयता"
 
 [na]
 en = "n/a"
@@ -201,6 +217,7 @@ sv = "ej tillgänglig"
 ru = "н/д"
 es = "n/d"
 de = "n/a"
+hi = "लागू नहीं"
 
 [discovered]
 en = "discovered %{hop_count} hops"
@@ -213,6 +230,7 @@ sv = "upptäckte %{hop_count} hopp"
 ru = "обнаружено %{hop_count} прыжков"
 es = "se descubrieron %{hop_count} saltos"
 de = "%{hop_count} gefundene hops"
+hi = "%{hop_count} हॉप्स की खोज की गई"
 
 [discovered_flows]
 en = "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
@@ -225,6 +243,7 @@ sv = "%{hop_count} hopp och unika %{flow_count} %{plural_flows} upptäckta"
 ru = "обнаружено %{hop_count} прыжков и %{flow_count} уникальных %{plural_flows}"
 es = "se descubrieron %{hop_count} saltos y %{flow_count} únicos %{plural_flows}"
 de = "%{hop_count} gefundene hops und %{flow_count} eindeutige %{plural_flows}"
+hi = "%{hop_count} हॉप्स और %{flow_count} अनूठे %{plural_flows} की खोज की गई"
 
 [unknown]
 en = "unknown"
@@ -237,6 +256,7 @@ sv = "okänd"
 ru = "неизвестно"
 es = "desconocido"
 de = "unbekannt"
+hi = "अज्ञात"
 
 [icmp]
 en = "icmp"
@@ -249,6 +269,7 @@ sv = "icmp"
 ru = "icmp"
 es = "icmp"
 de = "icmp"
+hi = "icmp"
 
 [udp]
 en = "udp"
@@ -261,6 +282,7 @@ sv = "udp"
 ru = "udp"
 es = "udp"
 de = "udp"
+hi = "udp"
 
 [tcp]
 en = "tcp"
@@ -273,6 +295,7 @@ sv = "tcp"
 ru = "tcp"
 es = "tcp"
 de = "tcp"
+hi = "tcp"
 
 [status_failures]
 en = "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
@@ -285,6 +308,7 @@ sv = "%{failure_count} av %{total_probes} (%{failure_rate}%) misslyckade prober"
 ru = "%{failure_count} из %{total_probes} (%{failure_rate}%) зондов не удалось"
 es = "%{failure_count} de %{total_probes} (%{failure_rate}%) sondas fallaron"
 de = "%{failure_count} von %{total_probes} (%{failure_rate}%) sonden sind fehlgeschlagen"
+hi = "%{total_probes} में से %{failure_count} (%{failure_rate}%) जांच विफल रही"
 
 [status_failed]
 en = "Failed"
@@ -297,6 +321,7 @@ sv = "Misslyckades"
 ru = "Не удалось"
 es = "Fallido"
 de = "Fehlgeschlagen"
+hi = "विफल"
 
 [status_running]
 en = "Running"
@@ -309,6 +334,7 @@ sv = "Kör"
 ru = "Запущен"
 es = "En ejecución"
 de = "Läuft"
+hi = "चल रहा है"
 
 [status_frozen]
 en = "Frozen"
@@ -321,6 +347,7 @@ sv = "Frusen"
 ru = "Заморожен"
 es = "Congelado"
 de = "Eingefroren"
+hi = "स्तब्ध"
 
 [awaiting_data]
 en = "Awaiting data..."
@@ -333,6 +360,7 @@ sv = "Väntar på data..."
 ru = "Ожидание данных..."
 es = "Esperando datos..."
 de = "Warten auf Daten..."
+hi = "डेटा की प्रतीक्षा कर रहा है..."
 
 [header_help]
 en = "help"
@@ -345,6 +373,7 @@ sv = "hjälp"
 ru = "помощь"
 es = "ayuda"
 de = "hilfe"
+hi = "मदद"
 
 [header_settings]
 en = "settings"
@@ -357,6 +386,7 @@ sv = "inställningar"
 ru = "настройки"
 es = "configuraciones"
 de = "einstellungen"
+hi = "सेटिंग्स"
 
 [header_quit]
 en = "quit"
@@ -369,6 +399,7 @@ sv = "avsluta"
 ru = "Выход"
 es = "salir"
 de = "beenden"
+hi = "बंद करें"
 
 [title_hops]
 en = "Hops"
@@ -381,6 +412,7 @@ sv = "Hopp"
 ru = "Прыжки"
 es = "Saltos"
 de = "Hops"
+hi = "हॉप्स"
 
 [title_frequency]
 en = "Frequency"
@@ -393,6 +425,7 @@ sv = "Frekvens"
 ru = "Частота"
 es = "Frecuencia"
 de = "Frequenz"
+hi = "आवृत्ति"
 
 [title_samples]
 en = "Samples"
@@ -405,6 +438,7 @@ sv = "Prover"
 ru = "Образцы"
 es = "Muestras"
 de = "Proben"
+hi = "नमूने"
 
 [title_traces]
 en = "Traces"
@@ -417,6 +451,7 @@ sv = "Spår"
 ru = "Следы"
 es = "Trazas"
 de = "Spuren"
+hi = "ट्रेसेस"
 
 [title_flows]
 en = "Flows"
@@ -429,6 +464,7 @@ sv = "Flöden"
 ru = "Потоки"
 es = "Flujos"
 de = "Flüsse"
+hi = "प्रवाह"
 
 [title_map]
 en = "Map"
@@ -441,6 +477,7 @@ sv = "Karta"
 ru = "Карта"
 es = "Mapa"
 de = "Karte"
+hi = "मानचित्र"
 
 [title_help]
 en = "Help"
@@ -453,6 +490,7 @@ sv = "Hjälp"
 ru = "Помощь"
 es = "Ayuda"
 de = "Hilfe"
+hi = "सहायता"
 
 [title_settings]
 en = "Settings"
@@ -465,6 +503,7 @@ sv = "Inställningar"
 ru = "Настройки"
 es = "Configuraciones"
 de = "Einstellungen"
+hi = "सेटिंग्स"
 
 [bsod_failed]
 en = "Trippy Failed :("
@@ -477,6 +516,7 @@ sv = "Trippy misslyckades :("
 ru = "Trippy не удалось :("
 es = "Trippy tuvo un problema :("
 de = "Trippy ist fehlgeschlagen :("
+hi = "ट्रिपी विफल हो गया :("
 
 [bsod_quit]
 en = "Press q to quit"
@@ -489,6 +529,7 @@ sv = "Tryck på q för att avsluta"
 ru = "Нажмите q для выхода"
 es = "Presiona q para salir"
 de = "Drücken Sie q, um zu beenden"
+hi = "बाहर निकलने के लिए q दबाएं"
 
 [hop]
 en = "Hop"
@@ -501,6 +542,7 @@ sv = "Hopp"
 ru = "Прыжок"
 es = "Salto"
 de = "Hop"
+hi = "हॉप"
 
 [rtt]
 en = "RTT"
@@ -513,6 +555,7 @@ sv = "RTT"
 ru = "RTT"
 es = "RTT"
 de = "RTT"
+hi = "RTT"
 
 [title_chart]
 en = "Chart"
@@ -525,6 +568,7 @@ sv = "Diagram"
 ru = "Диаграмма"
 es = "Gráfico"
 de = "Diagramm"
+hi = "चार्ट"
 
 [samples]
 en = "Samples"
@@ -537,6 +581,7 @@ sv = "Prover"
 ru = "Образцы"
 es = "Muestras"
 de = "Proben"
+hi = "नमूने"
 
 [host]
 en = "Host"
@@ -549,6 +594,7 @@ sv = "Värd"
 ru = "Хост"
 es = "Host"
 de = "Host"
+hi = "होस्ट"
 
 [no_response]
 en = "No response"
@@ -561,6 +607,7 @@ sv = "Inget svar"
 ru = "Нет ответа"
 es = "Sin respuesta"
 de = "Keine Antwort"
+hi = "कोई प्रतिक्रिया नहीं"
 
 [dns_failed]
 en = "Failed"
@@ -573,6 +620,7 @@ sv = "Misslyckades"
 ru = "Не удалось"
 es = "Fallido"
 de = "Fehlgeschlagen"
+hi = "विफल"
 
 [dns_timeout]
 en = "Timeout"
@@ -585,6 +633,7 @@ sv = "Tidsgräns nådd"
 ru = "Тайм-аут"
 es = "Tiempo de espera"
 de = "Zeitüberschreitung"
+hi = "समय समाप्त"
 
 [labels]
 en = "labels"
@@ -597,6 +646,7 @@ sv = "etiketter"
 ru = "метки"
 es = "etiquetas"
 de = "etiketten"
+hi = "लेबल"
 
 [not_enabled]
 en = "not enabled"
@@ -609,6 +659,7 @@ sv = "ej aktiverad"
 ru = "не активирован"
 es = "no habilitado"
 de = "nicht aktiviert"
+hi = "सक्षम नहीं"
 
 [not_found]
 en = "not found"
@@ -621,6 +672,7 @@ sv = "hittades inte"
 ru = "не найдено"
 es = "no encontrado"
 de = "nicht gefunden"
+hi = "नहीं मिला"
 
 [awaited]
 en = "awaited"
@@ -633,6 +685,7 @@ sv = "väntade"
 ru = "ожидаемый"
 es = "esperado"
 de = "erwartet"
+hi = "प्रतीक्षित"
 
 [name]
 en = "Name"
@@ -645,6 +698,7 @@ sv = "Namn"
 ru = "Имя"
 es = "Nombre"
 de = "Name"
+hi = "नाम"
 
 [info]
 en = "Info"
@@ -657,6 +711,7 @@ sv = "Information"
 ru = "Информация"
 es = "Información"
 de = "Info"
+hi = "जानकारी"
 
 [geo]
 en = "Geo"
@@ -669,6 +724,7 @@ sv = "Geo"
 ru = "Гео"
 es = "Geo"
 de = "Geo"
+hi = "भौगोलिक"
 
 [pos]
 en = "Pos"
@@ -681,6 +737,7 @@ sv = "Pos"
 ru = "Поз"
 es = "Pos"
 de = "Pos"
+hi = "स्थिति"
 
 [ext]
 en = "Ext"
@@ -693,6 +750,7 @@ sv = "Ext"
 ru = "Расширение"
 es = "Ext"
 de = "Ext"
+hi = "विस्तार"
 
 [help_tagline]
 en = "A network diagnostic tool"
@@ -705,6 +763,7 @@ sv = "Ett nätverksdiagnostikverktyg"
 ru = "Инструмент диагностики сети"
 es = "Una herramienta de diagnóstico de red"
 de = "Ein Netzwerkdiagnosetool"
+hi = "एक नेटवर्क निदान उपकरण"
 
 [help_show_settings]
 en = "Press [%{key}] to show all settings"
@@ -717,6 +776,7 @@ sv = "Tryck på [%{key}] för att visa alla inställningar"
 ru = "Нажмите [%{key}], чтобы показать все настройки"
 es = "Presiona [%{key}] para mostrar todas las configuraciones"
 de = "Drücken Sie [%{key}], um alle Einstellungen anzuzeigen"
+hi = "सभी सेटिंग्स दिखाने के लिए [%{key}] दबाएं"
 
 [help_show_bindings]
 en = "Press [%{key}] to show all bindings"
@@ -729,6 +789,7 @@ sv = "Tryck på [%{key}] för att visa alla kortkommando"
 ru = "Нажмите [%{key}], чтобы показать все привязки"
 es = "Presiona [%{key}] para mostrar todos los atajos"
 de = "Drücken Sie [%{key}], um alle Tastenbelegungen anzuzeigen"
+hi = "सभी बाइंडिंग दिखाने के लिए [%{key}] दबाएं"
 
 [help_show_columns]
 en = "Press [%{key}] to show all columns"
@@ -741,6 +802,7 @@ sv = "Tryck på [%{key}] för att visa alla kolumner"
 ru = "Нажмите [%{key}], чтобы показать все столбцы"
 es = "Presiona [%{key}] para mostrar todas las columnas"
 de = "Drücken Sie [%{key}], um alle Spalten anzuzeigen"
+hi = "सभी कॉलम दिखाने के लिए [%{key}] दबाएं"
 
 [help_license]
 en = "Distributed under the Apache License 2.0"
@@ -753,6 +815,7 @@ sv = "Distribueras under Apache License 2.0"
 ru = "Распространяется под лицензией Apache 2.0"
 es = "Distribuido bajo la Licencia Apache 2.0"
 de = "Verteilt unter der Apache-Lizenz 2.0"
+hi = "अपाचे लाइसेंस 2.0 के तहत वितरित"
 
 [help_copyright]
 en = "Copyright 2022 Trippy Contributors"
@@ -765,6 +828,7 @@ sv = "Upphovsrätt 2022 Trippy-bidragsgivare"
 ru = "Авторское право 2022 Участники Trippy"
 es = "Derechos de autor 2022 Contribuidores de Trippy"
 de = "Copyright 2022 Trippy Mitwirkende"
+hi = "कॉपीराइट 2022 ट्रिपी योगदानकर्ता"
 
 [geoip_not_enabled]
 en = "GeoIp not enabled"
@@ -777,6 +841,7 @@ sv = "GeoIp inte aktiverad"
 ru = "GeoIp не активирован"
 es = "GeoIp no habilitado"
 de = "GeoIp nicht aktiviert"
+hi = "जियोआईपी सक्षम नहीं है"
 
 [geoip_no_data_for_hop]
 en = "No GeoIp data for hop"
@@ -789,6 +854,7 @@ sv = "Inga GeoIp-data för hopp"
 ru = "Нет данных GeoIp для прыжка"
 es = "No hay datos de GeoIp para el salto"
 de = "Keine GeoIp-Daten für den Hop"
+hi = "हॉप के लिए कोई जियोआईपी डेटा नहीं"
 
 [geoip_multiple_data_for_hop]
 en = "Multiple GeoIp locations for hop"
@@ -801,6 +867,7 @@ sv = "Flera GeoIp-platser för hopp"
 ru = "Несколько местоположений GeoIp для прыжка"
 es = "Múltiples ubicaciones de GeoIp para el salto"
 de = "Mehrere GeoIp-Standorte für den Hop"
+hi = "हॉप के लिए कई जियोआईपी स्थान"
 
 [kilometer]
 en = "km"
@@ -813,6 +880,7 @@ sv = "km"
 ru = "км"
 es = "km"
 de = "km"
+hi = "किमी"
 
 [settings_info]
 en = "Info"
@@ -825,6 +893,7 @@ sv = "Information"
 ru = "Информация"
 es = "Información"
 de = "Info"
+hi = "जानकारी"
 
 [settings_tab_tui_title]
 en = "Tui"
@@ -837,6 +906,7 @@ sv = "Tui"
 ru = "Tui"
 es = "Tui"
 de = "Tui"
+hi = "टीयूआई"
 
 [settings_tab_trace_title]
 en = "Trace"
@@ -849,6 +919,7 @@ sv = "Spåra"
 ru = "След"
 es = "Rastrear"
 de = "Trace"
+hi = "ट्रेस"
 
 [settings_tab_dns_title]
 en = "DNS"
@@ -861,6 +932,7 @@ sv = "DNS"
 ru = "DNS"
 es = "DNS"
 de = "DNS"
+hi = "DNS"
 
 [settings_tab_geoip_title]
 en = "GeoIp"
@@ -873,6 +945,7 @@ sv = "GeoIp"
 ru = "GeoIp"
 es = "GeoIp"
 de = "GeoIp"
+hi = "GeoIp"
 
 [settings_tab_bindings_title]
 en = "Bindings"
@@ -885,6 +958,7 @@ sv = "Kortkommando"
 ru = "Привязки"
 es = "Atajos"
 de = "Tastenbelegungen"
+hi = "बाइंडिंग्स"
 
 [settings_tab_theme_title]
 en = "Theme"
@@ -897,6 +971,7 @@ sv = "Tema"
 ru = "Тема"
 es = "Tema"
 de = "Darstellung"
+hi = "थीम"
 
 [settings_tab_columns_title]
 en = "Columns"
@@ -909,6 +984,7 @@ es = "Columnas"
 sv = "Kolumner"
 ru = "Столбцы"
 de = "Spalten"
+hi = "कॉलम"
 
 [settings_tab_tui_desc]
 en = "Settings which control how data is displayed in this Tui"
@@ -921,6 +997,7 @@ sv = "Inställningar som styr hur data visas i detta Tui"
 ru = "Настройки, которые контролируют, как данные отображаются в этом Tui"
 es = "Configuraciones que controlan cómo se muestran los datos en este Tui"
 de = "Einstellungen, die steuern, wie Daten in diesem Tui angezeigt werden"
+hi = "सेटिंग्स जो नियंत्रित करती हैं कि डेटा इस टीयूआई में कैसे प्रदर्शित होता है"
 
 [settings_tab_trace_desc]
 en = "Settings which control the tracing strategy"
@@ -933,6 +1010,7 @@ sv = "Inställningar som styr spårningsstrategin"
 ru = "Настройки, которые контролируют стратегию трассировки"
 es = "Configuraciones que controlan la estrategia de rastreo"
 de = "Einstellungen, die die Tracing-Strategie steuern"
+hi = "ट्रेसिंग रणनीति को नियंत्रित करने वाली सेटिंग्स"
 
 [settings_tab_dns_desc]
 en = "Settings which control how DNS lookups are performed"
@@ -945,6 +1023,7 @@ sv = "Inställningar som styr hur DNS-uppslag utförs"
 ru = "Настройки, которые контролируют, как выполняются DNS-запросы"
 es = "Configuraciones que controlan cómo se realizan las búsquedas de DNS"
 de = "Einstellungen, die steuern, wie DNS-Lookups durchgeführt werden"
+hi = "डीएनएस लुकअप कैसे किए जाते हैं, इसे नियंत्रित करने वाली सेटिंग्स"
 
 [settings_tab_geoip_desc]
 en = "Settings relating to GeoIp"
@@ -957,6 +1036,7 @@ sv = "Inställningar som rör GeoIp"
 ru = "Настройки, касающиеся GeoIp"
 es = "Configuraciones relacionadas con GeoIp"
 de = "Einstellungen im Zusammenhang mit GeoIp"
+hi = "जियोआईपी से संबंधित सेटिंग्स"
 
 [settings_tab_bindings_desc]
 en = "Tui key bindings"
@@ -969,6 +1049,7 @@ sv = "Tui-kortkommando"
 ru = "Привязки клавиш Tui"
 es = "Atajos de teclado Tui"
 de = "Tui-Tastenbelegungen"
+hi = "टीयूआई कुंजी बाइंडिंग"
 
 [settings_tab_theme_desc]
 en = "Tui theme colors"
@@ -981,6 +1062,7 @@ sv = "Tui-temafärger"
 ru = "Цвета темы Tui"
 es = "Colores del tema Tui"
 de = "Tui-Themefarben"
+hi = "टीयूआई थीम रंग"
 
 [settings_tab_columns_desc]
 en = "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
@@ -993,6 +1075,7 @@ sv = "Tui-tabellkolumner. Tryck på [%{c}] för att slå på eller av en kolumn 
 ru = "Столбцы таблицы Tui. Нажмите [%{c}], чтобы включить или отключить столбец, и используйте клавиши [%{d}] и [%{u}], чтобы изменить порядок столбцов."
 es = "Columnas de la tabla Tui. Presiona [%{c}] para activar o desactivar una columna y usa las teclas [%{d}] y [%{u}] para cambiar el orden de las columnas."
 de = "Tui-Tabellenspalten. Drücken Sie [%{c}], um eine Spalte ein- oder auszuschalten, und verwenden Sie die Tasten [%{d}] und [%{u}], um die Spaltenreihenfolge zu ändern."
+hi = "टीयूआई टेबल कॉलम। कॉलम को चालू या बंद करने के लिए [%{c}] दबाएं और कॉलम क्रम बदलने के लिए [%{d}] और [%{u}] कुंजियों का उपयोग करें।"
 
 [settings_table_header_setting]
 en = "Setting"
@@ -1005,6 +1088,7 @@ sv = "Inställning"
 ru = "Настройка"
 es = "Configuración"
 de = "Einstellung"
+hi = "सेटिंग"
 
 [settings_table_header_value]
 en = "Value"
@@ -1017,6 +1101,7 @@ sv = "Värde"
 ru = "Значение"
 es = "Valor"
 de = "Wert"
+hi = "मान"
 
 [column_host]
 en = "Host"
@@ -1029,6 +1114,7 @@ sv = "Värd"
 ru = "Хост"
 es = "Host"
 de = "Host"
+hi = "होस्ट"
 
 [column_loss_pct]
 en = "Loss%"
@@ -1041,6 +1127,7 @@ sv = "Förlust%"
 ru = "Потери%"
 es = "% Perdidos"
 de = "Verlust%"
+hi = "हानि%"
 
 [column_snd]
 en = "Snd"
@@ -1053,6 +1140,7 @@ sv = "Skickat"
 ru = "Отпр"
 es = "Enviados"
 de = "Snd"
+hi = "भेजा"
 
 [column_recv]
 en = "Recv"
@@ -1065,6 +1153,7 @@ sv = "Mottagna"
 ru = "Получ"
 es = "Recibidos"
 de = "Recv"
+hi = "प्राप्त"
 
 [column_last]
 en = "Last"
@@ -1077,6 +1166,7 @@ sv = "Senast"
 ru = "Посл"
 es = "Último"
 de = "Letzte"
+hi = "अंतिम"
 
 [column_avg]
 en = "Avg"
@@ -1089,6 +1179,7 @@ sv = "Genomsnitt"
 ru = "Сред"
 es = "Prom"
 de = "Durchschnitt"
+hi = "औसत"
 
 [column_best]
 en = "Best"
@@ -1101,6 +1192,7 @@ sv = "Bäst"
 ru = "Луч"
 es = "Mejor"
 de = "Beste"
+hi = "सर्वश्रेष्ठ"
 
 [column_wrst]
 en = "Wrst"
@@ -1113,6 +1205,7 @@ sv = "Sämst"
 ru = "Худ"
 es = "Peor"
 de = "Schlechteste"
+hi = "सबसे खराब"
 
 [column_stdev]
 en = "StDev"
@@ -1125,6 +1218,7 @@ sv = "StDev"
 ru = "СКО"
 es = "DesvE"
 de = "StdAbw"
+hi = "मानक विचलन"
 
 [column_sts]
 en = "Sts"
@@ -1137,6 +1231,7 @@ sv = "Sts"
 ru = "Статус"
 es = "Est"
 de = "Sts"
+hi = "स्थिति"
 
 [column_jttr]
 en = "Jttr"
@@ -1149,6 +1244,7 @@ sv = "Jttr"
 ru = "Джитр"
 es = "Jttr"
 de = "Jttr"
+hi = "जिटर"
 
 [column_javg]
 en = "Javg"
@@ -1161,6 +1257,7 @@ sv = "Javg"
 ru = "СреднДжитр"
 es = "PromJit"
 de = "Javg"
+hi = "जेएवीजी"
 
 [column_jmax]
 en = "Jmax"
@@ -1173,6 +1270,7 @@ sv = "Jmax"
 ru = "МаксДжитр"
 es = "JitMax"
 de = "Jmax"
+hi = "जेमैक्स"
 
 [column_jint]
 en = "Jint"
@@ -1185,6 +1283,7 @@ sv = "Jint"
 ru = "ИнтДжитр"
 es = "JitInt"
 de = "Jint"
+hi = "जेइंट"
 
 [column_sprt]
 en = "Sprt"
@@ -1196,6 +1295,7 @@ sv = "Sprt"
 ru = "Исх"
 es = "Sprt"
 de = "Sprt"
+hi = "स्रोत पोर्ट"
 
 [column_dprt]
 en = "Dprt"
@@ -1208,6 +1308,7 @@ sv = "Dprt"
 ru = "Назн"
 es = "Dprt"
 de = "Dprt"
+hi = "गंतव्य पोर्ट"
 
 [column_seq]
 en = "Seq"
@@ -1220,6 +1321,7 @@ sv = "Seq"
 ru = "Посл"
 es = "Seq"
 de = "Seq"
+hi = "क्रम"
 
 [column_type]
 en = "Type"
@@ -1232,6 +1334,7 @@ sv = "Typ"
 ru = "Тип"
 es = "Tipo"
 de = "Typ"
+hi = "प्रकार"
 
 [column_code]
 en = "Code"
@@ -1244,6 +1347,7 @@ sv = "Kod"
 ru = "Код"
 es = "Código"
 de = "Code"
+hi = "कोड"
 
 [column_nat]
 en = "Nat"
@@ -1256,6 +1360,7 @@ sv = "Nat"
 ru = "Nat"
 es = "Nat"
 de = "Nat"
+hi = "Nat"
 
 [column_fail]
 en = "Fail"
@@ -1268,6 +1373,7 @@ sv = "Misslyckades"
 ru = "Неуд"
 es = "Falló"
 de = "Fehlgeschlagen"
+hi = "विफल"
 
 [column_floss]
 en = "Floss"
@@ -1280,6 +1386,7 @@ sv = "Floss"
 ru = "Floss"
 es = "Floss"
 de = "Floss"
+hi = "Floss"
 
 [column_bloss]
 en = "Bloss"
@@ -1292,6 +1399,7 @@ sv = "Bloss"
 ru = "Bloss"
 es = "Bloss"
 de = "Bloss"
+hi = "Bloss"
 
 [column_floss_pct]
 en = "Floss%"
@@ -1304,3 +1412,4 @@ sv = "Floss%"
 ru = "Floss%"
 es = "Floss%"
 de = "Floss%"
+hi = "Floss%"
