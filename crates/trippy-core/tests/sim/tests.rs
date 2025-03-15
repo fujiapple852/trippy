@@ -2,6 +2,7 @@ use crate::simulation::Simulation;
 use crate::tun_device::tun;
 use crate::{network, tracer};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::thread;
 use test_case::test_case;
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
@@ -69,7 +70,15 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     }
     for attempt in 1..=MAX_ATTEMPTS {
         info!("start simulating {} [attempt #{}]", name, attempt);
-        if let Err(err) = runtime.block_on(run_simulation(simulation.clone())) {
+
+        let token = CancellationToken::new();
+        {
+            let simulation = simulation.clone();
+            let token = token.clone();
+            thread::spawn(move || tracer::Tracer::new(simulation, token).trace());
+        }
+
+        if let Err(err) = runtime.block_on(run_simulation(simulation.clone(), token.clone())) {
             error!("failed simulating {} {} [attempt #{}]", name, err, attempt);
         } else {
             info!("end simulating {} [attempt #{}]", name, attempt);
@@ -79,10 +88,8 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
 }
 
-async fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
+async fn run_simulation(sim: Arc<Simulation>, token: CancellationToken) -> anyhow::Result<()> {
     let tun = tun();
-    let token = CancellationToken::new();
-    let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token.clone()));
-    tokio::task::spawn_blocking(move || tracer::Tracer::new(sim, token).trace()).await??;
+    let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token));
     handle.await?
 }
