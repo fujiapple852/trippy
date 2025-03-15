@@ -10,6 +10,15 @@ members = [
   "examples/*",
 ]
 
+default-members = [
+  "crates/trippy",
+  "crates/trippy-tui",
+  "crates/trippy-core",
+  "crates/trippy-packet",
+  "crates/trippy-privilege",
+  "crates/trippy-dns",
+]
+
 [workspace.package]
 version = "0.13.0-dev"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
