@@ -18,7 +18,7 @@ trippy-core.workspace = true
 trippy-privilege.workspace = true
 trippy-dns.workspace = true
 anyhow.workspace = true
-chrono = { workspace = true, default-features = false, features = ["clock"] }
+chrono = { workspace = true, default-features = false, features = ["clock", "serde"] }
 clap = { workspace = true, default-features = false, features = ["cargo", "derive", "wrap_help", "usage", "unstable-styles", "color", "suggestions", "error-context"] }
 clap_complete.workspace = true
 clap_mangen.workspace = true
