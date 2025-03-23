@@ -329,6 +329,11 @@ tui-refresh-rate = "100ms"
 # The locale to use for Tui [default: auto]
 # tui-locale = "en-US"
 
+# The timezone for displaying dates and time [default: auto]
+#
+# The timezone must be a valid IANA timezone identifier.
+# tui-timezone = "UTC"
+
 # Tui color theme configuration.
 #
 # The supported ANSI color values are:
