@@ -3,6 +3,7 @@ use crate::config::{IcmpExtensionMode, TuiBindings};
 use crate::frontend::binding::Bindings;
 use crate::frontend::columns::Columns;
 use crate::frontend::theme::Theme;
+use chrono_tz::Tz;
 use std::time::Duration;
 
 /// Tui configuration.
@@ -36,6 +37,7 @@ pub struct TuiConfig {
     pub dns_resolve_all: bool,
     /// The current locale.
     pub locale: String,
+    pub timezone: Option<Tz>,
 }
 
 impl TuiConfig {
@@ -56,6 +58,7 @@ impl TuiConfig {
         geoip_mmdb_file: Option<String>,
         dns_resolve_all: bool,
         locale: String,
+        timezone: Option<Tz>,
     ) -> Self {
         Self {
             refresh_rate,
@@ -73,6 +76,7 @@ impl TuiConfig {
             geoip_mmdb_file,
             dns_resolve_all,
             locale,
+            timezone,
         }
     }
 }
