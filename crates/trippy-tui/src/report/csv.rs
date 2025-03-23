@@ -3,9 +3,11 @@ use crate::report::types::fixed_width;
 use itertools::Itertools;
 use serde::Serialize;
 use std::net::IpAddr;
+use tracing::instrument;
 use trippy_dns::Resolver;
 
 /// Generate a CSV report of trace data.
+#[instrument(skip_all, level = "trace")]
 pub fn report<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,

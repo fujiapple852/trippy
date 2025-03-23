@@ -3,9 +3,11 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graphmap::DiGraphMap;
 use std::fmt::{Debug, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
+use tracing::instrument;
 use trippy_core::FlowEntry;
 
 /// Run a trace and generate a dot file.
+#[instrument(skip_all, level = "trace")]
 pub fn report(info: &TraceInfo, report_cycles: usize) -> anyhow::Result<()> {
     struct DotWrapper<'a>(Dot<'a, &'a DiGraphMap<IpAddr, ()>>);
     impl Debug for DotWrapper<'_> {

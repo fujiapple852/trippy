@@ -1,8 +1,10 @@
 use crate::app::TraceInfo;
 use crate::report::types::{Hop, Host, Info, Report};
+use tracing::instrument;
 use trippy_dns::Resolver;
 
 /// Generate a json report of trace data.
+#[instrument(skip_all, level = "trace")]
 pub fn report<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
@@ -23,5 +25,6 @@ pub fn report<R: Resolver>(
         },
         hops,
     };
-    Ok(serde_json::to_writer_pretty(std::io::stdout(), &report)?)
+    serde_json::to_writer_pretty(std::io::stdout(), &report)?;
+    Ok(())
 }

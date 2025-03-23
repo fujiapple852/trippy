@@ -2,9 +2,11 @@ use crate::app::TraceInfo;
 use crate::report::types::Hop;
 use anyhow::anyhow;
 use std::thread::sleep;
+use tracing::instrument;
 use trippy_dns::Resolver;
 
 /// Display a continuous stream of trace data.
+#[instrument(skip_all, level = "trace")]
 pub fn report<R: Resolver>(info: &TraceInfo, resolver: &R) -> anyhow::Result<()> {
     println!(
         "Tracing to {} ({})",
