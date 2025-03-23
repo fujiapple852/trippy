@@ -10,7 +10,9 @@ pub fn report<R: Resolver>(
     report_cycles: usize,
     resolver: &R,
 ) -> anyhow::Result<()> {
+    let start_timestamp = chrono::Utc::now();
     let trace = super::wait_for_round(&info.data, report_cycles)?;
+    let end_timestamp = chrono::Utc::now();
     let hops: Vec<Hop> = trace
         .hops()
         .iter()
@@ -22,6 +24,8 @@ pub fn report<R: Resolver>(
                 ip: info.data.target_addr(),
                 hostname: info.target_hostname.to_string(),
             },
+            start_timestamp,
+            end_timestamp,
         },
         hops,
     };
