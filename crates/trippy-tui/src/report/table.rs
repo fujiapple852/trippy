@@ -2,9 +2,11 @@ use crate::app::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
 use itertools::Itertools;
+use tracing::instrument;
 use trippy_dns::Resolver;
 
 /// Generate a Markdown table report of trace data.
+#[instrument(skip_all, level = "trace")]
 pub fn report_md<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
@@ -14,6 +16,7 @@ pub fn report_md<R: Resolver>(
 }
 
 /// Generate a pretty table report of trace data.
+#[instrument(skip_all, level = "trace")]
 pub fn report_pretty<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
