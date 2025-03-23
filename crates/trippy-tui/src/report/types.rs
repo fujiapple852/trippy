@@ -1,3 +1,4 @@
+use chrono::Utc;
 use itertools::Itertools;
 use serde::{Serialize, Serializer};
 use std::fmt::{Display, Formatter};
@@ -14,6 +15,8 @@ pub struct Report {
 #[derive(Serialize)]
 pub struct Info {
     pub target: Host,
+    pub start_timestamp: chrono::DateTime<Utc>,
+    pub end_timestamp: chrono::DateTime<Utc>,
 }
 
 #[derive(Serialize)]
