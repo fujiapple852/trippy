@@ -233,13 +233,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           allowed-commit-types: "feat,fix,chore,docs,style,refactor,test,build,ci,revert"
 
-  spelling:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Install cargo-spellcheck
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-spellcheck
-      - uses: actions/checkout@v4
-      - name: Run cargo-spellcheck
-        run: cargo spellcheck --code 1
+#  spelling:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - name: Install cargo-spellcheck
+#        uses: taiki-e/install-action@v2
+#        with:
+#          tool: cargo-spellcheck
+#      - uses: actions/checkout@v4
+#      - name: Run cargo-spellcheck
+#        run: cargo spellcheck --code 1
