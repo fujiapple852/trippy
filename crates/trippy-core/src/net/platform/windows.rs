@@ -11,6 +11,7 @@ use std::io::{Error as StdIoError, ErrorKind as StdErrorKind, Result as StdIoRes
 use std::mem::{size_of, zeroed};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::os::windows::prelude::AsRawSocket;
+use std::pin::Pin;
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
 use tracing::instrument;
@@ -92,10 +93,11 @@ const WINSOCK_VERSION: u16 = 0x202;
 
 /// A network socket.
 pub struct SocketImpl {
+    /// The underlying socket.
     inner: socket2::Socket,
-    ol: Box<OVERLAPPED>,
-    buf: Vec<u8>,
-    from: Box<SOCKADDR_STORAGE>,
+    /// Pinned memory for Overlapped I/O, so Windows can safely write into it.
+    pinned: Pin<Box<OverlappedBuffers>>,
+    /// Number of bytes read in the last overlapped operation.
     bytes_read: u32,
 }
 
@@ -113,29 +115,27 @@ impl SocketImpl {
     fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> IoResult<Self> {
         let inner = socket2::Socket::new(domain, ty, protocol)
             .map_err(|err| IoError::Other(err, IoOperation::NewSocket))?;
-        let from = Box::new(Self::new_sockaddr_storage());
-        let ol = Box::new(Self::new_overlapped());
-        let buf = vec![0u8; MAX_PACKET_SIZE];
+        let pinned = Box::pin(OverlappedBuffers::new());
         Ok(Self {
             inner,
-            ol,
-            buf,
-            from,
+            pinned,
             bytes_read: 0,
         })
     }
 
     #[instrument(skip(self), level = "trace")]
     fn create_event(&mut self) -> IoResult<()> {
-        self.ol.hEvent = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })
+        let handle = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })
             .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
+        self.pinned.as_mut().get_mut().overlapped.hEvent = handle;
         Ok(())
     }
 
     #[instrument(skip(self), level = "trace")]
     fn wait_for_event(&self, timeout: Duration) -> IoResult<bool> {
+        let handle = self.pinned.overlapped.hEvent;
         let millis = timeout.as_millis() as u32;
-        let rc = syscall_threading!(WaitForSingleObject(self.ol.hEvent, millis));
+        let rc = syscall_threading!(WaitForSingleObject(handle, millis));
         if rc == WAIT_TIMEOUT {
             return Ok(false);
         } else if rc == WAIT_FAILED {
@@ -149,7 +149,8 @@ impl SocketImpl {
 
     #[instrument(skip(self), level = "trace")]
     fn reset_event(&self) -> IoResult<()> {
-        syscall!(WSAResetEvent(self.ol.hEvent), |res| { res == 0 })
+        let handle = self.pinned.overlapped.hEvent;
+        syscall!(WSAResetEvent(handle), |res| { res == 0 })
             .map_err(|err| IoError::Other(err, IoOperation::WSAResetEvent))
             .map(|_| ())
     }
@@ -212,10 +213,14 @@ impl SocketImpl {
             res == SOCKET_ERROR
                 && StdIoError::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
         }
+        let pinned_mut = self.pinned.as_mut().get_mut();
+        let overlapped = &mut pinned_mut.overlapped;
+        let from_ptr = &mut pinned_mut.from;
+        let buf_ptr = pinned_mut.buf.as_mut_ptr();
         let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
             len: MAX_PACKET_SIZE as u32,
-            buf: self.buf.as_mut_ptr(),
+            buf: buf_ptr,
         };
         syscall!(
             WSARecvFrom(
@@ -224,9 +229,9 @@ impl SocketImpl {
                 1,
                 null_mut(),
                 &mut 0,
-                addr_of_mut!(*self.from).cast(),
+                addr_of_mut!(*from_ptr).cast(),
                 addr_of_mut!(fromlen),
-                addr_of_mut!(*self.ol),
+                addr_of_mut!(*overlapped),
                 None,
             ),
             is_err
@@ -237,13 +242,13 @@ impl SocketImpl {
 
     #[instrument(skip(self), level = "trace")]
     fn get_overlapped_result(&mut self) -> IoResult<()> {
+        let overlapped = &self.pinned.overlapped;
         let mut bytes_read = 0;
         let mut flags = 0;
-        let ol = *self.ol;
         syscall!(
             WSAGetOverlappedResult(
                 self.inner.as_raw_socket() as _,
-                addr_of!(ol),
+                addr_of!(*overlapped),
                 &mut bytes_read,
                 0,
                 &mut flags,
@@ -262,18 +267,6 @@ impl SocketImpl {
     }
 
     #[allow(unsafe_code)]
-    const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
-        // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
-        unsafe { zeroed::<SOCKADDR_STORAGE>() }
-    }
-
-    #[allow(unsafe_code)]
-    const fn new_overlapped() -> OVERLAPPED {
-        // Safety: an all-zero value is valid for `OVERLAPPED.`
-        unsafe { zeroed::<OVERLAPPED>() }
-    }
-
-    #[allow(unsafe_code)]
     const fn new_icmp_error_info() -> ICMP_ERROR_INFO {
         // Safety: an all-zero value is valid for `ICMP_ERROR_INFO`.
         unsafe { zeroed::<ICMP_ERROR_INFO>() }
@@ -284,8 +277,9 @@ impl SocketImpl {
 impl Drop for SocketImpl {
     fn drop(&mut self) {
         self.close().unwrap_or_default();
-        if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
-            syscall!(WSACloseEvent(self.ol.hEvent), |res| { res == 0 }).unwrap_or_default();
+        let handle = self.pinned.overlapped.hEvent;
+        if handle != -1 && handle != 0 {
+            let _ = syscall!(WSACloseEvent(handle), |res| res == 0);
         }
     }
 }
@@ -447,10 +441,11 @@ impl Socket for SocketImpl {
     #[instrument(skip(self), level = "trace")]
     fn connect(&mut self, addr: SocketAddr) -> IoResult<()> {
         self.set_fail_connect_on_icmp_error(true)?;
+        let handle = self.pinned.overlapped.hEvent;
         syscall!(
             WSAEventSelect(
                 self.inner.as_raw_socket() as _,
-                self.ol.hEvent,
+                handle,
                 (FD_CONNECT | FD_WRITE) as _
             ),
             |res| res == SOCKET_ERROR
@@ -505,8 +500,10 @@ impl Socket for SocketImpl {
 
     #[instrument(skip(self, buf), level = "trace")]
     fn recv_from(&mut self, buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
-        let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))
-            .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
+        let addr = sockaddrptr_to_ipaddr(
+            std::ptr::addr_of!(self.pinned.as_ref().get_ref().from).cast_mut(),
+        )
+        .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
         let len = self.read(buf)?;
         tracing::trace!(
             buf = format!("{:02x?}", buf[..len].iter().format(" ")),
@@ -518,7 +515,8 @@ impl Socket for SocketImpl {
 
     #[instrument(skip(self, buf), ret, level = "trace")]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        buf.copy_from_slice(self.buf.as_slice());
+        let pinned_buf = &self.pinned.as_ref().get_ref().buf;
+        buf.copy_from_slice(pinned_buf.as_slice());
         let bytes_read = self.bytes_read as usize;
         tracing::trace!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
         self.post_recv_from()?;
@@ -587,6 +585,35 @@ impl Socket for SocketImpl {
             == SOCKET_ERROR)
         .map_err(|err| IoError::Other(err, IoOperation::Close))
         .map(|_| ())
+    }
+}
+
+#[repr(C)]
+struct OverlappedBuffers {
+    overlapped: OVERLAPPED,
+    from: SOCKADDR_STORAGE,
+    buf: [u8; MAX_PACKET_SIZE],
+}
+
+impl OverlappedBuffers {
+    const fn new() -> Self {
+        Self {
+            overlapped: Self::new_overlapped(),
+            from: Self::new_sockaddr_storage(),
+            buf: [0; MAX_PACKET_SIZE],
+        }
+    }
+
+    #[allow(unsafe_code)]
+    const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
+        // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
+        unsafe { zeroed::<SOCKADDR_STORAGE>() }
+    }
+
+    #[allow(unsafe_code)]
+    const fn new_overlapped() -> OVERLAPPED {
+        // Safety: an all-zero value is valid for `OVERLAPPED.`
+        unsafe { zeroed::<OVERLAPPED>() }
     }
 }
 
