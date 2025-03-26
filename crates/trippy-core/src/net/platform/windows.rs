@@ -276,7 +276,6 @@ impl SocketImpl {
 #[allow(clippy::redundant_closure_call)]
 impl Drop for SocketImpl {
     fn drop(&mut self) {
-        self.close().unwrap_or_default();
         let handle = self.pinned.overlapped.hEvent;
         if handle != -1 && handle != 0 {
             let _ = syscall!(WSACloseEvent(handle), |res| res == 0);
