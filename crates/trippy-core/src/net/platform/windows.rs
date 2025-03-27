@@ -516,11 +516,11 @@ impl Socket for SocketImpl {
     #[instrument(skip(self, buf), ret, level = "trace")]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
         let pinned_buf = &self.pinned.as_ref().get_ref().buf;
-        buf.copy_from_slice(pinned_buf.as_slice());
-        let bytes_read = self.bytes_read as usize;
-        tracing::trace!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
+        let to_copy = std::cmp::min(self.bytes_read as usize, buf.len());
+        buf[..to_copy].copy_from_slice(&pinned_buf[..to_copy]);
+        tracing::trace!(buf = format!("{:02x?}", buf[..to_copy].iter().format(" ")));
         self.post_recv_from()?;
-        Ok(bytes_read)
+        Ok(to_copy)
     }
 
     #[instrument(skip(self), level = "trace")]
