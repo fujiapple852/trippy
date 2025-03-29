@@ -629,7 +629,8 @@ impl From<ErrorKind> for StdIoError {
 #[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
 #[instrument(level = "trace")]
 fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
-    let src: *mut c_void = [0; 1024].as_mut_ptr().cast();
+    let mut src_buf = [0; 1024];
+    let src: *mut c_void = src_buf.as_mut_ptr().cast();
     let mut bytes = 0;
     let socket = match target {
         IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
