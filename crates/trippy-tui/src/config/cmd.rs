@@ -226,6 +226,12 @@ pub struct Args {
     #[arg(long)]
     pub tui_locale: Option<String>,
 
+    /// The timezone to use for the TUI [default: auto]
+    ///
+    /// The timezone must be a valid IANA timezone identifier.
+    #[arg(long)]
+    pub tui_timezone: Option<String>,
+
     /// The TUI theme colors [item=color,item=color,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value)]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,

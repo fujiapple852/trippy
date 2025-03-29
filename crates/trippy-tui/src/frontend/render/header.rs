@@ -27,7 +27,13 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         );
-    let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+    let now = if let Some(tz) = &app.tui_config.timezone {
+        chrono::Utc::now()
+            .with_timezone(tz)
+            .to_rfc3339_opts(SecondsFormat::Secs, true)
+    } else {
+        chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true)
+    };
     let clock_span = Line::from(Span::raw(now));
     let bold = Style::default().add_modifier(Modifier::BOLD);
 

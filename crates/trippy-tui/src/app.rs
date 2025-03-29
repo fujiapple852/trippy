@@ -223,6 +223,7 @@ fn make_tui_config(args: &TrippyConfig, locale: String) -> TuiConfig {
         args.geoip_mmdb_file.clone(),
         args.dns_resolve_all,
         locale,
+        args.tui_timezone,
     )
 }
 
