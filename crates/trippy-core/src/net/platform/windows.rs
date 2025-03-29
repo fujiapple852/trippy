@@ -96,6 +96,7 @@ pub struct SocketImpl {
     ol: Box<OVERLAPPED>,
     buf: Vec<u8>,
     from: Box<SOCKADDR_STORAGE>,
+    from_len: i32,
     bytes_read: u32,
 }
 
@@ -114,6 +115,7 @@ impl SocketImpl {
         let inner = socket2::Socket::new(domain, ty, protocol)
             .map_err(|err| IoError::Other(err, IoOperation::NewSocket))?;
         let from = Box::new(Self::new_sockaddr_storage());
+        let from_len = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let ol = Box::new(Self::new_overlapped());
         let buf = vec![0u8; MAX_PACKET_SIZE];
         Ok(Self {
@@ -121,6 +123,7 @@ impl SocketImpl {
             ol,
             buf,
             from,
+            from_len,
             bytes_read: 0,
         })
     }
@@ -212,7 +215,6 @@ impl SocketImpl {
             res == SOCKET_ERROR
                 && StdIoError::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
         }
-        let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let wbuf = WSABUF {
             len: MAX_PACKET_SIZE as u32,
             buf: self.buf.as_mut_ptr(),
@@ -225,7 +227,7 @@ impl SocketImpl {
                 null_mut(),
                 &mut 0,
                 addr_of_mut!(*self.from).cast(),
-                addr_of_mut!(fromlen),
+                addr_of_mut!(self.from_len),
                 addr_of_mut!(*self.ol),
                 None,
             ),
