@@ -518,8 +518,8 @@ impl Socket for SocketImpl {
 
     #[instrument(skip(self, buf), ret, level = "trace")]
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        buf.copy_from_slice(self.buf.as_slice());
-        let bytes_read = self.bytes_read as usize;
+        let bytes_read = std::cmp::min(self.bytes_read as usize, buf.len());
+        buf[..bytes_read].copy_from_slice(&self.buf[..bytes_read]);
         tracing::trace!(buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")));
         self.post_recv_from()?;
         Ok(bytes_read)
