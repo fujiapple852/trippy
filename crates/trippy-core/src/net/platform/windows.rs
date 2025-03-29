@@ -17,11 +17,11 @@ use tracing::instrument;
 use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::Networking::WinSock::{
     AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, ICMP_ERROR_INFO, IN6_ADDR, IN6_ADDR_0, IN_ADDR,
-    IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
-    SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
-    SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
-    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAENETUNREACH, WSAENOBUFS,
-    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR, SOCKADDR_IN,
+    SOCKADDR_IN6, SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR,
+    SO_PORT_SCALABILITY, SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO,
+    WSABUF, WSADATA, WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS,
+    WSAENETUNREACH, WSAENOBUFS, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -95,7 +95,8 @@ pub struct SocketImpl {
     inner: socket2::Socket,
     ol: Box<OVERLAPPED>,
     buf: Vec<u8>,
-    from: Box<SOCKADDR_STORAGE>,
+    from: SockAddr,
+    from_len: i32,
     bytes_read: u32,
 }
 
@@ -113,14 +114,17 @@ impl SocketImpl {
     fn new(domain: Domain, ty: Type, protocol: Option<Protocol>) -> IoResult<Self> {
         let inner = socket2::Socket::new(domain, ty, protocol)
             .map_err(|err| IoError::Other(err, IoOperation::NewSocket))?;
-        let from = Box::new(Self::new_sockaddr_storage());
+        let from2 =
+            socket2::SockAddr::from(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 0));
+        let from2_len = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let ol = Box::new(Self::new_overlapped());
         let buf = vec![0u8; MAX_PACKET_SIZE];
         Ok(Self {
             inner,
             ol,
             buf,
-            from,
+            from: from2,
+            from_len: from2_len,
             bytes_read: 0,
         })
     }
@@ -212,7 +216,7 @@ impl SocketImpl {
             res == SOCKET_ERROR
                 && StdIoError::last_os_error().raw_os_error() != Some(WSA_IO_PENDING)
         }
-        let mut fromlen = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
+        let storage: *mut SOCKADDR = self.from.as_ptr().cast_mut().cast();
         let wbuf = WSABUF {
             len: MAX_PACKET_SIZE as u32,
             buf: self.buf.as_mut_ptr(),
@@ -224,8 +228,8 @@ impl SocketImpl {
                 1,
                 null_mut(),
                 &mut 0,
-                addr_of_mut!(*self.from).cast(),
-                addr_of_mut!(fromlen),
+                storage,
+                addr_of_mut!(self.from_len),
                 addr_of_mut!(*self.ol),
                 None,
             ),
@@ -261,11 +265,11 @@ impl SocketImpl {
         unsafe { zeroed::<WSADATA>() }
     }
 
-    #[allow(unsafe_code)]
-    const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
-        // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
-        unsafe { zeroed::<SOCKADDR_STORAGE>() }
-    }
+    // #[allow(unsafe_code)]
+    // const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
+    //     // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
+    //     unsafe { zeroed::<SOCKADDR_STORAGE>() }
+    // }
 
     #[allow(unsafe_code)]
     const fn new_overlapped() -> OVERLAPPED {
@@ -503,17 +507,18 @@ impl Socket for SocketImpl {
         Ok(true)
     }
 
-    #[instrument(skip(self, buf), level = "trace")]
-    fn recv_from(&mut self, buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
-        let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))
-            .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
-        let len = self.read(buf)?;
-        tracing::trace!(
-            buf = format!("{:02x?}", buf[..len].iter().format(" ")),
-            len,
-            ?addr
-        );
-        Ok((len, Some(SocketAddr::new(addr, 0))))
+    #[instrument(skip(self, _buf), level = "trace")]
+    fn recv_from(&mut self, _buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
+        // let addr = sockaddrptr_to_ipaddr(addr_of_mut!(*self.from))
+        //     .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
+        // let len = self.read(buf)?;
+        // tracing::trace!(
+        //     buf = format!("{:02x?}", buf[..len].iter().format(" ")),
+        //     len,
+        //     ?addr
+        // );
+        // Ok((len, Some(SocketAddr::new(addr, 0))))
+        todo!()
     }
 
     #[instrument(skip(self, buf), ret, level = "trace")]
