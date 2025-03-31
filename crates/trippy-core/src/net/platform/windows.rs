@@ -94,7 +94,7 @@ const WINSOCK_VERSION: u16 = 0x202;
 pub struct SocketImpl {
     inner: socket2::Socket,
     ol: Box<OVERLAPPED>,
-    buf: Vec<u8>,
+    buf: Box<[u8]>,
     from: Box<SOCKADDR_STORAGE>,
     from_len: i32,
     bytes_read: u32,
@@ -117,7 +117,7 @@ impl SocketImpl {
         let from = Box::new(Self::new_sockaddr_storage());
         let from_len = std::mem::size_of::<SOCKADDR_STORAGE>() as i32;
         let ol = Box::new(Self::new_overlapped());
-        let buf = vec![0u8; MAX_PACKET_SIZE];
+        let buf = Box::new([0; MAX_PACKET_SIZE]);
         Ok(Self {
             inner,
             ol,
