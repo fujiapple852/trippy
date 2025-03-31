@@ -459,57 +459,6 @@ mod socket {
                 .map(|_| ())
         }
 
-        #[instrument(skip(self, optval), level = "trace")]
-        fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> StdIoResult<T> {
-            let mut optlen = size_of::<T>() as i32;
-            syscall!(
-                getsockopt(
-                    self.inner.as_raw_socket() as _,
-                    level,
-                    optname,
-                    addr_of_mut!(optval).cast(),
-                    &mut optlen,
-                ),
-                |res| res == SOCKET_ERROR
-            )?;
-            Ok(optval)
-        }
-
-        #[instrument(skip(self), level = "trace")]
-        fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> StdIoResult<()> {
-            let bytes = optval.to_ne_bytes();
-            let optval = addr_of!(bytes).cast();
-            syscall!(
-                setsockopt(
-                    self.inner.as_raw_socket() as _,
-                    level,
-                    optname,
-                    optval,
-                    size_of::<u32>() as i32,
-                ),
-                |res| res == SOCKET_ERROR
-            )
-            .map(|_| ())
-        }
-
-        #[instrument(skip(self), level = "trace")]
-        fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> StdIoResult<()> {
-            self.setsockopt_u32(level, optname, u32::from(optval))
-        }
-
-        #[instrument(skip(self), level = "trace")]
-        fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> IoResult<()> {
-            self.setsockopt_bool(IPPROTO_TCP, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
-                .map_err(|err| IoError::Other(err, IoOperation::SetTcpFailConnectOnIcmpError))
-        }
-
-        #[instrument(skip(self), level = "trace")]
-        fn set_non_blocking(&self, is_non_blocking: bool) -> IoResult<()> {
-            self.inner
-                .set_nonblocking(is_non_blocking)
-                .map_err(|err| IoError::Other(err, IoOperation::SetNonBlocking))
-        }
-
         // TODO handle case where `WSARecvFrom` succeeded immediately.
         #[instrument(skip(self), level = "trace")]
         fn post_recv_from(&mut self) -> IoResult<()> {
@@ -560,6 +509,57 @@ mod socket {
             .map_err(|err| IoError::Other(err, IoOperation::WSAGetOverlappedResult))?;
             self.bytes_read = bytes_read;
             Ok(())
+        }
+
+        #[instrument(skip(self, optval), level = "trace")]
+        fn getsockopt<T>(&self, level: i32, optname: i32, mut optval: T) -> StdIoResult<T> {
+            let mut optlen = size_of::<T>() as i32;
+            syscall!(
+                getsockopt(
+                    self.inner.as_raw_socket() as _,
+                    level,
+                    optname,
+                    addr_of_mut!(optval).cast(),
+                    &mut optlen,
+                ),
+                |res| res == SOCKET_ERROR
+            )?;
+            Ok(optval)
+        }
+
+        #[instrument(skip(self), level = "trace")]
+        fn setsockopt_u32(&self, level: i32, optname: i32, optval: u32) -> StdIoResult<()> {
+            let bytes = optval.to_ne_bytes();
+            let optval = addr_of!(bytes).cast();
+            syscall!(
+                setsockopt(
+                    self.inner.as_raw_socket() as _,
+                    level,
+                    optname,
+                    optval,
+                    size_of::<u32>() as i32,
+                ),
+                |res| res == SOCKET_ERROR
+            )
+            .map(|_| ())
+        }
+
+        #[instrument(skip(self), level = "trace")]
+        fn setsockopt_bool(&self, level: i32, optname: i32, optval: bool) -> StdIoResult<()> {
+            self.setsockopt_u32(level, optname, u32::from(optval))
+        }
+
+        #[instrument(skip(self), level = "trace")]
+        fn set_fail_connect_on_icmp_error(&self, enabled: bool) -> IoResult<()> {
+            self.setsockopt_bool(IPPROTO_TCP, TCP_FAIL_CONNECT_ON_ICMP_ERROR as _, enabled)
+                .map_err(|err| IoError::Other(err, IoOperation::SetTcpFailConnectOnIcmpError))
+        }
+
+        #[instrument(skip(self), level = "trace")]
+        fn set_non_blocking(&self, is_non_blocking: bool) -> IoResult<()> {
+            self.inner
+                .set_nonblocking(is_non_blocking)
+                .map_err(|err| IoError::Other(err, IoOperation::SetNonBlocking))
         }
 
         #[allow(unsafe_code)]
