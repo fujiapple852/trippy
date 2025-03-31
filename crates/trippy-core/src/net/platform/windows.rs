@@ -37,26 +37,6 @@ macro_rules! syscall {
     }};
 }
 
-/// Execute a `Win32::NetworkManagement::IpHelper` syscall.
-///
-/// The raw result of the syscall is returned.
-macro_rules! syscall_ip_helper {
-    ($fn: ident ( $($arg: expr),* $(,)* )) => {{
-        #[allow(unsafe_code)]
-        unsafe { windows_sys::Win32::NetworkManagement::IpHelper::$fn($($arg, )*) }
-    }};
-}
-
-/// Execute a `Win32::System::Threading` syscall.
-///
-/// The raw result of the syscall is returned.
-macro_rules! syscall_threading {
-    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code)]
-        unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
-    }};
-}
-
 mod address {
     use crate::error::{IoError, IoOperation};
     use crate::net::socket::Socket;
@@ -72,6 +52,16 @@ mod address {
         AF_INET, AF_INET6, IN6_ADDR, IN6_ADDR_0, IN_ADDR, IN_ADDR_0, SIO_ROUTING_INTERFACE_QUERY,
         SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR,
     };
+
+    /// Execute a `Win32::NetworkManagement::IpHelper` syscall.
+    ///
+    /// The raw result of the syscall is returned.
+    macro_rules! syscall_ip_helper {
+        ($fn: ident ( $($arg: expr),* $(,)* )) => {{
+            #[allow(unsafe_code)]
+            unsafe { windows_sys::Win32::NetworkManagement::IpHelper::$fn($($arg, )*) }
+        }};
+    }
 
     /// NOTE under Windows, we cannot use a bind connect/getsockname as "If the socket
     /// is using a connectionless protocol, the address may not be available until I/O
@@ -380,6 +370,16 @@ mod socket {
         WSAENOBUFS, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
     };
     use windows_sys::Win32::System::IO::OVERLAPPED;
+
+    /// Execute a `Win32::System::Threading` syscall.
+    ///
+    /// The raw result of the syscall is returned.
+    macro_rules! syscall_threading {
+        ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
+            #[allow(unsafe_code)]
+            unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
+        }};
+    }
 
     #[instrument(level = "trace")]
     pub fn startup() -> crate::error::Result<()> {
