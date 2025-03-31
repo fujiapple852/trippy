@@ -38,19 +38,19 @@ macro_rules! syscall {
 }
 
 mod address {
+    use crate::error::{Error, Result};
     use crate::error::{IoError, IoOperation};
     use crate::net::socket::Socket;
     use crate::net::SocketImpl;
-    use crate::{error::Result, Error};
-    use std::ffi::c_void;
+    use socket2::SockAddr;
     use std::io::{Error as StdIoError, ErrorKind as StdErrorKind, Result as StdIoResult};
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
     use std::os::windows::io::AsRawSocket;
-    use std::ptr::{addr_of, addr_of_mut, null_mut};
+    use std::ptr::{addr_of_mut, null_mut};
     use tracing::instrument;
     use windows_sys::Win32::Networking::WinSock::{
-        AF_INET, AF_INET6, IN6_ADDR, IN6_ADDR_0, IN_ADDR, IN_ADDR_0, SIO_ROUTING_INTERFACE_QUERY,
-        SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR,
+        AF_INET, AF_INET6, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
+        SOCKADDR_STORAGE, SOCKET_ERROR,
     };
 
     /// Execute a `Win32::NetworkManagement::IpHelper` syscall.
@@ -68,36 +68,35 @@ mod address {
     /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
     #[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
     #[instrument(level = "trace")]
-    pub fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
-        let mut src_buf = [0; 1024];
-        let src: *mut c_void = src_buf.as_mut_ptr().cast();
-        let mut bytes = 0;
+    pub(super) fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
         let socket = match target {
             IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
             IpAddr::V6(_) => SocketImpl::new_udp_dgram_socket_ipv6(),
         }?;
-        let (dest, destlen) = socketaddr_to_sockaddr(SocketAddr::new(target, 0));
+        let dest = SockAddr::from(SocketAddr::new(target, 0));
+        let src = SockAddr::from(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0));
+        let mut bytes_returned = 0;
         syscall!(
             WSAIoctl(
                 socket.inner.as_raw_socket() as _,
                 SIO_ROUTING_INTERFACE_QUERY,
-                addr_of!(dest).cast(),
-                destlen as u32,
-                src,
-                1024,
-                addr_of_mut!(bytes),
+                dest.as_ptr().cast(),
+                dest.len() as u32,
+                src.as_ptr().cast_mut().cast(),
+                size_of::<SOCKADDR_STORAGE>() as u32,
+                addr_of_mut!(bytes_returned),
                 null_mut(),
                 None,
             ),
             |res| res == SOCKET_ERROR
         )
         .map_err(|err| IoError::Other(err, IoOperation::SioRoutingInterfaceQuery))?;
-        // Note that the `WSAIoctl` call potentially returns multiple results (see
-        // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
-        // TBD We choose the first one arbitrarily.
-        let sockaddr = src.cast::<SOCKADDR_STORAGE>();
-        sockaddrptr_to_ipaddr(sockaddr)
-            .map_err(|err| Error::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
+        if let Some(socket) = src.as_socket() {
+            Ok(socket.ip())
+        } else {
+            // TODO
+            Err(Error::Other("TODO".to_string()))
+        }
     }
 
     #[allow(unsafe_code)]
@@ -151,52 +150,8 @@ mod address {
         }
     }
 
-    #[allow(unsafe_code)]
-    #[allow(clippy::cast_possible_wrap)]
-    #[must_use]
-    fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
-        #[repr(C)]
-        union SockAddr {
-            storage: SOCKADDR_STORAGE,
-            in4: SOCKADDR_IN,
-            in6: SOCKADDR_IN6,
-        }
-
-        let sockaddr = match socketaddr {
-            SocketAddr::V4(socketaddrv4) => SockAddr {
-                in4: SOCKADDR_IN {
-                    sin_family: AF_INET,
-                    sin_port: socketaddrv4.port().to_be(),
-                    sin_addr: IN_ADDR {
-                        S_un: IN_ADDR_0 {
-                            S_addr: u32::from(*socketaddrv4.ip()).to_be(),
-                        },
-                    },
-                    sin_zero: [0; 8],
-                },
-            },
-            SocketAddr::V6(socketaddrv6) => SockAddr {
-                in6: SOCKADDR_IN6 {
-                    sin6_family: AF_INET6,
-                    sin6_port: socketaddrv6.port().to_be(),
-                    sin6_flowinfo: socketaddrv6.flowinfo(),
-                    sin6_addr: IN6_ADDR {
-                        u: IN6_ADDR_0 {
-                            Byte: socketaddrv6.ip().octets(),
-                        },
-                    },
-                    Anonymous: SOCKADDR_IN6_0 {
-                        sin6_scope_id: socketaddrv6.scope_id(),
-                    },
-                },
-            },
-        };
-
-        (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
-    }
-
     #[instrument(skip(addr), ret, level = "trace")]
-    pub(super) fn lookup_interface_addr(addr: IpAddr, name: &str) -> crate::error::Result<IpAddr> {
+    pub(super) fn lookup_interface_addr(addr: IpAddr, name: &str) -> Result<IpAddr> {
         let adapters = match addr {
             IpAddr::V4(_) => adapter::Adapters::ipv4()?,
             IpAddr::V6(_) => adapter::Adapters::ipv6()?,
