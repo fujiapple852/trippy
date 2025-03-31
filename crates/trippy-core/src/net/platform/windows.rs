@@ -43,14 +43,13 @@ mod address {
     use crate::net::socket::Socket;
     use crate::net::SocketImpl;
     use socket2::SockAddr;
-    use std::io::{Error as StdIoError, ErrorKind as StdErrorKind, Result as StdIoResult};
-    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+    use std::io::Error as StdIoError;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::os::windows::io::AsRawSocket;
     use std::ptr::{addr_of_mut, null_mut};
     use tracing::instrument;
     use windows_sys::Win32::Networking::WinSock::{
-        AF_INET, AF_INET6, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
-        SOCKADDR_STORAGE, SOCKET_ERROR,
+        SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_STORAGE, SOCKET_ERROR,
     };
 
     /// Execute a `Win32::NetworkManagement::IpHelper` syscall.
@@ -99,57 +98,6 @@ mod address {
         }
     }
 
-    #[allow(unsafe_code)]
-    fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr> {
-        // Safety: TODO
-        match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().unwrap() }) {
-            Err(e) => Err(e),
-            Ok(socketaddr) => match socketaddr {
-                SocketAddr::V4(socketaddrv4) => Ok(IpAddr::V4(*socketaddrv4.ip())),
-                SocketAddr::V6(socketaddrv6) => Ok(IpAddr::V6(*socketaddrv6.ip())),
-            },
-        }
-    }
-
-    #[allow(unsafe_code)]
-    fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr> {
-        let ptr = sockaddr as *const SOCKADDR_STORAGE;
-        let af = sockaddr.ss_family;
-        if af == AF_INET {
-            let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
-            // Safety: TODO
-            let sockaddr_in = unsafe { *sockaddr_in_ptr };
-            let ipv4addr = u32::from_be(unsafe { sockaddr_in.sin_addr.S_un.S_addr });
-            let port = sockaddr_in.sin_port;
-            Ok(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::from(ipv4addr),
-                port,
-            )))
-        } else if af == AF_INET6 {
-            #[allow(clippy::cast_ptr_alignment)]
-            let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
-            // Safety: TODO
-            let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
-            // TODO: check endianness
-            // Safety: TODO
-            let ipv6addr = unsafe { sockaddr_in6.sin6_addr.u.Byte };
-            let port = sockaddr_in6.sin6_port;
-            // Safety: TODO
-            let scope_id = unsafe { sockaddr_in6.Anonymous.sin6_scope_id };
-            Ok(SocketAddr::V6(SocketAddrV6::new(
-                Ipv6Addr::from(ipv6addr),
-                port,
-                sockaddr_in6.sin6_flowinfo,
-                scope_id,
-            )))
-        } else {
-            Err(StdIoError::new(
-                StdErrorKind::Unsupported,
-                format!("Unsupported address family: {af:?}"),
-            ))
-        }
-    }
-
     #[instrument(skip(addr), ret, level = "trace")]
     pub(super) fn lookup_interface_addr(addr: IpAddr, name: &str) -> Result<IpAddr> {
         let adapters = match addr {
@@ -170,7 +118,7 @@ mod address {
 
     mod adapter {
         use crate::error::{Error, Result};
-        use crate::net::platform::windows::address::sockaddrptr_to_ipaddr;
+        use socket2::SockAddr;
         use std::io::Error as StdIoError;
         use std::marker::PhantomData;
         use std::net::IpAddr;
@@ -289,7 +237,15 @@ mod address {
                             let first_unicast = (*self.next).FirstUnicastAddress;
                             let socket_address = (*first_unicast).Address;
                             let sockaddr = socket_address.lpSockaddr;
-                            sockaddrptr_to_ipaddr(sockaddr.cast()).ok()?
+
+                            // Safety: TODO
+                            let ((), addr) = SockAddr::try_init(|s, _length| {
+                                // TODO or `memcpy`?
+                                *s = *sockaddr.cast();
+                                Ok(())
+                            })
+                            .unwrap();
+                            addr.as_socket().unwrap().ip()
                         };
                         self.next = (*self.next).Next;
                         Some(AdapterAddress {
