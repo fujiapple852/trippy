@@ -64,7 +64,7 @@ ratatui = "0.29.0"
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = { version = "3.12.0", default-features = false, features = ["macros"] }
-socket2 = "0.5.8"
+socket2 = "0.5.9"
 strum = { version = "0.27.1", default-features = false }
 sys-locale = "0.3.2"
 test-case = "3.3.1"
