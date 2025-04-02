@@ -753,7 +753,7 @@ fn lookup_interface_addr(adapters: &Adapters, name: &str) -> Result<IpAddr> {
         .iter()
         .find_map(|addr| {
             if addr.name.eq_ignore_ascii_case(name) {
-                Some(addr.addr)
+                addr.addr
             } else {
                 None
             }
@@ -843,8 +843,8 @@ mod adapter {
     pub struct AdapterAddress {
         /// The adapter friendly name.
         pub name: String,
-        /// The adapter `IpAddress`.
-        pub addr: IpAddr,
+        /// The first adapter uni-cast `IpAddr`, if any.
+        pub addr: Option<IpAddr>,
     }
 
     /// An iterator for `Adapters` which yields `AdapterAddress`
@@ -880,9 +880,13 @@ mod adapter {
                         .ok()?;
                     let addr = {
                         let first_unicast = (*self.next).FirstUnicastAddress;
-                        let socket_address = (*first_unicast).Address;
-                        let sockaddr = socket_address.lpSockaddr;
-                        sockaddrptr_to_ipaddr(sockaddr.cast()).ok()?
+                        if first_unicast.is_null() {
+                            None
+                        } else {
+                            let socket_address = (*first_unicast).Address;
+                            let sockaddr = socket_address.lpSockaddr;
+                            Some(sockaddrptr_to_ipaddr(sockaddr.cast()).ok()?)
+                        }
                     };
                     self.next = (*self.next).Next;
                     Some(AdapterAddress {
