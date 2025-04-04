@@ -478,7 +478,7 @@ impl Socket for SocketImpl {
     fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
         if !self.wait_for_event(timeout)? {
             return Ok(false);
-        };
+        }
         while let Err(err) = self.get_overlapped_result() {
             if err.kind() != ErrorKind::Std(StdIoError::from_raw_os_error(WSA_IO_INCOMPLETE).kind())
             {
@@ -493,7 +493,7 @@ impl Socket for SocketImpl {
     fn is_writable(&mut self) -> IoResult<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
-        };
+        }
         while let Err(err) = self.get_overlapped_result() {
             if err.kind() != ErrorKind::Std(StdIoError::from_raw_os_error(WSA_IO_INCOMPLETE).kind())
             {

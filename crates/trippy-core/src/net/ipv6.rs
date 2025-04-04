@@ -253,7 +253,7 @@ impl Ipv6 {
                 }
                 SocketError::Other(_) => {}
             },
-        };
+        }
         Ok(None)
     }
 

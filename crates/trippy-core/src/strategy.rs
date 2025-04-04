@@ -124,7 +124,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                         }
                     }
                 }
-            };
+            }
         }
         Ok(())
     }

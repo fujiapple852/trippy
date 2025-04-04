@@ -244,7 +244,7 @@ impl TuiApp {
     pub fn previous_settings_tab(&mut self) {
         if self.settings_tab_selected > 0 {
             self.settings_tab_selected -= 1;
-        };
+        }
         self.setting_table_state.select(Some(0));
     }
 
