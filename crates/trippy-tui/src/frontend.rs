@@ -75,7 +75,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Resu
             app.snapshot_trace_data();
             app.clamp_selected_hop();
             app.update_order_flow_counts();
-        };
+        }
         terminal.draw(|f| render::app::render(f, app))?;
         if event::poll(app.tui_config.refresh_rate)? {
             if let Event::Key(key) = event::read()? {

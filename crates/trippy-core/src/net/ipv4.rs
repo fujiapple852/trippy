@@ -278,7 +278,7 @@ impl Ipv4 {
                 }
                 SocketError::Other(_) => {}
             },
-        };
+        }
         Ok(None)
     }
 

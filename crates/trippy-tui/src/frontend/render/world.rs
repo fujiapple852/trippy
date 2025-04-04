@@ -213,7 +213,7 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
                     });
                     entry.hops.push(hop.ttl());
                 }
-            };
+            }
         }
     }
     geo_map.into_values().collect_vec()

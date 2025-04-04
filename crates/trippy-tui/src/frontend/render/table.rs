@@ -11,6 +11,7 @@ use ratatui::prelude::Line;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use ratatui::Frame;
+use std::fmt::Write;
 use std::net::IpAddr;
 use std::rc::Rc;
 use trippy_core::{Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension};
@@ -361,16 +362,16 @@ fn format_address(
     };
     let mut address = addr_fmt;
     if let Some(geo) = geo_fmt.as_deref() {
-        address.push_str(&format!(" [{geo}]"));
+        let _ = write!(address, " [{geo}]");
     }
     if let Some(exp) = exp_fmt {
-        address.push_str(&format!(" [{exp}]"));
+        let _ = write!(address, " [{exp}]");
     }
     if let Some(nat) = nat {
-        address.push_str(&format!(" [{nat}]"));
+        let _ = write!(address, " [{nat}]");
     }
     if let Some(freq) = freq_fmt {
-        address.push_str(&format!(" [{freq}]"));
+        let _ = write!(address, " [{freq}]");
     }
     address
 }
