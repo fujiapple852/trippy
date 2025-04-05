@@ -28,6 +28,7 @@ const DEFAULT_HIDDEN_CONFIG_FILE: &str = ".trippy.toml";
 ///     - the current directory
 ///     - the user home directory
 ///     - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
+///     - the XDG app config directory (Unix only): `$XDG_CONFIG_HOME/trippy` or `~/.config/trippy`
 ///     - the Windows data directory (Windows only): `%APPDATA%`
 ///
 /// Note that only the first config file found is used, no attempt is
@@ -41,6 +42,8 @@ pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
         if let Some(file) = read_files(basedirs.home_dir())? {
             Ok(Some(file))
         } else if let Some(file) = read_files(basedirs.config_dir())? {
+            Ok(Some(file))
+        } else if let Some(file) = read_files(basedirs.config_dir().join("trippy"))? {
             Ok(Some(file))
         } else {
             Ok(None)
