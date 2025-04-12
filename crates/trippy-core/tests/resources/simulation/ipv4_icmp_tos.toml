@@ -1,7 +1,7 @@
-name = "IPv4/TCP with a fixed dest port"
+name = "IPv4/ICMP with a TOS"
 target = "10.0.0.103"
-protocol = "Tcp"
-port_direction = { tag = "FixedDest", value = 80 }
+protocol = "Icmp"
+icmp_identifier = 9
 tos = 224
 
 [[hops]]
@@ -14,4 +14,4 @@ resp = { tag = "SingleHost", addr = "10.0.0.102", rtt_ms = 20 }
 
 [[hops]]
 ttl = 3
-resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 20 }
+resp = { tag = "SingleHost", addr = "10.0.0.103", rtt_ms = 30 }
