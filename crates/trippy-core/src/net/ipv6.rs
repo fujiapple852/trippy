@@ -55,6 +55,7 @@ pub struct Ipv6 {
     pub packet_size: PacketSize,
     pub payload_pattern: PayloadPattern,
     pub privilege_mode: PrivilegeMode,
+    pub tos: TypeOfService,
     pub protocol: Protocol,
     pub icmp_extension_mode: IcmpExtensionParseMode,
     pub initial_sequence: Sequence,
@@ -68,6 +69,7 @@ impl Default for Ipv6 {
             packet_size: PacketSize(0),
             payload_pattern: PayloadPattern(0),
             privilege_mode: PrivilegeMode::Privileged,
+            tos: TypeOfService(0),
             protocol: Protocol::Icmp,
             icmp_extension_mode: IcmpExtensionParseMode::Disabled,
             initial_sequence: Sequence(0),
@@ -95,6 +97,7 @@ impl Ipv6 {
             icmp_payload_size(packet_size),
         )?;
         icmp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
+        icmp_send_socket.set_tclass_v6(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), 0);
         icmp_send_socket.send_to(echo_request.packet(), remote_addr)?;
         Ok(())
@@ -149,6 +152,7 @@ impl Ipv6 {
             udp.set_payload(&checksum);
         }
         udp_send_socket.set_unicast_hops_v6(probe.ttl.0)?;
+        udp_send_socket.set_tclass_v6(u32::from(self.tos.0))?;
         // Note that we set the port to be 0 in the remote `SocketAddr` as the target port is
         // encoded in the `UDP` packet.  If we (redundantly) set the target port here then
         // the `send_to` will fail with `EINVAL`.
@@ -168,6 +172,7 @@ impl Ipv6 {
             .or_else(ErrorMapper::in_progress)
             .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
         socket.set_unicast_hops_v6(probe.ttl.0)?;
+        socket.set_tclass_v6(u32::from(self.tos.0))?;
         socket.send_to(payload, remote_addr)?;
         Ok(())
     }
@@ -183,6 +188,7 @@ impl Ipv6 {
             .or_else(ErrorMapper::in_progress)
             .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))?;
         socket.set_unicast_hops_v6(probe.ttl.0)?;
+        socket.set_tclass_v6(u32::from(self.tos.0))?;
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), probe.dest_port.0);
         socket
             .connect(remote_addr)
@@ -518,6 +524,11 @@ mod tests {
             .times(1)
             .with(predicate::eq(10))
             .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
+            .returning(|_| Ok(()));
         let ipv6 = Ipv6 {
             src_addr,
             dest_addr,
@@ -557,6 +568,11 @@ mod tests {
             .expect_set_unicast_hops_v6()
             .times(1)
             .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
             .returning(|_| Ok(()));
         let ipv6 = Ipv6 {
             src_addr,
@@ -635,6 +651,11 @@ mod tests {
             .times(1)
             .with(predicate::eq(10))
             .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
+            .returning(|_| Ok(()));
 
         let ipv6 = Ipv6 {
             src_addr,
@@ -678,6 +699,11 @@ mod tests {
             .expect_set_unicast_hops_v6()
             .times(1)
             .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
             .returning(|_| Ok(()));
 
         let ipv6 = Ipv6 {
@@ -727,6 +753,11 @@ mod tests {
             .expect_set_unicast_hops_v6()
             .times(1)
             .with(predicate::eq(10))
+            .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
             .returning(|_| Ok(()));
 
         let ipv6 = Ipv6 {
@@ -783,6 +814,11 @@ mod tests {
             .times(1)
             .with(predicate::eq(10))
             .returning(|_| Ok(()));
+        mocket
+            .expect_set_tclass_v6()
+            .times(1)
+            .with(predicate::eq(0))
+            .returning(|_| Ok(()));
 
         let ipv6 = Ipv6 {
             src_addr,
@@ -827,6 +863,12 @@ mod tests {
                 .expect_set_unicast_hops_v6()
                 .times(1)
                 .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tclass_v6()
+                .times(1)
+                .with(predicate::eq(0))
                 .returning(|_| Ok(()));
 
             mocket
@@ -884,6 +926,12 @@ mod tests {
                 .expect_set_unicast_hops_v6()
                 .times(1)
                 .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tclass_v6()
+                .times(1)
+                .with(predicate::eq(0))
                 .returning(|_| Ok(()));
 
             mocket
@@ -982,6 +1030,12 @@ mod tests {
                 .expect_set_unicast_hops_v6()
                 .times(1)
                 .with(predicate::eq(expected_set_unicast_hops_v6))
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tclass_v6()
+                .times(1)
+                .with(predicate::eq(0))
                 .returning(|_| Ok(()));
 
             mocket

@@ -69,6 +69,7 @@ impl<S: Socket> Channel<S> {
                 packet_size: config.packet_size,
                 payload_pattern: config.payload_pattern,
                 privilege_mode: config.privilege_mode,
+                tos: config.tos,
                 protocol: config.protocol,
                 icmp_extension_mode: config.icmp_extension_parse_mode,
                 initial_sequence: config.initial_sequence,

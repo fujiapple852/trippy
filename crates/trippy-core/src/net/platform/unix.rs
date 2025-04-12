@@ -342,6 +342,12 @@ mod socket {
                 .map_err(|err| IoError::Other(err, IoOperation::SetTos))
         }
         #[instrument(skip(self), level = "trace")]
+        fn set_tclass_v6(&mut self, tclass: u32) -> IoResult<()> {
+            self.inner
+                .set_tclass_v6(tclass)
+                .map_err(|err| IoError::Other(err, IoOperation::SetTclassV6))
+        }
+        #[instrument(skip(self), level = "trace")]
         fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
             self.inner
                 .set_ttl(ttl)
