@@ -1,0 +1,14 @@
+largest_ttl = 3
+
+[[rounds]]
+probes = [
+  "1 C 333 10.1.0.1 0 12340 80 0 0 224",
+  "2 A 777 10.1.0.2 1 12340 80 0 0 0",
+]
+
+[[expected.hops]]
+ttl = 1
+tos = 224
+
+[[expected.hops]]
+ttl = 2

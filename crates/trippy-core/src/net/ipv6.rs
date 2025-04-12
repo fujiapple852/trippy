@@ -8,7 +8,7 @@ use crate::probe::{
     ResponseSeqTcp, ResponseSeqUdp,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId};
-use crate::{Flags, Port, PrivilegeMode, Protocol};
+use crate::{Flags, Port, PrivilegeMode, Protocol, TypeOfService};
 use std::io;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::time::SystemTime;
@@ -224,6 +224,7 @@ impl Ipv6 {
             IpAddr::V6(self.dest_addr),
             src_port.0,
             dest_port.0,
+            None,
         ));
         match tcp_socket.take_error()? {
             None => {
@@ -314,7 +315,7 @@ impl Ipv6 {
                     let packet = EchoReplyPacket::new_view(icmp_v6.packet())?;
                     let id = packet.get_identifier();
                     let seq = packet.get_sequence();
-                    let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq));
+                    let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq, None));
                     Some(Response::EchoReply(
                         ResponseData::new(recv, ip, resp_seq),
                         IcmpPacketCode(icmp_code.0),
@@ -331,7 +332,9 @@ impl Ipv6 {
             (Protocol::Icmp, IpProtocol::IcmpV6) => {
                 let (identifier, sequence) = extract_echo_request(ipv6)?;
                 Some(ResponseSeq::Icmp(ResponseSeqIcmp::new(
-                    identifier, sequence,
+                    identifier,
+                    sequence,
+                    Some(TypeOfService(ipv6.get_traffic_class())),
                 )))
             }
             (Protocol::Udp, IpProtocol::Udp) => {
@@ -348,6 +351,7 @@ impl Ipv6 {
                     IpAddr::V6(ipv6.get_destination_address()),
                     src_port,
                     dest_port,
+                    Some(TypeOfService(ipv6.get_traffic_class())),
                     actual_checksum,
                     actual_checksum,
                     payload_len,
@@ -360,6 +364,7 @@ impl Ipv6 {
                     IpAddr::V6(ipv6.get_destination_address()),
                     src_port,
                     dest_port,
+                    Some(TypeOfService(ipv6.get_traffic_class())),
                 )))
             }
             _ => None,
@@ -1027,6 +1032,7 @@ mod tests {
                     ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
+                        tos,
                     }),
                 ..
             },
@@ -1038,6 +1044,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(21945, identifier);
         assert_eq!(33062, sequence);
+        assert_eq!(None, tos);
         assert_eq!(IcmpPacketCode(0), icmp_code);
         Ok(())
     }
@@ -1078,6 +1085,7 @@ mod tests {
                     ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
+                        tos,
                     }),
                 ..
             },
@@ -1090,6 +1098,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(21945, identifier);
         assert_eq!(33056, sequence);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
@@ -1131,6 +1140,7 @@ mod tests {
                     ResponseSeq::Icmp(ResponseSeqIcmp {
                         identifier,
                         sequence,
+                        tos,
                     }),
                 ..
             },
@@ -1143,6 +1153,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(22437, identifier);
         assert_eq!(33005, sequence);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
@@ -1186,6 +1197,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                         expected_udp_checksum,
                         actual_udp_checksum,
                         payload_len,
@@ -1204,6 +1216,7 @@ mod tests {
         assert_eq!(IpAddr::V6(Ipv6Addr::from_str("2a04:4e42::81")?), dest_addr);
         assert_eq!(22694, src_port);
         assert_eq!(33029, dest_port);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(53489, expected_udp_checksum);
         assert_eq!(53489, actual_udp_checksum);
         assert_eq!(36, payload_len);
@@ -1251,6 +1264,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                         expected_udp_checksum,
                         actual_udp_checksum,
                         payload_len,
@@ -1272,6 +1286,7 @@ mod tests {
         );
         assert_eq!(26477, src_port);
         assert_eq!(33118, dest_port);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(37906, expected_udp_checksum);
         assert_eq!(37906, actual_udp_checksum);
         assert_eq!(36, payload_len);
@@ -1325,6 +1340,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                         expected_udp_checksum,
                         actual_udp_checksum,
                         payload_len,
@@ -1346,6 +1362,7 @@ mod tests {
         );
         assert_eq!(33000, src_port);
         assert_eq!(5000, dest_port);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(39490, expected_udp_checksum);
         assert_eq!(39490, actual_udp_checksum);
         assert_eq!(5, payload_len);
@@ -1392,6 +1409,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                     }),
                 ..
             },
@@ -1408,6 +1426,7 @@ mod tests {
         );
         assert_eq!(33038, src_port);
         assert_eq!(80, dest_port);
+        assert_eq!(Some(TypeOfService(128)), tos);
         assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
@@ -1450,6 +1469,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                     }),
                 ..
             },
@@ -1466,6 +1486,7 @@ mod tests {
         );
         assert_eq!(33060, src_port);
         assert_eq!(123, dest_port);
+        assert_eq!(Some(TypeOfService(0)), tos);
         assert_eq!(IcmpPacketCode(0), icmp_code);
         assert_eq!(None, extensions);
         Ok(())
@@ -1646,6 +1667,7 @@ mod tests {
                     dest_addr,
                     src_port,
                     dest_port,
+                    tos,
                 }),
             ..
         }) = resp
@@ -1655,6 +1677,7 @@ mod tests {
         assert_eq!(dest_addr, addr);
         assert_eq!(33434, src_port);
         assert_eq!(456, dest_port);
+        assert_eq!(None, tos);
         Ok(())
     }
 
@@ -1683,6 +1706,7 @@ mod tests {
                     dest_addr,
                     src_port,
                     dest_port,
+                    tos,
                 }),
             ..
         }) = resp
@@ -1692,6 +1716,7 @@ mod tests {
         assert_eq!(dest_addr, addr);
         assert_eq!(33434, src_port);
         assert_eq!(80, dest_port);
+        assert_eq!(None, tos);
         Ok(())
     }
 
@@ -1725,6 +1750,7 @@ mod tests {
                         dest_addr,
                         src_port,
                         dest_port,
+                        tos,
                     }),
                 ..
             },
@@ -1737,6 +1763,7 @@ mod tests {
         assert_eq!(dest_addr, addr);
         assert_eq!(33434, src_port);
         assert_eq!(80, dest_port);
+        assert_eq!(None, tos);
         assert_eq!(IcmpPacketCode(1), icmp_code);
         assert_eq!(None, extensions);
         Ok(())

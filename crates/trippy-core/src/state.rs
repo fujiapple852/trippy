@@ -1,7 +1,9 @@
 use crate::config::StateConfig;
 use crate::constants::MAX_TTL;
 use crate::flows::{Flow, FlowId, FlowRegistry};
-use crate::{Extensions, IcmpPacketType, ProbeStatus, Round, RoundId, TimeToLive};
+use crate::{
+    Dscp, Ecn, Extensions, IcmpPacketType, ProbeStatus, Round, RoundId, TimeToLive, TypeOfService,
+};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::iter::once;
@@ -205,6 +207,8 @@ pub struct Hop {
     last_nat_status: NatStatus,
     /// The history of round trip times across the last N rounds.
     samples: Vec<Duration>,
+    /// The type of service (DSCP/ECN) for this hop.
+    tos: Option<TypeOfService>,
     /// The ICMP extensions for this hop.
     extensions: Option<Extensions>,
     mean: f64,
@@ -388,6 +392,24 @@ impl Hop {
         self.last_nat_status
     }
 
+    /// The type of service (DSCP/ECN) for this hop.
+    #[must_use]
+    pub fn tos(&self) -> Option<TypeOfService> {
+        self.tos
+    }
+
+    /// The `DSCP` for this hop.
+    #[must_use]
+    pub fn dscp(&self) -> Option<Dscp> {
+        self.tos.map(|tos| tos.dscp())
+    }
+
+    /// The `ECN` for this hop.
+    #[must_use]
+    pub fn ecn(&self) -> Option<Ecn> {
+        self.tos.map(|tos| tos.ecn())
+    }
+
     /// The last N samples.
     #[must_use]
     pub fn samples(&self) -> &[Duration] {
@@ -425,6 +447,7 @@ impl Default for Hop {
             mean: 0f64,
             m2: 0f64,
             samples: Vec::default(),
+            tos: None,
             extensions: None,
             last_nat_status: NatStatus::NotApplicable,
         }
@@ -612,7 +635,7 @@ mod state_updater {
                     hop.last_dest_port = complete.dest_port.0;
                     hop.last_sequence = complete.sequence.0;
                     hop.last_icmp_packet_type = Some(complete.icmp_packet_type);
-
+                    hop.tos = complete.tos;
                     if let (Some(expected), Some(actual)) =
                         (complete.expected_udp_checksum, complete.actual_udp_checksum)
                     {
@@ -784,6 +807,7 @@ mod state_updater {
                             host: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
                             received: SystemTime::now(),
                             icmp_packet_type: IcmpPacketType::NotApplicable,
+                            tos: None,
                             expected_udp_checksum: None,
                             actual_udp_checksum: None,
                             extensions: None,
@@ -812,7 +836,7 @@ mod tests {
     use crate::types::Checksum;
     use crate::{
         CompletionReason, Flags, IcmpPacketType, Port, Probe, ProbeComplete, ProbeStatus, Sequence,
-        TimeToLive, TraceId,
+        TimeToLive, TraceId, TypeOfService,
     };
     use anyhow::anyhow;
     use serde::Deserialize;
@@ -853,9 +877,9 @@ mod tests {
         type Error = anyhow::Error;
 
         fn try_from(value: String) -> Result<Self, Self::Error> {
-            // format: `{ttl} {status} {duration} {host} {sequence} {src_port} {dest_port} {checksum}`
+            // format: `{ttl} {status} {duration} {host} {sequence} {src_port} {dest_port} {checksum} {tos}`
             let values = value.split_ascii_whitespace().collect::<Vec<_>>();
-            if values.len() == 9 {
+            if values.len() == 10 {
                 let ttl = TimeToLive(u8::from_str(values[0])?);
                 let state = values[1].to_ascii_lowercase();
                 let sequence = Sequence(u16::from_str(values[4])?);
@@ -884,6 +908,7 @@ mod tests {
                         let expected_udp_checksum = Some(Checksum(u16::from_str(values[7])?));
                         let actual_udp_checksum = Some(Checksum(u16::from_str(values[8])?));
                         let icmp_packet_type = IcmpPacketType::NotApplicable;
+                        let tos = Some(TypeOfService(u8::from_str(values[9])?));
                         Ok(ProbeStatus::Complete(
                             Probe::new(
                                 sequence,
@@ -899,6 +924,7 @@ mod tests {
                                 host,
                                 received,
                                 icmp_packet_type,
+                                tos,
                                 expected_udp_checksum,
                                 actual_udp_checksum,
                                 None,
@@ -963,6 +989,7 @@ mod tests {
         last_dest: Option<u16>,
         last_sequence: Option<u16>,
         last_nat_status: Option<NatStatusWrapper>,
+        tos: Option<u8>,
     }
 
     /// A wrapper struct over `NatStatus` to allow deserialization.
@@ -998,6 +1025,7 @@ mod tests {
     #[test_case(file!("minimal.toml"))]
     #[test_case(file!("floss_bloss.toml"))]
     #[test_case(file!("non_default_minimum_ttl.toml"))]
+    #[test_case(file!("tos.toml"))]
     fn test_scenario(scenario: Scenario) {
         let mut trace = State::new(StateConfig {
             max_flows: 1,
@@ -1068,6 +1096,7 @@ mod tests {
                 ),
                 expected.samples.as_ref(),
             );
+            assert_eq_opt(actual.tos().map(|tos| tos.0), expected.tos);
         }
     }
 

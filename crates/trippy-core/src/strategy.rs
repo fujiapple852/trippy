@@ -7,7 +7,9 @@ use crate::probe::{
     ResponseSeqUdp,
 };
 use crate::types::{Checksum, Sequence, TimeToLive, TraceId};
-use crate::{Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Probe, Protocol};
+use crate::{
+    Extensions, IcmpPacketType, MultipathStrategy, PortDirection, Probe, Protocol, TypeOfService,
+};
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -282,6 +284,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                 dest_addr,
                 src_port,
                 dest_port,
+                ..
             }) => {
                 let check_ports = validate_ports(self.config.port_direction, src_port, dest_port);
                 let check_dest_addr = self.config.target_addr == dest_addr;
@@ -297,6 +300,7 @@ struct StrategyResponse {
     icmp_packet_type: IcmpPacketType,
     trace_id: TraceId,
     sequence: Sequence,
+    tos: Option<TypeOfService>,
     expected_udp_checksum: Option<Checksum>,
     actual_udp_checksum: Option<Checksum>,
     received: SystemTime,
@@ -315,6 +319,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::TimeExceeded(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    tos: resp_seq.tos,
                     expected_udp_checksum: resp_seq.expected_udp_checksum,
                     actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
@@ -330,6 +335,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::Unreachable(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    tos: resp_seq.tos,
                     expected_udp_checksum: resp_seq.expected_udp_checksum,
                     actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
@@ -344,6 +350,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::EchoReply(code),
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    tos: resp_seq.tos,
                     expected_udp_checksum: resp_seq.expected_udp_checksum,
                     actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
@@ -358,6 +365,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                     icmp_packet_type: IcmpPacketType::NotApplicable,
                     trace_id: resp_seq.trace_id,
                     sequence: resp_seq.sequence,
+                    tos: resp_seq.tos,
                     expected_udp_checksum: resp_seq.expected_udp_checksum,
                     actual_udp_checksum: resp_seq.actual_udp_checksum,
                     received: data.recv,
@@ -375,6 +383,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
 struct StrategyResponseSeq {
     trace_id: TraceId,
     sequence: Sequence,
+    tos: Option<TypeOfService>,
     expected_udp_checksum: Option<Checksum>,
     actual_udp_checksum: Option<Checksum>,
 }
@@ -385,9 +394,11 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
             ResponseSeq::Icmp(ResponseSeqIcmp {
                 identifier,
                 sequence,
+                tos,
             }) => Self {
                 trace_id: TraceId(identifier),
                 sequence: Sequence(sequence),
+                tos,
                 expected_udp_checksum: None,
                 actual_udp_checksum: None,
             },
@@ -395,6 +406,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 identifier,
                 src_port,
                 dest_port,
+                tos,
                 expected_udp_checksum,
                 actual_udp_checksum,
                 payload_len,
@@ -426,6 +438,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 Self {
                     trace_id: TraceId(0),
                     sequence: Sequence(sequence),
+                    tos,
                     expected_udp_checksum,
                     actual_udp_checksum,
                 }
@@ -433,6 +446,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
             ResponseSeq::Tcp(ResponseSeqTcp {
                 src_port,
                 dest_port,
+                tos,
                 ..
             }) => {
                 let sequence = match config.port_direction {
@@ -442,6 +456,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 Self {
                     trace_id: TraceId(0),
                     sequence: Sequence(sequence),
+                    tos,
                     expected_udp_checksum: None,
                     actual_udp_checksum: None,
                 }
@@ -596,6 +611,7 @@ mod tests {
         let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp {
             identifier: 1234,
             sequence: 33434,
+            tos: Some(TypeOfService(0)),
         });
         let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(1234));
@@ -614,6 +630,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 33434,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 0,
@@ -636,6 +653,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
             dest_port: 5000,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 0,
@@ -659,6 +677,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 33434,
             actual_udp_checksum: 33434,
             payload_len: 0,
@@ -682,6 +701,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 35000,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 0,
@@ -706,6 +726,7 @@ mod tests {
             dest_addr: IpAddr::V6("::1".parse().unwrap()),
             src_port: 5000,
             dest_port: 35000,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 55,
@@ -728,6 +749,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
             dest_port: 80,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 0,
@@ -750,6 +772,7 @@ mod tests {
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
             dest_port: 33434,
+            tos: Some(TypeOfService(0)),
             expected_udp_checksum: 0,
             actual_udp_checksum: 0,
             payload_len: 0,
@@ -785,7 +808,7 @@ mod tests {
                     ResponseData::new(
                         SystemTime::now(),
                         target_addr,
-                        ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80)),
+                        ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80, None)),
                     ),
                     IcmpPacketCode(1),
                     None,
@@ -799,7 +822,7 @@ mod tests {
                 Ok(Some(Response::TcpRefused(ResponseData::new(
                     SystemTime::now(),
                     target_addr,
-                    ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80)),
+                    ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80, None)),
                 ))))
             });
 
@@ -826,6 +849,7 @@ mod tests {
             ResponseSeq::Icmp(ResponseSeqIcmp {
                 identifier: 0,
                 sequence: 33434,
+                tos: Some(TypeOfService(0)),
             }),
         )
     }
@@ -1182,6 +1206,7 @@ mod state {
                 resp.addr,
                 resp.received,
                 resp.icmp_packet_type,
+                resp.tos,
                 resp.expected_udp_checksum,
                 resp.actual_udp_checksum,
                 resp.exts,
@@ -1264,6 +1289,7 @@ mod state {
         use super::*;
         use crate::probe::{IcmpPacketCode, IcmpPacketType};
         use crate::types::MaxInflight;
+        use crate::TypeOfService;
         use rand::Rng;
         use std::net::{IpAddr, Ipv4Addr};
         use std::time::Duration;
@@ -1306,6 +1332,7 @@ mod state {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33434),
+                tos: Some(TypeOfService(0)),
                 expected_udp_checksum: None,
                 actual_udp_checksum: None,
                 received: received_1,
@@ -1381,6 +1408,7 @@ mod state {
                 icmp_packet_type: IcmpPacketType::TimeExceeded(IcmpPacketCode(1)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33435),
+                tos: Some(TypeOfService(0)),
                 expected_udp_checksum: None,
                 actual_udp_checksum: None,
                 received: received_2,
@@ -1416,6 +1444,7 @@ mod state {
                 icmp_packet_type: IcmpPacketType::EchoReply(IcmpPacketCode(0)),
                 trace_id: TraceId(0),
                 sequence: Sequence(33436),
+                tos: Some(TypeOfService(0)),
                 expected_udp_checksum: None,
                 actual_udp_checksum: None,
                 received: received_3,
