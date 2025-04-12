@@ -80,6 +80,11 @@ impl<'a> Ipv4Packet<'a> {
     }
 
     #[must_use]
+    pub fn get_tos(&self) -> u8 {
+        (self.get_dscp() << 2) | self.get_ecn()
+    }
+
+    #[must_use]
     pub fn get_total_length(&self) -> u16 {
         u16::from_be_bytes(self.buf.get_bytes(TOTAL_LENGTH_OFFSET))
     }
@@ -144,6 +149,11 @@ impl<'a> Ipv4Packet<'a> {
 
     pub fn set_ecn(&mut self, val: u8) {
         *self.buf.write(ECN_OFFSET) = (self.buf.read(ECN_OFFSET) & 0xfc) | (val & 0x3);
+    }
+
+    pub fn set_tos(&mut self, val: u8) {
+        self.set_dscp((val & 0xfc) >> 2);
+        self.set_ecn(val & 0x3);
     }
 
     pub fn set_total_length(&mut self, val: u16) {
@@ -305,6 +315,22 @@ mod tests {
         assert_eq!(63, packet.get_dscp());
         assert_eq!(3, packet.get_ecn());
         assert_eq!([0x00, 0xFF], packet.packet()[..2]);
+    }
+
+    #[test]
+    fn test_tos() {
+        let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
+        let mut packet = Ipv4Packet::new(&mut buf).unwrap();
+        packet.set_tos(224);
+        assert_eq!(224, packet.get_tos());
+        assert_eq!(56, packet.get_dscp());
+        assert_eq!(0, packet.get_ecn());
+        assert_eq!([0xE0], packet.packet()[1..2]);
+        packet.set_tos(255);
+        assert_eq!(255, packet.get_tos());
+        assert_eq!(63, packet.get_dscp());
+        assert_eq!(3, packet.get_ecn());
+        assert_eq!([0xFF], packet.packet()[1..2]);
     }
 
     #[test]
