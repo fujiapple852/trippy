@@ -415,6 +415,10 @@ impl Socket for SocketImpl {
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
     }
 
+    fn set_tclass_v6(&mut self, _tclass: u32) -> IoResult<()> {
+        unimplemented!()
+    }
+
     #[instrument(skip(self), level = "trace")]
     fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
         self.inner
