@@ -144,7 +144,7 @@ pub struct Args {
     #[arg(long)]
     pub payload_pattern: Option<u8>,
 
-    /// The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+    /// The TOS (i.e. DSCP+ECN) IP header value (IPv4 only) [default: 0]
     #[arg(short = 'Q', long)]
     pub tos: Option<u8>,
 

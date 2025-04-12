@@ -158,7 +158,7 @@ packet-size = 84
 # The repeating pattern in the payload of the ICMP packet [default: 0]
 payload-pattern = 0
 
-# The TOS IP header value (TCP and UDP only) [default: 0]
+# The TOS IP header value (IPv4 only) [default: 0]
 #
 # This is also known as DSCP+ECN.
 tos = 0
