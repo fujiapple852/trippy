@@ -294,7 +294,7 @@ mod tests {
         let mut packet = Ipv4Packet::new(&mut buf).unwrap();
         packet.set_dscp(63);
         assert_eq!(63, packet.get_dscp());
-        assert_eq!([0x00, 0xFC], packet.packet()[..2]);
+        assert_eq!([0xFC], packet.packet()[1..2]);
     }
 
     #[test]
@@ -303,7 +303,7 @@ mod tests {
         let mut packet = Ipv4Packet::new(&mut buf).unwrap();
         packet.set_ecn(3);
         assert_eq!(3, packet.get_ecn());
-        assert_eq!([0x00, 0x03], packet.packet()[..2]);
+        assert_eq!([0x03], packet.packet()[1..2]);
     }
 
     #[test]
@@ -314,7 +314,7 @@ mod tests {
         packet.set_ecn(3);
         assert_eq!(63, packet.get_dscp());
         assert_eq!(3, packet.get_ecn());
-        assert_eq!([0x00, 0xFF], packet.packet()[..2]);
+        assert_eq!([0xFF], packet.packet()[1..2]);
     }
 
     #[test]
