@@ -46,6 +46,7 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_udp_classic_fixed_dest.toml"))]
 #[test_case(sim!("ipv4_udp_paris_fixed_both.toml"))]
 #[test_case(sim!("ipv4_udp_dublin_fixed_both.toml"))]
+#[test_case(sim!("ipv4_udp_classic_privileged_tos.toml"))]
 #[test_case(sim!("ipv4_tcp_fixed_dest.toml"))]
 fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
@@ -54,6 +55,7 @@ fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
 // unprivileged mode is only supported on macOS
 #[cfg(target_os = "macos")]
 #[test_case(sim!("ipv4_udp_classic_unprivileged.toml"))]
+#[test_case(sim!("ipv4_udp_classic_unprivileged_tos.toml"))]
 fn test_simulation_macos(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }

@@ -70,6 +70,7 @@ impl Tracer {
                     .payload_pattern
                     .unwrap_or(defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN),
             )
+            .tos(self.sim.tos.unwrap_or(defaults::DEFAULT_STRATEGY_TOS))
             .min_round_duration(self.sim.min_round_duration.map_or(
                 defaults::DEFAULT_STRATEGY_MIN_ROUND_DURATION,
                 Duration::from_millis,
