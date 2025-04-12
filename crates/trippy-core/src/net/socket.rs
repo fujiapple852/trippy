@@ -29,6 +29,7 @@ where
     fn new_udp_dgram_socket_ipv6() -> Result<Self>;
     fn bind(&mut self, address: SocketAddr) -> Result<()>;
     fn set_tos(&mut self, tos: u32) -> Result<()>;
+    fn set_tclass_v6(&mut self, tclass: u32) -> Result<()>;
     fn set_ttl(&mut self, ttl: u32) -> Result<()>;
     fn set_reuse_port(&mut self, reuse: bool) -> Result<()>;
     fn set_header_included(&mut self, included: bool) -> Result<()>;

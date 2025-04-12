@@ -86,6 +86,7 @@ pub enum IoOperation {
     PeerAddr,
     TakeError,
     SetTos,
+    SetTclassV6,
     SetTtl,
     SetReusePort,
     SetHeaderIncluded,
@@ -101,6 +102,10 @@ pub enum IoOperation {
     ConvertSocketAddress,
     SioRoutingInterfaceQuery,
     Startup,
+    QOSCreateHandle,
+    QOSAddSocketToFlow,
+    QOSSetFlow,
+    QOSCloseHandle,
 }
 
 impl Display for IoOperation {
@@ -116,6 +121,7 @@ impl Display for IoOperation {
             Self::PeerAddr => write!(f, "peer addr"),
             Self::TakeError => write!(f, "take error"),
             Self::SetTos => write!(f, "set TOS"),
+            Self::SetTclassV6 => write!(f, "set TCLASS v6"),
             Self::SetTtl => write!(f, "set TTL"),
             Self::SetReusePort => write!(f, "set reuse port"),
             Self::SetHeaderIncluded => write!(f, "set header included"),
@@ -130,6 +136,10 @@ impl Display for IoOperation {
             Self::TcpIcmpErrorInfo => write!(f, "get TCP ICMP error info"),
             Self::ConvertSocketAddress => write!(f, "convert socket address"),
             Self::SioRoutingInterfaceQuery => write!(f, "SIO routing interface query"),
+            Self::QOSCreateHandle => write!(f, "QOS create handle"),
+            Self::QOSAddSocketToFlow => write!(f, "QOS add socket to flow"),
+            Self::QOSSetFlow => write!(f, "QOS set flow"),
+            Self::QOSCloseHandle => write!(f, "QOS close handle"),
             Self::Startup => write!(f, "startup"),
         }
     }

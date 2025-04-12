@@ -31,7 +31,7 @@ nix = { workspace = true, default-features = false, features = ["user", "poll", 
 [target.'cfg(windows)'.dependencies]
 paste.workspace = true
 widestring.workspace = true
-windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Networking_WinSock", "Win32_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_System_IO", "Win32_System_Threading", "Win32_Security"] }
+windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Networking_WinSock", "Win32_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_NetworkManagement_QoS", "Win32_System_IO", "Win32_System_Threading", "Win32_Security"] }
 
 [dev-dependencies]
 anyhow.workspace = true
