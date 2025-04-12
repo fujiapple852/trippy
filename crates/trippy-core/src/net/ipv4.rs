@@ -194,6 +194,7 @@ impl Ipv4 {
             .map_err(|err| ErrorMapper::addr_in_use(err, local_addr))
             .map_err(|err| ErrorMapper::probe_failed(err, ADDR_NOT_AVAILABLE_KIND))?;
         socket.set_ttl(u32::from(probe.ttl.0))?;
+        socket.set_tos(u32::from(self.tos.0))?;
         socket.send_to(payload, remote_addr)?;
         Ok(())
     }
@@ -450,6 +451,7 @@ impl Ipv4 {
         ipv4.set_protocol(protocol);
         ipv4.set_source(self.src_addr);
         ipv4.set_destination(self.dest_addr);
+        ipv4.set_tos(self.tos.0);
         ipv4.set_payload(payload);
         ipv4.set_identification(identification);
         ipv4.set_flags_and_fragment_offset(ipv4_flags_and_fragment_offset_header);
@@ -669,6 +671,46 @@ mod tests {
     }
 
     #[test]
+    fn test_dispatch_icmp_probe_with_tos() -> anyhow::Result<()> {
+        let probe = make_icmp_probe();
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let packet_size = PacketSize(28);
+        let payload_pattern = PayloadPattern(0x00);
+        let tos = TypeOfService(0xE0);
+        let byte_order = platform::Ipv4ByteOrder::Network;
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            45 e0 00 1c 00 00 40 00 0a 01 00 00 01 02 03 04
+            05 06 07 08 08 00 70 93 04 d2 82 9a
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 0);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        let ipv4 = Ipv4 {
+            src_addr,
+            dest_addr,
+            byte_order,
+            packet_size,
+            payload_pattern,
+            tos,
+            ..Default::default()
+        };
+        ipv4.dispatch_icmp_probe(&mut mocket, probe)?;
+        Ok(())
+    }
+
+    #[test]
     fn test_dispatch_udp_probe_classic_privileged_no_payload() -> anyhow::Result<()> {
         let probe = make_udp_probe(123, 456);
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
@@ -853,6 +895,7 @@ mod tests {
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
         let expected_set_ttl = 10;
+        let expected_set_tos = 0;
 
         let mut mocket = MockSocket::new();
 
@@ -868,6 +911,12 @@ mod tests {
             mocket
                 .expect_set_ttl()
                 .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tos()
+                .with(predicate::eq(expected_set_tos))
                 .times(1)
                 .returning(|_| Ok(()));
 
@@ -909,6 +958,7 @@ mod tests {
         let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
         let expected_set_ttl = 10;
+        let expected_set_tos = 0;
 
         let mut mocket = MockSocket::new();
 
@@ -924,6 +974,12 @@ mod tests {
             mocket
                 .expect_set_ttl()
                 .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tos()
+                .with(predicate::eq(expected_set_tos))
                 .times(1)
                 .returning(|_| Ok(()));
 
@@ -945,6 +1001,113 @@ mod tests {
             packet_size,
             payload_pattern,
             privilege_mode,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_privileged_with_tos() -> anyhow::Result<()> {
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let privilege_mode = PrivilegeMode::Privileged;
+        let packet_size = PacketSize(28);
+        let payload_pattern = PayloadPattern(0x00);
+        let byte_order = platform::Ipv4ByteOrder::Network;
+        let tos = TypeOfService(0xE0);
+        let expected_send_to_buf = hex_literal::hex!(
+            "
+            45 e0 00 1c 04 d2 40 00 0a 11 00 00 01 02 03 04
+            05 06 07 08 00 7b 01 c8 00 08 ed 87
+            "
+        );
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+
+        let mut mocket = MockSocket::new();
+        mocket
+            .expect_send_to()
+            .with(
+                predicate::eq(expected_send_to_buf),
+                predicate::eq(expected_send_to_addr),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        let ipv4 = Ipv4 {
+            src_addr,
+            dest_addr,
+            byte_order,
+            packet_size,
+            payload_pattern,
+            privilege_mode,
+            tos,
+            ..Default::default()
+        };
+        ipv4.dispatch_udp_probe(&mut mocket, probe)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch_udp_probe_classic_unprivileged_with_tos() -> anyhow::Result<()> {
+        let _m = MTX.lock();
+        let probe = make_udp_probe(123, 456);
+        let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
+        let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
+        let privilege_mode = PrivilegeMode::Unprivileged;
+        let packet_size = PacketSize(28);
+        let payload_pattern = PayloadPattern(0x00);
+        let byte_order = platform::Ipv4ByteOrder::Network;
+        let tos = TypeOfService(224);
+        let expected_send_to_buf = hex_literal::hex!("");
+        let expected_send_to_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
+        let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
+        let expected_set_ttl = 10;
+        let expected_set_tos = u32::from(tos.0);
+
+        let mut mocket = MockSocket::new();
+
+        let ctx = MockSocket::new_udp_send_socket_ipv4_context();
+        ctx.expect().with(predicate::eq(false)).returning(move |_| {
+            let mut mocket = MockSocket::new();
+            mocket
+                .expect_bind()
+                .with(predicate::eq(expected_bind_addr))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_ttl()
+                .with(predicate::eq(expected_set_ttl))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_set_tos()
+                .with(predicate::eq(expected_set_tos))
+                .times(1)
+                .returning(|_| Ok(()));
+
+            mocket
+                .expect_send_to()
+                .with(
+                    predicate::eq(expected_send_to_buf),
+                    predicate::eq(expected_send_to_addr),
+                )
+                .times(1)
+                .returning(|_, _| Ok(()));
+
+            Ok(mocket)
+        });
+        let ipv4 = Ipv4 {
+            src_addr,
+            dest_addr,
+            byte_order,
+            packet_size,
+            payload_pattern,
+            privilege_mode,
+            tos,
             ..Default::default()
         };
         ipv4.dispatch_udp_probe(&mut mocket, probe)?;
@@ -1005,10 +1168,10 @@ mod tests {
         let probe = make_udp_probe(123, 456);
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
-        let tos = TypeOfService(0);
+        let tos = TypeOfService(224);
         let expected_bind_addr = SocketAddr::new(IpAddr::V4(src_addr), 123);
         let expected_set_ttl = 10;
-        let expected_set_tos = 0;
+        let expected_set_tos = u32::from(tos.0);
         let expected_connect_addr = SocketAddr::new(IpAddr::V4(dest_addr), 456);
 
         let ctx = MockSocket::new_stream_socket_ipv4_context();
