@@ -84,9 +84,16 @@ newtype
 paris
 rfc1889
 rfc2460
+rfc2474
+rfc2475
+rfc2476
+rfc3168
+rfc3246
 rfc3550
 rfc4443
 rfc4884
+rfc5865
+rfc8622
 src
 stddev
 struct

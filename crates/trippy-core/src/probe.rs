@@ -1,4 +1,5 @@
 use crate::types::{Checksum, Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
+use crate::TypeOfService;
 use std::net::IpAddr;
 use std::time::SystemTime;
 
@@ -89,12 +90,14 @@ impl Probe {
     }
 
     /// A response has been received and the probe is now complete.
+    #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub(crate) const fn complete(
         self,
         host: IpAddr,
         received: SystemTime,
         icmp_packet_type: IcmpPacketType,
+        tos: Option<TypeOfService>,
         expected_udp_checksum: Option<Checksum>,
         actual_udp_checksum: Option<Checksum>,
         extensions: Option<Extensions>,
@@ -110,6 +113,7 @@ impl Probe {
             host,
             received,
             icmp_packet_type,
+            tos,
             expected_udp_checksum,
             actual_udp_checksum,
             extensions,
@@ -162,6 +166,8 @@ pub struct ProbeComplete {
     pub received: SystemTime,
     /// The type of ICMP response packet received for the probe.
     pub icmp_packet_type: IcmpPacketType,
+    /// The type of service (DSCP/ECN) of the original datagram.
+    pub tos: Option<TypeOfService>,
     /// The expected UDP checksum of the original datagram.
     pub expected_udp_checksum: Option<Checksum>,
     /// The actual UDP checksum of the original datagram.
@@ -309,13 +315,16 @@ pub struct ResponseSeqIcmp {
     pub identifier: u16,
     /// The ICMP sequence number.
     pub sequence: u16,
+    /// The type of service (DSCP/ECN) of the original datagram.
+    pub tos: Option<TypeOfService>,
 }
 
 impl ResponseSeqIcmp {
-    pub const fn new(identifier: u16, sequence: u16) -> Self {
+    pub const fn new(identifier: u16, sequence: u16, tos: Option<TypeOfService>) -> Self {
         Self {
             identifier,
             sequence,
+            tos,
         }
     }
 }
@@ -339,6 +348,8 @@ pub struct ResponseSeqUdp {
     ///
     /// This is used to validate the probe response matches the expected values.
     pub dest_port: u16,
+    /// The type of service (DSCP/ECN) of the original datagram.
+    pub tos: Option<TypeOfService>,
     /// The expected UDP checksum.
     ///
     /// This is calculated based on the data from the probe response and should
@@ -368,6 +379,7 @@ impl ResponseSeqUdp {
         dest_addr: IpAddr,
         src_port: u16,
         dest_port: u16,
+        tos: Option<TypeOfService>,
         expected_udp_checksum: u16,
         actual_udp_checksum: u16,
         payload_len: u16,
@@ -378,6 +390,7 @@ impl ResponseSeqUdp {
             dest_addr,
             src_port,
             dest_port,
+            tos,
             expected_udp_checksum,
             actual_udp_checksum,
             payload_len,
@@ -401,14 +414,22 @@ pub struct ResponseSeqTcp {
     ///
     /// This is used to validate the probe response matches the expected values.
     pub dest_port: u16,
+    /// The type of service (DSCP/ECN) of the original datagram.
+    pub tos: Option<TypeOfService>,
 }
 
 impl ResponseSeqTcp {
-    pub const fn new(dest_addr: IpAddr, src_port: u16, dest_port: u16) -> Self {
+    pub const fn new(
+        dest_addr: IpAddr,
+        src_port: u16,
+        dest_port: u16,
+        tos: Option<TypeOfService>,
+    ) -> Self {
         Self {
             dest_addr,
             src_port,
             dest_port,
+            tos,
         }
     }
 }
