@@ -1,4 +1,4 @@
-name = "IPv4/UDP classic unprivileged"
+name = "IPv4/UDP classic unprivileged with a TOS"
 privilege_mode = "Unprivileged"
 target = "10.0.0.103"
 protocol = "Udp"
