@@ -99,6 +99,10 @@ pub enum TuiColumn {
     Bloss,
     /// The forward loss % for a hop.
     FlossPct,
+    /// The Differentiated Services Code Point of the Original Datagram for a hop.
+    Dscp,
+    /// The Explicit Congestion Notification of the Original Datagram for a hop.
+    Ecn,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -131,6 +135,8 @@ impl TryFrom<char> for TuiColumn {
             'F' => Ok(Self::Floss),
             'B' => Ok(Self::Bloss),
             'D' => Ok(Self::FlossPct),
+            'K' => Ok(Self::Dscp),
+            'M' => Ok(Self::Ecn),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -164,6 +170,8 @@ impl Display for TuiColumn {
             Self::Floss => write!(f, "F"),
             Self::Bloss => write!(f, "B"),
             Self::FlossPct => write!(f, "D"),
+            Self::Dscp => write!(f, "K"),
+            Self::Ecn => write!(f, "M"),
         }
     }
 }
