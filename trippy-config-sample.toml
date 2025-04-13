@@ -279,6 +279,8 @@ tui-as-mode = "asn"
 #   F = Forward loss
 #   B = Backward loss
 #   D = Forward loss %
+#   K = Differentiated Services Code Point (DSCP) of the Original Datagram
+#   M = Explicit Congestion Notification (ECN) of the Original Datagram
 #
 # The columns will be shown in the order specified.
 tui-custom-columns = "holsravbwdt"

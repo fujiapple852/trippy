@@ -195,6 +195,10 @@ pub enum ColumnType {
     Bloss,
     /// The forward loss % for a hop.
     FlossPct,
+    /// The Differentiated Services Code Point of the Original Datagram for a hop.
+    Dscp,
+    /// The Explicit Congestion Notification of the Original Datagram for a hop.
+    Ecn,
 }
 
 impl From<ColumnType> for char {
@@ -225,6 +229,8 @@ impl From<ColumnType> for char {
             ColumnType::Floss => 'F',
             ColumnType::Bloss => 'B',
             ColumnType::FlossPct => 'D',
+            ColumnType::Dscp => 'K',
+            ColumnType::Ecn => 'M',
         }
     }
 }
@@ -257,6 +263,8 @@ impl From<TuiColumn> for Column {
             TuiColumn::Floss => Self::new_shown(ColumnType::Floss),
             TuiColumn::Bloss => Self::new_shown(ColumnType::Bloss),
             TuiColumn::FlossPct => Self::new_shown(ColumnType::FlossPct),
+            TuiColumn::Dscp => Self::new_shown(ColumnType::Dscp),
+            TuiColumn::Ecn => Self::new_shown(ColumnType::Ecn),
         }
     }
 }
@@ -297,6 +305,8 @@ impl ColumnType {
             Self::Floss => t!("column_floss"),
             Self::Bloss => t!("column_bloss"),
             Self::FlossPct => t!("column_floss_pct"),
+            Self::Dscp => t!("column_dscp"),
+            Self::Ecn => t!("column_ecn"),
         }
     }
 
@@ -338,6 +348,8 @@ impl ColumnType {
             Self::Floss => ColumnWidth::Fixed(width.max(7)),
             Self::Bloss => ColumnWidth::Fixed(width.max(7)),
             Self::FlossPct => ColumnWidth::Fixed(width.max(8)),
+            Self::Dscp => ColumnWidth::Fixed(width.max(7)),
+            Self::Ecn => ColumnWidth::Fixed(width.max(7)),
         }
     }
 }
@@ -401,6 +413,8 @@ mod tests {
                 Column::new_hidden(ColumnType::Floss),
                 Column::new_hidden(ColumnType::Bloss),
                 Column::new_hidden(ColumnType::FlossPct),
+                Column::new_hidden(ColumnType::Dscp),
+                Column::new_hidden(ColumnType::Ecn),
             ])
         );
     }

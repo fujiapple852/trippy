@@ -14,7 +14,9 @@ use ratatui::Frame;
 use std::fmt::Write;
 use std::net::IpAddr;
 use std::rc::Rc;
-use trippy_core::{Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension};
+use trippy_core::{
+    Dscp, Ecn, Extension, Extensions, IcmpPacketType, MplsLabelStackMember, UnknownExtension,
+};
 use trippy_core::{Hop, NatStatus};
 use trippy_dns::{AsInfo, DnsEntry, DnsResolver, Resolved, Resolver, Unresolved};
 
@@ -175,6 +177,8 @@ fn new_cell(
         ColumnType::Floss => render_usize_cell(hop.total_forward_loss()),
         ColumnType::Bloss => render_usize_cell(hop.total_backward_loss()),
         ColumnType::FlossPct => render_pct_cell(hop.forward_loss_pct()),
+        ColumnType::Dscp => render_dscp_cell(hop.dscp()),
+        ColumnType::Ecn => render_ecn_cell(hop.ecn()),
     }
 }
 
@@ -255,6 +259,46 @@ fn render_port_cell(port: u16) -> Cell<'static> {
         Cell::from(format!("{port}"))
     } else {
         Cell::from(t!("na"))
+    }
+}
+
+fn render_dscp_cell(dscp: Option<Dscp>) -> Cell<'static> {
+    match dscp {
+        Some(Dscp::DF) => Cell::from("DF"),
+        Some(Dscp::AF11) => Cell::from("AF11"),
+        Some(Dscp::AF12) => Cell::from("AF12"),
+        Some(Dscp::AF13) => Cell::from("AF13"),
+        Some(Dscp::AF21) => Cell::from("AF21"),
+        Some(Dscp::AF22) => Cell::from("AF22"),
+        Some(Dscp::AF23) => Cell::from("AF23"),
+        Some(Dscp::AF31) => Cell::from("AF31"),
+        Some(Dscp::AF32) => Cell::from("AF32"),
+        Some(Dscp::AF33) => Cell::from("AF33"),
+        Some(Dscp::AF41) => Cell::from("AF41"),
+        Some(Dscp::AF42) => Cell::from("AF42"),
+        Some(Dscp::AF43) => Cell::from("AF43"),
+        Some(Dscp::CS1) => Cell::from("CS1"),
+        Some(Dscp::CS2) => Cell::from("CS2"),
+        Some(Dscp::CS3) => Cell::from("CS3"),
+        Some(Dscp::CS4) => Cell::from("CS4"),
+        Some(Dscp::CS5) => Cell::from("CS5"),
+        Some(Dscp::CS6) => Cell::from("CS6"),
+        Some(Dscp::CS7) => Cell::from("CS7"),
+        Some(Dscp::EF) => Cell::from("EF"),
+        Some(Dscp::VA) => Cell::from("VA"),
+        Some(Dscp::LE) => Cell::from("LE"),
+        Some(Dscp::Other(other)) => Cell::from(format!("0x{other:02x}")),
+        None => Cell::from(t!("na")),
+    }
+}
+
+fn render_ecn_cell(ecn: Option<Ecn>) -> Cell<'static> {
+    match ecn {
+        Some(Ecn::NotECT) => Cell::from("NotECT"),
+        Some(Ecn::ECT1) => Cell::from("ECT1"),
+        Some(Ecn::ECT0) => Cell::from("ECT0"),
+        Some(Ecn::CE) => Cell::from("CE"),
+        None => Cell::from(t!("na")),
     }
 }
 
