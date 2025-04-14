@@ -75,19 +75,15 @@ impl Resolver for DnsResolver {
     fn lookup(&self, hostname: impl AsRef<str>) -> Result<ResolvedIpAddrs> {
         self.inner.lookup(hostname.as_ref())
     }
-    #[must_use]
     fn reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry {
         self.inner.reverse_lookup(addr.into(), false, false)
     }
-    #[must_use]
     fn reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry {
         self.inner.reverse_lookup(addr.into(), true, false)
     }
-    #[must_use]
     fn lazy_reverse_lookup(&self, addr: impl Into<IpAddr>) -> DnsEntry {
         self.inner.reverse_lookup(addr.into(), false, true)
     }
-    #[must_use]
     fn lazy_reverse_lookup_with_asinfo(&self, addr: impl Into<IpAddr>) -> DnsEntry {
         self.inner.reverse_lookup(addr.into(), true, true)
     }
