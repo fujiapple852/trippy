@@ -44,6 +44,7 @@ pub struct Hop {
     #[serde(serialize_with = "fixed_width")]
     pub jinta: f64,
     pub nat: Option<bool>,
+    pub tos: u8,
 }
 
 impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
@@ -71,6 +72,7 @@ impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
                 NatStatus::NotDetected => Some(false),
                 NatStatus::Detected => Some(true),
             },
+            tos: value.tos().unwrap_or_default().0,
         }
     }
 }
