@@ -287,30 +287,40 @@ pub struct ResponseData {
     pub recv: SystemTime,
     /// The `IpAddr` that responded to the probe.
     pub addr: IpAddr,
-    /// Information about the sequence number of the probe response.
-    pub resp_seq: ResponseSeq,
+    /// Protocol specific response information.
+    pub proto_resp: ProtocolResponse,
 }
 
 impl ResponseData {
-    pub const fn new(recv: SystemTime, addr: IpAddr, resp_seq: ResponseSeq) -> Self {
+    pub const fn new(recv: SystemTime, addr: IpAddr, proto_resp: ProtocolResponse) -> Self {
         Self {
             recv,
             addr,
-            resp_seq,
+            proto_resp,
         }
     }
 }
 
+/// Protocol specific response information.
+///
+/// This includes protocol specific information that is used to:
+///
+/// - determine the sequence number for matching the incoming probe response
+///   against the outgoing probe.
+/// - validate the probe response against the expected values and discard
+///   invalid responses.
+/// - record information from the probe Original Datagram such as the type of
+///   service (DSCP/ECN) and the expected UDP checksum.
 #[derive(Debug, Clone)]
-pub enum ResponseSeq {
-    Icmp(ResponseSeqIcmp),
-    Udp(ResponseSeqUdp),
-    Tcp(ResponseSeqTcp),
+pub enum ProtocolResponse {
+    Icmp(IcmpProtocolResponse),
+    Udp(UdpProtocolResponse),
+    Tcp(TcpProtocolResponse),
 }
 
 /// The data in the response to an ICMP probe.
 #[derive(Debug, Clone)]
-pub struct ResponseSeqIcmp {
+pub struct IcmpProtocolResponse {
     /// The ICMP identifier.
     pub identifier: u16,
     /// The ICMP sequence number.
@@ -319,7 +329,7 @@ pub struct ResponseSeqIcmp {
     pub tos: Option<TypeOfService>,
 }
 
-impl ResponseSeqIcmp {
+impl IcmpProtocolResponse {
     pub const fn new(identifier: u16, sequence: u16, tos: Option<TypeOfService>) -> Self {
         Self {
             identifier,
@@ -331,7 +341,7 @@ impl ResponseSeqIcmp {
 
 /// The data in the response to a UDP probe.
 #[derive(Debug, Clone)]
-pub struct ResponseSeqUdp {
+pub struct UdpProtocolResponse {
     /// The IPv4 identifier.
     ///
     /// This will be the sequence number for IPv4/Dublin.
@@ -372,7 +382,7 @@ pub struct ResponseSeqUdp {
     pub has_magic: bool,
 }
 
-impl ResponseSeqUdp {
+impl UdpProtocolResponse {
     #[allow(clippy::too_many_arguments)]
     pub const fn new(
         identifier: u16,
@@ -401,7 +411,7 @@ impl ResponseSeqUdp {
 
 /// The data in the response to an TCP probe.
 #[derive(Debug, Clone)]
-pub struct ResponseSeqTcp {
+pub struct TcpProtocolResponse {
     /// The destination IP address.
     ///
     /// This is used to validate the probe response matches the expected values.
@@ -418,7 +428,7 @@ pub struct ResponseSeqTcp {
     pub tos: Option<TypeOfService>,
 }
 
-impl ResponseSeqTcp {
+impl TcpProtocolResponse {
     pub const fn new(
         dest_addr: IpAddr,
         src_port: u16,
