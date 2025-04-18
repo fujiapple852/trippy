@@ -216,6 +216,12 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-custom-columns",
             format!("{}", app.tui_config.tui_columns),
         ),
+        SettingsItem::new(
+            "tui-timezone",
+            app.tui_config
+                .timezone
+                .map_or_else(|| t!("auto").to_string(), |tz| tz.to_string()),
+        ),
     ]
 }
 
@@ -262,6 +268,7 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "payload-pattern",
             format!("{}", cfg.data.payload_pattern().0),
         ),
+        SettingsItem::new("tos", format!("{}", cfg.data.tos().0)),
         SettingsItem::new(
             "icmp-extensions",
             format!("{}", cfg.data.icmp_extension_parse_mode()),
@@ -527,8 +534,8 @@ pub const SETTINGS_TAB_COLUMNS: usize = 6;
 /// The name and number of items for each tabs in the setting dialog.
 pub fn settings_tabs() -> [(String, usize); 7] {
     [
-        (t!("settings_tab_tui_title").to_string(), 9),
-        (t!("settings_tab_trace_title").to_string(), 17),
+        (t!("settings_tab_tui_title").to_string(), 10),
+        (t!("settings_tab_trace_title").to_string(), 18),
         (t!("settings_tab_dns_title").to_string(), 5),
         (t!("settings_tab_geoip_title").to_string(), 1),
         (t!("settings_tab_bindings_title").to_string(), 37),
