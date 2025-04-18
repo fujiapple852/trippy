@@ -996,7 +996,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_echo_reply() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             81 00 52 c0 55 b9 81 26 00 00 00 00 00 00 00 00
@@ -1044,7 +1044,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_time_exceeded_icmp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 4e c5 00 00 00 00 60 0f 08 00 00 2c 3a 01
@@ -1097,7 +1097,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_destination_unreachable_icmp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             01 00 ad ba 00 00 00 00 60 06 08 00 00 2c 3a 02
@@ -1150,7 +1150,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_time_exceeded_udp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 7b a7 00 00 00 00 60 04 04 00 00 2c 11 01
@@ -1201,10 +1201,7 @@ mod tests {
         };
         assert_eq!(recv_from_addr, addr);
         assert_eq!(0, identifier);
-        assert_eq!(
-            IpAddr::V6(Ipv6Addr::from_str("2a04:4e42::81").unwrap()),
-            dest_addr
-        );
+        assert_eq!(IpAddr::V6(Ipv6Addr::from_str("2a04:4e42::81")?), dest_addr);
         assert_eq!(22694, src_port);
         assert_eq!(33029, dest_port);
         assert_eq!(53489, expected_udp_checksum);
@@ -1218,7 +1215,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_destination_unreachable_udp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             01 00 a5 f5 00 00 00 00 60 03 08 00 00 2c 11 01
@@ -1270,7 +1267,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(0, identifier);
         assert_eq!(
-            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:81f::200e").unwrap()),
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:81f::200e")?),
             dest_addr
         );
         assert_eq!(26477, src_port);
@@ -1293,7 +1290,7 @@ mod tests {
     // the `tracer::Tracer::validate(..)` function.
     #[test]
     fn test_recv_icmp_probe_time_exceeded_udp_dublin_with_magic() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 23 6f 00 00 00 00 60 0e 0e 00 00 13 11 01
@@ -1344,7 +1341,7 @@ mod tests {
         assert_eq!(recv_from_addr, addr);
         assert_eq!(0, identifier);
         assert_eq!(
-            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:820::200e").unwrap()),
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:820::200e")?),
             dest_addr
         );
         assert_eq!(33000, src_port);
@@ -1360,7 +1357,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_time_exceeded_tcp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 f0 2d 00 00 00 00 68 0b 09 00 00 2c 06 01
@@ -1406,7 +1403,7 @@ mod tests {
         };
         assert_eq!(recv_from_addr, addr);
         assert_eq!(
-            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:815::200e").unwrap()),
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:815::200e")?),
             dest_addr
         );
         assert_eq!(33038, src_port);
@@ -1418,7 +1415,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_destination_unreachable_tcp_no_extensions() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             01 00 b1 e9 00 00 00 00 60 04 07 00 00 2c 06 01
@@ -1464,7 +1461,7 @@ mod tests {
         };
         assert_eq!(recv_from_addr, addr);
         assert_eq!(
-            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:821::200e").unwrap()),
+            IpAddr::V6(Ipv6Addr::from_str("2a00:1450:4009:821::200e")?),
             dest_addr
         );
         assert_eq!(33060, src_port);
@@ -1476,7 +1473,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_wrong_icmp_original_datagram_type_ignored() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 4e c5 00 00 00 00 60 0f 08 00 00 2c 3a 01
@@ -1525,7 +1522,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_wrong_udp_original_datagram_type_ignored() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 7b a7 00 00 00 00 60 04 04 00 00 2c 11 01
@@ -1574,7 +1571,7 @@ mod tests {
 
     #[test]
     fn test_recv_icmp_probe_wrong_tcp_original_datagram_type_ignored() -> anyhow::Result<()> {
-        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap());
+        let recv_from_addr = IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?);
         let expected_recv_from_buf = hex_literal::hex!(
             "
             03 00 f0 2d 00 00 00 00 68 0b 09 00 00 2c 06 01
@@ -1623,7 +1620,7 @@ mod tests {
 
     #[test]
     fn test_recv_tcp_socket_tcp_reply() -> anyhow::Result<()> {
-        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap();
+        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?;
         let expected_peer_addr = SocketAddr::new(IpAddr::V6(dest_addr), 456);
 
         let mut mocket = MockSocket::new();
@@ -1663,7 +1660,7 @@ mod tests {
 
     #[test]
     fn test_recv_tcp_socket_tcp_refused() -> anyhow::Result<()> {
-        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap();
+        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?;
 
         let mut mocket = MockSocket::new();
         mocket
@@ -1700,7 +1697,7 @@ mod tests {
 
     #[test]
     fn test_recv_tcp_socket_tcp_host_unreachable() -> anyhow::Result<()> {
-        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap();
+        let dest_addr = Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?;
 
         let mut mocket = MockSocket::new();
         mocket
@@ -1763,7 +1760,7 @@ mod tests {
            "
         );
         let expected_recv_from_addr = SocketAddr::new(
-            IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c").unwrap()),
+            IpAddr::V6(Ipv6Addr::from_str("2604:a880:ffff:6:1::41c")?),
             0,
         );
         let mut mocket = MockSocket::new();

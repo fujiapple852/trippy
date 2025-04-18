@@ -1253,10 +1253,7 @@ mod tests {
         else {
             panic!("expected EchoReply")
         };
-        assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("142.251.222.206").unwrap()),
-            addr
-        );
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("142.251.222.206")?), addr);
         assert_eq!(30167, identifier);
         assert_eq!(33049, sequence);
         assert_eq!(IcmpPacketCode(0), icmp_code);
@@ -1304,10 +1301,7 @@ mod tests {
         else {
             panic!("expected TimeExceeded")
         };
-        assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("142.250.61.129").unwrap()),
-            addr
-        );
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("142.250.61.129")?), addr);
         assert_eq!(30167, identifier);
         assert_eq!(33047, sequence);
         assert_eq!(IcmpPacketCode(0), icmp_code);
@@ -1353,7 +1347,7 @@ mod tests {
         else {
             panic!("expected DestinationUnreachable")
         };
-        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("20.0.0.254").unwrap()), addr);
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("20.0.0.254")?), addr);
         assert_eq!(31489, identifier);
         assert_eq!(33060, sequence);
         assert_eq!(IcmpPacketCode(1), icmp_code);
@@ -1381,8 +1375,8 @@ mod tests {
             .returning(mocket_read!(expected_read_buf));
         let ipv4 = Ipv4 {
             protocol: Protocol::Udp,
-            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
-            dest_addr: Ipv4Addr::from_str("142.250.204.142").unwrap(),
+            src_addr: Ipv4Addr::from_str("192.168.1.21")?,
+            dest_addr: Ipv4Addr::from_str("142.250.204.142")?,
             icmp_extension_mode: IcmpExtensionParseMode::Disabled,
             ..Default::default()
         };
@@ -1410,10 +1404,10 @@ mod tests {
         else {
             panic!("expected TimeExceeded")
         };
-        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1").unwrap()), addr);
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1")?), addr);
         assert_eq!(36969, identifier);
         assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142").unwrap()),
+            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142")?),
             dest_addr
         );
         assert_eq!(31829, src_port);
@@ -1447,8 +1441,8 @@ mod tests {
             .returning(mocket_read!(expected_read_buf));
         let ipv4 = Ipv4 {
             protocol: Protocol::Udp,
-            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
-            dest_addr: Ipv4Addr::from_str("9.9.9.9").unwrap(),
+            src_addr: Ipv4Addr::from_str("192.168.1.21")?,
+            dest_addr: Ipv4Addr::from_str("9.9.9.9")?,
             icmp_extension_mode: IcmpExtensionParseMode::Disabled,
             ..Default::default()
         };
@@ -1476,12 +1470,9 @@ mod tests {
         else {
             panic!("expected DestinationUnreachable")
         };
-        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()), addr);
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9")?), addr);
         assert_eq!(41481, identifier);
-        assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()),
-            dest_addr
-        );
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9")?), dest_addr);
         assert_eq!(32779, src_port);
         assert_eq!(33010, dest_port);
         assert_eq!(10913, expected_udp_checksum);
@@ -1534,12 +1525,9 @@ mod tests {
         else {
             panic!("expected TimeExceeded")
         };
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("209.85.240.235")?), addr);
         assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("209.85.240.235").unwrap()),
-            addr
-        );
-        assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142").unwrap()),
+            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142")?),
             dest_addr
         );
         assert_eq!(33021, src_port);
@@ -1590,11 +1578,8 @@ mod tests {
         else {
             panic!("expected DestinationUnreachable")
         };
-        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()), addr);
-        assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("9.9.9.9").unwrap()),
-            dest_addr
-        );
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9")?), addr);
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("9.9.9.9")?), dest_addr);
         assert_eq!(33010, src_port);
         assert_eq!(10011, dest_port);
         assert_eq!(IcmpPacketCode(10), icmp_code);
@@ -1921,8 +1906,8 @@ mod tests {
             .returning(mocket_read!(expected_read_buf));
         let ipv4 = Ipv4 {
             protocol: Protocol::Udp,
-            src_addr: Ipv4Addr::from_str("192.168.1.21").unwrap(),
-            dest_addr: Ipv4Addr::from_str("9.9.9.9").unwrap(),
+            src_addr: Ipv4Addr::from_str("192.168.1.21")?,
+            dest_addr: Ipv4Addr::from_str("9.9.9.9")?,
             icmp_extension_mode: IcmpExtensionParseMode::Disabled,
             ..Default::default()
         };
@@ -1950,10 +1935,10 @@ mod tests {
         else {
             panic!("expected TimeExceeded")
         };
-        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1").unwrap()), addr);
+        assert_eq!(IpAddr::V4(Ipv4Addr::from_str("192.168.1.1")?), addr);
         assert_eq!(36969, identifier);
         assert_eq!(
-            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142").unwrap()),
+            IpAddr::V4(Ipv4Addr::from_str("142.250.204.142")?),
             dest_addr
         );
         assert_eq!(31829, src_port);
