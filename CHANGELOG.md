@@ -13,6 +13,35 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+## [0.13.0] - 2025-04-** TODO **
+
+### Added
+
+- Added DSCP and ECN columns ([#1539](https://github.com/fujiapple852/trippy/issues/1539))
+- Added ability to read config from `$XDG_CONFIG_HOME/trippy`
+  directory ([#1528](https://github.com/fujiapple852/trippy/issues/1528))
+- Added `--tui-timezone` flag to set a custom timezone ([#1513](https://github.com/fujiapple852/trippy/issues/1513))
+- Added support for `--addr-family system` to defer address family selection to the OS
+  resolver ([#1469](https://github.com/fujiapple852/trippy/issues/1469))
+- Added tracing start and end timestamps to the `json`
+  report ([#1510](https://github.com/fujiapple852/trippy/issues/1510))
+- Added the Trippy logo! ([#100](https://github.com/fujiapple852/trippy/issues/100))
+
+### Changed
+
+- Remove address family downgrade for `dublin` strategy ([#1476](https://github.com/fujiapple852/trippy/issues/1476))
+- Reduce verbosity of tracing for library users ([#1482](https://github.com/fujiapple852/trippy/issues/1482))
+
+### Fixed
+
+- Fixed memory corruption on Windows ([#1527](https://github.com/fujiapple852/trippy/issues/1527))
+- Fixed potential crash on Windows for adapters without unicast
+  addresses ([#1547](https://github.com/fujiapple852/trippy/issues/1547))
+- Fixed socket being closed twice on Windows ([#1443](https://github.com/fujiapple852/trippy/issues/1443))
+- The `--tos` (`-Q`) flag is ignored for `IPv4/udp`
+  tracing ([#1540](https://github.com/fujiapple852/trippy/issues/1540))
+- Items missing from settings dialog ([#1541](https://github.com/fujiapple852/trippy/issues/1541))
+
 ## [0.12.2] - 2025-01-03
 
 ### Fixed
@@ -425,7 +454,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial WIP release of `trippy`
 
-[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.12.2...master
+[Unreleased]: https://github.com/fujiapple852/trippy/compare/0.13.0...master
+[0.13.0]: https://github.com/fujiapple852/trippy/compare/0.12.2...0.13.0
 [0.12.2]: https://github.com/fujiapple852/trippy/compare/0.12.1...0.12.2
 [0.12.1]: https://github.com/fujiapple852/trippy/compare/0.12.0...0.12.1
 [0.12.0]: https://github.com/fujiapple852/trippy/compare/0.11.0...0.12.0
