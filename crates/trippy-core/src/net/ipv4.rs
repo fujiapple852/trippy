@@ -5,8 +5,8 @@ use crate::net::common::ErrorMapper;
 use crate::net::platform;
 use crate::net::socket::{Socket, SocketError};
 use crate::probe::{
-    Extensions, IcmpPacketCode, Probe, Response, ResponseData, ResponseSeq, ResponseSeqIcmp,
-    ResponseSeqTcp, ResponseSeqUdp,
+    Extensions, IcmpPacketCode, IcmpProtocolResponse, Probe, ProtocolResponse, Response,
+    ResponseData, TcpProtocolResponse, UdpProtocolResponse,
 };
 use crate::types::{PacketSize, PayloadPattern, Sequence, TraceId, TypeOfService};
 use crate::{Flags, Port, PrivilegeMode, Protocol};
@@ -246,7 +246,7 @@ impl Ipv4 {
         src_port: Port,
         dest_port: Port,
     ) -> Result<Option<Response>> {
-        let resp_seq = ResponseSeq::Tcp(ResponseSeqTcp::new(
+        let proto_resp = ProtocolResponse::Tcp(TcpProtocolResponse::new(
             IpAddr::V4(self.dest_addr),
             src_port.0,
             dest_port.0,
@@ -259,7 +259,7 @@ impl Ipv4 {
                 return Ok(Some(Response::TcpReply(ResponseData::new(
                     SystemTime::now(),
                     addr,
-                    resp_seq,
+                    proto_resp,
                 ))));
             }
             Some(err) => match err {
@@ -267,13 +267,13 @@ impl Ipv4 {
                     return Ok(Some(Response::TcpRefused(ResponseData::new(
                         SystemTime::now(),
                         IpAddr::V4(self.dest_addr),
-                        resp_seq,
+                        proto_resp,
                     ))));
                 }
                 SocketError::HostUnreachable => {
                     let error_addr = tcp_socket.icmp_error_info()?;
                     return Ok(Some(Response::TimeExceeded(
-                        ResponseData::new(SystemTime::now(), error_addr, resp_seq),
+                        ResponseData::new(SystemTime::now(), error_addr, proto_resp),
                         IcmpPacketCode(1),
                         None,
                     )));
@@ -306,13 +306,14 @@ impl Ipv4 {
                             (ipv4, None)
                         }
                     };
-                    self.extract_probe_resp_seq(&nested_ipv4)?.map(|resp_seq| {
-                        Response::TimeExceeded(
-                            ResponseData::new(recv, src, resp_seq),
-                            IcmpPacketCode(icmp_code.0),
-                            extension,
-                        )
-                    })
+                    self.extract_probe_proto_resp(&nested_ipv4)?
+                        .map(|proto_resp| {
+                            Response::TimeExceeded(
+                                ResponseData::new(recv, src, proto_resp),
+                                IcmpPacketCode(icmp_code.0),
+                                extension,
+                            )
+                        })
                 } else {
                     None
                 }
@@ -326,22 +327,24 @@ impl Ipv4 {
                     }
                     IcmpExtensionParseMode::Disabled => None,
                 };
-                self.extract_probe_resp_seq(&nested_ipv4)?.map(|resp_seq| {
-                    Response::DestinationUnreachable(
-                        ResponseData::new(recv, src, resp_seq),
-                        IcmpPacketCode(icmp_code.0),
-                        extension,
-                    )
-                })
+                self.extract_probe_proto_resp(&nested_ipv4)?
+                    .map(|proto_resp| {
+                        Response::DestinationUnreachable(
+                            ResponseData::new(recv, src, proto_resp),
+                            IcmpPacketCode(icmp_code.0),
+                            extension,
+                        )
+                    })
             }
             IcmpType::EchoReply => match self.protocol {
                 Protocol::Icmp => {
                     let packet = EchoReplyPacket::new_view(icmp_v4.packet())?;
                     let id = packet.get_identifier();
                     let seq = packet.get_sequence();
-                    let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp::new(id, seq, None));
+                    let proto_resp =
+                        ProtocolResponse::Icmp(IcmpProtocolResponse::new(id, seq, None));
                     Some(Response::EchoReply(
-                        ResponseData::new(recv, src, resp_seq),
+                        ResponseData::new(recv, src, proto_resp),
                         IcmpPacketCode(icmp_code.0),
                     ))
                 }
@@ -352,13 +355,13 @@ impl Ipv4 {
     }
 
     #[instrument(skip(self), level = "trace")]
-    fn extract_probe_resp_seq(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<ResponseSeq>> {
+    fn extract_probe_proto_resp(&self, ipv4: &Ipv4Packet<'_>) -> Result<Option<ProtocolResponse>> {
         Ok(match (self.protocol, ipv4.get_protocol()) {
             (Protocol::Icmp, IpProtocol::Icmp) => {
                 let echo_request = extract_echo_request(ipv4)?;
                 let identifier = echo_request.get_identifier();
                 let sequence = echo_request.get_sequence();
-                Some(ResponseSeq::Icmp(ResponseSeqIcmp::new(
+                Some(ProtocolResponse::Icmp(IcmpProtocolResponse::new(
                     identifier,
                     sequence,
                     Some(TypeOfService(ipv4.get_tos())),
@@ -369,7 +372,7 @@ impl Ipv4 {
                     extract_udp_packet(ipv4)?;
                 let expected_checksum =
                     self.calc_udp_checksum(Port(src_port), Port(dest_port), payload_length)?;
-                Some(ResponseSeq::Udp(ResponseSeqUdp::new(
+                Some(ProtocolResponse::Udp(UdpProtocolResponse::new(
                     identifier,
                     IpAddr::V4(ipv4.get_destination()),
                     src_port,
@@ -383,7 +386,7 @@ impl Ipv4 {
             }
             (Protocol::Tcp, IpProtocol::Tcp) => {
                 let (src_port, dest_port) = extract_tcp_packet(ipv4)?;
-                Some(ResponseSeq::Tcp(ResponseSeqTcp::new(
+                Some(ProtocolResponse::Tcp(TcpProtocolResponse::new(
                     IpAddr::V4(ipv4.get_destination()),
                     src_port,
                     dest_port,
@@ -1246,8 +1249,8 @@ mod tests {
         let Response::EchoReply(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Icmp(ResponseSeqIcmp {
+                proto_resp:
+                    ProtocolResponse::Icmp(IcmpProtocolResponse {
                         identifier,
                         sequence,
                         tos,
@@ -1295,8 +1298,8 @@ mod tests {
         let Response::TimeExceeded(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Icmp(ResponseSeqIcmp {
+                proto_resp:
+                    ProtocolResponse::Icmp(IcmpProtocolResponse {
                         identifier,
                         sequence,
                         tos,
@@ -1343,8 +1346,8 @@ mod tests {
         let Response::DestinationUnreachable(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Icmp(ResponseSeqIcmp {
+                proto_resp:
+                    ProtocolResponse::Icmp(IcmpProtocolResponse {
                         identifier,
                         sequence,
                         tos,
@@ -1396,8 +1399,8 @@ mod tests {
         let Response::TimeExceeded(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Udp(ResponseSeqUdp {
+                proto_resp:
+                    ProtocolResponse::Udp(UdpProtocolResponse {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1464,8 +1467,8 @@ mod tests {
         let Response::DestinationUnreachable(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Udp(ResponseSeqUdp {
+                proto_resp:
+                    ProtocolResponse::Udp(UdpProtocolResponse {
                         identifier,
                         dest_addr,
                         src_port,
@@ -1526,8 +1529,8 @@ mod tests {
         let Response::TimeExceeded(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Tcp(ResponseSeqTcp {
+                proto_resp:
+                    ProtocolResponse::Tcp(TcpProtocolResponse {
                         dest_addr,
                         src_port,
                         dest_port,
@@ -1581,8 +1584,8 @@ mod tests {
         let Response::DestinationUnreachable(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Tcp(ResponseSeqTcp {
+                proto_resp:
+                    ProtocolResponse::Tcp(TcpProtocolResponse {
                         dest_addr,
                         src_port,
                         dest_port,
@@ -1763,8 +1766,8 @@ mod tests {
 
         let Response::TcpReply(ResponseData {
             addr,
-            resp_seq:
-                ResponseSeq::Tcp(ResponseSeqTcp {
+            proto_resp:
+                ProtocolResponse::Tcp(TcpProtocolResponse {
                     dest_addr,
                     src_port,
                     dest_port,
@@ -1802,8 +1805,8 @@ mod tests {
 
         let Response::TcpRefused(ResponseData {
             addr,
-            resp_seq:
-                ResponseSeq::Tcp(ResponseSeqTcp {
+            proto_resp:
+                ProtocolResponse::Tcp(TcpProtocolResponse {
                     dest_addr,
                     src_port,
                     dest_port,
@@ -1846,8 +1849,8 @@ mod tests {
         let Response::TimeExceeded(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Tcp(ResponseSeqTcp {
+                proto_resp:
+                    ProtocolResponse::Tcp(TcpProtocolResponse {
                         dest_addr,
                         src_port,
                         dest_port,
@@ -1941,8 +1944,8 @@ mod tests {
         let Response::TimeExceeded(
             ResponseData {
                 addr,
-                resp_seq:
-                    ResponseSeq::Udp(ResponseSeqUdp {
+                proto_resp:
+                    ProtocolResponse::Udp(UdpProtocolResponse {
                         identifier,
                         dest_addr,
                         src_port,

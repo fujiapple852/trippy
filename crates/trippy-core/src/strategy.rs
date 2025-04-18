@@ -3,8 +3,8 @@ use crate::config::StrategyConfig;
 use crate::error::{Error, Result};
 use crate::net::Network;
 use crate::probe::{
-    ProbeStatus, Response, ResponseData, ResponseSeq, ResponseSeqIcmp, ResponseSeqTcp,
-    ResponseSeqUdp,
+    IcmpProtocolResponse, ProbeStatus, ProtocolResponse, Response, ResponseData,
+    TcpProtocolResponse, UdpProtocolResponse,
 };
 use crate::types::{Checksum, Sequence, TimeToLive, TraceId};
 use crate::{
@@ -263,9 +263,9 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                 _ => false,
             }
         }
-        match resp.resp_seq {
-            ResponseSeq::Icmp(_) => true,
-            ResponseSeq::Udp(ResponseSeqUdp {
+        match resp.proto_resp {
+            ProtocolResponse::Icmp(_) => true,
+            ProtocolResponse::Udp(UdpProtocolResponse {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -280,7 +280,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
                 };
                 check_dest_addr && check_ports && check_magic
             }
-            ResponseSeq::Tcp(ResponseSeqTcp {
+            ProtocolResponse::Tcp(TcpProtocolResponse {
                 dest_addr,
                 src_port,
                 dest_port,
@@ -313,15 +313,15 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
     fn from((resp, config): (Response, &StrategyConfig)) -> Self {
         match resp {
             Response::TimeExceeded(data, code, exts) => {
-                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let proto_resp = ProtocolStrategyResponse::from((data.proto_resp, config));
                 let is_target = data.addr == config.target_addr;
                 Self {
                     icmp_packet_type: IcmpPacketType::TimeExceeded(code),
-                    trace_id: resp_seq.trace_id,
-                    sequence: resp_seq.sequence,
-                    tos: resp_seq.tos,
-                    expected_udp_checksum: resp_seq.expected_udp_checksum,
-                    actual_udp_checksum: resp_seq.actual_udp_checksum,
+                    trace_id: proto_resp.trace_id,
+                    sequence: proto_resp.sequence,
+                    tos: proto_resp.tos,
+                    expected_udp_checksum: proto_resp.expected_udp_checksum,
+                    actual_udp_checksum: proto_resp.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target,
@@ -329,15 +329,15 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                 }
             }
             Response::DestinationUnreachable(data, code, exts) => {
-                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let proto_resp = ProtocolStrategyResponse::from((data.proto_resp, config));
                 let is_target = data.addr == config.target_addr;
                 Self {
                     icmp_packet_type: IcmpPacketType::Unreachable(code),
-                    trace_id: resp_seq.trace_id,
-                    sequence: resp_seq.sequence,
-                    tos: resp_seq.tos,
-                    expected_udp_checksum: resp_seq.expected_udp_checksum,
-                    actual_udp_checksum: resp_seq.actual_udp_checksum,
+                    trace_id: proto_resp.trace_id,
+                    sequence: proto_resp.sequence,
+                    tos: proto_resp.tos,
+                    expected_udp_checksum: proto_resp.expected_udp_checksum,
+                    actual_udp_checksum: proto_resp.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target,
@@ -345,14 +345,14 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                 }
             }
             Response::EchoReply(data, code) => {
-                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let proto_resp = ProtocolStrategyResponse::from((data.proto_resp, config));
                 Self {
                     icmp_packet_type: IcmpPacketType::EchoReply(code),
-                    trace_id: resp_seq.trace_id,
-                    sequence: resp_seq.sequence,
-                    tos: resp_seq.tos,
-                    expected_udp_checksum: resp_seq.expected_udp_checksum,
-                    actual_udp_checksum: resp_seq.actual_udp_checksum,
+                    trace_id: proto_resp.trace_id,
+                    sequence: proto_resp.sequence,
+                    tos: proto_resp.tos,
+                    expected_udp_checksum: proto_resp.expected_udp_checksum,
+                    actual_udp_checksum: proto_resp.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target: true,
@@ -360,14 +360,14 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
                 }
             }
             Response::TcpReply(data) | Response::TcpRefused(data) => {
-                let resp_seq = StrategyResponseSeq::from((data.resp_seq, config));
+                let proto_resp = ProtocolStrategyResponse::from((data.proto_resp, config));
                 Self {
                     icmp_packet_type: IcmpPacketType::NotApplicable,
-                    trace_id: resp_seq.trace_id,
-                    sequence: resp_seq.sequence,
-                    tos: resp_seq.tos,
-                    expected_udp_checksum: resp_seq.expected_udp_checksum,
-                    actual_udp_checksum: resp_seq.actual_udp_checksum,
+                    trace_id: proto_resp.trace_id,
+                    sequence: proto_resp.sequence,
+                    tos: proto_resp.tos,
+                    expected_udp_checksum: proto_resp.expected_udp_checksum,
+                    actual_udp_checksum: proto_resp.actual_udp_checksum,
                     received: data.recv,
                     addr: data.addr,
                     is_target: true,
@@ -380,7 +380,7 @@ impl From<(Response, &StrategyConfig)> for StrategyResponse {
 
 /// Derived response sequence based on strategy config.
 #[derive(Debug)]
-struct StrategyResponseSeq {
+struct ProtocolStrategyResponse {
     trace_id: TraceId,
     sequence: Sequence,
     tos: Option<TypeOfService>,
@@ -388,10 +388,10 @@ struct StrategyResponseSeq {
     actual_udp_checksum: Option<Checksum>,
 }
 
-impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
-    fn from((resp_seq, config): (ResponseSeq, &StrategyConfig)) -> Self {
-        match resp_seq {
-            ResponseSeq::Icmp(ResponseSeqIcmp {
+impl From<(ProtocolResponse, &StrategyConfig)> for ProtocolStrategyResponse {
+    fn from((proto_resp, config): (ProtocolResponse, &StrategyConfig)) -> Self {
+        match proto_resp {
+            ProtocolResponse::Icmp(IcmpProtocolResponse {
                 identifier,
                 sequence,
                 tos,
@@ -402,7 +402,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                 expected_udp_checksum: None,
                 actual_udp_checksum: None,
             },
-            ResponseSeq::Udp(ResponseSeqUdp {
+            ProtocolResponse::Udp(UdpProtocolResponse {
                 identifier,
                 src_port,
                 dest_port,
@@ -443,7 +443,7 @@ impl From<(ResponseSeq, &StrategyConfig)> for StrategyResponseSeq {
                     actual_udp_checksum,
                 }
             }
-            ResponseSeq::Tcp(ResponseSeqTcp {
+            ProtocolResponse::Tcp(TcpProtocolResponse {
                 src_port,
                 dest_port,
                 tos,
@@ -608,12 +608,12 @@ mod tests {
     #[test]
     fn test_icmp_response() {
         let config = StrategyConfig::default();
-        let resp_seq = ResponseSeq::Icmp(ResponseSeqIcmp {
+        let proto_resp = ProtocolResponse::Icmp(IcmpProtocolResponse {
             identifier: 1234,
             sequence: 33434,
             tos: Some(TypeOfService(0)),
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(1234));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -625,7 +625,7 @@ mod tests {
             port_direction: PortDirection::FixedSrc(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
@@ -636,7 +636,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -648,7 +648,7 @@ mod tests {
             port_direction: PortDirection::FixedDest(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
@@ -659,7 +659,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -672,7 +672,7 @@ mod tests {
             port_direction: PortDirection::FixedSrc(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 33434,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
@@ -683,7 +683,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -696,7 +696,7 @@ mod tests {
             port_direction: PortDirection::FixedSrc(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 33434,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
@@ -707,7 +707,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -721,7 +721,7 @@ mod tests {
             port_direction: PortDirection::FixedSrc(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 0,
             dest_addr: IpAddr::V6("::1".parse().unwrap()),
             src_port: 5000,
@@ -732,7 +732,7 @@ mod tests {
             payload_len: 55,
             has_magic: true,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33489));
     }
@@ -744,7 +744,7 @@ mod tests {
             port_direction: PortDirection::FixedDest(Port(80)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 33434,
@@ -755,7 +755,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -767,7 +767,7 @@ mod tests {
             port_direction: PortDirection::FixedSrc(Port(5000)),
             ..Default::default()
         };
-        let resp_seq = ResponseSeq::Udp(ResponseSeqUdp {
+        let proto_resp = ProtocolResponse::Udp(UdpProtocolResponse {
             identifier: 0,
             dest_addr: IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
             src_port: 5000,
@@ -778,7 +778,7 @@ mod tests {
             payload_len: 0,
             has_magic: false,
         });
-        let strategy_resp = StrategyResponseSeq::from((resp_seq, &config));
+        let strategy_resp = ProtocolStrategyResponse::from((proto_resp, &config));
         assert_eq!(strategy_resp.trace_id, TraceId(0));
         assert_eq!(strategy_resp.sequence, Sequence(33434));
     }
@@ -808,7 +808,12 @@ mod tests {
                     ResponseData::new(
                         SystemTime::now(),
                         target_addr,
-                        ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80, None)),
+                        ProtocolResponse::Tcp(TcpProtocolResponse::new(
+                            target_addr,
+                            sequence,
+                            80,
+                            None,
+                        )),
                     ),
                     IcmpPacketCode(1),
                     None,
@@ -822,7 +827,12 @@ mod tests {
                 Ok(Some(Response::TcpRefused(ResponseData::new(
                     SystemTime::now(),
                     target_addr,
-                    ResponseSeq::Tcp(ResponseSeqTcp::new(target_addr, sequence, 80, None)),
+                    ProtocolResponse::Tcp(TcpProtocolResponse::new(
+                        target_addr,
+                        sequence,
+                        80,
+                        None,
+                    )),
                 ))))
             });
 
@@ -846,7 +856,7 @@ mod tests {
         ResponseData::new(
             now,
             IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
-            ResponseSeq::Icmp(ResponseSeqIcmp {
+            ProtocolResponse::Icmp(IcmpProtocolResponse {
                 identifier: 0,
                 sequence: 33434,
                 tos: Some(TypeOfService(0)),
