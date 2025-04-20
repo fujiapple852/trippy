@@ -1,0 +1,33 @@
+[package]
+name = "trippy-sim"
+description = "A network simulator for Trippy"
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+trippy-core.workspace = true
+trippy-packet.workspace = true
+trippy-privilege.workspace = true
+anyhow.workspace = true
+ipnetwork.workspace = true
+serde = { workspace = true, default-features = false, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+tokio-util.workspace = true
+toml = { workspace = true, default-features = false, features = ["parse"] }
+tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "fmt"] }
+tracing.workspace = true
+
+# see https://github.com/meh/rust-tun/pull/74
+[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
+tun = { workspace = true, features = ["async"] }
+
+[lints]
+workspace = true
