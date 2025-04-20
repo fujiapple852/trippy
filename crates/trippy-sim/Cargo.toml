@@ -17,6 +17,7 @@ trippy-core.workspace = true
 trippy-packet.workspace = true
 trippy-privilege.workspace = true
 anyhow.workspace = true
+clap.workspace = true
 ipnetwork.workspace = true
 serde = { workspace = true, default-features = false, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
