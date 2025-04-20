@@ -19,7 +19,7 @@ repository = "https://github.com/fujiapple852/trippy"
 readme = "README.md"
 license = "Apache-2.0"
 edition = "2021"
-rust-version = "1.76"
+rust-version = "1.78"
 keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
 categories = ["command-line-utilities", "network-programming"]
 
