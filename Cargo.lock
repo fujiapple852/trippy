@@ -2389,6 +2389,7 @@ name = "trippy-sim"
 version = "0.14.0-dev"
 dependencies = [
  "anyhow",
+ "clap",
  "ipnetwork",
  "serde",
  "tokio",
