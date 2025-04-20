@@ -36,7 +36,8 @@ impl TunDevice {
         let mut config = tun2::Configuration::default();
         config.address(addr).netmask(net.mask()).up();
         let dev = tun2::create_as_async(&config)?;
-        Self::create_route()?;
+        #[cfg(target_os = "windows")]
+        std::thread::sleep(std::time::Duration::from_millis(10000));
         Ok(Self { dev })
     }
 
@@ -48,30 +49,5 @@ impl TunDevice {
     pub async fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.dev.write_all(buf).await?;
         Ok(buf.len())
-    }
-
-    #[cfg(target_os = "macos")]
-    fn create_route() -> anyhow::Result<()> {
-        // macOS requires that we explicitly add the route.
-        let net: Ipv4Network = TUN_NETWORK_CIDR.parse()?;
-        let addr = net.nth(1).expect("addr");
-        std::process::Command::new("route")
-            .args(["-n", "add", "-net", &net.to_string(), &addr.to_string()])
-            .status()?;
-        Ok(())
-    }
-
-    #[cfg(target_os = "linux")]
-    #[allow(clippy::unnecessary_wraps)]
-    const fn create_route() -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    #[cfg(target_os = "windows")]
-    #[allow(clippy::unnecessary_wraps)]
-    fn create_route() -> anyhow::Result<()> {
-        // allow time for the routing table to reflect the tun device.
-        std::thread::sleep(std::time::Duration::from_millis(10000));
-        Ok(())
     }
 }
