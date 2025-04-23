@@ -863,7 +863,7 @@ pub mod time_exceeded {
             // From rfc4884:
             //
             // "For ICMPv4 messages, the length attribute represents 32-bit words
-            let length = usize::from(self.get_length() * 4);
+            let length = usize::from(self.get_length()) * 4;
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
             split(length, icmp_payload)
         }
@@ -960,6 +960,19 @@ pub mod time_exceeded {
             assert_eq!(62702, packet.get_checksum());
             assert_eq!(17, packet.get_length());
             assert!(packet.payload().is_empty());
+        }
+
+        #[test]
+        fn test_view_large() {
+            let mut buf = [0x0_u8; 256];
+            buf[..8].copy_from_slice(&[0x0b, 0x00, 0xf4, 0xee, 0x00, 0x40, 0x00, 0x00]);
+            let packet = TimeExceededPacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::TimeExceeded, packet.get_icmp_type());
+            assert_eq!(IcmpCode(0), packet.get_icmp_code());
+            assert_eq!(62702, packet.get_checksum());
+            assert_eq!(64, packet.get_length());
+            assert_eq!(&[0x0_u8; 248], packet.payload());
+            assert_eq!(None, packet.extension());
         }
 
         #[test]
@@ -1117,7 +1130,7 @@ pub mod destination_unreachable {
         }
 
         fn split_payload_extension(&self) -> (&[u8], Option<&[u8]>) {
-            let length = usize::from(self.get_length() * 4);
+            let length = usize::from(self.get_length()) * 4;
             let icmp_payload = &self.buf.as_slice()[Self::minimum_packet_size()..];
             split(length, icmp_payload)
         }
@@ -1215,6 +1228,19 @@ pub mod destination_unreachable {
             assert_eq!(57308, packet.get_checksum());
             assert_eq!(0, packet.get_length());
             assert!(packet.payload().is_empty());
+        }
+
+        #[test]
+        fn test_view_large() {
+            let mut buf = [0x0_u8; 256];
+            buf[..8].copy_from_slice(&[0x03, 0x03, 0xdf, 0xdc, 0x00, 0x40, 0x00, 0x00]);
+            let packet = DestinationUnreachablePacket::new_view(&buf).unwrap();
+            assert_eq!(IcmpType::DestinationUnreachable, packet.get_icmp_type());
+            assert_eq!(IcmpCode(3), packet.get_icmp_code());
+            assert_eq!(57308, packet.get_checksum());
+            assert_eq!(64, packet.get_length());
+            assert_eq!(&[0x0_u8; 248], packet.payload());
+            assert_eq!(None, packet.extension());
         }
 
         #[test]
