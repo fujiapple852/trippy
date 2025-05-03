@@ -95,18 +95,18 @@ mod inner {
     use crate::resolver::{AsInfo, DnsEntry, Error, Resolved, ResolvedIpAddrs, Result, Unresolved};
     use crossbeam::channel::{bounded, Receiver, Sender};
     use hickory_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
-    use hickory_resolver::error::{ResolveError, ResolveErrorKind};
-    use hickory_resolver::proto::error::ProtoError;
+    use hickory_resolver::name_server::TokioConnectionProvider;
     use hickory_resolver::proto::rr::RecordType;
+    use hickory_resolver::proto::{ProtoError, ProtoErrorKind};
     use hickory_resolver::system_conf::read_system_conf;
-    use hickory_resolver::{Name, Resolver};
+    use hickory_resolver::Name;
+    use hickory_resolver::{ResolveError, ResolveErrorKind, TokioResolver};
     use itertools::{Either, Itertools};
     use parking_lot::RwLock;
     use std::collections::HashMap;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
     use std::str::FromStr;
     use std::sync::Arc;
-    use std::thread;
     use std::time::{Duration, SystemTime};
 
     /// The maximum number of in-flight reverse DNS resolutions that may be
@@ -140,7 +140,7 @@ mod inner {
 
     #[derive(Clone)]
     enum DnsProvider {
-        TrustDns(Arc<Resolver>),
+        TrustDns(Arc<TokioResolver>),
         DnsLookup,
     }
 
@@ -156,6 +156,7 @@ mod inner {
         provider: DnsProvider,
         tx: Sender<DnsResolveRequest>,
         addr_cache: Cache,
+        runtime: tokio::runtime::Runtime,
     }
 
     impl DnsResolver {
@@ -180,32 +181,57 @@ mod inner {
                 options.ip_strategy = ip_strategy;
                 let res = match config.resolve_method {
                     ResolveMethod::Resolv => {
+                        let provider = TokioConnectionProvider::default();
                         let (resolver_cfg, mut options) = read_system_conf()?;
                         options.timeout = config.timeout;
                         options.ip_strategy = ip_strategy;
-                        Resolver::new(resolver_cfg, options)
+                        let mut builder =
+                            TokioResolver::builder_with_config(resolver_cfg, provider);
+                        *builder.options_mut() = options;
+                        builder.build()
                     }
-                    ResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
+                    ResolveMethod::Google => {
+                        let provider = TokioConnectionProvider::default();
+                        let mut builder =
+                            TokioResolver::builder_with_config(ResolverConfig::google(), provider);
+                        *builder.options_mut() = options;
+                        builder.build()
+                    }
                     ResolveMethod::Cloudflare => {
-                        Resolver::new(ResolverConfig::cloudflare(), options)
+                        let provider = TokioConnectionProvider::default();
+                        let mut builder = TokioResolver::builder_with_config(
+                            ResolverConfig::cloudflare(),
+                            provider,
+                        );
+                        *builder.options_mut() = options;
+                        builder.build()
                     }
                     ResolveMethod::System => unreachable!(),
-                }?;
+                };
                 let resolver = Arc::new(res);
                 DnsProvider::TrustDns(resolver)
             };
 
-            // spawn a thread to process the resolve queue
+            // start the tokio run-time
+            // TODO needed? where to do this?
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            // spawn a task to process the resolve queue
             {
                 let cache = addr_cache.clone();
                 let provider = provider.clone();
-                thread::spawn(move || resolver_queue_processor(rx, &provider, &cache));
+                runtime.spawn(async { resolver_queue_processor(rx, provider, cache).await });
             }
+
             Ok(Self {
                 config,
                 provider,
                 tx,
                 addr_cache,
+                runtime,
             })
         }
 
@@ -214,6 +240,11 @@ mod inner {
         }
 
         pub(super) fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
+            // TODO should be spawned as a task
+            self.runtime.block_on(self.lookup_async(hostname))
+        }
+
+        async fn lookup_async(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
             fn partition(all: Vec<IpAddr>) -> (Vec<IpAddr>, Vec<IpAddr>) {
                 all.into_iter().partition_map(|ip| match ip {
                     IpAddr::V4(_) => Either::Left(ip),
@@ -223,6 +254,7 @@ mod inner {
             match &self.provider {
                 DnsProvider::TrustDns(resolver) => Ok(resolver
                     .lookup_ip(hostname)
+                    .await
                     .map_err(|err| Error::LookupFailed(Box::new(err)))?
                     .iter()
                     .collect::<Vec<_>>()),
@@ -275,10 +307,22 @@ mod inner {
             with_asinfo: bool,
             lazy: bool,
         ) -> DnsEntry {
+            self.runtime
+                .block_on(self.reverse_lookup_async(addr, with_asinfo, lazy))
+        }
+
+        async fn reverse_lookup_async(
+            &self,
+            addr: IpAddr,
+            with_asinfo: bool,
+            lazy: bool,
+        ) -> DnsEntry {
             if lazy {
                 self.lazy_reverse_lookup(addr, with_asinfo).entry
             } else {
-                reverse_lookup(&self.provider, addr, with_asinfo).entry
+                reverse_lookup(&self.provider, addr, with_asinfo)
+                    .await
+                    .entry
             }
         }
 
@@ -365,18 +409,18 @@ mod inner {
     ///
     /// For each `IpAddr`, perform the reverse DNS lookup and update the cache with the result
     /// (`Resolved`, `NotFound`, `Timeout` or `Failed`) for that addr.
-    fn resolver_queue_processor(
+    async fn resolver_queue_processor(
         rx: Receiver<DnsResolveRequest>,
-        provider: &DnsProvider,
-        cache: &Cache,
+        provider: DnsProvider,
+        cache: Cache,
     ) {
         for DnsResolveRequest { addr, with_asinfo } in rx {
-            let dns_entry = reverse_lookup(provider, addr, with_asinfo);
+            let dns_entry = reverse_lookup(&provider, addr, with_asinfo).await;
             cache.write().insert(addr, dns_entry);
         }
     }
 
-    fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> CacheEntry {
+    async fn reverse_lookup(provider: &DnsProvider, addr: IpAddr, with_asinfo: bool) -> CacheEntry {
         let now = SystemTime::now();
         match &provider {
             DnsProvider::DnsLookup => {
@@ -389,7 +433,7 @@ mod inner {
                     Err(_) => CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now),
                 }
             }
-            DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
+            DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr).await {
                 Ok(name) => {
                     let hostnames = name
                         .into_iter()
@@ -400,7 +444,7 @@ mod inner {
                         .map(|s| s.to_string())
                         .collect();
                     if with_asinfo {
-                        let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
+                        let as_info = lookup_asinfo(resolver, addr).await.unwrap_or_default();
                         CacheEntry::new(
                             DnsEntry::Resolved(Resolved::WithAsInfo(addr, hostnames, as_info)),
                             now,
@@ -410,18 +454,22 @@ mod inner {
                     }
                 }
                 Err(err) => match err.kind() {
-                    ResolveErrorKind::NoRecordsFound { .. } => {
-                        if with_asinfo {
-                            let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
-                            CacheEntry::new(
-                                DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info)),
-                                now,
-                            )
-                        } else {
-                            CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now)
+                    ResolveErrorKind::Proto(prost_err) => match prost_err.kind() {
+                        ProtoErrorKind::NoRecordsFound { .. } => {
+                            if with_asinfo {
+                                let as_info =
+                                    lookup_asinfo(resolver, addr).await.unwrap_or_default();
+                                CacheEntry::new(
+                                    DnsEntry::NotFound(Unresolved::WithAsInfo(addr, as_info)),
+                                    now,
+                                )
+                            } else {
+                                CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now)
+                            }
                         }
-                    }
-                    ResolveErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr), now),
+                        ProtoErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr), now),
+                        _ => CacheEntry::new(DnsEntry::Failed(addr), now),
+                    },
                     _ => CacheEntry::new(DnsEntry::Failed(addr), now),
                 },
             },
@@ -429,13 +477,13 @@ mod inner {
     }
 
     /// Lookup up `AsInfo` for an `IpAddr` address.
-    fn lookup_asinfo(resolver: &Arc<Resolver>, addr: IpAddr) -> Result<AsInfo> {
+    async fn lookup_asinfo(resolver: &Arc<TokioResolver>, addr: IpAddr) -> Result<AsInfo> {
         let origin_query_txt = match addr {
-            IpAddr::V4(addr) => query_asn_ipv4(resolver, addr)?,
-            IpAddr::V6(addr) => query_asn_ipv6(resolver, addr)?,
+            IpAddr::V4(addr) => query_asn_ipv4(resolver, addr).await?,
+            IpAddr::V6(addr) => query_asn_ipv6(resolver, addr).await?,
         };
         let asinfo = parse_origin_query_txt(&origin_query_txt)?;
-        let asn_query_txt = query_asn_name(resolver, &asinfo.asn)?;
+        let asn_query_txt = query_asn_name(resolver, &asinfo.asn).await?;
         let as_name = parse_asn_query_txt(&asn_query_txt)?;
         Ok(AsInfo {
             asn: asinfo.asn,
@@ -448,7 +496,7 @@ mod inner {
     }
 
     /// Perform the `origin` query.
-    fn query_asn_ipv4(resolver: &Arc<Resolver>, addr: Ipv4Addr) -> Result<String> {
+    async fn query_asn_ipv4(resolver: &Arc<TokioResolver>, addr: Ipv4Addr) -> Result<String> {
         let query = format!(
             "{}.origin.asn.cymru.com.",
             addr.octets().iter().rev().join(".")
@@ -456,6 +504,7 @@ mod inner {
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
         let response = resolver
             .lookup(name, RecordType::TXT)
+            .await
             .map_err(resolve_error)?;
         let data = response
             .iter()
@@ -466,7 +515,7 @@ mod inner {
     }
 
     /// Perform the `origin` query.
-    fn query_asn_ipv6(resolver: &Arc<Resolver>, addr: Ipv6Addr) -> Result<String> {
+    async fn query_asn_ipv6(resolver: &Arc<TokioResolver>, addr: Ipv6Addr) -> Result<String> {
         let query = format!(
             "{:x}.origin6.asn.cymru.com.",
             addr.octets()
@@ -478,6 +527,7 @@ mod inner {
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
         let response = resolver
             .lookup(name, RecordType::TXT)
+            .await
             .map_err(resolve_error)?;
         let data = response
             .iter()
@@ -488,11 +538,12 @@ mod inner {
     }
 
     /// Perform the `asn` query.
-    fn query_asn_name(resolver: &Arc<Resolver>, asn: &str) -> Result<String> {
+    async fn query_asn_name(resolver: &Arc<TokioResolver>, asn: &str) -> Result<String> {
         let query = format!("AS{asn}.asn.cymru.com.");
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
         let response = resolver
             .lookup(name, RecordType::TXT)
+            .await
             .map_err(resolve_error)?;
         let data = response
             .iter()
