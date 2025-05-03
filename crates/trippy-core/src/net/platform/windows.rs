@@ -14,14 +14,17 @@ use std::os::windows::prelude::AsRawSocket;
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
 use tracing::instrument;
-use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
+use windows_sys::Win32::Foundation::{HANDLE, WAIT_FAILED, WAIT_TIMEOUT};
+use windows_sys::Win32::NetworkManagement::QoS::{
+    QOSSetOutgoingDSCPValue, QOSTrafficTypeBestEffort, QOS_VERSION,
+};
 use windows_sys::Win32::Networking::WinSock::{
     AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, ICMP_ERROR_INFO, IN6_ADDR, IN6_ADDR_0, IN_ADDR,
     IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
-    SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
-    SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
-    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAENETUNREACH, WSAENOBUFS,
-    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET, SOCKET_ERROR, SOL_SOCKET, SO_ERROR,
+    SO_PORT_SCALABILITY, SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO,
+    WSABUF, WSADATA, WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS,
+    WSAENETUNREACH, WSAENOBUFS, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -59,6 +62,21 @@ macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         #[allow(unsafe_code)]
         unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
+    }};
+}
+
+/// Execute a `Win32::NetworkManagement::Qos` syscall.
+///
+/// If the syscall fails then the last OS error is returned.
+macro_rules! syscall_qos {
+    ($fn:ident ( $($arg:expr),* $(,)* )) => {{
+        #[allow(unsafe_code)]
+        let res = unsafe { windows_sys::Win32::NetworkManagement::QoS::$fn($($arg, )*) };
+        if res == 0 {
+            Err(StdIoError::last_os_error())
+        } else {
+            Ok(res)
+        }
     }};
 }
 
@@ -413,6 +431,40 @@ impl Socket for SocketImpl {
         self.inner
             .set_tos(tos)
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
+    }
+
+    fn set_tclass_v6(&mut self, tclass: u32) -> IoResult<()> {
+        let dscp: u32 = (tclass >> 2) & 0x3F;
+        let ver = QOS_VERSION {
+            MajorVersion: 1,
+            MinorVersion: 0,
+        };
+        let mut qos: HANDLE = 0;
+        syscall_qos!(QOSCreateHandle(&ver, &mut qos))
+            .map_err(|err| IoError::Other(err, IoOperation::QOSCreateHandle))?;
+        let mut flow: u32 = 0;
+        syscall_qos!(QOSAddSocketToFlow(
+            qos,
+            self.inner.as_raw_socket() as SOCKET,
+            std::ptr::null(),
+            QOSTrafficTypeBestEffort,
+            0,
+            &mut flow
+        ))
+        .map_err(|err| IoError::Other(err, IoOperation::QOSAddSocketToFlow))?;
+        syscall_qos!(QOSSetFlow(
+            qos,
+            flow,
+            QOSSetOutgoingDSCPValue,
+            size_of::<u32>() as u32,
+            addr_of!(dscp).cast(),
+            0,
+            null_mut()
+        ))
+        .map_err(|err| IoError::Other(err, IoOperation::QOSSetFlow))?;
+        syscall_qos!(QOSCloseHandle(qos))
+            .map_err(|err| IoError::Other(err, IoOperation::QOSCloseHandle))?;
+        Ok(())
     }
 
     #[instrument(skip(self), level = "trace")]
