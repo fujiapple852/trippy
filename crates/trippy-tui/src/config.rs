@@ -654,6 +654,7 @@ impl TrippyConfig {
         validate_round_duration(min_round_duration, max_round_duration)?;
         validate_grace_duration(grace_duration)?;
         validate_packet_size(addr_family, packet_size)?;
+        validate_tos(addr_family, tos)?;
         validate_tui_refresh_rate(tui_refresh_rate)?;
         validate_report_cycles(report_cycles)?;
         validate_dns(dns_resolve_method, dns_lookup_as_info)?;
@@ -1131,6 +1132,15 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
     }
 }
 
+/// Validate `tos`.
+fn validate_tos(address_family: IpAddrFamily, tos: u8) -> anyhow::Result<()> {
+    if cfg!(target_os = "windows") && address_family != IpAddrFamily::Ipv4Only && tos != 0 {
+        Err(anyhow!("setting tos is only supported for IPv4 on Windows (hint: try setting --ipv4 to enforce IPv4)"))
+    } else {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1211,7 +1221,7 @@ mod tests {
     #[test_case("trip -U 20 example.com", Ok(cfg().max_inflight(20).build()); "single target after args")]
     #[test_case("trip example.com foo.com bar.com -U 20", Ok(cfg_multi().max_inflight(20).build()); "multiple targets before args")]
     #[test_case("trip -U 20 example.com foo.com bar.com", Ok(cfg_multi().max_inflight(20).build()); "multiple targets after args")]
-    #[test_case("trip example.com -U 20 foo.com -Q 255 bar.com", Ok(cfg_multi().max_inflight(20).tos(255).build()); "multiple targets between args")]
+    #[test_case("trip example.com -U 20 foo.com --payload-pattern 255 bar.com", Ok(cfg_multi().max_inflight(20).payload_pattern(255).build()); "multiple targets between args")]
     fn test_target(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1345,10 +1355,11 @@ mod tests {
     }
 
     #[test_case("trip example.com", Ok(cfg().tos(0).build()); "default tos")]
-    #[test_case("trip example.com --tos 255", Ok(cfg().tos(0xFF).build()); "custom tos")]
-    #[test_case("trip example.com -Q 255", Ok(cfg().tos(0xFF).build()); "custom tos short")]
+    #[test_case("trip example.com --tos 255 -4", Ok(cfg().tos(0xFF).addr_family(IpAddrFamily::Ipv4Only).build()); "custom tos")]
+    #[test_case("trip example.com -Q 255 -4", Ok(cfg().tos(0xFF).addr_family(IpAddrFamily::Ipv4Only).build()); "custom tos short")]
     #[test_case("trip example.com --tos foo", Err(anyhow!("error: invalid value 'foo' for '--tos <TOS>': invalid digit found in string For more information, try '--help'.")); "invalid format tos")]
     #[test_case("trip example.com --tos 300", Err(anyhow!("error: invalid value '300' for '--tos <TOS>': 300 is not in 0..=255 For more information, try '--help'.")); "invalid high tos")]
+    #[cfg_attr(target_os = "windows", test_case("trip example.com --tos 123 --ipv6", Err(anyhow!("setting tos is only supported for IPv4 on Windows (hint: try setting --ipv4 to enforce IPv4)")); "invalid windows ipv6"))]
     fn test_tos(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
