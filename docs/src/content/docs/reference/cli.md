@@ -54,13 +54,15 @@ Options:
           Trace using the ICMP protocol
 
   -F, --addr-family <ADDR_FAMILY>
-          The address family [default: Ipv4thenIpv6]
+          The address family [default: ipv4-then-ipv6]
 
           Possible values:
           - ipv4:           IPv4 only
           - ipv6:           IPv6 only
           - ipv6-then-ipv4: IPv6 with a fallback to IPv4
           - ipv4-then-ipv6: IPv4 with a fallback to IPv6
+          - system:         If the OS resolver is being used then use the first IP address returned, 
+                            otherwise lookup IPv6 with a fallback to IPv4
 
   -4, --ipv4
           Use IPv4 only
@@ -122,7 +124,7 @@ Options:
           The repeating pattern in the payload of the ICMP packet [default: 0]
 
   -Q, --tos <TOS>
-          The TOS (i.e. DSCP+ECN) IP header value (TCP and UDP only) [default: 0]
+          The TOS (i.e. DSCP+ECN) IP header value (IPv4 only) [default: 0]
 
   -e, --icmp-extensions
           Parse ICMP extensions
@@ -215,6 +217,11 @@ Options:
 
       --tui-locale <TUI_LOCALE>
           The locale to use for the TUI [default: auto]
+
+      --tui-timezone <TUI_TIMEZONE>
+          The timezone to use for the TUI [default: auto]
+
+          The timezone must be a valid IANA timezone identifier.
 
       --tui-theme-colors <TUI_THEME_COLORS>
           The TUI theme colors [item=color,item=color,..]
