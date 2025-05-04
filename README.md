@@ -4,7 +4,7 @@
   <br>
   <a href="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml">
     <img src="https://github.com/fujiapple852/trippy/workflows/CI/badge.svg"></a>
-  <a href="https://crates.io/crates/trippy/0.12.2">
+  <a href="https://crates.io/crates/trippy/0.13.0">
     <img src="https://img.shields.io/crates/v/trippy.svg"></a>
   <a href="https://repology.org/project/trippy/versions">
     <img src="https://repology.org/badge/tiny-repos/trippy.svg"></a>
@@ -41,7 +41,7 @@ cargo install trippy --locked
 
 ### Cargo
 
-[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.12.2)
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.13.0)
 
 ```shell
 cargo install trippy --locked
@@ -61,7 +61,7 @@ apt install trippy
 
 ### PPA (Ubuntu)
 
-[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.12.2-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
+[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.13.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
 
 ```shell
 add-apt-repository ppa:fujiapple/trippy
@@ -90,7 +90,7 @@ brew install trippy
 
 ### WinGet (Windows)
 
-[![winget package](https://img.shields.io/badge/WinGet-0.12.2-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.12.2)
+[![winget package](https://img.shields.io/badge/WinGet-0.13.0-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.13.0)
 
 ```shell
 winget install trippy
