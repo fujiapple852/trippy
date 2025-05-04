@@ -2,6 +2,297 @@
 
 Release notes for Trippy 0.6.0 onwards. See also the [CHANGELOG](CHANGELOG.md).
 
+# 0.13.0
+
+## Highlights
+
+The 0.13.0 release of Trippy includes several enhancements related to Type of Service (`ToS`) and adds new `Dscp` and
+`Ecn` columns.
+
+It also includes improvements to the TUI such as allowing a custom timezone to be set and adding the ability to read the
+configuration file from the XDG app config directory. The `json` report has been enriched with start and end timestamps.
+
+This release includes a number of bug fixes. For Windows users in particular, this release includes several important
+stability improvements.
+
+The release also introduces a new `system` address family option, which will become the new default in the next major
+release.
+
+Finally, Trippy now has a dedicated website and a logo!
+
+### Type of Service (DSCP/ECN) Improvements
+
+Trippy allows setting the Type of Service (`ToS`) for IPv4 via the `--tos` (`-Q`) command-line argument (or via the
+configuration file). The `ToS` value is the second byte of the `IPv4` header and encodes the Differentiated Services
+Code Point (`DSCP`) and Explicit Congestion Notification (`ECN`) fields.
+
+Setting the `ToS` on outgoing probe packets can influence the Quality of Service (`QoS`) used by the network devices
+along the path.
+
+Probe responses received from the hops along the path include the `ToS` values in the Original Datagram (the `IPv4`/
+`IPv6` header of the probe packet nested inside the `ICMP` error). Examining the `ToS` value from the Original Datagram
+can provide useful insight into the `QoS` treatment of the probe packets by network devices along the path.
+
+This release of Trippy adds two new columns to display the `DSCP` & `ECN` values, which are derived from the `ToS` value
+from the Original Datagram for each hop. The new columns are:
+
+- `Dscp` (`K`): The Differentiated Services Code Point (`DSCP`) of the Original Datagram for a hop
+- `Ecn` (`M`): The Explicit Congestion Notification (`ECN`) of the Original Datagram for a hop
+
+The `Dscp` and `Ecn` columns are decoded from the `ToS` field of the Original Datagram. If no `ToS` value is present,
+then the columns will show `na`. Note that these columns show the most recent `ToS` value received from the hop and
+may therefore change between rounds.
+
+Well-known `DSCP` values are displayed as follows:
+
+- Default Forwarding (`DF`) aka Best Effort aka Class Selector 0 (`CS0`)
+- Assured Forwarding (`AFn`)
+- Class Selector (`CSn`)
+- High Priority Expedited Forwarding (`EF`)
+- Voice Admit (`VA`)
+- Lower Effort (`LE`)
+
+Unknown `DSCP` values are displayed as a hexadecimal value.
+
+The `ECN` value is displayed as follows:
+
+- Not ECN-Capable Transport (`NotECT`)
+- ECN Capable Transport(1) (`ECT1`)
+- ECN Capable Transport(0) (`ECT0`)
+- Congestion Experienced (`CE`)
+
+These columns are hidden by default but can be enabled as needed. For more details, see
+the [Column Reference](https://trippy.rs/reference/column).
+
+The following example sets the `ToS` to be `224`, which is a `DSCP` value of `CS7` (0x38) and an `ECN` value of
+`NotECT` (0x0), and enables the new columns:
+
+```shell
+trip example.com --tos 224 --tui-custom-columns holsravbwdtKM
+```
+
+The following screenshot shows the example trace:
+
+<img width="60%" src="https://raw.githubusercontent.com/fujiapple852/trippy/master/assets/0.13.0/dscp_ecn.png"/>
+
+The `ToS` field of the Original Datagram has also been added to the `json` output format as a decimal value.
+
+See [#1539](https://github.com/fujiapple852/trippy/issues/1539) for details.
+
+This release also adds support for setting the `IPv6` Traffic Class (which encodes the `DSCP` & `ECN` values in the same
+way as `IPv4`) via the same `--tos` (`-Q`) command-line argument (or via the configuration file). Note that setting the
+`IPv6` Traffic Class is not currently supported on Windows.
+See [#202](https://github.com/fujiapple852/trippy/issues/202) for details.
+
+Finally, a bug which caused the `--tos` (`-Q`) command-line argument to be ignored for `IPv4/UDP` tracing has been
+fixed in this release. See [#1540](https://github.com/fujiapple852/trippy/issues/1540) for details.
+
+### Custom TUI Timezone
+
+Trippy shows the wall-clock time in the header of the TUI. Currently, this is set to show the local timezone of the
+system running Trippy. This can be problematic for users who are running Trippy in a container or on a remote system
+that uses a different timezone.
+
+This release adds the ability to set a custom timezone for the TUI using the `--tui-timezone` command-line argument (or
+via the configuration file). The timezone can be set to any valid IANA timezone identifier, such as `UTC`,
+`America/New_York`, or `Europe/London`.
+
+The following example sets the timezone to `UTC`:
+
+```shell
+trip example.com --tui-timezone UTC
+```
+
+This can be made permanent by setting the `tui-timezone` value in the `tui` section of the configuration file:
+
+```toml
+[tui]
+tui-timezone = "UTC"
+```
+
+See [#1513](https://github.com/fujiapple852/trippy/issues/1513) for details.
+
+### XDG App Config Directory
+
+Trippy will now attempt to locate a `trippy.toml` or `.trippy.toml` config file in the XDG app config directory
+(i.e. `$XDG_CONFIG_HOME/trippy` or `~/.config/trippy`) in addition to existing locations.
+
+This allows users to store their Trippy configuration files in a dedicated directory for Trippy, separate from other
+applications.
+
+The full list of locations Trippy will check for a `trippy.toml` or `.trippy.toml` config file is as
+follows:
+
+- the current directory
+- the user home directory
+- the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
+- the XDG app config directory (Unix only): `$XDG_CONFIG_HOME/trippy` or `~/.config/trippy`
+- the Windows data directory (Windows only): `%APPDATA%`
+
+See [#1528](https://github.com/fujiapple852/trippy/issues/1528) for details.
+
+### System Address Family
+
+Trippy supports tracing for both `IPv4` and `IPv6` address families. If the tracing target is supplied as a hostname,
+Trippy will attempt to resolve the hostname to a single `IPv4` or `IPv6` address. If the hostname resolves to both,
+Trippy will use the address family (`--addr-family`) configuration to determine which address family
+to use.
+
+The possible values for `--addr-family` are:
+
+- `ipv4` - Lookup IPv4 only
+- `ipv6` - Lookup IPv6 only
+- `ipv6-then-ipv4` - Lookup IPv6 with a fallback to IPv4
+- `ipv4-then-ipv6` - Lookup IPv4 with a fallback to IPv6 [default]
+
+The current default value for `--addr-family` is `ipv4-then-ipv6`, which means that if the hostname resolves to both
+`IPv4` and `IPv6` addresses, Trippy will prefer the `IPv4` address family.
+
+Some users find the default behavior undesirable, as it can lead to unexpected results when the hostname resolves to a
+different address family than the one used by other applications on the system.
+
+This release adds a new value for `--addr-family` called `system`. This value defers the choice of address family to the
+first address returned by OS resolver. This means that if the hostname resolves to both `IPv4` and `IPv6` addresses, the
+OS resolver will determine which address family to use based on the OS configuration.
+
+Note that if the `--addr-family` value is set to `system` and the `--dns-resolve-method` is set to any value _other_
+than `system` (i.e. `resolv`, `cloudflare` or `google`), then the address family lookup will effectively default to
+`ipv6-then-ipv4`.
+
+> **Important**: The default value for `--addr-family` will change to become `system` in the next major release of
+> Trippy (0.14.0). This will be a breaking change for users who rely on the current default value of `ipv4-then-ipv6`.
+
+See [#1469](https://github.com/fujiapple852/trippy/issues/1469) for details.
+
+### Remove Address Family "downgrade" for Dublin Strategy
+
+Currently, the address families `ipv4-then-ipv6` and `ipv6-then-ipv4` are silently _downgraded_ to `ipv4` when the
+`dublin` ECMP strategy is used. This behaviour was previously necessary, as Trippy did not support the `dublin` ECMP
+strategy for `IPv6`. However, Trippy has supported the `dublin` ECMP strategy for `IPv6` since version 0.10.0. As a
+result, this release removes the address family _downgrade_ for the `dublin` ECMP strategy.
+
+See [#1476](https://github.com/fujiapple852/trippy/issues/1476) for details.
+
+### Windows Stability Improvements
+
+This release includes several stability improvements for Windows. It fixes several known or potential issues that
+could cause crashes or memory corruption. It is recommended that all Windows users upgrade to this release.
+
+See the following issues for details:
+
+- Memory corruption on Windows ([#1527](https://github.com/fujiapple852/trippy/issues/1527))
+- Socket being closed twice on Windows ([#1443](https://github.com/fujiapple852/trippy/issues/1443))
+- Potential crash on Windows for adapters without unicast
+  addresses ([#1547](https://github.com/fujiapple852/trippy/issues/1547))
+- Potential use-after-free when discovering source address on
+  Windows ([#1558](https://github.com/fujiapple852/trippy/issues/1558))
+
+### Start and End Timestamps in JSON report
+
+The Trippy `json` report mode has been enhanced to show the start and end timestamps for the trace. These timestamps are
+shown in UTC using RFC 3339 format.
+
+The following example runs a trace to `example.com` for a single round and outputs the results in `json` format:
+
+```shell
+trip example.com -m json -C 1
+```
+
+The `info` section of the output now includes the `start_timestamp` and `end_timestamp` fields:
+
+```json
+{
+  "info": {
+    "target": {
+      "ip": "23.192.228.80",
+      "hostname": "example.com"
+    },
+    "start_timestamp": "2025-05-04T09:50:10.383221Z",
+    "end_timestamp": "2025-05-04T09:50:11.392039Z"
+  }
+}
+```
+
+See [#1510](https://github.com/fujiapple852/trippy/issues/1510) for details.
+
+### Reduce Tracing Verbosity
+
+The `trippy-core` crate logging is overly verbose. This release reduces all `#[instrument]` annotations from the default
+`info` level to the `trace` level. It also removes some tracing annotations and, in some cases, adds new ones.
+
+There are now no `info` level logs and only a handful of `debug` level logs:
+
+- Log the channel config when a channel is created (typically just once)
+- Log the strategy config when the tracer is started (typically just once)
+- Log each probe sent and received during a round (typically a handful per round)
+
+For application users there is no change; however the default logging level (`--log-filter trippy=debug`) used when `-v`
+is passed will now show substantially fewer logs. Users can set `--log-filter trippy=trace` to see a logging level
+similar to the previous default.
+
+See [#1482](https://github.com/fujiapple852/trippy/issues/1482) for details.
+
+### Bug Fixes
+
+This release fixes a bug where ICMP packets larger than 256 bytes could cause a tracer panic.
+See [#1561](https://github.com/fujiapple852/trippy/issues/1561) for details.
+
+It also adds a handful of missing configuration options to the settings dialog.
+See [#1541](https://github.com/fujiapple852/trippy/issues/1541) for details.
+
+### Trippy Website & Logo
+
+Trippy now has a dedicated website: https://trippy.rs
+
+The website is now the primary source of documentation. My thanks to @orhun for building the https://binsider.dev
+website which I ~~took inspiration from~~ shamelessly copied for Trippy.
+
+Along with the new website, Trippy (finally!) has a logo:
+
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/docs/src/assets/Trippy-Vertical-DarkMode.svg#gh-dark-mode-only" width="200">
+<img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/docs/src/assets/Trippy-Vertical.svg#gh-light-mode-only" width="200"><br>
+
+With thanks to [Harun Ocaksiz Design](https://www.instagram.com/harunocaksiz).
+
+See [#100](https://github.com/fujiapple852/trippy/issues/100) for details.
+
+### New Distribution Packages
+
+Trippy has been added to the Void Linux package repository (with thanks to @icp1994!):
+
+[![Void Linux x86_64 package](https://repology.org/badge/version-for-repo/void_x86_64/trippy.svg)](https://github.com/void-linux/void-packages/tree/master/srcpkgs/trippy)
+
+```shell
+xbps-install -S trippy
+```
+
+Trippy was also added to ALT Sisyphus package repository (with thanks
+to [Aleksandr Voyt](https://packages.altlinux.org/en/sisyphus/maintainers/sobue)!)
+
+[![ALT Sisyphus package](https://repology.org/badge/version-for-repo/altsisyphus/trippy.svg)](https://packages.altlinux.org/en/sisyphus/srpms/trippy/)
+
+```shell
+apt-get install trippy
+```
+
+Finally, Trippy has been added to the Chimera Linux package repository (with thanks to @ttyyls!):
+
+[![Chimera Linux package](https://repology.org/badge/version-for-repo/chimera/trippy.svg)](https://github.com/chimera-linux/cports/tree/master/user/trippy)
+
+```shell
+apk add trippy
+```
+
+### Thanks
+
+My thanks to all Trippy contributors, package maintainers, translators and community members.
+
+Feel free to drop by the Trippy Zulip room for a chat:
+
+[![project chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://trippy.zulipchat.com/)
+
+Happy Tracing!
+
 # 0.12.2
 
 ## Highlights
