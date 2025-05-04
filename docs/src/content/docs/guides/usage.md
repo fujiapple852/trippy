@@ -205,6 +205,12 @@ List supported Tui locales:
 trip --print-locales
 ```
 
+Set the Tui timezone to `UTC`:
+
+```shell
+trip example.com --tui-timezone UTC
+```
+
 Run in `silent` tracing mode and output `compact` trace logging with `full` span events:
 
 ```shell

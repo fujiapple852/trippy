@@ -3,9 +3,6 @@ title: Locale Reference
 description: A reference for customizing the Trippy TUI locale.
 sidebar:
   order: 6
-  badge:
-    text: New
-    variant: note
 ---
 
 The following table lists the supported locales for the Tui. These can be overridden with the `--tui-locale` command

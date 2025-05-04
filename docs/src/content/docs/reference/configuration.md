@@ -14,6 +14,7 @@ Trippy will attempt to locate a `trippy.toml` or `.trippy.toml` configuration fi
 - The current directory
 - The user home directory
 - the XDG config directory (Unix only): `$XDG_CONFIG_HOME` or `~/.config`
+- the XDG app config directory (Unix only): `$XDG_CONFIG_HOME/trippy` or `~/.config/trippy`
 - the Windows data directory (Windows only): `%APPDATA%`
 
 A template configuration file

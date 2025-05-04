@@ -40,6 +40,7 @@ sidebar:
   - Responsive UI with adjustable refresh rate
   - Hop privacy
   - Multiple language support
+  - Customizable timezone
 - DNS:
   - Use system, external (Google `8.8.8.8` or Cloudflare `1.1.1.1`) or custom resolver
   - Lazy reverse DNS queries

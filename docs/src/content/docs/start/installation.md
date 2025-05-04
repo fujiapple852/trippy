@@ -127,6 +127,30 @@ pacman -S trippy
 emerge -av net-analyzer/trippy
 ```
 
+### Void Linux
+
+[![Void Linux x86_64 package](https://repology.org/badge/version-for-repo/void_x86_64/trippy.svg)](https://github.com/void-linux/void-packages/tree/master/srcpkgs/trippy)
+
+```shell
+xbps-install -S trippy
+```
+
+### ALT Sisyphus
+
+[![ALT Sisyphus package](https://repology.org/badge/version-for-repo/altsisyphus/trippy.svg)](https://packages.altlinux.org/en/sisyphus/srpms/trippy/)
+
+```shell
+apt-get install trippy
+```
+
+### Chimera Linux
+
+[![Chimera Linux package](https://repology.org/badge/version-for-repo/chimera/trippy.svg)](https://github.com/chimera-linux/cports/tree/master/user/trippy)
+
+```shell
+apk add trippy
+```
+
 ### Nix
 
 [![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/tr/trippy/package.nix)
