@@ -210,12 +210,12 @@ This will trigger the GitHub Actions workflow to build the release binaries and 
 - Publish all crates to crates.io (in order):
 
 ```shell
-cargo publish trippy-dns
-cargo publish trippy-packet
-cargo publish trippy-privilege
-cargo publish trippy-core
-cargo publish trippy-tui
-cargo publish trippy
+cargo publish -p trippy-dns
+cargo publish -p trippy-packet
+cargo publish -p trippy-privilege
+cargo publish -p trippy-core
+cargo publish -p trippy-tui
+cargo publish -p trippy
 ```
 
 ### Docker
