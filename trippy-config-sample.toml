@@ -82,7 +82,7 @@ protocol = "icmp"
 #   ipv6            - Lookup IPv6 only
 #   ipv6-then-ipv4  - Lookup IPv6 with a fallback to IPv4
 #   ipv4-then-ipv6  - Lookup IPv4 with a fallback to IPv6 [default]
-#   system          - Use the first IP address returned by the OS resolver when `dns-resolve-method` is set to `system`,
+#   system          - If the OS resolver is being used then use the first IP address returned,
 #                     otherwise lookup IPv6 with a fallback to IPv4.
 addr-family = "ipv4-then-ipv6"
 
