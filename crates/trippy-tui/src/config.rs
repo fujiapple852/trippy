@@ -88,8 +88,8 @@ pub enum AddressFamilyConfig {
     /// IPv4 with a fallback to IPv6.
     #[serde(rename = "ipv4-then-ipv6")]
     Ipv4ThenIpv6,
-    /// Use the first IP address returned by the OS resolver when using
-    /// `DnsResolveMethodConfig::System`, otherwise lookup IPv6 with a fallback to IPv4.
+    /// If the OS resolver is being used then use the first IP address returned,
+    /// otherwise lookup IPv6 with a fallback to IPv4.
     System,
 }
 
