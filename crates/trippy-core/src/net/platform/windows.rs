@@ -415,8 +415,11 @@ impl Socket for SocketImpl {
             .map_err(|err| IoError::Other(err, IoOperation::SetTos))
     }
 
-    fn set_tclass_v6(&mut self, _tclass: u32) -> IoResult<()> {
-        unimplemented!()
+    fn set_tclass_v6(&mut self, tclass: u32) -> IoResult<()> {
+        if tclass > 0 {
+            unimplemented!("setting tclass_v6 is not supported on Windows")
+        }
+        Ok(())
     }
 
     #[instrument(skip(self), level = "trace")]
