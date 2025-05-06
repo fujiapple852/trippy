@@ -64,7 +64,7 @@ issues: https://github.com/fujiapple852/trippy/issues
 license: Apache-2.0
 source-code: https://github.com/fujiapple852/trippy
 website: https://trippy.rs
-base: core18
+base: core20
 confinement: strict
 parts:
   trippy:
