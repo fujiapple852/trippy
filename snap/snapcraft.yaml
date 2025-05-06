@@ -65,11 +65,14 @@ license: Apache-2.0
 source-code: https://github.com/fujiapple852/trippy
 website: https://trippy.rs
 base: core20
+grade: stable
 confinement: strict
 parts:
   trippy:
     plugin: rust
     source: .
+    organize:
+      trip: usr/bin/trip
 apps:
   trippy:
     command: usr/bin/trip
