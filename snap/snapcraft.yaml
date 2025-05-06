@@ -72,7 +72,7 @@ parts:
     source: .
 apps:
   trippy:
-    command: bin/trip
+    command: usr/bin/trip
     plugs:
       - network-bind
       - network
