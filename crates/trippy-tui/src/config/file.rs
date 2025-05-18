@@ -54,7 +54,7 @@ pub fn read_default_config_file() -> anyhow::Result<Option<ConfigFile>> {
 /// Read the config from the given path.
 pub fn read_config_file<P: AsRef<Path>>(path: P) -> anyhow::Result<ConfigFile> {
     let file = File::open(path.as_ref())
-        .with_context(|| format!("config file not found: {:?}", path.as_ref()))?;
+        .with_context(|| format!("config file not found: {}", path.as_ref().display()))?;
     let mut decoder = DecodeReaderBytes::new(BufReader::new(file));
     let mut dest = String::new();
     decoder.read_to_string(&mut dest)?;
