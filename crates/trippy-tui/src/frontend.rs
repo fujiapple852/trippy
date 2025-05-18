@@ -15,6 +15,7 @@ use ratatui::{
     Terminal,
 };
 use std::io;
+use std::io::Stdout;
 use trippy_dns::DnsResolver;
 use tui_app::TuiApp;
 
@@ -69,7 +70,10 @@ enum ExitAction {
 }
 
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<ExitAction> {
+fn run_app(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    app: &mut TuiApp,
+) -> io::Result<ExitAction> {
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
