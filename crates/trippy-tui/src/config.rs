@@ -250,7 +250,7 @@ pub enum LogSpanEvents {
 #[derive(Debug, Eq, PartialEq)]
 pub enum TrippyAction {
     /// Run Trippy.
-    Trippy(TrippyConfig),
+    Trippy(Box<TrippyConfig>),
     /// Print all TUI theme items and exit.
     PrintTuiThemeItems,
     /// Print all TUI commands that can be bound and exit.
@@ -280,7 +280,7 @@ impl TrippyAction {
         } else if args.print_locales {
             Self::PrintLocales
         } else {
-            Self::Trippy(TrippyConfig::from(args, privilege, pid)?)
+            Self::Trippy(Box::new(TrippyConfig::from(args, privilege, pid)?))
         })
     }
 }
