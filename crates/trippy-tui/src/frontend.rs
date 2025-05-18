@@ -69,7 +69,7 @@ enum ExitAction {
 }
 
 #[expect(clippy::too_many_lines, clippy::cognitive_complexity)]
-fn run_app(terminal: &mut DefaultTerminal, app: &mut TuiApp) -> Result<ExitAction, io::Error> {
+fn run_app(terminal: &mut DefaultTerminal, app: &mut TuiApp) -> io::Result<ExitAction> {
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
