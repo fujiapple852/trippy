@@ -289,7 +289,7 @@ impl From<(maxminddb::geoip2::City<'_>, &str)> for GeoIpCity {
 const FALLBACK_LOCALE: &str = "en";
 
 /// Alias for a cache of `GeoIp` data.
-type Cache = RefCell<HashMap<IpAddr, Rc<GeoIpCity>>>;
+type Cache = RefCell<HashMap<IpAddr, Option<Rc<GeoIpCity>>>>;
 
 /// Lookup `GeoIpCity` data form an `IpAddr`.
 #[derive(Debug)]
@@ -326,18 +326,20 @@ impl GeoIpLookup {
     pub fn lookup(&self, addr: IpAddr) -> anyhow::Result<Option<Rc<GeoIpCity>>> {
         if let Some(reader) = &self.reader {
             if let Some(geo) = self.cache.borrow().get(&addr) {
-                return Ok(Some(geo.clone()));
+                return Ok(geo.clone());
             }
             let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
-                GeoIpCity::from(reader.lookup::<ipinfo::IpInfoGeoIp>(addr)?)
+                reader
+                    .lookup::<ipinfo::IpInfoGeoIp>(addr)?
+                    .map(GeoIpCity::from)
             } else {
-                GeoIpCity::from((
-                    reader.lookup::<maxminddb::geoip2::City<'_>>(addr)?,
-                    self.locale.as_ref(),
-                ))
+                reader
+                    .lookup::<maxminddb::geoip2::City<'_>>(addr)?
+                    .map(|city| GeoIpCity::from((city, self.locale.as_ref())))
             };
-            let geo = self.cache.borrow_mut().insert(addr, Rc::new(city_data));
-            Ok(geo)
+            let cached = city_data.map(Rc::new);
+            self.cache.borrow_mut().insert(addr, cached.clone());
+            Ok(cached)
         } else {
             Ok(None)
         }

@@ -53,7 +53,7 @@ indexmap = { version = "2.9.0", default-features = false }
 insta = "1.43.1"
 ipnetwork = "0.21.1"
 itertools = "0.14.0"
-maxminddb = "0.25.0"
+maxminddb = "0.26.0"
 mockall = "0.13.1"
 nix = { version = "0.29.0", default-features = false }
 parking_lot = "0.12.3"
