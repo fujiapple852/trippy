@@ -179,7 +179,7 @@ pub enum IcmpExtensionMode {
 /// How to render `GeoIp` information in the hop table.
 ///
 /// Note that the hop details view is always shown using the `Long` representation.
-#[allow(clippy::doc_markdown)]
+#[expect(clippy::doc_markdown)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GeoIpMode {
@@ -358,7 +358,7 @@ impl TrippyConfig {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     fn build_config(
         args: Args,
         cfg_file: ConfigFile,
@@ -577,7 +577,7 @@ impl TrippyConfig {
             (false, false, false, ProtocolConfig::Tcp) | (_, true, _, _) => Protocol::Tcp,
             (false, false, false, ProtocolConfig::Icmp) | (_, _, true, _) => Protocol::Icmp,
         };
-        #[allow(clippy::match_same_arms)]
+        #[expect(clippy::match_same_arms)]
         let addr_family = match (
             args.ipv4,
             args.ipv6,
@@ -2168,7 +2168,7 @@ mod tests {
             }
         }
 
-        #[allow(clippy::large_types_passed_by_value)]
+        #[expect(clippy::large_types_passed_by_value)]
         pub fn tui_bindings(self, tui_bindings: TuiBindings) -> Self {
             Self {
                 config: TrippyConfig {

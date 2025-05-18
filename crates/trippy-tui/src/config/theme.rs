@@ -125,7 +125,7 @@ impl Default for TuiTheme {
 }
 
 impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
-    #[allow(clippy::too_many_lines, clippy::or_fun_call)]
+    #[expect(clippy::too_many_lines, clippy::or_fun_call)]
     fn from(value: (HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)) -> Self {
         let (color_map, cfg) = value;
         Self {
@@ -272,7 +272,7 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
 /// A TUI theme item.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, VariantNames)]
 #[strum(serialize_all = "kebab-case")]
-#[allow(clippy::enum_variant_names)]
+#[expect(clippy::enum_variant_names)]
 pub enum TuiThemeItem {
     /// The default background color.
     BgColor,
@@ -507,7 +507,7 @@ impl TryFrom<String> for TuiColor {
 impl TryFrom<&str> for TuiColor {
     type Error = anyhow::Error;
 
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().replace('-', "").as_ref() {
             "black" => Ok(Self::Black),

@@ -178,7 +178,6 @@ impl Privilege {
     // Unix (excl. Linux)
 
     #[cfg(all(unix, not(target_os = "linux")))]
-    #[allow(clippy::unnecessary_wraps)]
     /// Acquire privileges, if possible.
     ///
     /// This is a no-op on non-Linux unix systems.
@@ -187,7 +186,7 @@ impl Privilege {
     }
 
     #[cfg(all(unix, not(target_os = "linux")))]
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps)]
     /// Do we have the required privileges?
     ///
     /// Checks if the effective user is root.
@@ -196,7 +195,6 @@ impl Privilege {
     }
 
     #[cfg(all(unix, not(target_os = "linux")))]
-    #[allow(clippy::unnecessary_wraps)]
     /// Drop all privileges.
     ///
     /// This is a no-op on non-Linux unix systems.
@@ -231,7 +229,6 @@ impl Privilege {
     // Windows
 
     #[cfg(windows)]
-    #[allow(clippy::unnecessary_wraps)]
     /// Acquire privileges, if possible.
     ///
     /// This is a no-op on `Windows`.
@@ -240,14 +237,13 @@ impl Privilege {
     }
 
     #[cfg(windows)]
-    #[allow(clippy::unnecessary_wraps)]
     /// Do we have the required privileges?
     ///
     /// Check if the current process has an elevated token.
     fn check_has_privileges() -> Result<bool> {
         macro_rules! syscall {
             ($p: path, $fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-                #[allow(unsafe_code)]
+                #[expect(unsafe_code)]
                 unsafe { paste::paste!(windows_sys::Win32::$p::$fn) ($($arg, )*) }
             }};
         }
@@ -279,7 +275,7 @@ impl Privilege {
                 use windows_sys::Win32::Security::TokenElevation;
                 use windows_sys::Win32::Security::TOKEN_ELEVATION;
                 let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(clippy::cast_possible_truncation)]
                 let size = std::mem::size_of::<TOKEN_ELEVATION>() as u32;
                 let mut ret_size = 0u32;
                 let ret = syscall!(
@@ -311,7 +307,6 @@ impl Privilege {
     }
 
     #[cfg(windows)]
-    #[allow(clippy::unnecessary_wraps)]
     /// Drop all capabilities.
     ///
     /// This is a no-op on `Windows`.

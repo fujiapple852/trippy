@@ -663,7 +663,7 @@ fn format_details(
 /// Pos: 37.751, -97.822 (~1000km)
 /// Ext: [mpls(label=48268, ttl=1, exp=0, bos=1)]
 /// ```
-#[allow(clippy::too_many_arguments, clippy::cognitive_complexity)]
+#[expect(clippy::too_many_arguments)]
 fn fmt_details_line(
     addr: IpAddr,
     index: usize,

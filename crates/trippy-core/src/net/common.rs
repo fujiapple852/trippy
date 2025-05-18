@@ -30,7 +30,7 @@ impl ErrorMapper {
     }
 
     /// Convert a given [`ErrorKind`] to [`Error::ProbeFailed`].
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     pub fn probe_failed(err: Error, kind: ErrorKind) -> Error {
         match err {
             Error::IoError(io_err) if io_err.kind() == kind => Error::ProbeFailed(io_err),

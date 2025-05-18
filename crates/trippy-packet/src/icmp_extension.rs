@@ -1006,7 +1006,7 @@ pub mod extension_splitter {
             // object with a single member.  The packet does not have a `length`
             // field and is therefore rfc4884 non-complaint.
             #[test]
-            #[allow(clippy::cognitive_complexity)]
+            #[expect(clippy::cognitive_complexity)]
             fn test_split_extension_ipv4_time_exceeded_non_compliant_mpls() {
                 let buf = hex_literal::hex!(
                     "
@@ -1191,7 +1191,7 @@ pub mod extension_splitter {
             // This example contain an MPLS extension stack which contains
             // two member (i.e. labels)
             #[test]
-            #[allow(clippy::cognitive_complexity)]
+            #[expect(clippy::cognitive_complexity)]
             fn test_ipv6() {
                 let buf = hex_literal::hex!(
                     "

@@ -21,7 +21,7 @@ use trippy_packet::IpProtocol;
 
 const READ_TIMEOUT: Duration = Duration::from_millis(10);
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub async fn run(
     tun: Arc<Mutex<TunDevice>>,
     sim: Arc<Simulation>,

@@ -196,7 +196,7 @@ impl Default for ConfigStrategy {
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-#[allow(clippy::struct_field_names)]
+#[expect(clippy::struct_field_names)]
 pub struct ConfigDns {
     pub dns_resolve_method: Option<DnsResolveMethodConfig>,
     pub dns_resolve_all: Option<bool>,
@@ -281,7 +281,7 @@ impl Default for ConfigTui {
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-#[allow(clippy::struct_field_names)]
+#[expect(clippy::struct_field_names)]
 pub struct ConfigThemeColors {
     pub bg_color: Option<TuiColor>,
     pub border_color: Option<TuiColor>,
@@ -476,7 +476,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(clippy::too_many_lines)]
     fn test_parse_config_sample() {
         let config: ConfigFile =
             toml::from_str(include_str!("../../trippy-config-sample.toml")).unwrap();

@@ -24,7 +24,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         );
-    #[allow(clippy::needless_raw_string_hashes)]
+    #[expect(clippy::needless_raw_string_hashes)]
     let splash: Vec<Cow<'static, str>> = vec![
         r#" _____    _                "#.into(),
         r#"|_   _| _(_)_ __ _ __ _  _ "#.into(),

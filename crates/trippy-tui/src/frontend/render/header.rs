@@ -14,7 +14,7 @@ use trippy_core::{Hop, PortDirection};
 use trippy_dns::Resolver;
 
 /// Render the title, target, clock and basic keyboard controls.
-#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
+#[expect(clippy::too_many_lines)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
         .title(format!(" {} v{} ", t!("trippy"), clap::crate_version!()))

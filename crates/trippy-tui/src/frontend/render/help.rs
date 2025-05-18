@@ -12,7 +12,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
     let s = app.tui_config.bindings.toggle_settings;
     let b = app.tui_config.bindings.toggle_settings_bindings;
     let c = app.tui_config.bindings.toggle_settings_columns;
-    #[allow(clippy::needless_raw_string_hashes)]
+    #[expect(clippy::needless_raw_string_hashes)]
     let help_lines = vec![
         Line::raw(r#"                           "#),
         Line::raw(r#" _____    _                "#),

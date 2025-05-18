@@ -41,7 +41,7 @@ pub struct TuiConfig {
 }
 
 impl TuiConfig {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         refresh_rate: Duration,
         privacy_max_ttl: Option<u8>,

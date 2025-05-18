@@ -32,7 +32,7 @@ use windows_sys::Win32::System::IO::OVERLAPPED;
 /// returned.
 macro_rules! syscall {
     ($fn: ident ( $($arg: expr),* $(,)* ), $err_fn: expr) => {{
-        #[allow(unsafe_code)]
+        #[expect(unsafe_code)]
         let res = unsafe { windows_sys::Win32::Networking::WinSock::$fn($($arg, )*) };
         if $err_fn(res) {
             Err(StdIoError::last_os_error())
@@ -47,7 +47,7 @@ macro_rules! syscall {
 /// The raw result of the syscall is returned.
 macro_rules! syscall_ip_helper {
     ($fn: ident ( $($arg: expr),* $(,)* )) => {{
-        #[allow(unsafe_code)]
+        #[expect(unsafe_code)]
         unsafe { windows_sys::Win32::NetworkManagement::IpHelper::$fn($($arg, )*) }
     }};
 }
@@ -57,7 +57,7 @@ macro_rules! syscall_ip_helper {
 /// The raw result of the syscall is returned.
 macro_rules! syscall_threading {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
-        #[allow(unsafe_code)]
+        #[expect(unsafe_code)]
         unsafe { windows_sys::Win32::System::Threading::$fn($($arg, )*) }
     }};
 }
@@ -65,7 +65,6 @@ macro_rules! syscall_threading {
 pub struct PlatformImpl;
 
 impl Platform for PlatformImpl {
-    #[allow(clippy::unnecessary_wraps)]
     fn byte_order_for_address(_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
@@ -100,7 +99,7 @@ pub struct SocketImpl {
     bytes_read: u32,
 }
 
-#[allow(clippy::cast_possible_wrap, clippy::redundant_closure_call)]
+#[expect(clippy::cast_possible_wrap)]
 impl SocketImpl {
     fn startup() -> IoResult<()> {
         let mut wsa_data = Self::new_wsa_data();
@@ -257,32 +256,31 @@ impl SocketImpl {
         Ok(())
     }
 
-    #[allow(unsafe_code)]
+    #[expect(unsafe_code)]
     const fn new_wsa_data() -> WSADATA {
         // Safety: an all-zero value is valid for `WSADATA`.
         unsafe { zeroed::<WSADATA>() }
     }
 
-    #[allow(unsafe_code)]
+    #[expect(unsafe_code)]
     const fn new_sockaddr_storage() -> SOCKADDR_STORAGE {
         // Safety: an all-zero value is valid for `SOCKADDR_STORAGE`.
         unsafe { zeroed::<SOCKADDR_STORAGE>() }
     }
 
-    #[allow(unsafe_code)]
+    #[expect(unsafe_code)]
     const fn new_overlapped() -> OVERLAPPED {
         // Safety: an all-zero value is valid for `OVERLAPPED.`
         unsafe { zeroed::<OVERLAPPED>() }
     }
 
-    #[allow(unsafe_code)]
+    #[expect(unsafe_code)]
     const fn new_icmp_error_info() -> ICMP_ERROR_INFO {
         // Safety: an all-zero value is valid for `ICMP_ERROR_INFO`.
         unsafe { zeroed::<ICMP_ERROR_INFO>() }
     }
 }
 
-#[allow(clippy::redundant_closure_call)]
 impl Drop for SocketImpl {
     fn drop(&mut self) {
         if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
@@ -291,7 +289,7 @@ impl Drop for SocketImpl {
     }
 }
 
-#[allow(clippy::cast_possible_wrap, clippy::redundant_closure_call)]
+#[expect(clippy::cast_possible_wrap)]
 impl Socket for SocketImpl {
     #[instrument(level = "trace")]
     fn new_icmp_send_socket_ipv4(raw: bool) -> IoResult<Self> {
@@ -564,7 +562,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self), ret, level = "trace")]
-    #[allow(unsafe_code)]
+    #[expect(unsafe_code)]
     fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
         let icmp_error_info = self
             .getsockopt::<ICMP_ERROR_INFO>(
@@ -625,7 +623,7 @@ impl From<ErrorKind> for StdIoError {
 /// NOTE under Windows, we cannot use a bind connect/getsockname as "If the socket
 /// is using a connectionless protocol, the address may not be available until I/O
 /// occurs on the socket."  We use `SIO_ROUTING_INTERFACE_QUERY` instead.
-#[allow(clippy::cast_sign_loss, clippy::redundant_closure_call)]
+#[expect(clippy::cast_sign_loss)]
 #[instrument(level = "trace")]
 fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
     let mut src_buf = [0; 1024];
@@ -659,7 +657,7 @@ fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
         .map_err(|err| Error::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
 }
 
-#[allow(unsafe_code)]
+#[expect(unsafe_code)]
 fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr> {
     // Safety: TODO
     match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().unwrap() }) {
@@ -671,7 +669,7 @@ fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr>
     }
 }
 
-#[allow(unsafe_code)]
+#[expect(unsafe_code)]
 fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr> {
     let ptr = sockaddr as *const SOCKADDR_STORAGE;
     let af = sockaddr.ss_family;
@@ -686,7 +684,6 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr
             port,
         )))
     } else if af == AF_INET6 {
-        #[allow(clippy::cast_ptr_alignment)]
         let sockaddr_in6_ptr = ptr.cast::<SOCKADDR_IN6>();
         // Safety: TODO
         let sockaddr_in6 = unsafe { *sockaddr_in6_ptr };
@@ -710,8 +707,8 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr
     }
 }
 
-#[allow(unsafe_code)]
-#[allow(clippy::cast_possible_wrap)]
+#[expect(unsafe_code)]
+#[expect(clippy::cast_possible_wrap)]
 #[must_use]
 fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
     #[repr(C)]
@@ -880,7 +877,7 @@ mod adapter {
                 None
             } else {
                 // Safety: `next` is not null and points to a valid `IP_ADAPTER_ADDRESSES_LH`
-                #[allow(unsafe_code)]
+                #[expect(unsafe_code)]
                 unsafe {
                     let friendly_name = WideCString::from_ptr_str((*self.next).FriendlyName)
                         .to_string()

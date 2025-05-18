@@ -38,7 +38,7 @@ mod address {
     /// Linux accepts either network byte order or host byte order for the `total_length` field, and
     /// so we skip the check and return network byte order unconditionally.
     #[cfg(target_os = "linux")]
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps)]
     pub const fn for_address(_src_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
@@ -168,7 +168,6 @@ mod socket {
     use std::time::Duration;
     use tracing::instrument;
 
-    #[allow(clippy::unnecessary_wraps)]
     #[instrument(level = "trace")]
     pub fn startup() -> Result<()> {
         Ok(())
@@ -481,7 +480,6 @@ mod socket {
                 })
                 .map_err(|err| IoError::Other(err, IoOperation::TakeError))
         }
-        #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
         #[instrument(skip(self), ret, level = "trace")]
         fn icmp_error_info(&mut self) -> IoResult<IpAddr> {
             Ok(IpAddr::V4(Ipv4Addr::UNSPECIFIED))

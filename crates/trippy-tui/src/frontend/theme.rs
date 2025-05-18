@@ -122,7 +122,7 @@ impl From<TuiTheme> for Theme {
 }
 
 impl From<TuiColor> for Color {
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     fn from(value: TuiColor) -> Self {
         match value {
             TuiColor::Black => Self::Black,

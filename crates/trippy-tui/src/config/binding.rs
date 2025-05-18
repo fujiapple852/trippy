@@ -183,7 +183,7 @@ impl TuiBindings {
 }
 
 impl From<(HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)> for TuiBindings {
-    #[allow(clippy::too_many_lines, clippy::or_fun_call)]
+    #[expect(clippy::too_many_lines, clippy::or_fun_call)]
     fn from(value: (HashMap<TuiCommandItem, TuiKeyBinding>, ConfigBindings)) -> Self {
         let (cmd_items, cfg) = value;
         Self {
@@ -560,7 +560,6 @@ impl Display for TuiKeyBinding {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, EnumString, VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 #[derive(AsRefStr)]
-#[allow(clippy::enum_variant_names)]
 pub enum TuiCommandItem {
     /// Toggle the help dialog.
     ToggleHelp,

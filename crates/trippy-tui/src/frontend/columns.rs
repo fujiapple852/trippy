@@ -277,7 +277,6 @@ impl Display for ColumnType {
 
 impl ColumnType {
     /// The name of the column in the current locale.
-    #[allow(clippy::cognitive_complexity)]
     pub(self) fn name(&self) -> Cow<'_, str> {
         match self {
             Self::Ttl => Cow::Borrowed("#"),
@@ -321,7 +320,7 @@ impl ColumnType {
     /// The `Host` column is variable as it should use the remaining space.
     pub(self) fn width(self) -> ColumnWidth {
         let width = self.name().width() as u16 + 2;
-        #[allow(clippy::match_same_arms)]
+        #[expect(clippy::match_same_arms)]
         match self {
             Self::Ttl => ColumnWidth::Fixed(4),
             Self::Host => ColumnWidth::Variable,

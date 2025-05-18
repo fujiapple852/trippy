@@ -407,7 +407,7 @@ fn format_binding_settings(app: &TuiApp) -> Vec<SettingsItem> {
 }
 
 /// Format theme settings.
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
     let theme = &app.tui_config.theme;
     vec![

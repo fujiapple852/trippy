@@ -1100,7 +1100,7 @@ mod tests {
         }
     }
 
-    #[allow(clippy::needless_pass_by_value)]
+    #[expect(clippy::needless_pass_by_value)]
     fn assert_eq_opt<T: Eq + Debug>(actual: Option<T>, expected: Option<T>) {
         assert_eq_inner(actual.as_ref(), expected.as_ref(), |a, e| a == e);
     }
