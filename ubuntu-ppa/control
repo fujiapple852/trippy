@@ -4,8 +4,8 @@ Priority: optional
 Maintainer: Fuji Apple <fujiapple852@gmail.com>
 Rules-Requires-Root: no
 Build-Depends: debhelper-compat (= 13),
- cargo-1.78,
- rustc-1.78,
+ cargo-1.81,
+ rustc-1.81,
  libstd-rust-dev
 Standards-Version: 4.6.2
 Vcs-Browser: https://github.com/fujiapple852/trippy

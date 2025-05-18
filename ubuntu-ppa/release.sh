@@ -41,7 +41,7 @@ if gpg --list-keys --with-colons "${GPG_KEY_ID}" | grep '^pub' | grep '[e]'; the
 fi
 
 # Vendor the cargo dependencies
-cargo-1.78 vendor
+cargo-1.81 vendor
 tar cJf ubuntu-ppa/vendor.tar.xz vendor
 
 for series in "${SERIES[@]}"; do
