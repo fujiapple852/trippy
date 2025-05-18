@@ -25,7 +25,7 @@ impl Tracer {
     /// Create a `Tracer`.
     ///
     /// Use the [`crate::Builder`] type to create a [`Tracer`].
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[must_use]
     pub(crate) fn new(
         interface: Option<String>,
@@ -469,7 +469,7 @@ mod inner {
     }
 
     impl TracerInner {
-        #[allow(clippy::too_many_arguments)]
+        #[expect(clippy::too_many_arguments)]
         pub(super) fn new(
             interface: Option<String>,
             source_addr: Option<IpAddr>,

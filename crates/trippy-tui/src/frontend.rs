@@ -68,7 +68,7 @@ enum ExitAction {
     PreserveScreen,
 }
 
-#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
+#[expect(clippy::too_many_lines, clippy::cognitive_complexity)]
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<ExitAction> {
     loop {
         if app.frozen_start.is_none() {

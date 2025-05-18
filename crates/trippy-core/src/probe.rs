@@ -66,7 +66,7 @@ pub struct Probe {
 impl Probe {
     /// Create a new probe.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub(crate) const fn new(
         sequence: Sequence,
         identifier: TraceId,
@@ -90,7 +90,7 @@ impl Probe {
     }
 
     /// A response has been received and the probe is now complete.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[must_use]
     pub(crate) const fn complete(
         self,
@@ -383,7 +383,7 @@ pub struct UdpProtocolResponse {
 }
 
 impl UdpProtocolResponse {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub const fn new(
         identifier: u16,
         dest_addr: IpAddr,

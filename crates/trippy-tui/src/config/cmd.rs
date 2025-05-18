@@ -14,7 +14,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// Trace a route to a host and record statistics
-#[allow(clippy::doc_markdown)]
+#[expect(clippy::doc_markdown)]
 #[derive(Parser, Debug)]
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
 pub struct Args {

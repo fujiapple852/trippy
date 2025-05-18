@@ -386,7 +386,7 @@ mod tests {
         assert_eq!(FlowId(2), flow2_id);
     }
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(clippy::unnecessary_wraps)]
     fn addr(addr: &str) -> Option<IpAddr> {
         Some(IpAddr::V4(Ipv4Addr::from_str(addr).unwrap()))
     }

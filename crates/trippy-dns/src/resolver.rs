@@ -169,7 +169,7 @@ pub struct AsInfo {
 
 impl Display for DnsEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        #[allow(clippy::match_same_arms)]
+        #[expect(clippy::match_same_arms)]
         match self {
             Self::Resolved(Resolved::Normal(_, hosts)) => write!(f, "{}", hosts.join(" ")),
             Self::Resolved(Resolved::WithAsInfo(_, hosts, asinfo)) => {

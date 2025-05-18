@@ -167,7 +167,7 @@ mod inner {
                 DnsProvider::DnsLookup
             } else {
                 let mut options = ResolverOpts::default();
-                #[allow(clippy::match_same_arms)]
+                #[expect(clippy::match_same_arms)]
                 let ip_strategy = match config.addr_family {
                     IpAddrFamily::Ipv4Only => LookupIpStrategy::Ipv4Only,
                     IpAddrFamily::Ipv6Only => LookupIpStrategy::Ipv6Only,

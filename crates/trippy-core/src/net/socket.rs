@@ -54,7 +54,7 @@ pub enum SocketError {
     ConnectionRefused,
     #[allow(dead_code)]
     HostUnreachable,
-    Other(#[allow(dead_code)] std::io::Error),
+    Other(#[expect(dead_code)] std::io::Error),
 }
 
 #[cfg(test)]

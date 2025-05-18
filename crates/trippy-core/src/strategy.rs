@@ -1304,7 +1304,7 @@ mod state {
         use std::net::{IpAddr, Ipv4Addr};
         use std::time::Duration;
 
-        #[allow(
+        #[expect(
             clippy::cognitive_complexity,
             clippy::too_many_lines,
             clippy::bool_assert_comparison

@@ -244,7 +244,7 @@ impl Display for UnknownExtension {
     }
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[expect(clippy::trivially_copy_pass_by_ref)]
 pub fn fixed_width<S>(val: &f64, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
