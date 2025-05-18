@@ -1407,6 +1407,18 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
  "memoffset",
 ]
 
@@ -2405,7 +2417,7 @@ dependencies = [
  "ipnetwork",
  "itertools 0.14.0",
  "mockall",
- "nix",
+ "nix 0.30.1",
  "parking_lot",
  "paste",
  "rand 0.9.1",
@@ -2454,7 +2466,7 @@ version = "0.14.0-dev"
 dependencies = [
  "anyhow",
  "caps",
- "nix",
+ "nix 0.30.1",
  "paste",
  "thiserror 2.0.12",
  "windows-sys 0.52.0",
@@ -2511,7 +2523,7 @@ dependencies = [
  "ipnet",
  "libc",
  "log",
- "nix",
+ "nix 0.29.0",
  "thiserror 1.0.69",
  "tokio",
  "tokio-util",
