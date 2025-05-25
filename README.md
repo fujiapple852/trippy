@@ -3,7 +3,7 @@
   <img src="https://raw.githubusercontent.com/fujiapple852/trippy/master/docs/src/assets/Trippy-Vertical.svg#gh-light-mode-only" width="300"><br>
   <br>
   <a href="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml">
-    <img src="https://github.com/fujiapple852/trippy/workflows/CI/badge.svg"></a>
+    <img src="https://github.com/fujiapple852/trippy/actions/workflows/ci.yml/badge.svg?branch=master"></a>
   <a href="https://crates.io/crates/trippy/0.13.0">
     <img src="https://img.shields.io/crates/v/trippy.svg"></a>
   <a href="https://repology.org/project/trippy/versions">
