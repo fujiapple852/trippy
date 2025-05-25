@@ -47,7 +47,7 @@ pub const DEFAULT_TUI_REFRESH_RATE: Duration = Duration::from_millis(100);
 pub const DEFAULT_DNS_RESOLVE_METHOD: DnsResolveMethodConfig = DnsResolveMethodConfig::System;
 
 /// The default value for `addr-family`.
-pub const DEFAULT_ADDR_FAMILY: AddressFamilyConfig = AddressFamilyConfig::Ipv4ThenIpv6;
+pub const DEFAULT_ADDR_FAMILY: AddressFamilyConfig = AddressFamilyConfig::System;
 
 /// The default value for `dns-lookup-as-info`.
 pub const DEFAULT_DNS_LOOKUP_AS_INFO: bool = false;

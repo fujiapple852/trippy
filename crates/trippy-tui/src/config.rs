@@ -1281,7 +1281,7 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
-    #[test_case("trip example.com", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "default address family")]
+    #[test_case("trip example.com", Ok(cfg().addr_family(IpAddrFamily::System).build()); "default address family")]
     #[test_case("trip example.com --addr-family ipv4", Ok(cfg().addr_family(IpAddrFamily::Ipv4Only).build()); "ipv4 address family")]
     #[test_case("trip example.com --addr-family ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv6Only).build()); "ipv6 address family")]
     #[test_case("trip example.com --addr-family ipv4-then-ipv6", Ok(cfg().addr_family(IpAddrFamily::Ipv4thenIpv6).build()); "ipv4 then ipv6 address family")]

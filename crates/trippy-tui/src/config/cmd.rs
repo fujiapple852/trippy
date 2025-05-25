@@ -65,7 +65,7 @@ pub struct Args {
     )]
     pub icmp: bool,
 
-    /// The address family [default: ipv4-then-ipv6]
+    /// The address family [default: system]
     #[arg(value_enum, short = 'F', long)]
     pub addr_family: Option<AddressFamilyConfig>,
 
