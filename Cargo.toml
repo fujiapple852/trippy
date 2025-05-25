@@ -70,7 +70,7 @@ strum = { version = "0.27.1", default-features = false }
 sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "2.0.3"
-tokio = "1.44.2"
+tokio = "1.45.1"
 tokio-util = "0.7.15"
 toml = { version = "0.8.22", default-features = false }
 tracing = "0.1.41"
