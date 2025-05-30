@@ -7,6 +7,7 @@ members = [
   "crates/trippy-packet",
   "crates/trippy-privilege",
   "crates/trippy-dns",
+  "crates/trippy-sim",
   "examples/*",
 ]
 
@@ -29,6 +30,7 @@ trippy-core = { version = "0.14.0-dev", path = "crates/trippy-core" }
 trippy-privilege = { version = "0.14.0-dev", path = "crates/trippy-privilege" }
 trippy-dns = { version = "0.14.0-dev", path = "crates/trippy-dns" }
 trippy-packet = { version = "0.14.0-dev", path = "crates/trippy-packet" }
+trippy-sim = { version = "0.14.0-dev", path = "crates/trippy-sim" }
 anyhow = "1.0.91"
 arrayvec = { version = "0.7.6", default-features = false }
 bitflags = "2.9.1"
@@ -97,6 +99,7 @@ cast_precision_loss = "allow"
 bool_assert_comparison = "allow"
 missing_const_for_fn = "allow"
 struct_field_names = "allow"
+missing_panics_doc = "allow"
 
 [profile.release]
 lto = true

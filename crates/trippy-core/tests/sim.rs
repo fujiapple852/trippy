@@ -1,12 +1,15 @@
-use crate::simulation::Simulation;
-use crate::tun_device::tun;
-use crate::{network, tracer};
+#![cfg(all(
+    feature = "sim-tests",
+    any(target_os = "linux", target_os = "macos", target_os = "windows")
+))]
+#![allow(clippy::needless_pass_by_value, clippy::redundant_clone)]
+
 use std::sync::{Arc, Mutex, OnceLock};
 use test_case::test_case;
 use tokio::runtime::Runtime;
-use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use tracing_subscriber::fmt::format::FmtSpan;
+use trippy_sim::Simulation;
 
 /// The maximum number of attempts for each test.
 const MAX_ATTEMPTS: usize = 5;
@@ -17,7 +20,9 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
     RUNTIME.get_or_init(|| {
         tracing_subscriber::fmt()
             .with_span_events(FmtSpan::NONE)
-            .with_env_filter("trippy=off,sim=debug")
+            .with_env_filter(
+                "sim=debug,trippy_sim::tracer=debug,trippy_sim::network=debug,trippy_core=info",
+            )
             .init();
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -30,7 +35,7 @@ pub fn runtime() -> &'static Arc<Mutex<Runtime>> {
 
 macro_rules! sim {
     ($path:expr) => {{
-        let data = include_str!(concat!("../resources/simulation/", $path));
+        let data = include_str!(concat!("resources/simulation/", $path));
         toml::from_str(data)?
     }};
 }
@@ -63,7 +68,6 @@ fn test_simulation_macos(simulation: Simulation) -> anyhow::Result<()> {
 
 fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     let runtime = runtime().lock().unwrap();
-    let simulation = Arc::new(simulation);
     let name = simulation.name.clone();
     if !trippy_privilege::Privilege::discover()?.has_privileges() {
         // Skip if the current test as the user cannot create a tun device.
@@ -72,7 +76,7 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
     }
     for attempt in 1..=MAX_ATTEMPTS {
         info!("start simulating {} [attempt #{}]", name, attempt);
-        if let Err(err) = runtime.block_on(run_simulation(simulation.clone())) {
+        if let Err(err) = runtime.block_on(trippy_sim::simulate(simulation.clone())) {
             error!("failed simulating {} {} [attempt #{}]", name, err, attempt);
         } else {
             info!("end simulating {} [attempt #{}]", name, attempt);
@@ -80,12 +84,4 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
         }
     }
     anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
-}
-
-async fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
-    let tun = tun();
-    let token = CancellationToken::new();
-    let handle = tokio::spawn(network::run(tun.clone(), sim.clone(), token.clone()));
-    tokio::task::spawn_blocking(move || tracer::Tracer::new(sim, token).trace()).await??;
-    handle.await?
 }

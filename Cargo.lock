@@ -2410,7 +2410,6 @@ dependencies = [
  "derive_more",
  "hex-literal",
  "indexmap",
- "ipnetwork",
  "itertools 0.14.0",
  "mockall",
  "nix",
@@ -2422,13 +2421,12 @@ dependencies = [
  "test-case",
  "thiserror 2.0.12",
  "tokio",
- "tokio-util",
  "toml",
  "tracing",
  "tracing-subscriber",
  "trippy-packet",
  "trippy-privilege",
- "tun",
+ "trippy-sim",
  "widestring",
  "windows-sys 0.52.0",
 ]
@@ -2466,6 +2464,25 @@ dependencies = [
  "paste",
  "thiserror 2.0.12",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "trippy-sim"
+version = "0.14.0-dev"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ipnetwork",
+ "serde",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "trippy-core",
+ "trippy-packet",
+ "trippy-privilege",
+ "tun",
 ]
 
 [[package]]
