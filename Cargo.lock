@@ -1178,7 +1178,7 @@ dependencies = [
  "socket2",
  "widestring",
  "windows-sys 0.48.0",
- "winreg",
+ "winreg 0.50.0",
 ]
 
 [[package]]
@@ -1395,18 +1395,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
-]
-
-[[package]]
-name = "nix"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
-dependencies = [
- "bitflags",
- "cfg-if",
- "cfg_aliases",
- "libc",
 ]
 
 [[package]]
@@ -2425,7 +2413,7 @@ dependencies = [
  "ipnetwork",
  "itertools 0.14.0",
  "mockall",
- "nix 0.30.1",
+ "nix",
  "parking_lot",
  "paste",
  "rand 0.9.1",
@@ -2440,7 +2428,7 @@ dependencies = [
  "tracing-subscriber",
  "trippy-packet",
  "trippy-privilege",
- "tun2",
+ "tun",
  "widestring",
  "windows-sys 0.52.0",
 ]
@@ -2474,7 +2462,7 @@ version = "0.14.0-dev"
 dependencies = [
  "anyhow",
  "caps",
- "nix 0.30.1",
+ "nix",
  "paste",
  "thiserror 2.0.12",
  "windows-sys 0.52.0",
@@ -2519,10 +2507,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "tun2"
-version = "4.0.0"
+name = "tun"
+version = "0.7.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21afe73d3d42581a7400fbf5aec057a646ffe3f8bb5ae3f61d88c7e7f4ac77be"
+checksum = "dc6bf9cb46a7a749b12997f2a746fdfbd8e5975ec74d89215b8275708b2feb1a"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2531,8 +2519,8 @@ dependencies = [
  "ipnet",
  "libc",
  "log",
- "nix 0.29.0",
- "thiserror 1.0.69",
+ "nix",
+ "thiserror 2.0.12",
  "tokio",
  "tokio-util",
  "windows-sys 0.59.0",
@@ -3001,6 +2989,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "winreg"
+version = "0.55.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb5a765337c50e9ec252c2069be9bf91c7df47afb103b642ba3a53bf8101be97"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "wintun-bindings"
 version = "0.7.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3013,6 +3011,7 @@ dependencies = [
  "log",
  "thiserror 2.0.12",
  "windows-sys 0.59.0",
+ "winreg 0.55.0",
 ]
 
 [[package]]

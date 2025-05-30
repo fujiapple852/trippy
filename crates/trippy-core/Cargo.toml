@@ -48,7 +48,7 @@ tracing-subscriber = { workspace = true, default-features = false, features = ["
 
 # see https://github.com/meh/rust-tun/pull/74
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun2 = { workspace = true, features = ["async"] }
+tun = { workspace = true, features = ["async"] }
 
 [features]
 # Enable simulation integration tests

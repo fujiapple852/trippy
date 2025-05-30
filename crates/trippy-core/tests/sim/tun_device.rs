@@ -26,16 +26,16 @@ const TUN_NETWORK_CIDR: &str = "10.0.0.0/24";
 
 /// A `tun` device.
 pub struct TunDevice {
-    dev: tun2::AsyncDevice,
+    dev: tun::AsyncDevice,
 }
 
 impl TunDevice {
     pub fn start() -> anyhow::Result<Self> {
         let net: Ipv4Network = TUN_NETWORK_CIDR.parse()?;
         let addr = net.nth(1).expect("addr");
-        let mut config = tun2::Configuration::default();
+        let mut config = tun::Configuration::default();
         config.address(addr).netmask(net.mask()).up();
-        let dev = tun2::create_as_async(&config)?;
+        let dev = tun::create_as_async(&config)?;
         #[cfg(target_os = "windows")]
         std::thread::sleep(std::time::Duration::from_millis(10000));
         Ok(Self { dev })
