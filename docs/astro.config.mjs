@@ -28,12 +28,12 @@ export default defineConfig({
                 },
               },
             ],
-			social: {
-				'github': 'https://github.com/fujiapple852/trippy',
-				'zulip': 'https://trippy.zulipchat.com',
-				'matrix': 'https://matrix.to/#/#trippy-dev:matrix.org',
-				'x.com': 'https://x.com/FujiApple852v2',
-			},
+			social: [
+                { icon: 'github', label: 'github', href: 'https://github.com/fujiapple852/trippy' },
+                { icon: 'zulip', label: 'zulip', href: 'https://trippy.zulipchat.com' },
+                { icon: 'matrix', label: 'matrix', href: 'https://matrix.to/#/#trippy-dev:matrix.org' },
+                { icon: 'x.com', label: 'x.com', href: 'https://x.com/FujiApple852v2' },
+			],
 			sidebar: [
                 {
                     label: 'Start Here',
