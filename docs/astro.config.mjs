@@ -9,7 +9,7 @@ export default defineConfig({
 		starlight({
             plugins: [
               starlightVersions({
-                versions: [{ slug: '0.12.2' }],
+                versions: [{ slug: '0.12.2' }, { slug: '0.13.0' }],
               }),
             ],
 			title: 'Trippy',
