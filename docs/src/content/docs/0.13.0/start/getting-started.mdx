@@ -1,0 +1,47 @@
+---
+title: Getting Started
+description: Get started with Trippy.
+sidebar:
+  order: 1
+slug: 0.13.0/start/getting-started
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+The following steps will guide you through the process of installing and running Trippy.
+
+<Steps>
+  1. Install Trippy:
+
+     Trippy runs on Linux, BSD, macOS, and Windows. It can be installed from most common package managers, precompiled binaries, or source.
+
+     For example, to install Trippy from `cargo`:
+
+     ```shell
+     cargo install trippy --locked
+     ```
+
+     See the [installation guide](/0.13.0/start/installation) for details of how to install Trippy on your system.
+
+  2. Run Trippy:
+
+     To run a basic trace to `example.com` with default settings, use the following command:
+
+     ```shell
+     sudo trip example.com
+     ```
+
+     See the [usage examples](/0.13.0/guides/usage) and the [CLI reference](/0.13.0/reference/cli) for details of how to use Trippy.  To use Trippy without elevated privileges, see the [privileges guide](/0.13.0/guides/privileges).
+
+  3. Customize the key bindings, theme and columns:
+
+     See the [key bindings reference](/0.13.0/reference/bindings), [theme reference](/0.13.0/reference/theme) and [column reference](/0.13.0/reference/column) for details of how to customize the appearance and behavior of Trippy.
+
+     These settings can be made permanent by adding them to the Trippy configuration file, see the [configuration reference](/0.13.0/reference/configuration) for details.
+
+  4. Review the tracing recommendations:
+
+     To get the most out of Trippy, review the [recommended tracing settings](/0.13.0/guides/recommendation) for guidance on how to configure Trippy for different types of analysis.
+</Steps>
+
+Happy tracing!
