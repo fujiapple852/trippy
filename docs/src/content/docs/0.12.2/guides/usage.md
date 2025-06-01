@@ -109,7 +109,7 @@ Perform DNS queries using the `google` DNS resolver (or `cloudflare`, `system`, 
 trip example.com -r google
 ```
 
-Lookup \[AS]\[autonomous\_system] information for all discovered IP addresses (not yet available for the `system` resolver,
+Lookup [AS][autonomous_system] information for all discovered IP addresses (not yet available for the `system` resolver,
 see [#66](https://github.com/fujiapple852/trippy/issues/66)):
 
 ```shell
@@ -204,12 +204,6 @@ List supported Tui locales:
 
 ```shell
 trip --print-locales
-```
-
-Set the Tui timezone to `UTC`:
-
-```shell
-trip example.com --tui-timezone UTC
 ```
 
 Run in `silent` tracing mode and output `compact` trace logging with `full` span events:

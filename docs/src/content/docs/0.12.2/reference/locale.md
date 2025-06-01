@@ -3,6 +3,9 @@ title: Locale Reference
 description: A reference for customizing the Trippy TUI locale.
 sidebar:
   order: 6
+  badge:
+    text: New
+    variant: note
 slug: 0.12.2/reference/locale
 ---
 
