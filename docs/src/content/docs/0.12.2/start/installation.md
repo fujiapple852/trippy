@@ -17,7 +17,7 @@ Trippy is available for a variety of platforms and package managers.
 
 ### Cargo
 
-[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.13.0)
+[![Crates.io](https://img.shields.io/crates/v/trippy)](https://crates.io/crates/trippy/0.12.2)
 
 ```shell
 cargo install trippy --locked
@@ -37,7 +37,7 @@ Only available for Debian 13 (`trixie`) and later.
 
 ### PPA (Ubuntu)
 
-[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.13.0-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
+[![Ubuntu PPA](https://img.shields.io/badge/Ubuntu%20PPA-0.12.2-brightgreen)](https://launchpad.net/~fujiapple/+archive/ubuntu/trippy/+packages)
 
 ```shell
 add-apt-repository ppa:fujiapple/trippy
@@ -66,7 +66,7 @@ brew install trippy
 
 ### WinGet (Windows)
 
-[![winget package](https://img.shields.io/badge/WinGet-0.13.0-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.13.0)
+[![winget package](https://img.shields.io/badge/WinGet-0.12.2-brightgreen)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/FujiApple/Trippy/0.12.2)
 
 ```shell
 winget install trippy
@@ -74,7 +74,7 @@ winget install trippy
 
 ### Scoop (Windows)
 
-[![Scoop package](https://img.shields.io/scoop/v/trippy?style=flat\&labelColor=5c5c5c\&color=%234dc71f)](https://github.com/ScoopInstaller/Main/blob/master/bucket/trippy.json)
+[![Scoop package](https://img.shields.io/scoop/v/trippy?style=flat&labelColor=5c5c5c&color=%234dc71f)](https://github.com/ScoopInstaller/Main/blob/master/bucket/trippy.json)
 
 ```shell
 scoop install trippy
@@ -128,30 +128,6 @@ pacman -S trippy
 emerge -av net-analyzer/trippy
 ```
 
-### Void Linux
-
-[![Void Linux x86\_64 package](https://repology.org/badge/version-for-repo/void_x86_64/trippy.svg)](https://github.com/void-linux/void-packages/tree/master/srcpkgs/trippy)
-
-```shell
-xbps-install -S trippy
-```
-
-### ALT Sisyphus
-
-[![ALT Sisyphus package](https://repology.org/badge/version-for-repo/altsisyphus/trippy.svg)](https://packages.altlinux.org/en/sisyphus/srpms/trippy/)
-
-```shell
-apt-get install trippy
-```
-
-### Chimera Linux
-
-[![Chimera Linux package](https://repology.org/badge/version-for-repo/chimera/trippy.svg)](https://github.com/chimera-linux/cports/tree/master/user/trippy)
-
-```shell
-apk add trippy
-```
-
 ### Nix
 
 [![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/trippy.svg)](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/tr/trippy/package.nix)
@@ -176,22 +152,22 @@ docker run -it fujiapple/trippy
 
 Download the latest release for your platform.
 
-| OS      | Arch      | Env          | Current (0.13.0)                                                                                                              | Previous (0.12.2)                                                                                                             | Previous (0.11.0)                                                                                                             |
+| OS      | Arch      | Env          | Current (0.12.2)                                                                                                              | Previous (0.11.0)                                                                                                             | Previous (0.10.0)                                                                                                             |
 | ------- | --------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Linux   | `x86_64`  | `gnu`        | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-unknown-linux-gnu.tar.gz)       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-linux-gnu.tar.gz)       | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-gnu.tar.gz)       |
-| Linux   | `x86_64`  | `musl`       | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-unknown-linux-musl.tar.gz)      | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-linux-musl.tar.gz)      | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-musl.tar.gz)      |
-| Linux   | `aarch64` | `gnu`        | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-aarch64-unknown-linux-gnu.tar.gz)      | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-unknown-linux-gnu.tar.gz)      | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-unknown-linux-gnu.tar.gz)      |
-| Linux   | `aarch64` | `musl`       | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-aarch64-unknown-linux-musl.tar.gz)     | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-unknown-linux-musl.tar.gz)     | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-unknown-linux-musl.tar.gz)     |
-| Linux   | `arm7`    | `gnueabihf`  | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-armv7-unknown-linux-gnueabihf.tar.gz)  | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-gnueabihf.tar.gz)  | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-gnueabihf.tar.gz)  |
-| Linux   | `arm7`    | `musleabi`   | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-armv7-unknown-linux-musleabi.tar.gz)   | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-musleabi.tar.gz)   | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-musleabi.tar.gz)   |
-| Linux   | `arm7`    | `musleabihf` | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-armv7-unknown-linux-musleabihf.tar.gz) | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-musleabihf.tar.gz) | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-musleabihf.tar.gz) |
-| macOS   | `x86_64`  | `darwin`     | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-apple-darwin.tar.gz)            | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-apple-darwin.tar.gz)            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-apple-darwin.tar.gz)            |
-| macOS   | `aarch64` | `darwin`     | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-aarch64-apple-darwin.tar.gz)           | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-apple-darwin.tar.gz)           | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-apple-darwin.tar.gz)           |
-| Windows | `x86_64`  | `msvc`       | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-pc-windows-msvc.zip)            | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-pc-windows-msvc.zip)            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-pc-windows-msvc.zip)            |
-| Windows | `x86_64`  | `gnu`        | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-pc-windows-gnu.zip)             | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-pc-windows-gnu.zip)             | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-pc-windows-gnu.zip)             |
-| Windows | `aarch64` | `msvc`       | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-aarch64-pc-windows-msvc.zip)           | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-pc-windows-msvc.zip)           | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-pc-windows-msvc.zip)           |
-| FreeBSD | `x86_64`  | n/a          | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-unknown-freebsd.tar.gz)         | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-freebsd.tar.gz)         | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-freebsd.tar.gz)         |
-| NetBSD  | `x86_64`  | n/a          | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64-unknown-netbsd.tar.gz)          | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-netbsd.tar.gz)          | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-netbsd.tar.gz)          |
-| RPM     | `x86_64`  | `gnu`        | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy-0.13.0-x86_64.rpm)                            | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64.rpm)                            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64.rpm)                            |
-| Debian  | `x86_64`  | `gnu`        | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy_x86_64-unknown-linux-gnu_0.13.0_amd64.deb)    | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy_x86_64-unknown-linux-gnu_0.12.2_amd64.deb)    | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy_x86_64-unknown-linux-gnu_0.11.0_amd64.deb)    |
-| Debian  | `x86_64`  | `musl`       | [0.13.0](https://github.com/fujiapple852/trippy/releases/download/0.13.0/trippy_x86_64-unknown-linux-musl_0.13.0_amd64.deb)   | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy_x86_64-unknown-linux-musl_0.12.2_amd64.deb)   | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy_x86_64-unknown-linux-musl_0.11.0_amd64.deb)   |
+| Linux   | `x86_64`  | `gnu`        | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-linux-gnu.tar.gz)       | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-gnu.tar.gz)       | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-linux-gnu.tar.gz)       |
+| Linux   | `x86_64`  | `musl`       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-linux-musl.tar.gz)      | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-linux-musl.tar.gz)      | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-linux-musl.tar.gz)      |
+| Linux   | `aarch64` | `gnu`        | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-unknown-linux-gnu.tar.gz)      | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-unknown-linux-gnu.tar.gz)      | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-aarch64-unknown-linux-gnu.tar.gz)      |
+| Linux   | `aarch64` | `musl`       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-unknown-linux-musl.tar.gz)     | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-unknown-linux-musl.tar.gz)     | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-aarch64-unknown-linux-musl.tar.gz)     |
+| Linux   | `arm7`    | `gnueabihf`  | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-gnueabihf.tar.gz)  | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-gnueabihf.tar.gz)  | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-armv7-unknown-linux-gnueabihf.tar.gz)  |
+| Linux   | `arm7`    | `musleabi`   | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-musleabi.tar.gz)   | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-musleabi.tar.gz)   | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-armv7-unknown-linux-musleabi.tar.gz)   |
+| Linux   | `arm7`    | `musleabihf` | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-armv7-unknown-linux-musleabihf.tar.gz) | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-armv7-unknown-linux-musleabihf.tar.gz) | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-armv7-unknown-linux-musleabihf.tar.gz) |
+| macOS   | `x86_64`  | `darwin`     | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-apple-darwin.tar.gz)            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-apple-darwin.tar.gz)            | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-apple-darwin.tar.gz)            |
+| macOS   | `aarch64` | `darwin`     | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-apple-darwin.tar.gz)           | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-apple-darwin.tar.gz)           | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-aarch64-apple-darwin.tar.gz)           |
+| Windows | `x86_64`  | `msvc`       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-pc-windows-msvc.zip)            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-pc-windows-msvc.zip)            | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-pc-windows-msvc.zip)            |
+| Windows | `x86_64`  | `gnu`        | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-pc-windows-gnu.zip)             | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-pc-windows-gnu.zip)             | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-pc-windows-gnu.zip)             |
+| Windows | `aarch64` | `msvc`       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-aarch64-pc-windows-msvc.zip)           | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-aarch64-pc-windows-msvc.zip)           | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-aarch64-pc-windows-msvc.zip)           |
+| FreeBSD | `x86_64`  | n/a          | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-freebsd.tar.gz)         | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-freebsd.tar.gz)         | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-freebsd.tar.gz)         |
+| NetBSD  | `x86_64`  | n/a          | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64-unknown-netbsd.tar.gz)          | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64-unknown-netbsd.tar.gz)          | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64-unknown-netbsd.tar.gz)          |
+| RPM     | `x86_64`  | `gnu`        | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy-0.12.2-x86_64.rpm)                            | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy-0.11.0-x86_64.rpm)                            | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy-0.10.0-x86_64.rpm)                            |
+| Debian  | `x86_64`  | `gnu`        | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy_x86_64-unknown-linux-gnu_0.12.2_amd64.deb)    | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy_x86_64-unknown-linux-gnu_0.11.0_amd64.deb)    | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy_x86_64-unknown-linux-gnu_0.10.0_amd64.deb)    |
+| Debian  | `x86_64`  | `musl`       | [0.12.2](https://github.com/fujiapple852/trippy/releases/download/0.12.2/trippy_x86_64-unknown-linux-musl_0.12.2_amd64.deb)   | [0.11.0](https://github.com/fujiapple852/trippy/releases/download/0.11.0/trippy_x86_64-unknown-linux-musl_0.11.0_amd64.deb)   | [0.10.0](https://github.com/fujiapple852/trippy/releases/download/0.10.0/trippy_x86_64-unknown-linux-musl_0.10.0_amd64.deb)   |

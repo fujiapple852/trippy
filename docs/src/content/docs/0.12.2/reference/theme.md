@@ -48,7 +48,7 @@ line option or in the `theme-colors` section of the configuration file.
 
 The supported [ANSI colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) are:
 
-* `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`,
+- `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `Gray`, `DarkGray`, `LightRed`, `LightGreen`,
   `LightYellow`, `LightBlue`, `LightMagenta`, `LightCyan`, `White`
 
 In addition, CSS [named colors](https://developer.mozilla.org/en-US/docs/Web/CSS/named-color) (i.e. SkyBlue) and raw hex

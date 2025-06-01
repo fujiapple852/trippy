@@ -62,7 +62,7 @@ paths being followed for each probe within each round of tracing. This can make 
 different hosts will reply for a given hop (time-to-live) across rounds.
 
 By using the `dublin` ECMP strategy, which encodes the sequence number in the IP `identifier` field, Trippy can fix both
-the source and target ports, typically resulting in a *single* path for each probe within each round of tracing.
+the source and target ports, typically resulting in a _single_ path for each probe within each round of tracing.
 
 :::note
 UDP/Dublin for IPv6 encodes the sequence number as the payload length as the IP `identifier` field is not available in
@@ -70,7 +70,7 @@ IPv6.
 :::
 
 :::note
-Keep in mind that every probe is an *independent trial* and each may traverse a completely different path. In practice,
+Keep in mind that every probe is an _independent trial_ and each may traverse a completely different path. In practice,
 ICMP probes often follow a single path, whereas the path of UDP and TCP probes is typically determined by the 5-tuple of
 protocol, source and destination IP addresses and ports.
 
@@ -103,9 +103,9 @@ target-port = 33434
 ## UDP/Dublin with fixed target port and variable source port
 
 As an extension to the above, if you do not fix the source port when using the `dublin` ECMP strategy, Trippy will
-vary the source port per *round* of tracing (i.e. each probe within a given round will share the same source port, and
-the source port will vary for each round). This will typically result in the *same* path being followed for *each* probe
-within a given round, but *different* paths being followed for each round.
+vary the source port per _round_ of tracing (i.e. each probe within a given round will share the same source port, and
+the source port will vary for each round). This will typically result in the _same_ path being followed for _each_ probe
+within a given round, but _different_ paths being followed for each round.
 
 These individual flows can be explored in the Trippy Tui by pressing the `toggle-flows` key binding (`f` key by
 default).

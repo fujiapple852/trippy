@@ -24,7 +24,7 @@ sudo trip example.com
 sudo chown root $(which trip) && sudo chmod +s $(which trip)
 ```
 
-3: \[Linux only] Set the `CAP_NET_RAW` capability:
+3: [Linux only] Set the `CAP_NET_RAW` capability:
 
 ```shell
 sudo setcap CAP_NET_RAW+p $(which trip)
