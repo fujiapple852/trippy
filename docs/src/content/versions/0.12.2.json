@@ -1,0 +1,28 @@
+{
+  "sidebar": [
+    {
+      "label": "Start Here",
+      "autogenerate": {
+        "directory": "start"
+      }
+    },
+    {
+      "label": "Guides",
+      "autogenerate": {
+        "directory": "guides"
+      }
+    },
+    {
+      "label": "Reference",
+      "autogenerate": {
+        "directory": "reference"
+      }
+    },
+    {
+      "label": "Development",
+      "autogenerate": {
+        "directory": "development"
+      }
+    }
+  ]
+}

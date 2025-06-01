@@ -1,11 +1,17 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightVersions from 'starlight-versions'
 
 // https://astro.build/config
 export default defineConfig({
     site: 'https://trippy.rs',
 	integrations: [
 		starlight({
+            plugins: [
+              starlightVersions({
+                versions: [{ slug: '0.12.2' }],
+              }),
+            ],
 			title: 'Trippy',
             customCss: [
               // Relative path to your custom CSS file
