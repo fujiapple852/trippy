@@ -95,13 +95,13 @@ pub enum DnsEntry {
 
 /// The resolved hostnames of a `DnsEntry`.
 #[derive(Debug, Clone)]
-pub struct ResolvedHostnames<'a>(pub(super) &'a [String]);
+pub struct ResolvedHostnames<'a>(pub(super) std::slice::Iter<'a, String>);
 
 impl<'a> Iterator for ResolvedHostnames<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.iter().next().map(String::as_str)
+        self.0.next().map(String::as_str)
     }
 }
 
@@ -111,10 +111,12 @@ impl DnsEntry {
     pub fn hostnames(&self) -> ResolvedHostnames<'_> {
         match self {
             Self::Resolved(Resolved::WithAsInfo(_, hosts, _) | Resolved::Normal(_, hosts)) => {
-                ResolvedHostnames(hosts)
+                ResolvedHostnames(hosts.iter())
             }
-            Self::Pending(_) | Self::Timeout(_) | Self::NotFound(_) | Self::Failed(_) => {
-                ResolvedHostnames(&[])
+            Self::Pending(_) | Self::Timeout(_) | Self::NotFound(_) | Self::Failed(_) =>
+            {
+                #[expect(clippy::iter_on_empty_collections)]
+                ResolvedHostnames([].iter())
             }
         }
     }
@@ -183,5 +185,26 @@ impl Display for DnsEntry {
             }
             Self::Failed(ip) => write!(f, "Failed: {ip}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::IpAddr;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_iterator_returns_each_hostname_once() {
+        let entry = DnsEntry::Resolved(Resolved::Normal(
+            IpAddr::from_str("1.1.1.1").unwrap(),
+            vec!["one".to_string(), "two".to_string(), "three".to_string()],
+        ));
+
+        let mut iter = entry.hostnames();
+        assert_eq!(iter.next(), Some("one"));
+        assert_eq!(iter.next(), Some("two"));
+        assert_eq!(iter.next(), Some("three"));
+        assert_eq!(iter.next(), None);
     }
 }
