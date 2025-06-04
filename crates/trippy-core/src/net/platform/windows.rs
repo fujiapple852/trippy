@@ -836,7 +836,7 @@ mod adapter {
                 return Ok(Self { buf });
             }
             Err(Error::UnknownInterface(format!(
-                "GetAdaptersAddresses did not success after {} attempts",
+                "GetAdaptersAddresses did not succeed after {} attempts",
                 Self::MAX_ATTEMPTS
             )))
         }
