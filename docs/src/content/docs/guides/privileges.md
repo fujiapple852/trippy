@@ -11,19 +11,31 @@ certain platforms, with some limitations.
 
 ## Unix
 
-1: Run as `root` user via `sudo`:
+### Run via `sudo`
+
+Run as `root` user via `sudo`:
 
 ```shell
 sudo trip example.com
 ```
 
-2: `chown` `trip` as the `root` user and set the `setuid` bit:
+:::note
+When running `trip` via `sudo` you must ensure that the (optional) configuration file is stored relative to the `root`
+user or specify the location of the configuration file via the `-c` (`--config-file`) command line argument. See
+the [configuration reference](/reference/configuration).
+:::
+
+### Set the `setuid` bit
+
+`chown` `trip` as the `root` user and set the `setuid` bit:
 
 ```shell
 sudo chown root $(which trip) && sudo chmod +s $(which trip)
 ```
 
-3: [Linux only] Set the `CAP_NET_RAW` capability:
+### [Linux only] Set capabilities
+
+Set the `CAP_NET_RAW` capability:
 
 ```shell
 sudo setcap CAP_NET_RAW+p $(which trip)
