@@ -23,6 +23,15 @@ mod util;
 /// Run the Trippy application.
 pub fn trippy() -> anyhow::Result<()> {
     let args = Args::parse();
+
+    // don't sudo when requested
+    #[cfg(target_os = "linux")]
+    {
+        if !args.unprivileged {
+            sudo::escalate_if_needed().map_err(|e| anyhow::format_err!("unable to sudo: {e:?}"))?;
+        }
+    }
+
     let privilege = Privilege::acquire_privileges()?;
     let pid = u16::try_from(process::id() % u32::from(u16::MAX))?;
     match TrippyAction::from(args, &privilege, pid)? {
