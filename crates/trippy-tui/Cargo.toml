@@ -44,6 +44,9 @@ tracing-subscriber = { workspace = true, default-features = false, features = ["
 tracing.workspace = true
 unicode-width.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+sudo.workspace = true
+
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }
 pretty_assertions.workspace = true

@@ -2052,6 +2052,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sudo"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88bd84d4c082e18e37fef52c0088e4407dabcef19d23a607fb4b5ee03b7d5b83"
+dependencies = [
+ "libc",
+ "log",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2494,6 +2504,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "strum 0.27.1",
+ "sudo",
  "sys-locale",
  "test-case",
  "toml",
