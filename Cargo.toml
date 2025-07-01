@@ -97,6 +97,7 @@ cast_precision_loss = "allow"
 bool_assert_comparison = "allow"
 missing_const_for_fn = "allow"
 struct_field_names = "allow"
+cognitive_complexity = "allow"
 
 [profile.release]
 lto = true
