@@ -12,7 +12,7 @@ use crossterm::{
 use ratatui::layout::Position;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    Terminal,
+    DefaultTerminal, Terminal,
 };
 use std::io;
 use trippy_dns::DnsResolver;
@@ -69,7 +69,7 @@ enum ExitAction {
 }
 
 #[expect(clippy::too_many_lines)]
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut TuiApp) -> io::Result<ExitAction> {
+fn run_app(terminal: &mut DefaultTerminal, app: &mut TuiApp) -> io::Result<ExitAction> {
     loop {
         if app.frozen_start.is_none() {
             app.snapshot_trace_data();
