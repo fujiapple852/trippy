@@ -1304,11 +1304,7 @@ mod state {
         use std::net::{IpAddr, Ipv4Addr};
         use std::time::Duration;
 
-        #[expect(
-            clippy::cognitive_complexity,
-            clippy::too_many_lines,
-            clippy::bool_assert_comparison
-        )]
+        #[expect(clippy::too_many_lines, clippy::bool_assert_comparison)]
         #[test]
         fn test_state() {
             let mut state = TracerState::new(cfg(Sequence(33434)));
