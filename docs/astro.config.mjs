@@ -33,6 +33,15 @@ export default defineConfig({
                   href: '/apple-touch-icon.png',
                 },
               },
+              {
+                tag: 'script',
+                attrs: {
+                  defer: true,
+                  src: 'https://cloud.umami.is/script.js',
+                  'data-website-id': '02e6fe53-a5b1-4f2a-b3e6-87124b1b276b',
+                  'data-astro-rerun': true
+                }
+              }
             ],
             social: [
                 { icon: 'github', label: 'github', href: 'https://github.com/fujiapple852/trippy' },
