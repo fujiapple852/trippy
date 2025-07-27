@@ -337,7 +337,7 @@ mod socket {
         #[instrument(skip(self), level = "trace")]
         fn set_tos(&mut self, tos: u32) -> IoResult<()> {
             self.inner
-                .set_tos(tos)
+                .set_tos_v4(tos)
                 .map_err(|err| IoError::Other(err, IoOperation::SetTos))
         }
         #[instrument(skip(self), level = "trace")]
@@ -349,7 +349,7 @@ mod socket {
         #[instrument(skip(self), level = "trace")]
         fn set_ttl(&mut self, ttl: u32) -> IoResult<()> {
             self.inner
-                .set_ttl(ttl)
+                .set_ttl_v4(ttl)
                 .map_err(|err| IoError::Other(err, IoOperation::SetTtl))
         }
         #[instrument(skip(self), level = "trace")]
