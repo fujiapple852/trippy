@@ -191,9 +191,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: EmbarkStudios/cargo-deny-action@v2
         with:
-          rust-version: "1.87.0"
+          rust-version: "1.88.0"
           log-level: warn
           command: check
           arguments: --all-features
@@ -222,7 +222,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dprint/check@v2.2
+      - uses: dprint/check@v2.3
 
   conventional-commits:
     runs-on: ubuntu-22.04

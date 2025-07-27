@@ -155,7 +155,7 @@ jobs:
 
       - name: Upload RPM package
         if: startsWith(matrix.build, 'x86_64-linux-gnu')
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -181,7 +181,7 @@ jobs:
 
       - name: Upload Deb Release Asset
         if: startsWith(matrix.build, 'x86_64-linux-gnu') || startsWith(matrix.build, 'x86_64-linux-musl')
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -191,7 +191,7 @@ jobs:
           asset_name: trippy_${{ matrix.target }}_${{ needs.create-release.outputs.trip_version }}_${{ env.DPKG_ARCH }}.deb
 
       - name: Upload release archive
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
