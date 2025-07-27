@@ -83,7 +83,7 @@ impl Ipv6 {
     pub fn dispatch_icmp_probe<S: Socket>(
         &self,
         icmp_send_socket: &mut S,
-        probe: Probe,
+        probe: &Probe,
     ) -> Result<()> {
         let mut icmp_buf = [0_u8; MAX_ICMP_PACKET_BUF];
         let packet_size = usize::from(self.packet_size.0);
@@ -108,7 +108,7 @@ impl Ipv6 {
     pub fn dispatch_udp_probe<S: Socket>(
         &self,
         raw_send_socket: &mut S,
-        probe: Probe,
+        probe: &Probe,
     ) -> Result<()> {
         let packet_size = usize::from(self.packet_size.0);
         if !(MIN_PACKET_SIZE_UDP..=MAX_PACKET_SIZE).contains(&packet_size) {
@@ -128,7 +128,7 @@ impl Ipv6 {
     fn dispatch_udp_probe_raw<S: Socket>(
         &self,
         udp_send_socket: &mut S,
-        probe: Probe,
+        probe: &Probe,
         payload: &[u8],
     ) -> Result<()> {
         let mut udp_buf = [0_u8; MAX_UDP_PACKET_BUF];
@@ -162,7 +162,7 @@ impl Ipv6 {
     }
 
     #[instrument(skip(self), level = "trace")]
-    fn dispatch_udp_probe_non_raw<S: Socket>(&self, probe: Probe, payload: &[u8]) -> Result<()> {
+    fn dispatch_udp_probe_non_raw<S: Socket>(&self, probe: &Probe, payload: &[u8]) -> Result<()> {
         let local_addr = SocketAddr::new(IpAddr::V6(self.src_addr), probe.src_port.0);
         let remote_addr = SocketAddr::new(IpAddr::V6(self.dest_addr), probe.dest_port.0);
         let mut socket = S::new_udp_send_socket_ipv6(false)?;
@@ -536,7 +536,7 @@ mod tests {
             payload_pattern,
             ..Default::default()
         };
-        ipv6.dispatch_icmp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_icmp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -581,7 +581,7 @@ mod tests {
             payload_pattern,
             ..Default::default()
         };
-        ipv6.dispatch_icmp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_icmp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -600,7 +600,7 @@ mod tests {
             payload_pattern,
             ..Default::default()
         };
-        let err = ipv6.dispatch_icmp_probe(&mut mocket, probe).unwrap_err();
+        let err = ipv6.dispatch_icmp_probe(&mut mocket, &probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -620,7 +620,7 @@ mod tests {
             payload_pattern,
             ..Default::default()
         };
-        let err = ipv6.dispatch_icmp_probe(&mut mocket, probe).unwrap_err();
+        let err = ipv6.dispatch_icmp_probe(&mut mocket, &probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -666,7 +666,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -715,7 +715,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -769,7 +769,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -829,7 +829,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -892,7 +892,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -955,7 +955,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        ipv6.dispatch_udp_probe(&mut mocket, probe)?;
+        ipv6.dispatch_udp_probe(&mut mocket, &probe)?;
         Ok(())
     }
 
@@ -978,7 +978,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        let err = ipv6.dispatch_udp_probe(&mut mocket, probe).unwrap_err();
+        let err = ipv6.dispatch_udp_probe(&mut mocket, &probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
@@ -1002,7 +1002,7 @@ mod tests {
             initial_sequence,
             ..Default::default()
         };
-        let err = ipv6.dispatch_udp_probe(&mut mocket, probe).unwrap_err();
+        let err = ipv6.dispatch_udp_probe(&mut mocket, &probe).unwrap_err();
         assert!(matches!(err, Error::InvalidPacketSize(_)));
         Ok(())
     }
