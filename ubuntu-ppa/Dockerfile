@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     gpg debmake debhelper devscripts equivs \
-    distro-info-data distro-info software-properties-common cargo cargo-1.81 wget
+1    distro-info-data distro-info software-properties-common cargo cargo-1.82 wget
 
 COPY release.sh release.sh
 

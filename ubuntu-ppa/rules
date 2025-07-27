@@ -9,10 +9,10 @@ override_dh_auto_build:
 	mkdir .cargo
 	cp debian/cargo.config .cargo/config
 	tar xJf debian/vendor.tar.xz
-	cargo-1.81 build --release --frozen
+	cargo-1.82 build --release --frozen
 
 override_dh_auto_clean:
-	cargo-1.81 clean
+	cargo-1.82 clean
 	rm -rf .cargo vendor
 
 override_dh_strip:
