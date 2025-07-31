@@ -184,7 +184,7 @@ mod tests {
     fn test_available_languages() {
         assert_eq!(
             available_locales(),
-            vec!["de", "en", "es", "fr", "it", "pt", "ru", "sv", "tr", "zh"]
+            vec!["de", "en", "es", "fr", "it", "pt", "ru", "sv", "tr", "zh", "zh-TW"]
         );
     }
 
@@ -197,6 +197,7 @@ mod tests {
     fn test_translate() {
         assert_eq!(translate_locale("title_hops", "en"), "Hops");
         assert_eq!(translate_locale("title_hops", "zh"), "跳");
+        assert_eq!(translate_locale("title_hops", "zh-TW"), "跳");
         assert_eq!(translate_locale("unknown_item", "en"), "unknown_item");
         assert_eq!(translate_locale("unknown_locale", "xx"), "unknown_locale");
     }
@@ -206,5 +207,17 @@ mod tests {
         assert_eq!(t!("title_hops"), "Hops");
         assert_eq!(t!("awaiting_data"), "Awaiting data...");
         assert_eq!(t!("unknown_item"), "unknown_item");
+    }
+
+    #[test]
+    fn test_zh_tw_translations() {
+        // Test key Traditional Chinese translations
+        assert_eq!(translate_locale("auto", "zh-TW"), "自動");
+        assert_eq!(translate_locale("status_failed", "zh-TW"), "失敗");
+        assert_eq!(translate_locale("status_running", "zh-TW"), "執行中");
+        assert_eq!(translate_locale("title_settings", "zh-TW"), "設定");
+        assert_eq!(translate_locale("help_tagline", "zh-TW"), "網路診斷工具");
+        assert_eq!(translate_locale("column_loss_pct", "zh-TW"), "封包遺失率");
+        assert_eq!(translate_locale("rtt", "zh-TW"), "往返時間");
     }
 }
