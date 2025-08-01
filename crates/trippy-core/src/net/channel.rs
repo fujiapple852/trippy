@@ -93,9 +93,9 @@ impl<S: Socket> Network for Channel<S> {
     fn send_probe(&mut self, probe: Probe) -> Result<()> {
         tracing::debug!(?probe);
         match self.protocol {
-            Protocol::Icmp => self.dispatch_icmp_probe(probe),
-            Protocol::Udp => self.dispatch_udp_probe(probe),
-            Protocol::Tcp => self.dispatch_tcp_probe(probe),
+            Protocol::Icmp => self.dispatch_icmp_probe(&probe),
+            Protocol::Udp => self.dispatch_udp_probe(&probe),
+            Protocol::Tcp => self.dispatch_tcp_probe(&probe),
         }
     }
     #[instrument(skip_all, level = "trace")]
@@ -117,7 +117,7 @@ impl<S: Socket> Network for Channel<S> {
 impl<S: Socket> Channel<S> {
     /// Dispatch a ICMP probe.
     #[instrument(skip_all, level = "trace")]
-    fn dispatch_icmp_probe(&mut self, probe: Probe) -> Result<()> {
+    fn dispatch_icmp_probe(&mut self, probe: &Probe) -> Result<()> {
         match (&self.family_config, self.send_socket.as_mut()) {
             (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_icmp_probe(socket, probe),
             (FamilyConfig::V6(ipv6), Some(socket)) => ipv6.dispatch_icmp_probe(socket, probe),
@@ -127,7 +127,7 @@ impl<S: Socket> Channel<S> {
 
     /// Dispatch a UDP probe.
     #[instrument(skip_all, level = "trace")]
-    fn dispatch_udp_probe(&mut self, probe: Probe) -> Result<()> {
+    fn dispatch_udp_probe(&mut self, probe: &Probe) -> Result<()> {
         match (&self.family_config, self.send_socket.as_mut()) {
             (FamilyConfig::V4(ipv4), Some(socket)) => ipv4.dispatch_udp_probe(socket, probe),
             (FamilyConfig::V6(ipv6), Some(socket)) => ipv6.dispatch_udp_probe(socket, probe),
@@ -137,10 +137,10 @@ impl<S: Socket> Channel<S> {
 
     /// Dispatch a TCP probe.
     #[instrument(skip_all, level = "trace")]
-    fn dispatch_tcp_probe(&mut self, probe: Probe) -> Result<()> {
+    fn dispatch_tcp_probe(&mut self, probe: &Probe) -> Result<()> {
         let socket = match &self.family_config {
-            FamilyConfig::V4(ipv4) => ipv4.dispatch_tcp_probe(&probe),
-            FamilyConfig::V6(ipv6) => ipv6.dispatch_tcp_probe(&probe),
+            FamilyConfig::V4(ipv4) => ipv4.dispatch_tcp_probe(probe),
+            FamilyConfig::V6(ipv6) => ipv6.dispatch_tcp_probe(probe),
         }?;
         self.tcp_probes.push(TcpProbe::new(
             socket,
