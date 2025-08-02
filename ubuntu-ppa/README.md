@@ -7,6 +7,7 @@
 - update the `cargo-1.xx` versions in `rules`
 - update the `cargo-1.xx` versions in `release.sh`
 - update the trippy `VERSION` in the `release.sh` script
+- update the `UPSTREAM` in the `release.sh` script (removing any `+repack{N}` suffix)
 - reset the `REVISION` to `1` in the `release.sh` script
 
 ## Build and release the debian package
