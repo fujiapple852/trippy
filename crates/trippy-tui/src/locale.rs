@@ -2,7 +2,9 @@ use itertools::Itertools;
 use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::OnceLock;
+use unic_langid::LanguageIdentifier;
 
 const FALLBACK_LOCALE: &str = "en";
 
@@ -75,8 +77,6 @@ fn translate_locale<'a>(item: &'a str, locale: &str) -> &'a str {
     if let Some(key) = data().0.get(item) {
         if let Some(value) = key.0.get(locale) {
             value
-        } else if let Some(value) = key.0.get(&split_locale(locale)) {
-            value
         } else if let Some(value) = key.0.get(FALLBACK_LOCALE) {
             value
         } else {
@@ -105,33 +105,21 @@ struct Item(HashMap<String, String>);
 
 /// calculate the locale to use.
 fn calculate_locale(cfg_locale: Option<&str>, sys_locale: Option<&str>) -> String {
-    let target_locale = if let Some(locale) = cfg_locale {
-        locale
-    } else if let Some(locale) = sys_locale {
-        locale
-    } else {
-        FALLBACK_LOCALE
-    };
-    let all_locales = available_locales();
-    if all_locales.contains(&target_locale) {
-        String::from(target_locale)
-    } else {
-        let language = split_locale(target_locale);
-        if all_locales.contains(&language.as_str()) {
-            language
-        } else {
-            String::from(FALLBACK_LOCALE)
-        }
-    }
-}
-
-/// Split a locale into language and region parts and return the language part.
-fn split_locale(locale: &str) -> String {
-    let mut parts = locale.split(['-', '_']);
-    parts
-        .next()
-        .map_or_else(|| FALLBACK_LOCALE, |lang| lang)
-        .to_string()
+    let preferred = cfg_locale.or(sys_locale).unwrap_or(FALLBACK_LOCALE);
+    let locales = available_locales();
+    locales
+        .contains(&preferred)
+        .then(|| preferred.to_string())
+        .or_else(|| {
+            LanguageIdentifier::from_str(preferred).ok().and_then(|id| {
+                let lang = id.language.to_string();
+                id.region
+                    .map(|r| format!("{lang}-{r}"))
+                    .filter(|s| locales.contains(&s.as_str()))
+                    .or_else(|| locales.contains(&lang.as_str()).then_some(lang))
+            })
+        })
+        .unwrap_or_else(|| FALLBACK_LOCALE.to_string())
 }
 
 thread_local! {
@@ -146,16 +134,6 @@ fn store_locale(new_locale: &str) {
 mod tests {
     use super::*;
     use test_case::test_case;
-
-    #[test_case("en-US", "en"; "dash")]
-    #[test_case("en_US", "en"; "underscore")]
-    #[test_case("en", "en"; "no_region")]
-    #[test_case("zh-", "zh"; "invalid_dash")]
-    #[test_case("zh_", "zh"; "invalid_underscore")]
-    #[test_case("en?", "en?"; "invalid_accepted")]
-    fn test_split_locale(locale: &str, expected: &str) {
-        assert_eq!(split_locale(locale), expected);
-    }
 
     #[test_case(None, None, "en"; "no_locale")]
     #[test_case(Some("en"), None, "en"; "cfg_locale")]
@@ -176,6 +154,9 @@ mod tests {
     #[test_case(Some("en-"), None, "en"; "cfg_locale_invalid_dash")]
     #[test_case(Some("en_"), None, "en"; "cfg_locale_invalid_underscore")]
     #[test_case(Some("en?"), None, "en"; "cfg_locale_invalid_accepted")]
+    #[test_case(Some("zh-Hant-TW"), None, "zh-TW"; "cfg_locale_ignore_script")]
+    #[test_case(None, Some("zh-Hant-TW"), "zh-TW"; "sys_locale_ignore_script")]
+    #[test_case(Some("zh-Hant-TW"), Some("zh-Hant-TW"), "zh-TW"; "both_locales_ignore_script")]
     fn test_set_locale(cfg_locale: Option<&str>, sys_locale: Option<&str>, expected: &str) {
         assert_eq!(calculate_locale(cfg_locale, sys_locale), expected);
     }

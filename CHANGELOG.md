@@ -9,11 +9,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added translations for locale `zh-TW` ([#1630](https://github.com/fujiapple852/trippy/pull/1630))
+
 ### Changed
 
 - Increase MSRV to 1.82 ([#1633](https://github.com/fujiapple852/trippy/issues/1633))
 
 ### Fixed
+
+- Locale parsing fails for valid BCP 47 language tags ([#1631](https://github.com/fujiapple852/trippy/pull/1631))
 
 ## [0.13.0] - 2025-05-05
 
