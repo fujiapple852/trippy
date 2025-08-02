@@ -62,7 +62,7 @@ Options:
           - ipv6-then-ipv4: IPv6 with a fallback to IPv4
           - ipv4-then-ipv6: IPv4 with a fallback to IPv6
           - system:         If the OS resolver is being used then use the first IP address returned, 
-                            otherwise lookup IPv6 with a fallback to IPv4
+                            otherwise lookup IPv4 with a fallback to IPv6
 
   -4, --ipv4
           Use IPv4 only

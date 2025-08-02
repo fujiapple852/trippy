@@ -29,7 +29,7 @@ pub enum IpAddrFamily {
     /// Lookup IPv4 with a fallback to IPv6.
     Ipv4thenIpv6,
     /// Use the first IP address returned by the OS resolver when using `ResolveMethod::System`,
-    /// otherwise lookup IPv6 with a fallback to IPv4.
+    /// otherwise lookup IPv4 with a fallback to IPv6.
     System,
 }
 
@@ -174,7 +174,7 @@ mod inner {
                     IpAddrFamily::Ipv6thenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
                     IpAddrFamily::Ipv4thenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
                     // see issue #1469
-                    IpAddrFamily::System => LookupIpStrategy::Ipv6thenIpv4,
+                    IpAddrFamily::System => LookupIpStrategy::Ipv4thenIpv6,
                 };
                 options.timeout = config.timeout;
                 options.ip_strategy = ip_strategy;
