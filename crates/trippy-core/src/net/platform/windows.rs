@@ -165,7 +165,7 @@ impl SocketImpl {
                 level,
                 optname,
                 addr_of_mut!(optval).cast(),
-                &mut optlen,
+                &raw mut optlen,
             ),
             |res| res == SOCKET_ERROR
         )?;
@@ -245,9 +245,9 @@ impl SocketImpl {
             WSAGetOverlappedResult(
                 self.inner.as_raw_socket() as _,
                 addr_of!(ol),
-                &mut bytes_read,
+                &raw mut bytes_read,
                 0,
-                &mut flags,
+                &raw mut flags,
             ),
             |res| { res == 0 }
         )
@@ -822,7 +822,7 @@ mod adapter {
                     Self::ADDRESS_FLAGS,
                     null_mut(),
                     buf.as_mut_ptr().cast(),
-                    &mut buf_len,
+                    &raw mut buf_len,
                 ));
                 if res == ERROR_BUFFER_OVERFLOW {
                     continue;
