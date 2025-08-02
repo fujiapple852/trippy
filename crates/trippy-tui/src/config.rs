@@ -89,7 +89,7 @@ pub enum AddressFamilyConfig {
     #[serde(rename = "ipv4-then-ipv6")]
     Ipv4ThenIpv6,
     /// If the OS resolver is being used then use the first IP address returned,
-    /// otherwise lookup IPv6 with a fallback to IPv4.
+    /// otherwise lookup IPv4 with a fallback to IPv6.
     System,
 }
 
