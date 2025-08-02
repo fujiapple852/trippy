@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Increase MSRV to 1.81 ([#1594](https://github.com/fujiapple852/trippy/issues/1594))
+- Increase MSRV to 1.82 ([#1633](https://github.com/fujiapple852/trippy/issues/1633))
 
 ### Fixed
 
