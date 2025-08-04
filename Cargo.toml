@@ -71,7 +71,7 @@ sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "2.0.3"
 tokio = "1.47.1"
-tokio-util = "0.7.15"
+tokio-util = "0.7.16"
 toml = { version = "0.8.23", default-features = false }
 tracing = "0.1.41"
 tracing-chrome = "0.7.2"
