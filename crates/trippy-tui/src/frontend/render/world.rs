@@ -158,7 +158,7 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
                 selected_hop.addrs().join(", ")
             ),
             [] => format!("{} {}", t!("geoip_no_data_for_hop"), selected_hop.ttl()),
-            [loc] => loc.to_string(),
+            [loc] => loc.clone(),
             _ => format!(
                 "{} {}",
                 t!("geoip_multiple_data_for_hop"),

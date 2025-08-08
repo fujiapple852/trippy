@@ -477,7 +477,7 @@ mod tests {
         assert_eq!(21, packet.get_ttl());
         assert_eq!(IpProtocol::Udp, packet.get_protocol());
         assert_eq!(39662, packet.get_checksum());
-        assert_eq!(Ipv4Addr::new(0x07F, 0x00, 0x00, 0x01), packet.get_source());
+        assert_eq!(Ipv4Addr::LOCALHOST, packet.get_source());
         assert_eq!(
             Ipv4Addr::new(0xde, 0x9a, 0x56, 0x12),
             packet.get_destination()

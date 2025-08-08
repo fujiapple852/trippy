@@ -66,7 +66,7 @@ mod ipinfo {
     use serde::{Deserialize, Serialize};
     use serde_with::serde_as;
 
-    /// The IPinfo mmdb database format.
+    /// The `IPinfo` mmdb database format.
     ///
     /// Support both the "IP to Geolocation Extended" and "IP to Country + ASN" database formats.
     ///

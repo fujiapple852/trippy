@@ -130,7 +130,7 @@ fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result
                     let hostname = if cfg.dns_resolve_all {
                         format!("{} [{}]", target, i + 1)
                     } else {
-                        target.to_string()
+                        target.clone()
                     };
                     Ok(TargetInfo { hostname, addr })
                 })

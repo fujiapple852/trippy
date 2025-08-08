@@ -34,7 +34,7 @@ pub async fn run(
             let tun = tun.clone();
             tokio::select!(
                 () = token.cancelled() => {
-                    handles.into_iter().for_each(|h| h.abort());
+                    for h in handles { h.abort(); }
                     return Ok(())
                 },
                 bytes_read = read_with_timeout(&mut buf, tun) => {
