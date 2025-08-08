@@ -770,7 +770,7 @@ mod tests {
     use std::net::Ipv4Addr;
     use std::num::NonZeroUsize;
 
-    const SOURCE_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+    const SOURCE_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
     const TARGET_ADDR: IpAddr = IpAddr::V4(Ipv4Addr::new(2, 2, 2, 2));
 
     #[test]

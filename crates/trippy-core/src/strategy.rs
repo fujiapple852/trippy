@@ -99,11 +99,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
         if !st.target_found() && st.ttl() <= self.config.max_ttl && can_send_ttl {
             let sent = SystemTime::now();
             match self.config.protocol {
-                Protocol::Icmp => {
-                    let probe = st.next_probe(sent);
-                    Self::do_send(network, st, probe)?;
-                }
-                Protocol::Udp => {
+                Protocol::Icmp | Protocol::Udp => {
                     let probe = st.next_probe(sent);
                     Self::do_send(network, st, probe)?;
                 }

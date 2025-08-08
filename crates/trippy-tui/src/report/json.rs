@@ -22,7 +22,7 @@ pub fn report<R: Resolver>(
         info: Info {
             target: Host {
                 ip: info.data.target_addr(),
-                hostname: info.target_hostname.to_string(),
+                hostname: info.target_hostname.clone(),
             },
             start_timestamp,
             end_timestamp,
