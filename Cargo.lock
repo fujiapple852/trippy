@@ -2370,7 +2370,7 @@ dependencies = [
  "paste",
  "rand 0.9.2",
  "serde",
- "socket2 0.5.10",
+ "socket2 0.6.0",
  "test-case",
  "thiserror 2.0.12",
  "tokio",
