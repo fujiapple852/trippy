@@ -75,7 +75,7 @@ tokio-util = "0.7.16"
 toml = { version = "0.8.23", default-features = false }
 tracing = "0.1.41"
 tracing-chrome = "0.7.2"
-tracing-subscriber = { version = "0.3.18", default-features = false }
+tracing-subscriber = { version = "0.3.20", default-features = false }
 tun = "0.7.22"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
