@@ -12,6 +12,7 @@ pub fn report<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: u8,
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
     let mut writer = csv::Writer::from_writer(std::io::stdout());
@@ -21,6 +22,7 @@ pub fn report<R: Resolver>(
             info.data.target_addr(),
             hop,
             resolver,
+            privacy_max_ttl,
         );
         writer.serialize(row)?;
     }
@@ -66,19 +68,25 @@ impl CsvRow {
         target_addr: IpAddr,
         hop: &trippy_core::Hop,
         resolver: &R,
+        privacy_max_ttl: u8,
     ) -> Self {
         let ttl = hop.ttl();
-        let ips = hop.addrs().join(":");
-        let ip = if ips.is_empty() {
-            String::from("???")
+        let (ip, host) = if privacy_max_ttl > 0 && ttl <= privacy_max_ttl {
+            (String::from("[hidden]"), String::from("[hidden]"))
         } else {
-            ips
-        };
-        let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
-        let host = if hosts.is_empty() {
-            String::from("???")
-        } else {
-            hosts
+            let ips = hop.addrs().join(":");
+            let ip = if ips.is_empty() {
+                String::from("???")
+            } else {
+                ips
+            };
+            let hosts = hop.addrs().map(|ip| resolver.reverse_lookup(*ip)).join(":");
+            let host = if hosts.is_empty() {
+                String::from("???")
+            } else {
+                hosts
+            };
+            (ip, host)
         };
         let sent = hop.total_sent();
         let recv = hop.total_recv();
