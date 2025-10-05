@@ -2,7 +2,7 @@
 title: Frequently Asked Questions
 description: Frequently asked questions about Trippy.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 ## Why does Trippy show "Awaiting data..."?
