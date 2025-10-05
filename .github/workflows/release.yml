@@ -75,7 +75,7 @@ jobs:
 
           # macOS (x86_64 & aarch64)
           - build: x86_64-apple-darwin
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
           - build: aarch64-apple-darwin
             os: macos-14
