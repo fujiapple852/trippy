@@ -1315,11 +1315,11 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default min round duration")]
     #[test_case("trip example.com --min-round-duration 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration")]
     #[test_case("trip example.com -i 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration short")]
-    #[test_case("trip example.com --min-round-duration 0", Err(anyhow!("error: invalid value '0' for '--min-round-duration <MIN_ROUND_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format min round duration")]
+    #[test_case("trip example.com --min-round-duration 0", Ok(cfg().min_round_duration(Duration::from_millis(0)).build()); "zero min round duration")]
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default max round duration")]
     #[test_case("trip example.com --max-round-duration 1250ms", Ok(cfg().max_round_duration(Duration::from_millis(1250)).build()); "custom max round duration")]
     #[test_case("trip example.com -T 2s", Ok(cfg().max_round_duration(Duration::from_millis(2000)).build()); "custom max round duration short")]
-    #[test_case("trip example.com --max-round-duration 0", Err(anyhow!("error: invalid value '0' for '--max-round-duration <MAX_ROUND_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format max round duration")]
+    #[test_case("trip example.com --max-round-duration 0", Err(anyhow!("max-round-duration (0ns) must not be less than min-round-duration (1s)")); "invalid format max round duration")]
     #[test_case("trip example.com -i 250ms -T 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).max_round_duration(Duration::from_millis(250)).build()); "custom min and max round duration")]
     #[test_case("trip example.com -i 300ms -T 250ms", Err(anyhow!("max-round-duration (250ms) must not be less than min-round-duration (300ms)")); "min round duration greater than max")]
     fn test_round_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1329,7 +1329,7 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().grace_duration(Duration::from_millis(100)).build()); "default grace duration")]
     #[test_case("trip example.com --grace-duration 10ms", Ok(cfg().grace_duration(Duration::from_millis(10)).build()); "custom grace duration")]
     #[test_case("trip example.com -g 50ms", Ok(cfg().grace_duration(Duration::from_millis(50)).build()); "custom grace duration short")]
-    #[test_case("trip example.com --grace-duration 0", Err(anyhow!("error: invalid value '0' for '--grace-duration <GRACE_DURATION>': time unit needed, for example 0sec or 0ms For more information, try '--help'.")); "invalid format grace duration")]
+    #[test_case("trip example.com --grace-duration 0", Err(anyhow!("grace-duration (0ns) must be between 10ms and 1s inclusive")); "invalid format grace duration")]
     #[test_case("trip example.com --grace-duration 9ms", Err(anyhow!("grace-duration (9ms) must be between 10ms and 1s inclusive")); "invalid low grace duration")]
     #[test_case("trip example.com --grace-duration 1001ms", Err(anyhow!("grace-duration (1.001s) must be between 10ms and 1s inclusive")); "invalid high grace duration")]
     fn test_grace_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1484,7 +1484,7 @@ mod tests {
     #[test_case("trip example.com --tui-refresh-rate 49ms", Err(anyhow!("tui-refresh-rate (49ms) must be between 50ms and 1s inclusive")); "invalid low tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate 1001ms", Err(anyhow!("tui-refresh-rate (1.001s) must be between 50ms and 1s inclusive")); "invalid high tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("error: invalid value 'foo' for '--tui-refresh-rate <TUI_REFRESH_RATE>': expected number at 0 For more information, try '--help'.")); "invalid format tui refresh rate")]
-    #[test_case("trip example.com --tui-refresh-rate 10xx", Err(anyhow!("error: invalid value '10xx' for '--tui-refresh-rate <TUI_REFRESH_RATE>': unknown time unit \"xx\", supported units: ns, us, ms, sec, min, hours, days, weeks, months, years (and few variations) For more information, try '--help'.")); "invalid time unit tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 10xx", Err(anyhow!("error: invalid value '10xx' for '--tui-refresh-rate <TUI_REFRESH_RATE>': unknown time unit \"xx\", supported units: ns, us/µs, ms, sec, min, hours, days, weeks, months, years (and few variations)\nFor more information, try '--help'.")); "invalid time unit tui refresh rate")]
     fn test_tui_refresh_rate(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
