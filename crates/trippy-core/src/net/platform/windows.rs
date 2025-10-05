@@ -129,10 +129,8 @@ impl SocketImpl {
 
     #[instrument(skip(self), level = "trace")]
     fn create_event(&mut self) -> IoResult<()> {
-        let event = syscall!(WSACreateEvent(), |res| {
-            res == WSA_INVALID_EVENT || res == -1
-        })
-        .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
+        let event = syscall!(WSACreateEvent(), |res| { res == WSA_INVALID_EVENT })
+            .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
         self.ol.hEvent = event as HANDLE;
         Ok(())
     }
