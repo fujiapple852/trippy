@@ -41,7 +41,7 @@ jobs:
             target: x86_64-apple-darwin
             rust: stable
           - build: macos-stable-arm64
-            os: macos-14
+            os: macos-latest
             target: aarch64-apple-darwin
             rust: stable
           - build: windows-stable
