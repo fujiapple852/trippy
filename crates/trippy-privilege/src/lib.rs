@@ -257,7 +257,7 @@ impl Privilege {
             /// Create a new `ElevationChecker` for the current process.
             pub fn current_process() -> Result<Self> {
                 use windows_sys::Win32::Security::TOKEN_QUERY;
-                let mut handle: windows_sys::Win32::Foundation::HANDLE = 0;
+                let mut handle: windows_sys::Win32::Foundation::HANDLE = std::ptr::null_mut();
                 let current_process = syscall!(System::Threading, GetCurrentProcess());
                 let res = syscall!(
                     System::Threading,
@@ -298,7 +298,7 @@ impl Privilege {
 
         impl Drop for Privileged {
             fn drop(&mut self) {
-                if self.handle != 0 {
+                if !self.handle.is_null() {
                     syscall!(Foundation, CloseHandle(self.handle));
                 }
             }

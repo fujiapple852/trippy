@@ -14,14 +14,14 @@ use std::os::windows::prelude::AsRawSocket;
 use std::ptr::{addr_of, addr_of_mut, null_mut};
 use std::time::Duration;
 use tracing::instrument;
-use windows_sys::Win32::Foundation::{WAIT_FAILED, WAIT_TIMEOUT};
+use windows_sys::Win32::Foundation::{HANDLE, WAIT_FAILED, WAIT_TIMEOUT};
 use windows_sys::Win32::Networking::WinSock::{
     AF_INET, AF_INET6, FD_CONNECT, FD_WRITE, ICMP_ERROR_INFO, IN6_ADDR, IN6_ADDR_0, IN_ADDR,
     IN_ADDR_0, IPPROTO_RAW, IPPROTO_TCP, SIO_ROUTING_INTERFACE_QUERY, SOCKADDR_IN, SOCKADDR_IN6,
     SOCKADDR_IN6_0, SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, SO_ERROR, SO_PORT_SCALABILITY,
     SO_REUSE_UNICASTPORT, TCP_FAIL_CONNECT_ON_ICMP_ERROR, TCP_ICMP_ERROR_INFO, WSABUF, WSADATA,
     WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAENETUNREACH, WSAENOBUFS,
-    WSA_IO_INCOMPLETE, WSA_IO_PENDING,
+    WSAEVENT, WSA_INVALID_EVENT, WSA_IO_INCOMPLETE, WSA_IO_PENDING,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -129,8 +129,11 @@ impl SocketImpl {
 
     #[instrument(skip(self), level = "trace")]
     fn create_event(&mut self) -> IoResult<()> {
-        self.ol.hEvent = syscall!(WSACreateEvent(), |res| { res == 0 || res == -1 })
-            .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
+        let event = syscall!(WSACreateEvent(), |res| {
+            res == WSA_INVALID_EVENT || res == -1
+        })
+        .map_err(|err| IoError::Other(err, IoOperation::WSACreateEvent))?;
+        self.ol.hEvent = event as HANDLE;
         Ok(())
     }
 
@@ -283,8 +286,11 @@ impl SocketImpl {
 
 impl Drop for SocketImpl {
     fn drop(&mut self) {
-        if self.ol.hEvent != -1 && self.ol.hEvent != 0 {
-            syscall!(WSACloseEvent(self.ol.hEvent), |res| { res == 0 }).unwrap_or_default();
+        if !self.ol.hEvent.is_null() {
+            syscall!(WSACloseEvent(self.ol.hEvent as WSAEVENT), |res| {
+                res == 0
+            })
+            .unwrap_or_default();
         }
     }
 }
@@ -456,7 +462,7 @@ impl Socket for SocketImpl {
         syscall!(
             WSAEventSelect(
                 self.inner.as_raw_socket() as _,
-                self.ol.hEvent,
+                self.ol.hEvent as WSAEVENT,
                 (FD_CONNECT | FD_WRITE) as _
             ),
             |res| res == SOCKET_ERROR

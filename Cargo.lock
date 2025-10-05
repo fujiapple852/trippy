@@ -2382,7 +2382,7 @@ dependencies = [
  "trippy-privilege",
  "tun",
  "widestring",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2417,7 +2417,7 @@ dependencies = [
  "nix",
  "paste",
  "thiserror 2.0.12",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

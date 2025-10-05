@@ -80,7 +80,7 @@ tun = "0.7.22"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
 widestring = "1.2.0"
-windows-sys = "0.52.0"
+windows-sys = "0.59.0"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
