@@ -37,7 +37,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             rust: nightly
           - build: macos-stable
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
             rust: stable
           - build: macos-stable-arm64
@@ -103,7 +103,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
@@ -163,7 +163,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
