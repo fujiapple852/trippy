@@ -167,6 +167,10 @@ nix-env -iA trippy
 docker run -it fujiapple/trippy
 ```
 
+:::note
+See the [Docker guide](/guides/docker) for more information.
+:::
+
 ### All Repositories
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/trippy.svg)](https://repology.org/project/trippy/versions)
