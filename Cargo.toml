@@ -79,7 +79,7 @@ tracing-subscriber = { version = "0.3.20", default-features = false }
 tun = "0.7.22"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
-widestring = "1.2.0"
+widestring = "1.2.1"
 windows-sys = "0.52.0"
 
 [workspace.lints.rust]
