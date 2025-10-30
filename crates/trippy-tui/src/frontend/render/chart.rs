@@ -28,7 +28,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .iter()
         .flatten()
         .map(|&(_, s)| s)
-        .max_by_key(|&c| c as u64)
+        .max_by_key(|&c| (c * 1000.0) as u64)
         .unwrap_or_default();
     let sets = series_data
         .iter()
