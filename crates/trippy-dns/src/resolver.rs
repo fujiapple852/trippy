@@ -113,9 +113,7 @@ impl DnsEntry {
             Self::Resolved(Resolved::WithAsInfo(_, hosts, _) | Resolved::Normal(_, hosts)) => {
                 ResolvedHostnames(hosts.iter())
             }
-            Self::Pending(_) | Self::Timeout(_) | Self::NotFound(_) | Self::Failed(_) =>
-            {
-                #[expect(clippy::iter_on_empty_collections)]
+            Self::Pending(_) | Self::Timeout(_) | Self::NotFound(_) | Self::Failed(_) => {
                 ResolvedHostnames([].iter())
             }
         }
