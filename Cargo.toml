@@ -40,7 +40,7 @@ clap_complete = "4.4.9"
 clap_mangen = "0.2.20"
 comfy-table = { version = "7.1.4", default-features = false }
 crossbeam = "0.8.4"
-crossterm = { version = "0.28.1", default-features = false }
+crossterm = { version = "0.29.0", default-features = false }
 csv = "1.4.0"
 derive_more = { version = "2.0.1", default-features = false }
 dns-lookup = "2.0.4"
