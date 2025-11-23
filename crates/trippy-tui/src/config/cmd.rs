@@ -6,7 +6,6 @@ use crate::config::{
     TuiKeyBinding,
 };
 use anyhow::anyhow;
-use clap::builder::Styles;
 use clap::Parser;
 use clap_complete::Shell;
 use std::net::IpAddr;
@@ -16,7 +15,7 @@ use std::time::Duration;
 /// Trace a route to a host and record statistics
 #[expect(clippy::doc_markdown)]
 #[derive(Parser, Debug)]
-#[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=Styles::styled())]
+#[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=clap_cargo::style::CLAP_STYLING)]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
     #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate", "generate_man", "print_locales"]))]

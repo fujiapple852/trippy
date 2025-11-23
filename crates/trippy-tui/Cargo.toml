@@ -44,6 +44,7 @@ tracing-subscriber = { workspace = true, default-features = false, features = ["
 tracing.workspace = true
 unic-langid.workspace = true
 unicode-width.workspace = true
+clap-cargo.workspace = true
 
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }
