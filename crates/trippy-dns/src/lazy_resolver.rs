@@ -214,8 +214,8 @@ mod inner {
         }
 
         pub(super) fn lookup(&self, hostname: &str) -> Result<ResolvedIpAddrs> {
-            fn partition(all: Vec<IpAddr>) -> (Vec<IpAddr>, Vec<IpAddr>) {
-                all.into_iter().partition_map(|ip| match ip {
+            fn partition<I: Iterator<Item = IpAddr>>(all: I) -> (Vec<IpAddr>, Vec<IpAddr>) {
+                all.partition_map(|ip| match ip {
                     IpAddr::V4(_) => Either::Left(ip),
                     IpAddr::V6(_) => Either::Right(ip),
                 })
@@ -231,22 +231,22 @@ mod inner {
                         .map_err(|err| Error::LookupFailed(Box::new(err)))?;
                     Ok(match self.config.addr_family {
                         IpAddrFamily::Ipv4Only => {
-                            let (ipv4, _) = partition(all);
+                            let (ipv4, _): (Vec<_>, Vec<_>) = partition(all);
                             if ipv4.is_empty() { vec![] } else { ipv4 }
                         }
                         IpAddrFamily::Ipv6Only => {
-                            let (_, ipv6) = partition(all);
+                            let (_, ipv6): (Vec<_>, Vec<_>) = partition(all);
                             if ipv6.is_empty() { vec![] } else { ipv6 }
                         }
                         IpAddrFamily::Ipv6thenIpv4 => {
-                            let (ipv4, ipv6) = partition(all);
+                            let (ipv4, ipv6): (Vec<_>, Vec<_>) = partition(all);
                             if ipv6.is_empty() { ipv4 } else { ipv6 }
                         }
                         IpAddrFamily::Ipv4thenIpv6 => {
-                            let (ipv4, ipv6) = partition(all);
+                            let (ipv4, ipv6): (Vec<_>, Vec<_>) = partition(all);
                             if ipv4.is_empty() { ipv6 } else { ipv4 }
                         }
-                        IpAddrFamily::System => all,
+                        IpAddrFamily::System => all.collect(),
                     })
                 }
             }
