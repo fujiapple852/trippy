@@ -179,6 +179,7 @@ fn new_cell(
         ColumnType::FlossPct => render_pct_cell(hop.forward_loss_pct()),
         ColumnType::Dscp => render_dscp_cell(hop.dscp()),
         ColumnType::Ecn => render_ecn_cell(hop.ecn()),
+        ColumnType::Asn => render_asn_cell(hop, dns, config),
     }
 }
 
@@ -302,6 +303,23 @@ fn render_ecn_cell(ecn: Option<Ecn>) -> Cell<'static> {
     }
 }
 
+fn render_asn_cell(hop: &Hop, dns: &DnsResolver, config: &TuiConfig) -> Cell<'static> {
+    if hop.total_recv() == 0 {
+        Cell::from(t!("na"))
+    } else if config.privacy_max_ttl >= Some(hop.ttl()) {
+        Cell::from("****".to_string())
+    } else if !config.lookup_as_info {
+        Cell::from(t!("na"))
+    } else {
+        let (addrs, _) = visible_addresses(hop, config.max_addrs);
+        let content = addrs
+            .into_iter()
+            .map(|(addr, _)| format_asinfo_cell(*addr, dns))
+            .join("\n");
+        Cell::from(content)
+    }
+}
+
 /// Render hostname table cell (normal mode).
 fn render_hostname(
     app: &TuiApp,
@@ -313,36 +331,40 @@ fn render_hostname(
         if app.tui_config.privacy_max_ttl >= Some(hop.ttl()) {
             (format!("**{}**", t!("hidden")), 1)
         } else {
-            match app.tui_config.max_addrs {
-                None => {
-                    let hostnames = hop
-                        .addrs_with_counts()
-                        .map(|(addr, &freq)| {
-                            format_address(addr, freq, hop, dns, geoip_lookup, &app.tui_config)
-                        })
-                        .join("\n");
-                    let count = hop.addr_count().clamp(1, u8::MAX as usize);
-                    (hostnames, count as u16)
-                }
-                Some(max_addr) => {
-                    let hostnames = hop
-                        .addrs_with_counts()
-                        .sorted_unstable_by_key(|&(_, cnt)| cnt)
-                        .rev()
-                        .take(max_addr as usize)
-                        .map(|(addr, &freq)| {
-                            format_address(addr, freq, hop, dns, geoip_lookup, &app.tui_config)
-                        })
-                        .join("\n");
-                    let count = hop.addr_count().clamp(1, max_addr as usize);
-                    (hostnames, count as u16)
-                }
-            }
+            let (addrs, count) = visible_addresses(hop, app.tui_config.max_addrs);
+            let hostnames = addrs
+                .into_iter()
+                .map(|(addr, &freq)| {
+                    format_address(addr, freq, hop, dns, geoip_lookup, &app.tui_config)
+                })
+                .join("\n");
+            (hostnames, count)
         }
     } else {
         (format!("{}", t!("no_response")), 1)
     };
     (Cell::from(hostname), count)
+}
+
+/// calculate which addresses will be visible.
+fn visible_addresses(hop: &Hop, max_addrs: Option<u8>) -> (Vec<(&IpAddr, &usize)>, u16) {
+    match max_addrs {
+        None => {
+            let addrs: Vec<_> = hop.addrs_with_counts().collect();
+            let count = hop.addr_count().clamp(1, u8::MAX as usize);
+            (addrs, count as u16)
+        }
+        Some(max_addr) => {
+            let addrs: Vec<_> = hop
+                .addrs_with_counts()
+                .sorted_unstable_by_key(|&(_, cnt)| cnt)
+                .rev()
+                .take(max_addr as usize)
+                .collect();
+            let count = hop.addr_count().clamp(1, max_addr as usize);
+            (addrs, count as u16)
+        }
+    }
 }
 
 /// Perform a reverse DNS lookup for an address and format the result.
@@ -453,6 +475,20 @@ fn format_asinfo(asinfo: &AsInfo, as_mode: AsMode) -> String {
         AsMode::Registry => format!("AS{} [{}]", asinfo.asn, asinfo.registry),
         AsMode::Allocated => format!("AS{} [{}]", asinfo.asn, asinfo.allocated),
         AsMode::Name => format!("AS{} [{}]", asinfo.asn, asinfo.name),
+    }
+}
+
+fn format_asinfo_cell(addr: IpAddr, dns: &DnsResolver) -> String {
+    match dns.lazy_reverse_lookup_with_asinfo(addr) {
+        DnsEntry::Resolved(Resolved::WithAsInfo(_, _, asinfo))
+        | DnsEntry::NotFound(Unresolved::WithAsInfo(_, asinfo))
+            if !asinfo.asn.is_empty() =>
+        {
+            format_asinfo(&asinfo, AsMode::Asn)
+        }
+        DnsEntry::Pending(_) => String::new(),
+        DnsEntry::Failed(_) | DnsEntry::Timeout(_) => "?????".to_string(),
+        _ => t!("na").to_string(),
     }
 }
 

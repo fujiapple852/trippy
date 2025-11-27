@@ -199,6 +199,8 @@ pub enum ColumnType {
     Dscp,
     /// The Explicit Congestion Notification of the Original Datagram for a hop.
     Ecn,
+    /// The autonomous system number for a hop.
+    Asn,
 }
 
 impl From<ColumnType> for char {
@@ -231,6 +233,7 @@ impl From<ColumnType> for char {
             ColumnType::FlossPct => 'D',
             ColumnType::Dscp => 'K',
             ColumnType::Ecn => 'M',
+            ColumnType::Asn => 'A',
         }
     }
 }
@@ -265,6 +268,7 @@ impl From<TuiColumn> for Column {
             TuiColumn::FlossPct => Self::new_shown(ColumnType::FlossPct),
             TuiColumn::Dscp => Self::new_shown(ColumnType::Dscp),
             TuiColumn::Ecn => Self::new_shown(ColumnType::Ecn),
+            TuiColumn::Asn => Self::new_shown(ColumnType::Asn),
         }
     }
 }
@@ -306,6 +310,7 @@ impl ColumnType {
             Self::FlossPct => t!("column_floss_pct"),
             Self::Dscp => t!("column_dscp"),
             Self::Ecn => t!("column_ecn"),
+            Self::Asn => t!("column_asn"),
         }
     }
 
@@ -349,6 +354,7 @@ impl ColumnType {
             Self::FlossPct => ColumnWidth::Fixed(width.max(8)),
             Self::Dscp => ColumnWidth::Fixed(width.max(7)),
             Self::Ecn => ColumnWidth::Fixed(width.max(7)),
+            Self::Asn => ColumnWidth::Fixed(width.max(8)),
         }
     }
 }
@@ -414,6 +420,7 @@ mod tests {
                 Column::new_hidden(ColumnType::FlossPct),
                 Column::new_hidden(ColumnType::Dscp),
                 Column::new_hidden(ColumnType::Ecn),
+                Column::new_hidden(ColumnType::Asn),
             ])
         );
     }
@@ -438,12 +445,14 @@ mod tests {
     #[test_case(ColumnType::Worst, "Wrst")]
     #[test_case(ColumnType::StdDev, "StDev")]
     #[test_case(ColumnType::Status, "Sts")]
+    #[test_case(ColumnType::Asn, "ASN")]
     fn test_column_display_formatting(c: ColumnType, heading: &'static str) {
         assert_eq!(format!("{c}"), heading);
     }
 
     #[test_case(ColumnType::Ttl, & ColumnWidth::Fixed(4))]
     #[test_case(ColumnType::Host, & ColumnWidth::Variable)]
+    #[test_case(ColumnType::Asn, & ColumnWidth::Fixed(8))]
     #[test_case(ColumnType::LossPct, & ColumnWidth::Fixed(8))]
     fn test_column_width(column_type: ColumnType, width: &ColumnWidth) {
         assert_eq!(column_type.width(), *width);
