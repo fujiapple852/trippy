@@ -286,5 +286,7 @@ Options:
 ```
 
 :::note
-Trippy command line arguments may be given in any order and my occur both before and after the targets.
+Trippy command line arguments may be given in any order and my occur both before and after the targets. All options can
+also be provided via environment variables using the `TRIP_` prefix (for example, `TRIP_PROTOCOL=tcp`). CLI flags take
+precedence over environment variables when both are set.
 :::
