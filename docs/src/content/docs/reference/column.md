@@ -38,6 +38,7 @@ configuration file.
 | `Floss%` | `D`  | The _forward loss_ % for the hop                                                                                                                                                                                                                                                                                                                      |
 | `Dscp`   | `K`  | Differentiated Services Code Point (DSCP) of the Original Datagram                                                                                                                                                                                                                                                                                    |
 | `Ecn`    | `M`  | Explicit Congestion Notification (ECN) of the Original Datagram                                                                                                                                                                                                                                                                                       |
+| `Asn`    | `A`  | Autonomous System Number (ASN)                                                                                                                                                                                                                                                                                                                        |
 
 The default columns are `holsravbwdt`.
 
