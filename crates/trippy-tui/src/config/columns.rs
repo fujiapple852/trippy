@@ -103,6 +103,8 @@ pub enum TuiColumn {
     Dscp,
     /// The Explicit Congestion Notification of the Original Datagram for a hop.
     Ecn,
+    /// The autonomous system number for a hop.
+    Asn,
 }
 
 impl TryFrom<char> for TuiColumn {
@@ -137,6 +139,7 @@ impl TryFrom<char> for TuiColumn {
             'D' => Ok(Self::FlossPct),
             'K' => Ok(Self::Dscp),
             'M' => Ok(Self::Ecn),
+            'A' => Ok(Self::Asn),
             c => Err(anyhow!(format!("unknown column code: {c}"))),
         }
     }
@@ -172,6 +175,7 @@ impl Display for TuiColumn {
             Self::FlossPct => write!(f, "D"),
             Self::Dscp => write!(f, "K"),
             Self::Ecn => write!(f, "M"),
+            Self::Asn => write!(f, "A"),
         }
     }
 }
@@ -193,6 +197,7 @@ mod tests {
     #[test_case('w', TuiColumn::Worst)]
     #[test_case('d', TuiColumn::StdDev)]
     #[test_case('t', TuiColumn::Status)]
+    #[test_case('A', TuiColumn::Asn)]
     fn test_try_from_char_for_tui_column(c: char, t: TuiColumn) {
         assert_eq!(TuiColumn::try_from(c).unwrap(), t);
     }
@@ -217,6 +222,7 @@ mod tests {
     #[test_case(TuiColumn::Worst, "w")]
     #[test_case(TuiColumn::StdDev, "d")]
     #[test_case(TuiColumn::Status, "t")]
+    #[test_case(TuiColumn::Asn, "A")]
     fn test_display_formatting_for_tui_column(t: TuiColumn, letter: &'static str) {
         assert_eq!(format!("{t}"), letter);
     }
