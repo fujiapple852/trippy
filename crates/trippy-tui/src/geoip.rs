@@ -212,54 +212,21 @@ impl From<ipinfo::IpInfoGeoIp> for GeoIpCity {
 
 impl From<(maxminddb::geoip2::City<'_>, &str)> for GeoIpCity {
     fn from((value, locale): (maxminddb::geoip2::City<'_>, &str)) -> Self {
-        let city = value
-            .city
-            .as_ref()
-            .and_then(|city| city.names.as_ref())
-            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
-            .map(ToString::to_string);
+        let city = localized_name(&value.city.names, locale);
         let subdivision = value
             .subdivisions
-            .as_ref()
-            .and_then(|c| c.first())
-            .and_then(|c| c.names.as_ref())
-            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
-            .map(ToString::to_string);
+            .first()
+            .and_then(|c| localized_name(&c.names, locale));
         let subdivision_code = value
             .subdivisions
-            .as_ref()
-            .and_then(|c| c.first())
-            .and_then(|c| c.iso_code.as_ref())
-            .map(ToString::to_string);
-        let country = value
-            .country
-            .as_ref()
-            .and_then(|country| country.names.as_ref())
-            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
-            .map(ToString::to_string);
-        let country_code = value
-            .country
-            .as_ref()
-            .and_then(|country| country.iso_code.as_ref())
-            .map(ToString::to_string);
-        let continent = value
-            .continent
-            .as_ref()
-            .and_then(|continent| continent.names.as_ref())
-            .and_then(|names| names.get(locale).or_else(|| names.get(FALLBACK_LOCALE)))
-            .map(ToString::to_string);
-        let latitude = value
-            .location
-            .as_ref()
-            .and_then(|location| location.latitude);
-        let longitude = value
-            .location
-            .as_ref()
-            .and_then(|location| location.longitude);
-        let accuracy_radius = value
-            .location
-            .as_ref()
-            .and_then(|location| location.accuracy_radius);
+            .first()
+            .and_then(|c| c.iso_code.as_ref().map(ToString::to_string));
+        let country = localized_name(&value.country.names, locale);
+        let country_code = value.country.iso_code.map(ToString::to_string);
+        let continent = localized_name(&value.continent.names, locale);
+        let latitude = value.location.latitude;
+        let longitude = value.location.longitude;
+        let accuracy_radius = value.location.accuracy_radius;
         Self {
             latitude,
             longitude,
@@ -328,13 +295,14 @@ impl GeoIpLookup {
             if let Some(geo) = self.cache.borrow().get(&addr) {
                 return Ok(geo.clone());
             }
+            let lookup_result = reader.lookup(addr)?;
             let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
-                reader
-                    .lookup::<ipinfo::IpInfoGeoIp>(addr)?
+                lookup_result
+                    .decode::<ipinfo::IpInfoGeoIp>()?
                     .map(GeoIpCity::from)
             } else {
-                reader
-                    .lookup::<maxminddb::geoip2::City<'_>>(addr)?
+                lookup_result
+                    .decode::<maxminddb::geoip2::City<'_>>()?
                     .map(|city| GeoIpCity::from((city, self.locale.as_ref())))
             };
             let cached = city_data.map(Rc::new);
@@ -342,6 +310,35 @@ impl GeoIpLookup {
             Ok(cached)
         } else {
             Ok(None)
+        }
+    }
+}
+
+fn localized_name(names: &maxminddb::geoip2::Names<'_>, locale: &str) -> Option<String> {
+    lookup_locale(names, locale)
+        .or_else(|| lookup_locale(names, FALLBACK_LOCALE))
+        .map(ToString::to_string)
+}
+
+/// Map a Trippy locale code to the closest `maxminddb` locale field.
+///
+/// - `pt*` (e.g. `pt`, `pt-BR`, `pt-PT`) use `brazilian_portuguese`
+/// - `zh*` (e.g. `zh`, `zh-TW`) use `simplified_chinese`
+/// - Other languages that are supported map directly (`en`, `de`, `es`, `fr`, `ja`, `ru`).
+fn lookup_locale<'a>(names: &maxminddb::geoip2::Names<'a>, code: &str) -> Option<&'a str> {
+    if code.starts_with("pt") {
+        names.brazilian_portuguese
+    } else if code.starts_with("zh") {
+        names.simplified_chinese
+    } else {
+        match code {
+            "de" => names.german,
+            "en" => names.english,
+            "es" => names.spanish,
+            "fr" => names.french,
+            "ja" => names.japanese,
+            "ru" => names.russian,
+            _ => None,
         }
     }
 }
