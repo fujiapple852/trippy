@@ -136,9 +136,7 @@ fn resolve_targets(cfg: &TrippyConfig, resolver: &DnsResolver) -> anyhow::Result
                 })
                 .collect::<Vec<_>>()
                 .into_iter(),
-            Err(e) => {
-                vec![Err(anyhow!("failed to resolve target: {} ({})", target, e))].into_iter()
-            }
+            Err(e) => vec![Err(anyhow!("failed to resolve target: {target} ({e})"))].into_iter(),
         })
         .collect::<anyhow::Result<Vec<_>>>()
 }

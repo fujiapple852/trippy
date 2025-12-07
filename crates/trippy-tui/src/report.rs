@@ -19,7 +19,7 @@ fn wait_for_round(trace_data: &Tracer, report_cycles: usize) -> anyhow::Result<S
     {
         trace = trace_data.snapshot();
         if let Some(err) = trace.error() {
-            return Err(anyhow!("error: {}", err));
+            return Err(anyhow!("error: {err}"));
         }
     }
     Ok(trace)

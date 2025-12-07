@@ -935,7 +935,7 @@ mod tests {
                 }?;
                 Ok(Self(state))
             } else {
-                Err(anyhow!("failed to parse {}", value))
+                Err(anyhow!("failed to parse {value}"))
             }
         }
     }

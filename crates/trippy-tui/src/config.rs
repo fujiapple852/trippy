@@ -852,20 +852,16 @@ fn validate_privilege(
     match (privilege_mode, has_privileges, needs_privileges) {
         (PrivilegeMode::Privileged, true, _) | (PrivilegeMode::Unprivileged, _, false) => Ok(()),
         (PrivilegeMode::Privileged, false, true) => Err(anyhow!(format!(
-            "privileges are required\n\nsee {} for details",
-            PRIVILEGE_URL
+            "privileges are required\n\nsee {PRIVILEGE_URL} for details"
         ))),
         (PrivilegeMode::Privileged, false, false) => Err(anyhow!(format!(
-            "privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee {} for details",
-            PRIVILEGE_URL
+            "privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee {PRIVILEGE_URL} for details"
         ))),
         (PrivilegeMode::Unprivileged, false, true) => Err(anyhow!(format!(
-            "unprivileged mode not supported on this platform\n\nsee {} for details",
-            PRIVILEGE_URL
+            "unprivileged mode not supported on this platform\n\nsee {PRIVILEGE_URL} for details"
         ))),
         (PrivilegeMode::Unprivileged, true, true) => Err(anyhow!(format!(
-            "unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee {} for details",
-            PRIVILEGE_URL
+            "unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee {PRIVILEGE_URL} for details"
         ))),
     }
 }
@@ -985,8 +981,7 @@ fn validate_ttl(first_ttl: u8, max_ttl: u8) -> anyhow::Result<()> {
 fn validate_max_inflight(max_inflight: u8) -> anyhow::Result<()> {
     if max_inflight == 0 {
         Err(anyhow!(
-            "max-inflight ({}) must be greater than zero",
-            max_inflight
+            "max-inflight ({max_inflight}) must be greater than zero"
         ))
     } else {
         Ok(())
@@ -1016,9 +1011,7 @@ fn validate_round_duration(
 ) -> anyhow::Result<()> {
     if min_round_duration > max_round_duration {
         Err(anyhow!(
-            "max-round-duration ({:?}) must not be less than min-round-duration ({:?})",
-            max_round_duration,
-            min_round_duration
+            "max-round-duration ({max_round_duration:?}) must not be less than min-round-duration ({min_round_duration:?})"
         ))
     } else {
         Ok(())
@@ -1066,7 +1059,7 @@ fn validate_packet_size(address_family: IpAddrFamily, packet_size: u16) -> anyho
 /// Validate `source_port`.
 fn validate_source_port(source_port: u16) -> anyhow::Result<()> {
     if source_port < 1024 {
-        Err(anyhow!("source-port ({}) must be >= 1024", source_port))
+        Err(anyhow!("source-port ({source_port}) must be >= 1024"))
     } else {
         Ok(())
     }
@@ -1092,8 +1085,7 @@ fn validate_tui_refresh_rate(tui_refresh_rate: Duration) -> anyhow::Result<()> {
 fn validate_report_cycles(report_cycles: usize) -> anyhow::Result<()> {
     if report_cycles == 0 {
         Err(anyhow!(
-            "report-cycles ({}) must be greater than zero",
-            report_cycles
+            "report-cycles ({report_cycles}) must be greater than zero"
         ))
     } else {
         Ok(())

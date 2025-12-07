@@ -415,7 +415,7 @@ impl TryFrom<&str> for TuiKeyBinding {
                             None
                         }
                     })
-                    .ok_or_else(|| anyhow!("unknown key binding '{}'", value))?
+                    .ok_or_else(|| anyhow!("unknown key binding '{value}'"))?
             })
         }
         fn parse_modifiers(modifiers: &str) -> anyhow::Result<KeyModifiers> {
@@ -431,7 +431,7 @@ impl TryFrom<&str> for TuiKeyBinding {
                                 None
                             }
                         })
-                        .ok_or_else(|| anyhow!("unknown modifier '{}'", token,))
+                        .ok_or_else(|| anyhow!("unknown modifier '{token}'",))
                 })
         }
         match value.rsplit_once('+') {
