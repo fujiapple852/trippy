@@ -16,7 +16,7 @@ pub fn report<R: Resolver>(info: &TraceInfo, resolver: &R) -> anyhow::Result<()>
     loop {
         let trace_data = &info.data.snapshot();
         if let Some(err) = trace_data.error() {
-            return Err(anyhow!("error: {}", err));
+            return Err(anyhow!("error: {err}"));
         }
         for hop in trace_data.hops() {
             let hop = Hop::from((hop, resolver));

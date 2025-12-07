@@ -79,7 +79,7 @@ fn run_simulation_with_retry(simulation: Simulation) -> anyhow::Result<()> {
             return Ok(());
         }
     }
-    anyhow::bail!("failed simulating {} after {} attempts", name, MAX_ATTEMPTS)
+    anyhow::bail!("failed simulating {name} after {MAX_ATTEMPTS} attempts")
 }
 
 async fn run_simulation(sim: Arc<Simulation>) -> anyhow::Result<()> {
