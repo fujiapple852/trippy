@@ -1,9 +1,9 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders, Sparkline};
-use ratatui::Frame;
 
 /// Render the ping history for the final hop which is typically the target.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {

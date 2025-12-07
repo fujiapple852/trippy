@@ -1,6 +1,6 @@
 use crate::buffer::Buffer;
 use crate::error::{Error, Result};
-use crate::{fmt_payload, IpProtocol};
+use crate::{IpProtocol, fmt_payload};
 use std::fmt::{Debug, Formatter};
 use std::net::Ipv6Addr;
 

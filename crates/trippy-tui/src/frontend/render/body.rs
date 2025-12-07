@@ -1,7 +1,7 @@
 use crate::frontend::render::{bsod, chart, splash, table, world};
 use crate::frontend::tui_app::TuiApp;
-use ratatui::layout::Rect;
 use ratatui::Frame;
+use ratatui::layout::Rect;
 
 /// Render the body.
 ///

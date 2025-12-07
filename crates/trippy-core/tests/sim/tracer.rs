@@ -6,8 +6,8 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 use trippy_core::{
-    defaults, Builder, CompletionReason, MultipathStrategy, PortDirection, PrivilegeMode,
-    ProbeStatus, Protocol, Round, TimeToLive,
+    Builder, CompletionReason, MultipathStrategy, PortDirection, PrivilegeMode, ProbeStatus,
+    Protocol, Round, TimeToLive, defaults,
 };
 
 // The length of time to wait after the completion of the tracing before

@@ -1,10 +1,10 @@
 use crate::config::AddressMode;
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Line, Span, Style};
 use ratatui::widgets::Paragraph;
-use ratatui::Frame;
 use std::borrow::Cow;
 use std::net::IpAddr;
 use trippy_core::{PrivilegeMode, Protocol};

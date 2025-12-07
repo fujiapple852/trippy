@@ -3,7 +3,7 @@ use crate::frontend::TuiConfig;
 use crate::geoip::GeoIpLookup;
 use crate::locale;
 use crate::{frontend, report};
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use std::net::IpAddr;
 use tracing::instrument;
 use tracing_chrome::{ChromeLayerBuilder, FlushGuard};

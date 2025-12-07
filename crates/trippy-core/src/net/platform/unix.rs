@@ -18,9 +18,9 @@ impl Platform for PlatformImpl {
 
 mod address {
     use crate::error::{Error, Result};
+    use crate::net::SocketImpl;
     use crate::net::platform::Ipv4ByteOrder;
     use crate::net::socket::Socket;
-    use crate::net::SocketImpl;
     use nix::sys::socket::{AddressFamily, SockaddrLike};
     use std::net::{IpAddr, SocketAddr};
     use tracing::instrument;
@@ -155,9 +155,9 @@ mod socket {
     use crate::net::socket::{Socket, SocketError};
     use itertools::Itertools;
     use nix::{
+        Error,
         sys::select::FdSet,
         sys::time::{TimeVal, TimeValLike},
-        Error,
     };
     use socket2::{Domain, Protocol, SockAddr, Type};
     use std::io;
@@ -541,4 +541,4 @@ mod socket {
     }
 }
 
-pub use socket::{startup, SocketImpl};
+pub use socket::{SocketImpl, startup};

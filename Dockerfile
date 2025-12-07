@@ -1,4 +1,4 @@
-FROM rust:1.82 AS build-env
+FROM rust:1.85 AS build-env
 RUN rustup target add x86_64-unknown-linux-musl
 WORKDIR /app
 COPY Cargo.toml /app

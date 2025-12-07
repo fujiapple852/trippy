@@ -1,9 +1,9 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{BarChart, Block, BorderType, Borders};
-use ratatui::Frame;
 use std::collections::BTreeMap;
 use std::time::Duration;
 

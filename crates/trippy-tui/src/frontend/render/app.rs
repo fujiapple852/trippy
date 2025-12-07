@@ -1,7 +1,7 @@
 use crate::frontend::render::{bar, body, flows, footer, header, help, settings, tabs};
 use crate::frontend::tui_app::TuiApp;
-use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
+use ratatui::layout::{Constraint, Direction, Layout};
 
 /// Render the application main screen.
 ///

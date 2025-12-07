@@ -4,13 +4,13 @@ use crate::frontend::theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
 use humantime::format_duration;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table, Tabs, Wrap,
 };
-use ratatui::Frame;
 use trippy_core::PortDirection;
 use trippy_dns::ResolveMethod;
 
