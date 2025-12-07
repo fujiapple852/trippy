@@ -197,6 +197,7 @@ jobs:
           log-level: warn
           command: check
           arguments: --all-features
+          command-arguments: "--hide-inclusion-graph"
 
   cargo-msrv:
     runs-on: ubuntu-22.04
