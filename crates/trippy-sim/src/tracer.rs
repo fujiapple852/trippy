@@ -11,7 +11,7 @@ use trippy_core::{
 };
 
 // The length of time to wait after the completion of the tracing before
-// cancelling the network simulator.  This is needed to ensure that all
+// canceling the network simulator.  This is needed to ensure that all
 // in-flight packets for the current test are sent or received prior to
 // ending the round so that they are not incorrectly used in a subsequent
 // test.
@@ -90,7 +90,7 @@ impl Tracer {
             .map_err(anyhow::Error::from);
         thread::sleep(CLEANUP_DELAY);
         self.token.cancel();
-        // ensure both the tracer and the validator were successful.
+        // ensure both the tracer and the validation were successful.
         tracer_res.and(result.replace(Ok(())))
     }
 
