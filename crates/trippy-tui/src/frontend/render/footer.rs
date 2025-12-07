@@ -1,7 +1,7 @@
 use crate::frontend::render::{histogram, history};
 use crate::frontend::tui_app::TuiApp;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::Frame;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
 /// Render the footer.
 ///

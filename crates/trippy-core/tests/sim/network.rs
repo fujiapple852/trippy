@@ -8,6 +8,7 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, info};
+use trippy_packet::IpProtocol;
 use trippy_packet::checksum::{icmp_ipv4_checksum, ipv4_header_checksum, tcp_ipv4_checksum};
 use trippy_packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use trippy_packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -17,7 +18,6 @@ use trippy_packet::icmpv4::{IcmpCode, IcmpType};
 use trippy_packet::ipv4::Ipv4Packet;
 use trippy_packet::tcp::TcpPacket;
 use trippy_packet::udp::UdpPacket;
-use trippy_packet::IpProtocol;
 
 const READ_TIMEOUT: Duration = Duration::from_millis(10);
 

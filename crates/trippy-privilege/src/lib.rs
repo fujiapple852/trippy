@@ -272,8 +272,8 @@ impl Privilege {
 
             /// Check if the current process has elevated privileged.
             pub fn is_elevated(&self) -> Result<bool> {
-                use windows_sys::Win32::Security::TokenElevation;
                 use windows_sys::Win32::Security::TOKEN_ELEVATION;
+                use windows_sys::Win32::Security::TokenElevation;
                 let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
                 #[expect(clippy::cast_possible_truncation)]
                 let size = std::mem::size_of::<TOKEN_ELEVATION>() as u32;

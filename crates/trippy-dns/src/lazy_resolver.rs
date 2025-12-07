@@ -93,7 +93,7 @@ impl Resolver for DnsResolver {
 mod inner {
     use super::{Config, IpAddrFamily, ResolveMethod};
     use crate::resolver::{AsInfo, DnsEntry, Error, Resolved, ResolvedIpAddrs, Result, Unresolved};
-    use crossbeam::channel::{bounded, Receiver, Sender};
+    use crossbeam::channel::{Receiver, Sender, bounded};
     use hickory_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
     use hickory_resolver::error::{ResolveError, ResolveErrorKind};
     use hickory_resolver::proto::error::ProtoError;
@@ -232,35 +232,19 @@ mod inner {
                     Ok(match self.config.addr_family {
                         IpAddrFamily::Ipv4Only => {
                             let (ipv4, _) = partition(all);
-                            if ipv4.is_empty() {
-                                vec![]
-                            } else {
-                                ipv4
-                            }
+                            if ipv4.is_empty() { vec![] } else { ipv4 }
                         }
                         IpAddrFamily::Ipv6Only => {
                             let (_, ipv6) = partition(all);
-                            if ipv6.is_empty() {
-                                vec![]
-                            } else {
-                                ipv6
-                            }
+                            if ipv6.is_empty() { vec![] } else { ipv6 }
                         }
                         IpAddrFamily::Ipv6thenIpv4 => {
                             let (ipv4, ipv6) = partition(all);
-                            if ipv6.is_empty() {
-                                ipv4
-                            } else {
-                                ipv6
-                            }
+                            if ipv6.is_empty() { ipv4 } else { ipv6 }
                         }
                         IpAddrFamily::Ipv4thenIpv6 => {
                             let (ipv4, ipv6) = partition(all);
-                            if ipv4.is_empty() {
-                                ipv6
-                            } else {
-                                ipv4
-                            }
+                            if ipv4.is_empty() { ipv6 } else { ipv4 }
                         }
                         IpAddrFamily::System => all,
                     })

@@ -2,9 +2,9 @@ use crate::config::{ChannelConfig, StateConfig, StrategyConfig};
 use crate::constants::MAX_INITIAL_SEQUENCE;
 use crate::error::Result;
 use crate::{
-    Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
+    Error, IcmpExtensionParseMode, MAX_TTL, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
     PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId, Tracer,
-    TypeOfService, MAX_TTL,
+    TypeOfService,
 };
 use std::net::IpAddr;
 use std::num::NonZeroUsize;
@@ -765,7 +765,7 @@ impl Builder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{config, Port};
+    use crate::{Port, config};
     use config::defaults;
     use std::net::Ipv4Addr;
     use std::num::NonZeroUsize;

@@ -1,7 +1,7 @@
 use crate::config::ChannelConfig;
 use crate::error::{Error, Result};
 use crate::net::socket::Socket;
-use crate::net::{ipv4::Ipv4, ipv6::Ipv6, platform, Network};
+use crate::net::{Network, ipv4::Ipv4, ipv6::Ipv6, platform};
 use crate::probe::{Probe, Response};
 use crate::{Port, PrivilegeMode, Protocol};
 use arrayvec::ArrayVec;

@@ -55,7 +55,7 @@ tar -xf "${TARBALL}"
 pushd "trippy-${VERSION}"
 rm -f ../ubuntu-ppa/vendor.tar.xz
 rm -rf vendor
-cargo-1.82 vendor --locked
+cargo-1.85 vendor --locked
 tar -cJf ../ubuntu-ppa/vendor.tar.xz vendor
 popd
 rm -rf "trippy-${VERSION}"

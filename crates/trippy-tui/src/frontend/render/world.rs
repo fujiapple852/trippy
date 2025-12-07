@@ -1,6 +1,7 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
 use itertools::Itertools;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::prelude::Line;
 use ratatui::style::{Color, Style};
@@ -8,7 +9,6 @@ use ratatui::symbols::Marker;
 use ratatui::text::Span;
 use ratatui::widgets::canvas::{Canvas, Circle, Context, Map, MapResolution, Rectangle};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
-use ratatui::Frame;
 use std::collections::HashMap;
 use trippy_core::Hop;
 

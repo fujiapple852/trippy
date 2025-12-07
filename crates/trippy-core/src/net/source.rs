@@ -1,9 +1,9 @@
+use crate::PortDirection;
 use crate::error::Error::InvalidSourceAddr;
 use crate::error::Result;
 use crate::net::platform::Platform;
 use crate::net::socket::Socket;
 use crate::types::Port;
-use crate::PortDirection;
 use std::net::{IpAddr, SocketAddr};
 
 /// The port used for local address discovery if not dest port is available.

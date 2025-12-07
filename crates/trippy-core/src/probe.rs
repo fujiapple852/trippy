@@ -1,5 +1,5 @@
-use crate::types::{Checksum, Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use crate::TypeOfService;
+use crate::types::{Checksum, Flags, Port, RoundId, Sequence, TimeToLive, TraceId};
 use std::net::IpAddr;
 use std::time::SystemTime;
 

@@ -1,11 +1,11 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::Style;
 use ratatui::symbols::Marker;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType};
-use ratatui::Frame;
 
 /// Render the ping history for all hops as a chart.
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {

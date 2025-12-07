@@ -1,9 +1,9 @@
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
-use ratatui::Frame;
 
 /// Render a blue screen of death.
 pub fn render(f: &mut Frame<'_>, rect: Rect, error: &str) {

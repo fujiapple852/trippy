@@ -1,10 +1,10 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Tabs};
-use ratatui::Frame;
 
 /// Render the tabs, one per trace.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {

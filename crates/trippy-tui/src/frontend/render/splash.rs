@@ -1,10 +1,10 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
-use ratatui::Frame;
 use std::borrow::Cow;
 
 /// Render the splash screen.

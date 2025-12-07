@@ -1,6 +1,6 @@
 use crate::app::TraceInfo;
 use crate::frontend::config::TuiConfig;
-use crate::frontend::render::settings::{settings_tabs, SETTINGS_TAB_COLUMNS};
+use crate::frontend::render::settings::{SETTINGS_TAB_COLUMNS, settings_tabs};
 use crate::geoip::GeoIpLookup;
 use itertools::Itertools;
 use ratatui::widgets::TableState;

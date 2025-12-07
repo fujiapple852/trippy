@@ -2,8 +2,8 @@
 name = "toy-traceroute"
 version = "0.1.0"
 license = "Apache-2.0"
-edition = "2021"
-rust-version = "1.82"
+edition = "2024"
+rust-version = "1.85"
 publish = false
 
 [dependencies]

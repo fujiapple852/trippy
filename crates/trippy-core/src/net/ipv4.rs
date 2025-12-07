@@ -14,6 +14,7 @@ use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::SystemTime;
 use tracing::instrument;
+use trippy_packet::IpProtocol;
 use trippy_packet::checksum::{icmp_ipv4_checksum, udp_ipv4_checksum};
 use trippy_packet::icmpv4::destination_unreachable::DestinationUnreachablePacket;
 use trippy_packet::icmpv4::echo_reply::EchoReplyPacket;
@@ -23,7 +24,6 @@ use trippy_packet::icmpv4::{IcmpCode, IcmpPacket, IcmpTimeExceededCode, IcmpType
 use trippy_packet::ipv4::Ipv4Packet;
 use trippy_packet::tcp::TcpPacket;
 use trippy_packet::udp::UdpPacket;
-use trippy_packet::IpProtocol;
 
 /// The maximum size of UDP packet we allow.
 const MAX_UDP_PACKET_BUF: usize = MAX_PACKET_SIZE - Ipv4Packet::minimum_packet_size();

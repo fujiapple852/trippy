@@ -1,10 +1,10 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
+use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Bar, BarChart, BarGroup, Block, BorderType, Borders};
-use ratatui::Frame;
 
 /// Render the flows.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {

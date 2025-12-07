@@ -1293,9 +1293,9 @@ mod state {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use crate::TypeOfService;
         use crate::probe::{IcmpPacketCode, IcmpPacketType};
         use crate::types::MaxInflight;
-        use crate::TypeOfService;
         use rand::Rng;
         use std::net::{IpAddr, Ipv4Addr};
         use std::time::Duration;

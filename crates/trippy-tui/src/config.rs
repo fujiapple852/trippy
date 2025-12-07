@@ -9,8 +9,8 @@ use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{
-    defaults, IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
-    MAX_TTL,
+    IcmpExtensionParseMode, MAX_TTL, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
+    defaults,
 };
 use trippy_dns::{IpAddrFamily, ResolveMethod};
 
@@ -826,11 +826,17 @@ fn validate_deprecated(
     cfg_file_tui_bindings: &ConfigBindings,
 ) -> anyhow::Result<()> {
     if cfg_file_tui.deprecated_tui_max_samples.is_some() {
-        Err(anyhow!("tui-max-samples in [tui] section is deprecated, use max-samples in [strategy] section instead"))
+        Err(anyhow!(
+            "tui-max-samples in [tui] section is deprecated, use max-samples in [strategy] section instead"
+        ))
     } else if cfg_file_tui.deprecated_tui_max_flows.is_some() {
-        Err(anyhow!("tui-max-flows in [tui] section is deprecated, use max-flows in [strategy] section instead"))
+        Err(anyhow!(
+            "tui-max-flows in [tui] section is deprecated, use max-flows in [strategy] section instead"
+        ))
     } else if cfg_file_tui_bindings.deprecated_toggle_privacy.is_some() {
-        Err(anyhow!("toggle-privacy in [bindings] section is deprecated, use expand-privacy and contract-privacy instead"))
+        Err(anyhow!(
+            "toggle-privacy in [bindings] section is deprecated, use expand-privacy and contract-privacy instead"
+        ))
     } else {
         Ok(())
     }
@@ -1135,7 +1141,9 @@ fn validate_bindings(bindings: &TuiBindings) -> anyhow::Result<()> {
 /// Validate `tos`.
 fn validate_tos(address_family: IpAddrFamily, tos: u8) -> anyhow::Result<()> {
     if cfg!(target_os = "windows") && address_family != IpAddrFamily::Ipv4Only && tos != 0 {
-        Err(anyhow!("setting tos is only supported for IPv4 on Windows (hint: try setting --ipv4 to enforce IPv4)"))
+        Err(anyhow!(
+            "setting tos is only supported for IPv4 on Windows (hint: try setting --ipv4 to enforce IPv4)"
+        ))
     } else {
         Ok(())
     }
