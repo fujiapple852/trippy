@@ -43,7 +43,7 @@ comfy-table = { version = "7.1.4", default-features = false }
 crossbeam = "0.8.4"
 crossterm = { version = "0.28.1", default-features = false }
 csv = "1.4.0"
-derive_more = { version = "2.0.1", default-features = false }
+derive_more = { version = "2.1.1", default-features = false }
 dns-lookup = "3.0.1"
 encoding_rs_io = "0.1.7"
 etcetera = "0.10.0"
