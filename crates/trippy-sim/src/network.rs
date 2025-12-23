@@ -98,8 +98,8 @@ pub async fn run(
             }
         }
 
-        // if the ttl is greater than the largest ttl in our sim we will reply as the last node in
-        // the sim
+        // if the ttl is greater than the largest ttl in our simulation we will reply as the last node in
+        // the simulation
         let index = std::cmp::min(usize::from(ipv4.get_ttl()) - 1, sim.hops.len() - 1);
         let (reply_addr, reply_delay_ms) = match sim.hops[index].resp {
             Response::NoResponse => {

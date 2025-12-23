@@ -34,21 +34,16 @@ widestring.workspace = true
 windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_Networking_WinSock", "Win32_System_IO", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_System_IO", "Win32_System_Threading", "Win32_Security"] }
 
 [dev-dependencies]
+trippy-sim.workspace = true
 anyhow.workspace = true
 hex-literal.workspace = true
-ipnetwork.workspace = true
 mockall.workspace = true
 rand.workspace = true
 serde = { workspace = true, default-features = false, features = ["derive"] }
 test-case.workspace = true
-tokio-util.workspace = true
 tokio = { workspace = true, features = ["full"] }
 toml = { workspace = true, default-features = false, features = ["parse"] }
 tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "fmt"] }
-
-# see https://github.com/meh/rust-tun/pull/74
-[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dev-dependencies]
-tun = { workspace = true, features = ["async"] }
 
 [features]
 # Enable simulation integration tests
