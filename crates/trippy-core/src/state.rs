@@ -72,12 +72,6 @@ impl State {
         self.state[&flow_id].is_target(hop)
     }
 
-    /// Is a given `Hop` in the current round for a given flow?
-    #[must_use]
-    pub fn is_in_round(&self, hop: &Hop, flow_id: FlowId) -> bool {
-        self.state[&flow_id].is_in_round(hop)
-    }
-
     /// Return the target `Hop` for a given flow.
     #[must_use]
     pub fn target_hop(&self, flow_id: FlowId) -> &Hop {
@@ -509,10 +503,6 @@ impl FlowState {
 
     const fn is_target(&self, hop: &Hop) -> bool {
         self.highest_ttl_for_round == hop.ttl
-    }
-
-    const fn is_in_round(&self, hop: &Hop) -> bool {
-        hop.ttl <= self.highest_ttl_for_round
     }
 
     fn target_hop(&self) -> &Hop {

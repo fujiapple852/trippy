@@ -101,7 +101,6 @@ fn render_table_row(
     custom_columns: &Columns,
 ) -> Row<'static> {
     let is_selected_hop = app.selected_hop().is_some_and(|h| h.ttl() == hop.ttl());
-    let is_in_round = app.tracer_data().is_in_round(hop, app.selected_flow);
     let (_, row_height) = if is_selected_hop && app.show_hop_details {
         render_hostname_with_details(app, hop, dns, geoip_lookup, config)
     } else {
@@ -121,7 +120,7 @@ fn render_table_row(
             )
         })
         .collect();
-    let row_color = if is_in_round {
+    let row_color = if is_selected_hop {
         config.theme.hops_table_row_active_text
     } else {
         config.theme.hops_table_row_inactive_text
