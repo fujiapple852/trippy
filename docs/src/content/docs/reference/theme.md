@@ -16,7 +16,8 @@ line option or in the `theme-colors` section of the configuration file.
 | `tab-text-color`                     | The color of the text in traces tabs                      | `Green`      |
 | `hops-table-header-bg-color`         | The background color of the hops table header             | `White`      |
 | `hops-table-header-text-color`       | The color of text in the hops table header                | `Black`      |
-| `hops-table-row-active-text-color`   | The color of text of active rows in the hops table        | `Gray`       |
+| `hops-table-row-active-bg-color`     | The color of background of active rows in the hops table  | `Gray`       |
+| `hops-table-row-active-text-color`   | The color of text of active rows in the hops table        | `Black`      |
 | `hops-table-row-inactive-text-color` | The color of text of inactive rows in the hops table      | `DarkGray`   |
 | `hops-chart-selected-color`          | The color of the selected series in the hops chart        | `Green`      |
 | `hops-chart-unselected-color`        | The color of the unselected series in the hops chart      | `Gray`       |
