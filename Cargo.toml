@@ -73,7 +73,7 @@ test-case = "3.3.1"
 thiserror = "2.0.3"
 tokio = "1.48.0"
 tokio-util = "0.7.17"
-toml = { version = "0.9.8", default-features = false, features = ["serde"] }
+toml = { version = "0.9.10", default-features = false, features = ["serde"] }
 tracing = "0.1.44"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.20", default-features = false }
