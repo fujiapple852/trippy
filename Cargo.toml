@@ -77,7 +77,7 @@ toml = { version = "0.9.8", default-features = false, features = ["serde"] }
 tracing = "0.1.44"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.20", default-features = false }
-tun = "0.8.4"
+tun = "0.8.5"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
 widestring = "1.2.1"
