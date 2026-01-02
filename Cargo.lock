@@ -1654,6 +1654,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ratatui-dialog"
+version = "0.1.0"
+source = "git+https://github.com/fujiapple852/ratatui-dialog?branch=master#fb421bbf19d486092a1f30102493e50db2d4235b"
+dependencies = [
+ "ratatui",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2423,6 +2431,7 @@ dependencies = [
  "petgraph",
  "pretty_assertions",
  "ratatui",
+ "ratatui-dialog",
  "serde",
  "serde_json",
  "serde_with",

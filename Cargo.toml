@@ -63,6 +63,7 @@ petgraph = "0.8.3"
 pretty_assertions = "1.4.1"
 rand = "0.9.2"
 ratatui = "0.29.0"
+ratatui-dialog = { git = "https://github.com/fujiapple852/ratatui-dialog", branch = "master" }
 serde = { version = "1.0.201", default-features = false }
 serde_json = { version = "1.0.117", default-features = false }
 serde_with = { version = "3.16.0", default-features = false, features = ["macros"] }

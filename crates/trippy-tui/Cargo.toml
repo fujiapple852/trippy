@@ -17,6 +17,7 @@ categories.workspace = true
 trippy-core.workspace = true
 trippy-privilege.workspace = true
 trippy-dns.workspace = true
+ratatui-dialog.workspace = true
 anyhow.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock", "serde"] }
 chrono-tz.workspace = true
