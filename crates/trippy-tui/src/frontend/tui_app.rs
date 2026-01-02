@@ -4,7 +4,8 @@ use crate::frontend::render::settings::{SETTINGS_TAB_COLUMNS, settings_tabs};
 use crate::geoip::GeoIpLookup;
 use itertools::Itertools;
 use ratatui::widgets::TableState;
-use std::time::SystemTime;
+use ratatui_dialog::DialogState;
+use std::time::{Duration, SystemTime};
 use trippy_core::FlowId;
 use trippy_core::Hop;
 use trippy_core::State;
@@ -18,6 +19,8 @@ pub struct TuiApp {
     pub table_state: TableState,
     /// The state of the settings table.
     pub setting_table_state: TableState,
+    /// The state of the alert dialog.
+    pub alert_state: DialogState,
     /// The selected trace.
     pub trace_selected: usize,
     /// The selected tab in the settings dialog.
@@ -57,6 +60,7 @@ impl TuiApp {
             tui_config,
             table_state: TableState::default(),
             setting_table_state: TableState::default(),
+            alert_state: DialogState::default(),
             trace_selected: 0,
             settings_tab_selected: 0,
             selected_hop_address: 0,
@@ -376,6 +380,8 @@ impl TuiApp {
                 self.show_flows = true;
                 self.selected_hop_address = 0;
             }
+        } else {
+            self.alert_state.show_for(Duration::from_secs(2));
         }
     }
 
