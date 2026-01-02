@@ -424,6 +424,10 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
             theme::fmt_color(theme.hops_table_header_text),
         ),
         SettingsItem::new(
+            "hops-table-row-active-bg-color",
+            theme::fmt_color(theme.hops_table_row_active_bg),
+        ),
+        SettingsItem::new(
             "hops-table-row-active-text-color",
             theme::fmt_color(theme.hops_table_row_active_text),
         ),

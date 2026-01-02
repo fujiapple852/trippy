@@ -25,6 +25,8 @@ pub struct TuiTheme {
     pub hops_table_header_bg: TuiColor,
     /// The color of text in the hops table header.
     pub hops_table_header_text: TuiColor,
+    /// The color of background of active rows in the hops table.
+    pub hops_table_row_active_bg: TuiColor,
     /// The color of text of active rows in the hops table.
     pub hops_table_row_active_text: TuiColor,
     /// The color of text of inactive rows in the hops table.
@@ -92,7 +94,8 @@ impl Default for TuiTheme {
             tab_text: TuiColor::Green,
             hops_table_header_bg: TuiColor::White,
             hops_table_header_text: TuiColor::Black,
-            hops_table_row_active_text: TuiColor::Gray,
+            hops_table_row_active_bg: TuiColor::Gray,
+            hops_table_row_active_text: TuiColor::Black,
             hops_table_row_inactive_text: TuiColor::DarkGray,
             hops_chart_selected: TuiColor::Green,
             hops_chart_unselected: TuiColor::Gray,
@@ -153,6 +156,10 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::HopsTableHeaderTextColor)
                 .or(cfg.hops_table_header_text_color.as_ref())
                 .unwrap_or(&Self::default().hops_table_header_text),
+            hops_table_row_active_bg: *color_map
+                .get(&TuiThemeItem::HopsTableRowActiveBgColor)
+                .or(cfg.hops_table_row_active_bg_color.as_ref())
+                .unwrap_or(&Self::default().hops_table_row_active_bg),
             hops_table_row_active_text: *color_map
                 .get(&TuiThemeItem::HopsTableRowActiveTextColor)
                 .or(cfg.hops_table_row_active_text_color.as_ref())
@@ -286,6 +293,8 @@ pub enum TuiThemeItem {
     HopsTableHeaderBgColor,
     /// The color of text in the hops table header.
     HopsTableHeaderTextColor,
+    /// The color of background of active rows in the hops table.
+    HopsTableRowActiveBgColor,
     /// The color of text of active rows in the hops table.
     HopsTableRowActiveTextColor,
     /// The color of text of inactive rows in the hops table.

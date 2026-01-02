@@ -9,7 +9,7 @@ use itertools::Itertools;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::prelude::Line;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use std::fmt::Write;
 use std::net::IpAddr;
@@ -46,7 +46,6 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
     let widths = config.tui_columns.constraints(rect);
     let header = render_table_header(app.tui_config.theme, &config.tui_columns);
-    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let rows = app
         .tracer_data()
         .hops_for_flow(app.selected_flow)
@@ -75,7 +74,6 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         )
-        .row_highlight_style(selected_style)
         .column_spacing(1);
     f.render_stateful_widget(table, rect, &mut app.table_state);
 }
@@ -121,15 +119,18 @@ fn render_table_row(
             )
         })
         .collect();
-    let row_color = if is_in_round {
-        config.theme.hops_table_row_active_text
+
+    let style = if is_in_round {
+        Style::default()
+            .fg(config.theme.hops_table_row_active_text)
+            .bg(config.theme.hops_table_row_active_bg)
     } else {
-        config.theme.hops_table_row_inactive_text
+        Style::default().fg(config.theme.hops_table_row_inactive_text)
     };
     Row::new(cells)
         .height(row_height)
         .bottom_margin(0)
-        .style(Style::default().fg(row_color))
+        .style(style)
 }
 
 ///Returns a Cell matched on short char of the Column

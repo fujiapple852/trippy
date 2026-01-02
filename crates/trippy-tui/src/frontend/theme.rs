@@ -22,6 +22,8 @@ pub struct Theme {
     pub hops_table_header_bg: Color,
     /// The color of text in the hops table header.
     pub hops_table_header_text: Color,
+    /// The color of background of active rows in the hops table.
+    pub hops_table_row_active_bg: Color,
     /// The color of text of active rows in the hops table.
     pub hops_table_row_active_text: Color,
     /// The color of text of inactive rows in the hops table.
@@ -89,6 +91,7 @@ impl From<TuiTheme> for Theme {
             tab_text: Color::from(value.tab_text),
             hops_table_header_bg: Color::from(value.hops_table_header_bg),
             hops_table_header_text: Color::from(value.hops_table_header_text),
+            hops_table_row_active_bg: Color::from(value.hops_table_row_active_bg),
             hops_table_row_active_text: Color::from(value.hops_table_row_active_text),
             hops_table_row_inactive_text: Color::from(value.hops_table_row_inactive_text),
             hops_chart_selected: Color::from(value.hops_chart_selected),
