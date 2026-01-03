@@ -32,6 +32,8 @@ pub struct TuiApp {
     pub selected_flow: FlowId,
     /// Ordered flow ids with counts.
     pub flow_counts: Vec<(FlowId, usize)>,
+    /// The index of the first visible flow in the flows chart.
+    pub flows_start_index: usize,
     pub resolver: DnsResolver,
     pub geoip_lookup: GeoIpLookup,
     pub show_help: bool,
@@ -62,6 +64,7 @@ impl TuiApp {
             selected_hop_address: 0,
             selected_flow: State::default_flow_id(),
             flow_counts: vec![],
+            flows_start_index: 0,
             resolver,
             geoip_lookup,
             show_help: false,
@@ -371,10 +374,12 @@ impl TuiApp {
                 self.selected_flow = FlowId(0);
                 self.show_flows = false;
                 self.selected_hop_address = 0;
+                self.flows_start_index = 0;
             } else if self.flow_count() > 0 {
                 self.selected_flow = FlowId(1);
                 self.show_flows = true;
                 self.selected_hop_address = 0;
+                self.flows_start_index = 0;
             }
         }
     }
