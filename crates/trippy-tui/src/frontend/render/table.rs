@@ -9,7 +9,7 @@ use itertools::Itertools;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::prelude::Line;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::Style;
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Row, Table};
 use std::fmt::Write;
 use std::net::IpAddr;
@@ -46,7 +46,14 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
     let config = &app.tui_config;
     let widths = config.tui_columns.constraints(rect);
     let header = render_table_header(app.tui_config.theme, &config.tui_columns);
-    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
+    let selected_style = match app.selected_hop() {
+        Some(hop) if !app.tracer_data().is_in_round(hop, app.selected_flow) => Style::default()
+            .fg(config.theme.hops_table_row_inactive_selected_text)
+            .bg(config.theme.hops_table_row_inactive_selected_bg),
+        _ => Style::default()
+            .fg(config.theme.hops_table_row_active_selected_text)
+            .bg(config.theme.hops_table_row_active_selected_bg),
+    };
     let rows = app
         .tracer_data()
         .hops_for_flow(app.selected_flow)
