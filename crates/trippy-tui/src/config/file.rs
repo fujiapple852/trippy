@@ -291,6 +291,10 @@ pub struct ConfigThemeColors {
     pub hops_table_header_text_color: Option<TuiColor>,
     pub hops_table_row_active_text_color: Option<TuiColor>,
     pub hops_table_row_inactive_text_color: Option<TuiColor>,
+    pub hops_table_row_active_selected_bg_color: Option<TuiColor>,
+    pub hops_table_row_active_selected_text_color: Option<TuiColor>,
+    pub hops_table_row_inactive_selected_bg_color: Option<TuiColor>,
+    pub hops_table_row_inactive_selected_text_color: Option<TuiColor>,
     pub hops_chart_selected_color: Option<TuiColor>,
     pub hops_chart_unselected_color: Option<TuiColor>,
     pub hops_chart_axis_color: Option<TuiColor>,
@@ -331,6 +335,16 @@ impl Default for ConfigThemeColors {
             hops_table_header_text_color: Some(theme.hops_table_header_text),
             hops_table_row_active_text_color: Some(theme.hops_table_row_active_text),
             hops_table_row_inactive_text_color: Some(theme.hops_table_row_inactive_text),
+            hops_table_row_active_selected_bg_color: Some(theme.hops_table_row_active_selected_bg),
+            hops_table_row_active_selected_text_color: Some(
+                theme.hops_table_row_active_selected_text,
+            ),
+            hops_table_row_inactive_selected_bg_color: Some(
+                theme.hops_table_row_inactive_selected_bg,
+            ),
+            hops_table_row_inactive_selected_text_color: Some(
+                theme.hops_table_row_inactive_selected_text,
+            ),
             hops_chart_selected_color: Some(theme.hops_chart_selected),
             hops_chart_unselected_color: Some(theme.hops_chart_unselected),
             hops_chart_axis_color: Some(theme.hops_chart_axis),

@@ -29,6 +29,14 @@ pub struct TuiTheme {
     pub hops_table_row_active_text: TuiColor,
     /// The color of text of inactive rows in the hops table.
     pub hops_table_row_inactive_text: TuiColor,
+    /// The background color of selected active rows in the hops table.
+    pub hops_table_row_active_selected_bg: TuiColor,
+    /// The color of text of selected active rows in the hops table.
+    pub hops_table_row_active_selected_text: TuiColor,
+    /// The background color of selected inactive rows in the hops table.
+    pub hops_table_row_inactive_selected_bg: TuiColor,
+    /// The color of text of selected inactive rows in the hops table.
+    pub hops_table_row_inactive_selected_text: TuiColor,
     /// The color of the selected series in the hops chart.
     pub hops_chart_selected: TuiColor,
     /// The color of the unselected series in the hops chart.
@@ -94,6 +102,10 @@ impl Default for TuiTheme {
             hops_table_header_text: TuiColor::Black,
             hops_table_row_active_text: TuiColor::Gray,
             hops_table_row_inactive_text: TuiColor::DarkGray,
+            hops_table_row_active_selected_bg: TuiColor::Gray,
+            hops_table_row_active_selected_text: TuiColor::Black,
+            hops_table_row_inactive_selected_bg: TuiColor::DarkGray,
+            hops_table_row_inactive_selected_text: TuiColor::Black,
             hops_chart_selected: TuiColor::Green,
             hops_chart_unselected: TuiColor::Gray,
             hops_chart_axis: TuiColor::DarkGray,
@@ -161,6 +173,22 @@ impl From<(HashMap<TuiThemeItem, TuiColor>, ConfigThemeColors)> for TuiTheme {
                 .get(&TuiThemeItem::HopsTableRowInactiveTextColor)
                 .or(cfg.hops_table_row_inactive_text_color.as_ref())
                 .unwrap_or(&Self::default().hops_table_row_inactive_text),
+            hops_table_row_active_selected_bg: *color_map
+                .get(&TuiThemeItem::HopsTableRowActiveSelectedBgColor)
+                .or(cfg.hops_table_row_active_selected_bg_color.as_ref())
+                .unwrap_or(&Self::default().hops_table_row_active_selected_bg),
+            hops_table_row_active_selected_text: *color_map
+                .get(&TuiThemeItem::HopsTableRowActiveSelectedTextColor)
+                .or(cfg.hops_table_row_active_selected_text_color.as_ref())
+                .unwrap_or(&Self::default().hops_table_row_active_selected_text),
+            hops_table_row_inactive_selected_bg: *color_map
+                .get(&TuiThemeItem::HopsTableRowInactiveSelectedBgColor)
+                .or(cfg.hops_table_row_inactive_selected_bg_color.as_ref())
+                .unwrap_or(&Self::default().hops_table_row_inactive_selected_bg),
+            hops_table_row_inactive_selected_text: *color_map
+                .get(&TuiThemeItem::HopsTableRowInactiveSelectedTextColor)
+                .or(cfg.hops_table_row_inactive_selected_text_color.as_ref())
+                .unwrap_or(&Self::default().hops_table_row_inactive_selected_text),
             hops_chart_selected: *color_map
                 .get(&TuiThemeItem::HopsChartSelectedColor)
                 .or(cfg.hops_chart_selected_color.as_ref())
@@ -290,6 +318,14 @@ pub enum TuiThemeItem {
     HopsTableRowActiveTextColor,
     /// The color of text of inactive rows in the hops table.
     HopsTableRowInactiveTextColor,
+    /// The background color of selected active rows in the hops table.
+    HopsTableRowActiveSelectedBgColor,
+    /// The color of text of selected active rows in the hops table.
+    HopsTableRowActiveSelectedTextColor,
+    /// The background color of selected inactive rows in the hops table.
+    HopsTableRowInactiveSelectedBgColor,
+    /// The color of text of selected inactive rows in the hops table.
+    HopsTableRowInactiveSelectedTextColor,
     /// The color of the selected series in the hops chart.
     HopsChartSelectedColor,
     /// The color of the unselected series in the hops chart.
