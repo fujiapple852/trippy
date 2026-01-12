@@ -26,6 +26,14 @@ pub struct Theme {
     pub hops_table_row_active_text: Color,
     /// The color of text of inactive rows in the hops table.
     pub hops_table_row_inactive_text: Color,
+    /// The background color of selected active rows in the hops table.
+    pub hops_table_row_active_selected_bg: Color,
+    /// The color of text of selected active rows in the hops table.
+    pub hops_table_row_active_selected_text: Color,
+    /// The background color of selected inactive rows in the hops table.
+    pub hops_table_row_inactive_selected_bg: Color,
+    /// The color of text of selected inactive rows in the hops table.
+    pub hops_table_row_inactive_selected_text: Color,
     /// The color of the selected series in the hops chart.
     pub hops_chart_selected: Color,
     /// The color of the unselected series in the hops chart.
@@ -91,6 +99,16 @@ impl From<TuiTheme> for Theme {
             hops_table_header_text: Color::from(value.hops_table_header_text),
             hops_table_row_active_text: Color::from(value.hops_table_row_active_text),
             hops_table_row_inactive_text: Color::from(value.hops_table_row_inactive_text),
+            hops_table_row_active_selected_bg: Color::from(value.hops_table_row_active_selected_bg),
+            hops_table_row_active_selected_text: Color::from(
+                value.hops_table_row_active_selected_text,
+            ),
+            hops_table_row_inactive_selected_bg: Color::from(
+                value.hops_table_row_inactive_selected_bg,
+            ),
+            hops_table_row_inactive_selected_text: Color::from(
+                value.hops_table_row_inactive_selected_text,
+            ),
             hops_chart_selected: Color::from(value.hops_chart_selected),
             hops_chart_unselected: Color::from(value.hops_chart_unselected),
             hops_chart_axis: Color::from(value.hops_chart_axis),

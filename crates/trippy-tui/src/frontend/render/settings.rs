@@ -432,6 +432,22 @@ fn format_theme_settings(app: &TuiApp) -> Vec<SettingsItem> {
             theme::fmt_color(theme.hops_table_row_inactive_text),
         ),
         SettingsItem::new(
+            "hops-table-row-active-selected-bg-color",
+            theme::fmt_color(theme.hops_table_row_active_selected_bg),
+        ),
+        SettingsItem::new(
+            "hops-table-row-active-selected-text-color",
+            theme::fmt_color(theme.hops_table_row_active_selected_text),
+        ),
+        SettingsItem::new(
+            "hops-table-row-inactive-selected-bg-color",
+            theme::fmt_color(theme.hops_table_row_inactive_selected_bg),
+        ),
+        SettingsItem::new(
+            "hops-table-row-inactive-selected-text-color",
+            theme::fmt_color(theme.hops_table_row_inactive_selected_text),
+        ),
+        SettingsItem::new(
             "hops-chart-selected-color",
             theme::fmt_color(theme.hops_chart_selected),
         ),
@@ -539,7 +555,7 @@ pub fn settings_tabs() -> [(String, usize); 7] {
         (t!("settings_tab_dns_title").to_string(), 5),
         (t!("settings_tab_geoip_title").to_string(), 1),
         (t!("settings_tab_bindings_title").to_string(), 37),
-        (t!("settings_tab_theme_title").to_string(), 33),
+        (t!("settings_tab_theme_title").to_string(), 35),
         (t!("settings_tab_columns_title").to_string(), 0),
     ]
 }
