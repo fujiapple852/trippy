@@ -39,7 +39,7 @@ clap = { version = "4.5.20", default-features = false }
 clap-cargo = "0.15.2"
 clap_complete = "4.4.9"
 clap_mangen = "0.2.20"
-comfy-table = { version = "7.1.4", default-features = false }
+comfy-table = { version = "7.2.2", default-features = false }
 crossbeam = "0.8.4"
 crossterm = { version = "0.28.1", default-features = false }
 csv = "1.4.0"
