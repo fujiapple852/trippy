@@ -33,7 +33,7 @@ anyhow = "1.0.91"
 arrayvec = { version = "0.7.6", default-features = false }
 bitflags = "2.10.0"
 caps = "0.5.6"
-chrono = { version = "0.4.42", default-features = false }
+chrono = { version = "0.4.43", default-features = false }
 chrono-tz = "0.10.4"
 clap = { version = "4.5.20", default-features = false }
 clap-cargo = "0.15.2"
