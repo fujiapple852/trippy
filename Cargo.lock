@@ -1212,9 +1212,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.177"
+version = "0.2.180"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2874a2af47a2325c2001a6e6fad9b16a53b802102b528163885171cf92b15976"
+checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "libloading"
@@ -1363,6 +1363,18 @@ name = "nix"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "225e7cfe711e0ba79a68baeddb2982723e4235247aefce1482f2f16c27865b66"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -2345,7 +2357,7 @@ dependencies = [
  "ipnetwork",
  "itertools 0.14.0",
  "mockall",
- "nix",
+ "nix 0.31.1",
  "parking_lot",
  "paste",
  "rand 0.9.2",
@@ -2394,7 +2406,7 @@ version = "0.14.0-dev"
 dependencies = [
  "anyhow",
  "caps",
- "nix",
+ "nix 0.31.1",
  "paste",
  "thiserror 2.0.17",
  "windows-sys 0.52.0",
@@ -2453,7 +2465,7 @@ dependencies = [
  "ipnet",
  "libc",
  "log",
- "nix",
+ "nix 0.30.1",
  "thiserror 2.0.17",
  "tokio",
  "tokio-util",
