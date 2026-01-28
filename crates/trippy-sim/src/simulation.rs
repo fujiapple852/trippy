@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use trippy_core::Port;
 
 /// A simulated trace.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Simulation {
     pub name: String,
     pub rounds: Option<usize>,
@@ -28,7 +28,8 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn latest_ttl(&self) -> u8 {
+    #[must_use]
+    pub(crate) fn latest_ttl(&self) -> u8 {
         if self.hops.is_empty() {
             0
         } else {
@@ -38,7 +39,7 @@ impl Simulation {
 }
 
 /// A simulated hop.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Hop {
     /// The simulated time-to-live (TTL).
     pub ttl: u8,
@@ -47,7 +48,7 @@ pub struct Hop {
 }
 
 /// A simulated probe response.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "tag")]
 pub enum Response {
     /// Simulate a hop which does not response to probes.
@@ -57,7 +58,7 @@ pub enum Response {
 }
 
 /// A simulated probe response with a single addr and fixed ttl.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SingleHost {
     /// The simulated host responding to the probe.
     pub addr: IpAddr,
