@@ -1,5 +1,7 @@
 use crate::simulation::{Response, Simulation, SingleHost};
+use crate::tun_device::{TUN_NETWORK_ADDR_V4, TUN_NETWORK_ADDR_V6};
 use std::cell::RefCell;
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -49,7 +51,12 @@ impl Tracer {
 
     pub fn trace(&self) -> anyhow::Result<()> {
         let result = RefCell::new(Ok(()));
+        let source_addr = Some(match self.sim.target {
+            IpAddr::V4(_) => IpAddr::V4(TUN_NETWORK_ADDR_V4),
+            IpAddr::V6(_) => IpAddr::V6(TUN_NETWORK_ADDR_V6),
+        });
         let tracer = Builder::new(self.sim.target)
+            .source_addr(source_addr)
             .privilege_mode(PrivilegeMode::from(self.sim.privilege_mode))
             .trace_identifier(self.sim.icmp_identifier)
             .initial_sequence(

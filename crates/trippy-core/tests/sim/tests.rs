@@ -36,19 +36,27 @@ macro_rules! sim {
 }
 
 #[test_case(sim!("ipv4_icmp.toml"))]
+#[test_case(sim!("ipv6_icmp.toml"))]
 #[test_case(sim!("ipv4_icmp_gaps.toml"))]
 #[test_case(sim!("ipv4_icmp_ooo.toml"))]
 #[test_case(sim!("ipv4_icmp_min.toml"))]
+#[test_case(sim!("ipv6_icmp_min.toml"))]
 #[test_case(sim!("ipv4_icmp_pattern.toml"))]
+#[test_case(sim!("ipv6_icmp_pattern.toml"))]
 #[test_case(sim!("ipv4_icmp_quick.toml"))]
 #[test_case(sim!("ipv4_icmp_wrap.toml"))]
 #[test_case(sim!("ipv4_icmp_tos.toml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_src.toml"))]
+#[test_case(sim!("ipv6_udp_classic_fixed_src.toml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_dest.toml"))]
+#[test_case(sim!("ipv6_udp_classic_fixed_dest.toml"))]
 #[test_case(sim!("ipv4_udp_paris_fixed_both.toml"))]
+#[test_case(sim!("ipv6_udp_paris_fixed_both.toml"))]
 #[test_case(sim!("ipv4_udp_dublin_fixed_both.toml"))]
+#[test_case(sim!("ipv6_udp_dublin_fixed_both.toml"))]
 #[test_case(sim!("ipv4_udp_classic_privileged_tos.toml"))]
 #[test_case(sim!("ipv4_tcp_fixed_dest.toml"))]
+#[test_case(sim!("ipv6_tcp_fixed_dest.toml"))]
 fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }
@@ -57,6 +65,8 @@ fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
 #[cfg(target_os = "macos")]
 #[test_case(sim!("ipv4_udp_classic_unprivileged.toml"))]
 #[test_case(sim!("ipv4_udp_classic_unprivileged_tos.toml"))]
+#[test_case(sim!("ipv6_udp_classic_unprivileged.toml"))]
+#[test_case(sim!("ipv6_udp_classic_unprivileged_tos.toml"))]
 fn test_simulation_macos(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }

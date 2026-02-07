@@ -47,12 +47,12 @@ derive_more = { version = "2.1.1", default-features = false }
 dns-lookup = "3.0.1"
 encoding_rs_io = "0.1.7"
 etcetera = "0.10.0"
+futures-concurrency = "7.6.3"
 hex-literal = "1.1.0"
 hickory-resolver = "0.24.4"
 humantime = "2.3.0"
 indexmap = { version = "2.13.0", default-features = false }
 insta = "1.46.3"
-ipnetwork = "0.21.1"
 itertools = "0.14.0"
 maxminddb = "0.27.1"
 mockall = "0.14.0"
@@ -77,7 +77,7 @@ toml = { version = "0.9.11", default-features = false, features = ["serde"] }
 tracing = "0.1.44"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.20", default-features = false }
-tun = "0.8.5"
+tun-rs = "2.7.8"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
 widestring = "1.2.1"

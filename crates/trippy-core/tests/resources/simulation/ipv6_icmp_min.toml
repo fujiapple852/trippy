@@ -1,0 +1,17 @@
+name = "IPv6/ICMP with a minimum packet size"
+target = "fd00:10::103"
+protocol = "Icmp"
+icmp_identifier = 5
+packet_size = 48
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "fd00:10::101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "fd00:10::102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "fd00:10::103", rtt_ms = 30 }

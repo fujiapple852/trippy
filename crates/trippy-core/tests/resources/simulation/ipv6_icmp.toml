@@ -1,0 +1,32 @@
+name = "IPv6/ICMP"
+target = "fd00:10::107"
+protocol = "Icmp"
+icmp_identifier = 1
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "fd00:10::101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "fd00:10::102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "fd00:10::103", rtt_ms = 30 }
+
+[[hops]]
+ttl = 4
+resp = { tag = "SingleHost", addr = "fd00:10::104", rtt_ms = 40 }
+
+[[hops]]
+ttl = 5
+resp = { tag = "SingleHost", addr = "fd00:10::105", rtt_ms = 50 }
+
+[[hops]]
+ttl = 6
+resp = { tag = "SingleHost", addr = "fd00:10::106", rtt_ms = 60 }
+
+[[hops]]
+ttl = 7
+resp = { tag = "SingleHost", addr = "fd00:10::107", rtt_ms = 70 }

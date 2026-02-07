@@ -1,0 +1,17 @@
+name = "IPv6/UDP classic with a fixed dest port"
+target = "fd00:10::103"
+protocol = "Udp"
+port_direction = { tag = "FixedDest", value = 33434 }
+multipath_strategy = "Classic"
+
+[[hops]]
+ttl = 1
+resp = { tag = "SingleHost", addr = "fd00:10::101", rtt_ms = 10 }
+
+[[hops]]
+ttl = 2
+resp = { tag = "SingleHost", addr = "fd00:10::102", rtt_ms = 20 }
+
+[[hops]]
+ttl = 3
+resp = { tag = "SingleHost", addr = "fd00:10::103", rtt_ms = 20 }
