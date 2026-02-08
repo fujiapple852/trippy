@@ -4,7 +4,7 @@ protocol = "Icmp"
 icmp_identifier = 7
 min_round_duration = 250
 max_round_duration = 250
-grace_period = 50
+grace_duration = 50
 
 [[hops]]
 ttl = 1

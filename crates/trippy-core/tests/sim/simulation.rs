@@ -4,6 +4,7 @@ use trippy_core::Port;
 
 /// A simulated trace.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Simulation {
     pub name: String,
     pub rounds: Option<usize>,
@@ -39,6 +40,7 @@ impl Simulation {
 
 /// A simulated hop.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Hop {
     /// The simulated time-to-live (TTL).
     pub ttl: u8,
@@ -58,6 +60,7 @@ pub enum Response {
 
 /// A simulated probe response with a single addr and fixed ttl.
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SingleHost {
     /// The simulated host responding to the probe.
     pub addr: IpAddr,
@@ -109,6 +112,7 @@ pub enum PortDirection {
 }
 
 #[derive(Copy, Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FixedBoth {
     pub src: u16,
     pub dest: u16,

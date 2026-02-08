@@ -2,7 +2,7 @@ name = "IPv4/ICMP with out of order responses"
 target = "10.0.0.105"
 protocol = "Icmp"
 icmp_identifier = 4
-grace_period = 300
+grace_duration = 300
 
 [[hops]]
 ttl = 1
