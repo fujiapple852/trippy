@@ -43,6 +43,12 @@ pub fn udp_ipv6_checksum(data: &[u8], src_addr: Ipv6Addr, dest_addr: Ipv6Addr) -
     ipv6_checksum(data, 3, src_addr, dest_addr, IpProtocol::Udp)
 }
 
+/// Calculate the checksum for an `IPv6` `TCP` packet.
+#[must_use]
+pub fn tcp_ipv6_checksum(data: &[u8], src_addr: Ipv6Addr, dest_addr: Ipv6Addr) -> u16 {
+    ipv6_checksum(data, 8, src_addr, dest_addr, IpProtocol::Tcp)
+}
+
 fn checksum(data: &[u8], ignore_word: usize) -> u16 {
     if data.is_empty() {
         return 0;
@@ -201,6 +207,14 @@ mod tests {
             0x00, 0x00,
         ];
         assert_eq!(61454, udp_ipv6_checksum(&bytes, src_addr, dest_addr));
+    }
+
+    #[test]
+    fn test_tcp_ipv6_checksum() {
+        let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a").unwrap();
+        let dest_addr = Ipv6Addr::from_str("2404:6800:4003:c03::bc").unwrap();
+        let bytes = hex!("fa 54 14 6c 96 16 44 89 08 f0 39 2b 50 10 08 00 c7 60 00 00");
+        assert_eq!(0xc760, tcp_ipv6_checksum(&bytes, src_addr, dest_addr));
     }
 
     #[test]
