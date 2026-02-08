@@ -1,6 +1,7 @@
 //! Packet wire format parsing and building.
 //!
 //! The following packet are supported:
+//! - `IP`
 //! - `ICMPv4`
 //! - `ICMPv6`
 //! - `IPv4`
@@ -71,6 +72,9 @@ pub mod icmpv6;
 
 /// `ICMP` extensions.
 pub mod icmp_extension;
+
+/// `IP` packets.
+pub mod ip;
 
 /// `IPv4` packets.
 pub mod ipv4;
