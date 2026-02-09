@@ -1296,7 +1296,7 @@ mod state {
         use crate::TypeOfService;
         use crate::probe::{IcmpPacketCode, IcmpPacketType};
         use crate::types::MaxInflight;
-        use rand::Rng;
+        use rand::RngExt;
         use std::net::{IpAddr, Ipv4Addr};
         use std::time::Duration;
 
