@@ -1,0 +1,147 @@
+name: Dependabot Serial Merge
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Log planned actions without rebasing or enabling auto-merge"
+        required: false
+        default: true
+        type: boolean
+      pr_number:
+        description: "Optional PR number to target instead of auto-selecting"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-serial-merge
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pick the active Dependabot PR
+        id: pick
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TARGET_PR: ${{ inputs.pr_number || '' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+        run: |
+          prs="$(
+            gh pr list \
+              --repo "$REPO" \
+              --base master \
+              --state open \
+              --limit 100 \
+              --json number,url,isDraft,mergeStateStatus,reviewDecision,author,autoMergeRequest
+          )"
+
+          dependabot_prs="$(
+            jq -c '
+              [
+                .[]
+                | select(.author.login == "app/dependabot" or .author.login == "dependabot[bot]")
+              ]
+              | sort_by(.number)
+            ' <<<"$prs"
+          )"
+
+          if [ "$(jq 'length' <<<"$dependabot_prs")" -eq 0 ]; then
+            echo "number=" >>"$GITHUB_OUTPUT"
+            echo "url=" >>"$GITHUB_OUTPUT"
+            echo "behind=false" >>"$GITHUB_OUTPUT"
+            echo "auto_merge_enabled=false" >>"$GITHUB_OUTPUT"
+            echo "dry_run=$DRY_RUN" >>"$GITHUB_OUTPUT"
+            echo "No open Dependabot PRs found."
+            exit 0
+          fi
+
+          if [ -n "$TARGET_PR" ]; then
+            active="$(
+              jq -c --arg target "$TARGET_PR" '
+                map(select((.number | tostring) == $target))
+                | first
+              ' <<<"$dependabot_prs"
+            )"
+
+            if [ "$active" = "null" ]; then
+              echo "Requested Dependabot PR #$TARGET_PR was not found."
+              exit 1
+            fi
+          else
+            active="$(
+              jq -c '
+                map(select(.autoMergeRequest != null))
+                | first
+              ' <<<"$dependabot_prs"
+            )"
+
+            if [ "$active" = "null" ]; then
+              active="$(jq -c 'first' <<<"$dependabot_prs")"
+            fi
+          fi
+
+          echo "number=$(jq -r '.number' <<<"$active")" >>"$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<<"$active")" >>"$GITHUB_OUTPUT"
+          echo "dry_run=$DRY_RUN" >>"$GITHUB_OUTPUT"
+
+          if [ "$(jq -r '.mergeStateStatus == "BEHIND"' <<<"$active")" = "true" ]; then
+            echo "behind=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "behind=false" >>"$GITHUB_OUTPUT"
+          fi
+
+          if [ "$(jq -r '.autoMergeRequest != null' <<<"$active")" = "true" ]; then
+            echo "auto_merge_enabled=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "auto_merge_enabled=false" >>"$GITHUB_OUTPUT"
+          fi
+
+          review_decision="$(jq -r '.reviewDecision // "NONE"' <<<"$active")"
+          auto_merge_state="$(jq -r 'if .autoMergeRequest == null then "disabled" else "enabled" end' <<<"$active")"
+
+          echo "Selected PR #$(jq -r '.number' <<<"$active")"
+          echo "mergeStateStatus=$(jq -r '.mergeStateStatus' <<<"$active")"
+          echo "reviewDecision=$review_decision"
+          echo "autoMergeRequest=$auto_merge_state"
+
+      - name: Rebase the active PR onto master
+        if: steps.pick.outputs.number != '' && steps.pick.outputs.behind == 'true' && steps.pick.outputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pick.outputs.number }}
+        run: |
+          gh pr update-branch "$PR_NUMBER" --repo "$REPO" --rebase
+
+      - name: Report planned rebase in dry-run mode
+        if: steps.pick.outputs.number != '' && steps.pick.outputs.behind == 'true' && steps.pick.outputs.dry_run == 'true'
+        env:
+          PR_NUMBER: ${{ steps.pick.outputs.number }}
+        run: |
+          echo "Dry run: would rebase PR #$PR_NUMBER onto master."
+
+      - name: Enable auto-merge for the active PR
+        if: steps.pick.outputs.url != '' && steps.pick.outputs.auto_merge_enabled != 'true' && steps.pick.outputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.pick.outputs.url }}
+        run: |
+          gh pr merge --auto --rebase "$PR_URL"
+
+      - name: Report planned auto-merge in dry-run mode
+        if: steps.pick.outputs.url != '' && steps.pick.outputs.auto_merge_enabled != 'true' && steps.pick.outputs.dry_run == 'true'
+        env:
+          PR_URL: ${{ steps.pick.outputs.url }}
+        run: |
+          echo "Dry run: would enable auto-merge for $PR_URL."
