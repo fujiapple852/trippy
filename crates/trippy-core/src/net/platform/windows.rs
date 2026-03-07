@@ -671,7 +671,7 @@ fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr>
 
 #[expect(unsafe_code)]
 fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr> {
-    let ptr = sockaddr as *const SOCKADDR_STORAGE;
+    let ptr = std::ptr::from_ref(sockaddr);
     let af = sockaddr.ss_family;
     if af == AF_INET {
         let sockaddr_in_ptr = ptr.cast::<SOCKADDR_IN>();
