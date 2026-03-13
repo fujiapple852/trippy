@@ -1,3 +1,4 @@
+pub mod alert;
 pub mod app;
 pub mod bar;
 pub mod body;

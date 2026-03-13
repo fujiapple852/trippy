@@ -492,6 +492,19 @@ ru = "Помощь"
 es = "Ayuda"
 de = "Hilfe"
 
+[title_alert]
+en = "Alert"
+fr = "Alerte"
+tr = "Uyarı"
+it = "Avviso"
+pt = "Alerta"
+zh = "警报"
+zh-TW = "警報"
+sv = "Varning"
+ru = "Предупреждение"
+es = "Alerta"
+de = "Warnung"
+
 [title_settings]
 en = "Settings"
 fr = "Paramètres"
@@ -829,6 +842,19 @@ sv = "Upphovsrätt 2022 Trippy-bidragsgivare"
 ru = "Авторское право 2022 Участники Trippy"
 es = "Derechos de autor 2022 Contribuidores de Trippy"
 de = "Copyright 2022 Trippy Mitwirkende"
+
+[alert_flows]
+en = "Flows require the udp/dublin or udp/paris ECMP strategy to be enabled"
+fr = "Les flux nécessitent que la stratégie ECMP udp/dublin ou udp/paris soit activée"
+tr = "Akışlar, udp/dublin veya udp/paris ECMP stratejisinin etkinleştirilmesini gerektirir"
+it = "I flussi richiedono che la strategia ECMP udp/dublin o udp/paris sia abilitata"
+pt = "Os fluxos exigem que a estratégia ECMP udp/dublin ou udp/paris esteja ativada"
+zh = "流量需要启用 udp/dublin 或 udp/paris ECMP 策略"
+zh-TW = "流量需要啟用 udp/dublin 或 udp/paris ECMP 策略"
+sv = "Flöden kräver att ECMP-strategin udp/dublin eller udp/paris är aktiverad"
+ru = "Потоки требуют, чтобы была включена стратегия ECMP udp/dublin или udp/paris"
+es = "Los flujos requieren que la estrategia ECMP udp/dublin o udp/paris esté habilitada"
+de = "Flüsse erfordern, dass die ECMP-Strategie udp/dublin oder udp/paris aktiviert ist"
 
 [geoip_not_enabled]
 en = "GeoIp not enabled"
