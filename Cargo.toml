@@ -35,7 +35,7 @@ bitflags = "2.11.0"
 caps = "0.5.6"
 chrono = { version = "0.4.44", default-features = false }
 chrono-tz = "0.10.4"
-clap = { version = "4.5.20", default-features = false }
+clap = { version = "4.5.60", default-features = false }
 clap-cargo = "0.15.2"
 clap_complete = "4.4.9"
 clap_mangen = "0.2.20"
