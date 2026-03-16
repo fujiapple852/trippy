@@ -76,7 +76,7 @@ tokio-util = "0.7.18"
 toml = { version = "1.0.6", default-features = false, features = ["serde"] }
 tracing = "0.1.44"
 tracing-chrome = "0.7.2"
-tracing-subscriber = { version = "0.3.20", default-features = false }
+tracing-subscriber = { version = "0.3.23", default-features = false }
 tun-rs = "2.8.2"
 unic-langid = "0.9.6"
 unicode-width = "0.2.0"
