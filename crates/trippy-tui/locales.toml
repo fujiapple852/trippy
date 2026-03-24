@@ -10,6 +10,7 @@ sv = "trippy"
 ru = "trippy"
 es = "trippy"
 de = "trippy"
+ja = "trippy"
 
 [auto]
 en = "auto"
@@ -23,6 +24,7 @@ sv = "automatisk"
 ru = "авто"
 es = "automático"
 de = "auto"
+ja = "自動"
 
 [on]
 en = "on"
@@ -36,6 +38,7 @@ sv = "på"
 ru = "вкл"
 es = "activo"
 de = "an"
+ja = "オン"
 
 [off]
 en = "off"
@@ -49,6 +52,7 @@ sv = "av"
 ru = "выкл"
 es = "inactivo"
 de = "aus"
+ja = "オフ"
 
 [yes]
 en = "Yes"
@@ -62,6 +66,7 @@ sv = "Ja"
 ru = "Да"
 es = "Sí"
 de = "Ja"
+ja = "はい"
 
 [no]
 en = "No"
@@ -75,6 +80,7 @@ sv = "Nej"
 ru = "Нет"
 es = "No"
 de = "Nein"
+ja = "いいえ"
 
 [none]
 en = "none"
@@ -88,6 +94,7 @@ sv = "ingen"
 ru = "нет"
 es = "ninguno"
 de = "keiner"
+ja = "なし"
 
 [hidden]
 en = "Hidden"
@@ -101,6 +108,7 @@ sv = "Dold"
 ru = "Скрыто"
 es = "Oculto"
 de = "Versteckt"
+ja = "非表示"
 
 [flow]
 en = "flow"
@@ -114,6 +122,7 @@ sv = "flöde"
 ru = "поток"
 es = "flujo"
 de = "fluss"
+ja = "フロー"
 
 [flows]
 en = "flows"
@@ -127,6 +136,7 @@ sv = "flöden"
 ru = "потоки"
 es = "flujos"
 de = "flüsse"
+ja = "フロー"
 
 [target]
 en = "Target"
@@ -140,6 +150,7 @@ sv = "Mål"
 ru = "Цель"
 es = "Objetivo"
 de = "Ziel"
+ja = "ターゲット"
 
 [status]
 en = "Status"
@@ -153,6 +164,7 @@ sv = "Status"
 ru = "Статус"
 es = "Estado"
 de = "Status"
+ja = "ステータス"
 
 [details]
 en = "detail"
@@ -166,6 +178,7 @@ sv = "detaljer"
 ru = "детали"
 es = "detalles"
 de = "detail"
+ja = "詳細"
 
 [privileged]
 en = "privileged"
@@ -179,6 +192,7 @@ sv = "privilegierad"
 ru = "привилегированный"
 es = "privilegiado"
 de = "privilegiert"
+ja = "特権"
 
 [unprivileged]
 en = "unprivileged"
@@ -192,6 +206,7 @@ sv = "oprivilegierad"
 ru = "непривилегированный"
 es = "no privilegiado"
 de = "unprivilegiert"
+ja = "非特権"
 
 [privacy]
 en = "privacy"
@@ -205,6 +220,7 @@ sv = "integritet"
 ru = "конфиденциальность"
 es = "privacidad"
 de = "datenschutz"
+ja = "プライバシー"
 
 [na]
 en = "n/a"
@@ -218,6 +234,7 @@ sv = "ej tillgänglig"
 ru = "н/д"
 es = "n/d"
 de = "n/a"
+ja = "N/A"
 
 [discovered]
 en = "discovered %{hop_count} hops"
@@ -231,6 +248,7 @@ sv = "upptäckte %{hop_count} hopp"
 ru = "обнаружено %{hop_count} прыжков"
 es = "se descubrieron %{hop_count} saltos"
 de = "%{hop_count} gefundene hops"
+ja = "%{hop_count} ホップを発見"
 
 [discovered_flows]
 en = "discovered %{hop_count} hops and %{flow_count} unique %{plural_flows}"
@@ -244,6 +262,7 @@ sv = "%{hop_count} hopp och unika %{flow_count} %{plural_flows} upptäckta"
 ru = "обнаружено %{hop_count} прыжков и %{flow_count} уникальных %{plural_flows}"
 es = "se descubrieron %{hop_count} saltos y %{flow_count} únicos %{plural_flows}"
 de = "%{hop_count} gefundene hops und %{flow_count} eindeutige %{plural_flows}"
+ja = "%{hop_count} ホップと %{flow_count} 個のユニークな%{plural_flows}を発見"
 
 [unknown]
 en = "unknown"
@@ -257,6 +276,7 @@ sv = "okänd"
 ru = "неизвестно"
 es = "desconocido"
 de = "unbekannt"
+ja = "不明"
 
 [icmp]
 en = "icmp"
@@ -270,6 +290,7 @@ sv = "icmp"
 ru = "icmp"
 es = "icmp"
 de = "icmp"
+ja = "icmp"
 
 [udp]
 en = "udp"
@@ -283,6 +304,7 @@ sv = "udp"
 ru = "udp"
 es = "udp"
 de = "udp"
+ja = "udp"
 
 [tcp]
 en = "tcp"
@@ -296,6 +318,7 @@ sv = "tcp"
 ru = "tcp"
 es = "tcp"
 de = "tcp"
+ja = "tcp"
 
 [status_failures]
 en = "%{failure_count} of %{total_probes} (%{failure_rate}%) probes failed"
@@ -309,6 +332,7 @@ sv = "%{failure_count} av %{total_probes} (%{failure_rate}%) misslyckade prober"
 ru = "%{failure_count} из %{total_probes} (%{failure_rate}%) зондов не удалось"
 es = "%{failure_count} de %{total_probes} (%{failure_rate}%) sondas fallaron"
 de = "%{failure_count} von %{total_probes} (%{failure_rate}%) sonden sind fehlgeschlagen"
+ja = "%{total_probes} 中 %{failure_count} (%{failure_rate}%) のプローブが失敗"
 
 [status_failed]
 en = "Failed"
@@ -322,6 +346,7 @@ sv = "Misslyckades"
 ru = "Не удалось"
 es = "Fallido"
 de = "Fehlgeschlagen"
+ja = "失敗"
 
 [status_running]
 en = "Running"
@@ -335,6 +360,7 @@ sv = "Kör"
 ru = "Запущен"
 es = "En ejecución"
 de = "Läuft"
+ja = "実行中"
 
 [status_frozen]
 en = "Frozen"
@@ -348,6 +374,7 @@ sv = "Frusen"
 ru = "Заморожен"
 es = "Congelado"
 de = "Eingefroren"
+ja = "停止中"
 
 [awaiting_data]
 en = "Awaiting data..."
@@ -361,6 +388,7 @@ sv = "Väntar på data..."
 ru = "Ожидание данных..."
 es = "Esperando datos..."
 de = "Warten auf Daten..."
+ja = "データ待機中..."
 
 [header_help]
 en = "help"
@@ -374,6 +402,7 @@ sv = "hjälp"
 ru = "помощь"
 es = "ayuda"
 de = "hilfe"
+ja = "ヘルプ"
 
 [header_settings]
 en = "settings"
@@ -387,6 +416,7 @@ sv = "inställningar"
 ru = "настройки"
 es = "configuraciones"
 de = "einstellungen"
+ja = "設定"
 
 [header_quit]
 en = "quit"
@@ -400,6 +430,7 @@ sv = "avsluta"
 ru = "Выход"
 es = "salir"
 de = "beenden"
+ja = "終了"
 
 [title_hops]
 en = "Hops"
@@ -413,6 +444,7 @@ sv = "Hopp"
 ru = "Прыжки"
 es = "Saltos"
 de = "Hops"
+ja = "ホップ"
 
 [title_frequency]
 en = "Frequency"
@@ -426,6 +458,7 @@ sv = "Frekvens"
 ru = "Частота"
 es = "Frecuencia"
 de = "Frequenz"
+ja = "頻度"
 
 [title_samples]
 en = "Samples"
@@ -439,6 +472,7 @@ sv = "Prover"
 ru = "Образцы"
 es = "Muestras"
 de = "Proben"
+ja = "サンプル"
 
 [title_traces]
 en = "Traces"
@@ -452,6 +486,7 @@ sv = "Spår"
 ru = "Следы"
 es = "Trazas"
 de = "Spuren"
+ja = "トレース"
 
 [title_flows]
 en = "Flows"
@@ -465,6 +500,7 @@ sv = "Flöden"
 ru = "Потоки"
 es = "Flujos"
 de = "Flüsse"
+ja = "フロー"
 
 [title_map]
 en = "Map"
@@ -478,6 +514,7 @@ sv = "Karta"
 ru = "Карта"
 es = "Mapa"
 de = "Karte"
+ja = "マップ"
 
 [title_help]
 en = "Help"
@@ -491,6 +528,7 @@ sv = "Hjälp"
 ru = "Помощь"
 es = "Ayuda"
 de = "Hilfe"
+ja = "ヘルプ"
 
 [title_settings]
 en = "Settings"
@@ -504,6 +542,7 @@ sv = "Inställningar"
 ru = "Настройки"
 es = "Configuraciones"
 de = "Einstellungen"
+ja = "設定"
 
 [bsod_failed]
 en = "Trippy Failed :("
@@ -517,6 +556,7 @@ sv = "Trippy misslyckades :("
 ru = "Trippy не удалось :("
 es = "Trippy tuvo un problema :("
 de = "Trippy ist fehlgeschlagen :("
+ja = "Trippy が失敗しました :("
 
 [bsod_quit]
 en = "Press q to quit"
@@ -530,6 +570,7 @@ sv = "Tryck på q för att avsluta"
 ru = "Нажмите q для выхода"
 es = "Presiona q para salir"
 de = "Drücken Sie q, um zu beenden"
+ja = "q を押して終了"
 
 [hop]
 en = "Hop"
@@ -543,6 +584,7 @@ sv = "Hopp"
 ru = "Прыжок"
 es = "Salto"
 de = "Hop"
+ja = "ホップ"
 
 [rtt]
 en = "RTT"
@@ -556,6 +598,7 @@ sv = "RTT"
 ru = "RTT"
 es = "RTT"
 de = "RTT"
+ja = "RTT"
 
 [title_chart]
 en = "Chart"
@@ -569,6 +612,7 @@ sv = "Diagram"
 ru = "Диаграмма"
 es = "Gráfico"
 de = "Diagramm"
+ja = "チャート"
 
 [samples]
 en = "Samples"
@@ -582,6 +626,7 @@ sv = "Prover"
 ru = "Образцы"
 es = "Muestras"
 de = "Proben"
+ja = "サンプル"
 
 [host]
 en = "Host"
@@ -595,6 +640,7 @@ sv = "Värd"
 ru = "Хост"
 es = "Host"
 de = "Host"
+ja = "ホスト"
 
 [no_response]
 en = "No response"
@@ -608,6 +654,7 @@ sv = "Inget svar"
 ru = "Нет ответа"
 es = "Sin respuesta"
 de = "Keine Antwort"
+ja = "応答なし"
 
 [dns_failed]
 en = "Failed"
@@ -621,6 +668,7 @@ sv = "Misslyckades"
 ru = "Не удалось"
 es = "Fallido"
 de = "Fehlgeschlagen"
+ja = "失敗"
 
 [dns_timeout]
 en = "Timeout"
@@ -634,6 +682,7 @@ sv = "Tidsgräns nådd"
 ru = "Тайм-аут"
 es = "Tiempo de espera"
 de = "Zeitüberschreitung"
+ja = "タイムアウト"
 
 [labels]
 en = "labels"
@@ -647,6 +696,7 @@ sv = "etiketter"
 ru = "метки"
 es = "etiquetas"
 de = "etiketten"
+ja = "ラベル"
 
 [not_enabled]
 en = "not enabled"
@@ -660,6 +710,7 @@ sv = "ej aktiverad"
 ru = "не активирован"
 es = "no habilitado"
 de = "nicht aktiviert"
+ja = "無効"
 
 [not_found]
 en = "not found"
@@ -673,6 +724,7 @@ sv = "hittades inte"
 ru = "не найдено"
 es = "no encontrado"
 de = "nicht gefunden"
+ja = "見つかりません"
 
 [awaited]
 en = "awaited"
@@ -686,6 +738,7 @@ sv = "väntade"
 ru = "ожидаемый"
 es = "esperado"
 de = "erwartet"
+ja = "待機中"
 
 [name]
 en = "Name"
@@ -699,6 +752,7 @@ sv = "Namn"
 ru = "Имя"
 es = "Nombre"
 de = "Name"
+ja = "名前"
 
 [info]
 en = "Info"
@@ -712,6 +766,7 @@ sv = "Information"
 ru = "Информация"
 es = "Información"
 de = "Info"
+ja = "情報"
 
 [geo]
 en = "Geo"
@@ -725,6 +780,7 @@ sv = "Geo"
 ru = "Гео"
 es = "Geo"
 de = "Geo"
+ja = "位置"
 
 [pos]
 en = "Pos"
@@ -738,6 +794,7 @@ sv = "Pos"
 ru = "Поз"
 es = "Pos"
 de = "Pos"
+ja = "座標"
 
 [ext]
 en = "Ext"
@@ -751,6 +808,7 @@ sv = "Ext"
 ru = "Расширение"
 es = "Ext"
 de = "Ext"
+ja = "拡張"
 
 [help_tagline]
 en = "A network diagnostic tool"
@@ -764,6 +822,7 @@ sv = "Ett nätverksdiagnostikverktyg"
 ru = "Инструмент диагностики сети"
 es = "Una herramienta de diagnóstico de red"
 de = "Ein Netzwerkdiagnosetool"
+ja = "ネットワーク診断ツール"
 
 [help_show_settings]
 en = "Press [%{key}] to show all settings"
@@ -777,6 +836,7 @@ sv = "Tryck på [%{key}] för att visa alla inställningar"
 ru = "Нажмите [%{key}], чтобы показать все настройки"
 es = "Presiona [%{key}] para mostrar todas las configuraciones"
 de = "Drücken Sie [%{key}], um alle Einstellungen anzuzeigen"
+ja = "[%{key}] を押してすべての設定を表示"
 
 [help_show_bindings]
 en = "Press [%{key}] to show all bindings"
@@ -790,6 +850,7 @@ sv = "Tryck på [%{key}] för att visa alla kortkommando"
 ru = "Нажмите [%{key}], чтобы показать все привязки"
 es = "Presiona [%{key}] para mostrar todos los atajos"
 de = "Drücken Sie [%{key}], um alle Tastenbelegungen anzuzeigen"
+ja = "[%{key}] を押してすべてのバインディングを表示"
 
 [help_show_columns]
 en = "Press [%{key}] to show all columns"
@@ -803,6 +864,7 @@ sv = "Tryck på [%{key}] för att visa alla kolumner"
 ru = "Нажмите [%{key}], чтобы показать все столбцы"
 es = "Presiona [%{key}] para mostrar todas las columnas"
 de = "Drücken Sie [%{key}], um alle Spalten anzuzeigen"
+ja = "[%{key}] を押してすべての列を表示"
 
 [help_license]
 en = "Distributed under the Apache License 2.0"
@@ -816,6 +878,7 @@ sv = "Distribueras under Apache License 2.0"
 ru = "Распространяется под лицензией Apache 2.0"
 es = "Distribuido bajo la Licencia Apache 2.0"
 de = "Verteilt unter der Apache-Lizenz 2.0"
+ja = "Apache License 2.0 の下で配布"
 
 [help_copyright]
 en = "Copyright 2022 Trippy Contributors"
@@ -829,6 +892,7 @@ sv = "Upphovsrätt 2022 Trippy-bidragsgivare"
 ru = "Авторское право 2022 Участники Trippy"
 es = "Derechos de autor 2022 Contribuidores de Trippy"
 de = "Copyright 2022 Trippy Mitwirkende"
+ja = "Copyright 2022 Trippy Contributors"
 
 [geoip_not_enabled]
 en = "GeoIp not enabled"
@@ -842,6 +906,7 @@ sv = "GeoIp inte aktiverad"
 ru = "GeoIp не активирован"
 es = "GeoIp no habilitado"
 de = "GeoIp nicht aktiviert"
+ja = "GeoIp が無効です"
 
 [geoip_no_data_for_hop]
 en = "No GeoIp data for hop"
@@ -855,6 +920,7 @@ sv = "Inga GeoIp-data för hopp"
 ru = "Нет данных GeoIp для прыжка"
 es = "No hay datos de GeoIp para el salto"
 de = "Keine GeoIp-Daten für den Hop"
+ja = "ホップの GeoIp データがありません"
 
 [geoip_multiple_data_for_hop]
 en = "Multiple GeoIp locations for hop"
@@ -868,6 +934,7 @@ sv = "Flera GeoIp-platser för hopp"
 ru = "Несколько местоположений GeoIp для прыжка"
 es = "Múltiples ubicaciones de GeoIp para el salto"
 de = "Mehrere GeoIp-Standorte für den Hop"
+ja = "ホップに複数の GeoIp 位置があります"
 
 [kilometer]
 en = "km"
@@ -881,6 +948,7 @@ sv = "km"
 ru = "км"
 es = "km"
 de = "km"
+ja = "km"
 
 [settings_info]
 en = "Info"
@@ -894,6 +962,7 @@ sv = "Information"
 ru = "Информация"
 es = "Información"
 de = "Info"
+ja = "情報"
 
 [settings_tab_tui_title]
 en = "Tui"
@@ -907,6 +976,7 @@ sv = "Tui"
 ru = "Tui"
 es = "Tui"
 de = "Tui"
+ja = "TUI"
 
 [settings_tab_trace_title]
 en = "Trace"
@@ -920,6 +990,7 @@ sv = "Spåra"
 ru = "След"
 es = "Rastrear"
 de = "Trace"
+ja = "トレース"
 
 [settings_tab_dns_title]
 en = "DNS"
@@ -933,6 +1004,7 @@ sv = "DNS"
 ru = "DNS"
 es = "DNS"
 de = "DNS"
+ja = "DNS"
 
 [settings_tab_geoip_title]
 en = "GeoIp"
@@ -946,6 +1018,7 @@ sv = "GeoIp"
 ru = "GeoIp"
 es = "GeoIp"
 de = "GeoIp"
+ja = "GeoIp"
 
 [settings_tab_bindings_title]
 en = "Bindings"
@@ -959,6 +1032,7 @@ sv = "Kortkommando"
 ru = "Привязки"
 es = "Atajos"
 de = "Tastenbelegungen"
+ja = "バインディング"
 
 [settings_tab_theme_title]
 en = "Theme"
@@ -972,6 +1046,7 @@ sv = "Tema"
 ru = "Тема"
 es = "Tema"
 de = "Darstellung"
+ja = "テーマ"
 
 [settings_tab_columns_title]
 en = "Columns"
@@ -985,6 +1060,7 @@ es = "Columnas"
 sv = "Kolumner"
 ru = "Столбцы"
 de = "Spalten"
+ja = "列"
 
 [settings_tab_tui_desc]
 en = "Settings which control how data is displayed in this Tui"
@@ -998,6 +1074,7 @@ sv = "Inställningar som styr hur data visas i detta Tui"
 ru = "Настройки, которые контролируют, как данные отображаются в этом Tui"
 es = "Configuraciones que controlan cómo se muestran los datos en este Tui"
 de = "Einstellungen, die steuern, wie Daten in diesem Tui angezeigt werden"
+ja = "この TUI でデータがどのように表示されるかを制御する設定"
 
 [settings_tab_trace_desc]
 en = "Settings which control the tracing strategy"
@@ -1011,6 +1088,7 @@ sv = "Inställningar som styr spårningsstrategin"
 ru = "Настройки, которые контролируют стратегию трассировки"
 es = "Configuraciones que controlan la estrategia de rastreo"
 de = "Einstellungen, die die Tracing-Strategie steuern"
+ja = "トレース戦略を制御する設定"
 
 [settings_tab_dns_desc]
 en = "Settings which control how DNS lookups are performed"
@@ -1024,6 +1102,7 @@ sv = "Inställningar som styr hur DNS-uppslag utförs"
 ru = "Настройки, которые контролируют, как выполняются DNS-запросы"
 es = "Configuraciones que controlan cómo se realizan las búsquedas de DNS"
 de = "Einstellungen, die steuern, wie DNS-Lookups durchgeführt werden"
+ja = "DNS ルックアップの実行方法を制御する設定"
 
 [settings_tab_geoip_desc]
 en = "Settings relating to GeoIp"
@@ -1037,6 +1116,7 @@ sv = "Inställningar som rör GeoIp"
 ru = "Настройки, касающиеся GeoIp"
 es = "Configuraciones relacionadas con GeoIp"
 de = "Einstellungen im Zusammenhang mit GeoIp"
+ja = "GeoIp に関する設定"
 
 [settings_tab_bindings_desc]
 en = "Tui key bindings"
@@ -1050,6 +1130,7 @@ sv = "Tui-kortkommando"
 ru = "Привязки клавиш Tui"
 es = "Atajos de teclado Tui"
 de = "Tui-Tastenbelegungen"
+ja = "TUI キーバインディング"
 
 [settings_tab_theme_desc]
 en = "Tui theme colors"
@@ -1063,6 +1144,7 @@ sv = "Tui-temafärger"
 ru = "Цвета темы Tui"
 es = "Colores del tema Tui"
 de = "Tui-Themefarben"
+ja = "TUI テーマカラー"
 
 [settings_tab_columns_desc]
 en = "Tui table columns.  Press [%{c}] to toggle a column on or off and use the [%{d}] and [%{u}] keys to change the column order."
@@ -1076,6 +1158,7 @@ sv = "Tui-tabellkolumner. Tryck på [%{c}] för att slå på eller av en kolumn 
 ru = "Столбцы таблицы Tui. Нажмите [%{c}], чтобы включить или отключить столбец, и используйте клавиши [%{d}] и [%{u}], чтобы изменить порядок столбцов."
 es = "Columnas de la tabla Tui. Presiona [%{c}] para activar o desactivar una columna y usa las teclas [%{d}] y [%{u}] para cambiar el orden de las columnas."
 de = "Tui-Tabellenspalten. Drücken Sie [%{c}], um eine Spalte ein- oder auszuschalten, und verwenden Sie die Tasten [%{d}] und [%{u}], um die Spaltenreihenfolge zu ändern."
+ja = "TUI テーブル列。[%{c}] を押して列のオン/オフを切り替え、[%{d}] と [%{u}] キーで列の順序を変更します。"
 
 [settings_table_header_setting]
 en = "Setting"
@@ -1089,6 +1172,7 @@ sv = "Inställning"
 ru = "Настройка"
 es = "Configuración"
 de = "Einstellung"
+ja = "設定"
 
 [settings_table_header_value]
 en = "Value"
@@ -1102,6 +1186,7 @@ sv = "Värde"
 ru = "Значение"
 es = "Valor"
 de = "Wert"
+ja = "値"
 
 [column_host]
 en = "Host"
@@ -1115,6 +1200,7 @@ sv = "Värd"
 ru = "Хост"
 es = "Host"
 de = "Host"
+ja = "ホスト"
 
 [column_loss_pct]
 en = "Loss%"
@@ -1128,6 +1214,7 @@ sv = "Förlust%"
 ru = "Потери%"
 es = "% Perdidos"
 de = "Verlust%"
+ja = "Loss%"
 
 [column_snd]
 en = "Snd"
@@ -1141,6 +1228,7 @@ sv = "Skickat"
 ru = "Отпр"
 es = "Enviados"
 de = "Snd"
+ja = "送信"
 
 [column_recv]
 en = "Recv"
@@ -1154,6 +1242,7 @@ sv = "Mottagna"
 ru = "Получ"
 es = "Recibidos"
 de = "Recv"
+ja = "受信"
 
 [column_last]
 en = "Last"
@@ -1167,6 +1256,7 @@ sv = "Senast"
 ru = "Посл"
 es = "Último"
 de = "Letzte"
+ja = "最新"
 
 [column_avg]
 en = "Avg"
@@ -1180,6 +1270,7 @@ sv = "Genomsnitt"
 ru = "Сред"
 es = "Prom"
 de = "Durchschnitt"
+ja = "平均"
 
 [column_best]
 en = "Best"
@@ -1193,6 +1284,7 @@ sv = "Bäst"
 ru = "Луч"
 es = "Mejor"
 de = "Beste"
+ja = "最良"
 
 [column_wrst]
 en = "Wrst"
@@ -1206,6 +1298,7 @@ sv = "Sämst"
 ru = "Худ"
 es = "Peor"
 de = "Schlechteste"
+ja = "最悪"
 
 [column_stdev]
 en = "StDev"
@@ -1219,6 +1312,7 @@ sv = "StDev"
 ru = "СКО"
 es = "DesvE"
 de = "StdAbw"
+ja = "標準偏差"
 
 [column_sts]
 en = "Sts"
@@ -1232,6 +1326,7 @@ sv = "Sts"
 ru = "Статус"
 es = "Est"
 de = "Sts"
+ja = "Sts"
 
 [column_jttr]
 en = "Jttr"
@@ -1245,6 +1340,7 @@ sv = "Jttr"
 ru = "Джитр"
 es = "Jttr"
 de = "Jttr"
+ja = "Jttr"
 
 [column_javg]
 en = "Javg"
@@ -1258,6 +1354,7 @@ sv = "Javg"
 ru = "СреднДжитр"
 es = "PromJit"
 de = "Javg"
+ja = "Javg"
 
 [column_jmax]
 en = "Jmax"
@@ -1271,6 +1368,7 @@ sv = "Jmax"
 ru = "МаксДжитр"
 es = "JitMax"
 de = "Jmax"
+ja = "Jmax"
 
 [column_jint]
 en = "Jint"
@@ -1284,6 +1382,7 @@ sv = "Jint"
 ru = "ИнтДжитр"
 es = "JitInt"
 de = "Jint"
+ja = "Jint"
 
 [column_sprt]
 en = "Sprt"
@@ -1296,6 +1395,7 @@ sv = "Sprt"
 ru = "Исх"
 es = "Sprt"
 de = "Sprt"
+ja = "送信ポート"
 
 [column_dprt]
 en = "Dprt"
@@ -1309,6 +1409,7 @@ sv = "Dprt"
 ru = "Назн"
 es = "Dprt"
 de = "Dprt"
+ja = "宛先ポート"
 
 [column_seq]
 en = "Seq"
@@ -1322,6 +1423,7 @@ sv = "Seq"
 ru = "Посл"
 es = "Seq"
 de = "Seq"
+ja = "シーケンス"
 
 [column_type]
 en = "Type"
@@ -1335,6 +1437,7 @@ sv = "Typ"
 ru = "Тип"
 es = "Tipo"
 de = "Typ"
+ja = "タイプ"
 
 [column_code]
 en = "Code"
@@ -1348,6 +1451,7 @@ sv = "Kod"
 ru = "Код"
 es = "Código"
 de = "Code"
+ja = "コード"
 
 [column_nat]
 en = "NAT"
@@ -1361,6 +1465,7 @@ sv = "NAT"
 ru = "NAT"
 es = "NAT"
 de = "NAT"
+ja = "NAT"
 
 [column_fail]
 en = "Fail"
@@ -1374,6 +1479,7 @@ sv = "Misslyckades"
 ru = "Неуд"
 es = "Falló"
 de = "Fehlgeschlagen"
+ja = "失敗"
 
 [column_floss]
 en = "Floss"
@@ -1387,6 +1493,7 @@ sv = "Floss"
 ru = "Floss"
 es = "Floss"
 de = "Floss"
+ja = "Floss"
 
 [column_bloss]
 en = "Bloss"
@@ -1400,6 +1507,7 @@ sv = "Bloss"
 ru = "Bloss"
 es = "Bloss"
 de = "Bloss"
+ja = "Bloss"
 
 [column_floss_pct]
 en = "Floss%"
@@ -1413,6 +1521,7 @@ sv = "Floss%"
 ru = "Floss%"
 es = "Floss%"
 de = "Floss%"
+ja = "Floss%"
 
 [column_dscp]
 en = "DSCP"
@@ -1426,6 +1535,7 @@ sv = "DSCP"
 ru = "DSCP"
 es = "DSCP"
 de = "DSCP"
+ja = "DSCP"
 
 [column_ecn]
 en = "ECN"
@@ -1439,6 +1549,7 @@ sv = "ECN"
 ru = "ECN"
 es = "ECN"
 de = "ECN"
+ja = "ECN"
 
 [column_asn]
 en = "ASN"
@@ -1452,3 +1563,4 @@ sv = "ASN"
 ru = "ASN"
 es = "ASN"
 de = "ASN"
+ja = "ASN"
