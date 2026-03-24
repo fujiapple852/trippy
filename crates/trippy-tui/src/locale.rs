@@ -166,7 +166,7 @@ mod tests {
         assert_eq!(
             available_locales(),
             vec![
-                "de", "en", "es", "fr", "it", "pt", "ru", "sv", "tr", "zh", "zh-TW"
+                "de", "en", "es", "fr", "it", "ja", "pt", "ru", "sv", "tr", "zh", "zh-TW"
             ]
         );
     }
