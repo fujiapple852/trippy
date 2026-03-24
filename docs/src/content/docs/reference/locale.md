@@ -15,6 +15,7 @@ line option or in the `tui-locale` attribute in the `tui` section of the configu
 | `fr`   | French     | all    |
 | `de`   | German     | all    |
 | `it`   | Italian    | all    |
+| `ja`   | Japanese   | all    |
 | `pt`   | Portuguese | all    |
 | `ru`   | Russian    | all    |
 | `es`   | Spanish    | all    |
