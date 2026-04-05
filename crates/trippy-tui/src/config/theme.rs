@@ -545,7 +545,9 @@ impl TryFrom<&str> for TuiColor {
 
     #[expect(clippy::too_many_lines)]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_ascii_lowercase().replace('-', "").as_ref() {
+        let normalized = value.to_ascii_lowercase().replace('-', "");
+        let rgb_hex = normalized.strip_prefix('#').unwrap_or(&normalized);
+        match normalized.as_ref() {
             "black" => Ok(Self::Black),
             "red" => Ok(Self::Red),
             "green" => Ok(Self::Green),
@@ -689,7 +691,7 @@ impl TryFrom<&str> for TuiColor {
             "wheat" => Ok(Self::Wheat),
             "whitesmoke" => Ok(Self::WhiteSmoke),
             "yellowgreen" => Ok(Self::YellowGreen),
-            rgb_hex if value.len() == 6 && value.chars().all(|c| c.is_ascii_hexdigit()) => {
+            _ if rgb_hex.len() == 6 && rgb_hex.chars().all(|c| c.is_ascii_hexdigit()) => {
                 let red = u8::from_str_radix(&rgb_hex[0..2], 16)?;
                 let green = u8::from_str_radix(&rgb_hex[2..4], 16)?;
                 let blue = u8::from_str_radix(&rgb_hex[4..6], 16)?;
