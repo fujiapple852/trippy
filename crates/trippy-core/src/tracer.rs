@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::{
-    Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
+    Action, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
     PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, State, TimeToLive,
     TraceId, TypeOfService,
 };
@@ -137,9 +137,12 @@ impl Tracer {
     /// retrieved using the [`Tracer::snapshot`] method.
     ///
     /// This method will additionally call the provided function for each round
-    /// that is completed.  This can be useful if you want to gather round state
+    /// that is completed. This can be useful if you want to gather round state
     /// manually if the tracer is run indefinitely (by not setting
-    /// [`crate::Builder::max_rounds`])
+    /// [`crate::Builder::max_rounds`]).
+    ///
+    /// The callback may either return `()` to continue tracing, or return
+    /// [`Action`] to decide whether tracing should continue after each round.
     ///
     /// # Example
     ///
@@ -159,10 +162,39 @@ impl Tracer {
     /// # }
     /// ```
     ///
+    /// The following will stop after the first round for which `stop` is set:
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// # use std::net::IpAddr;
+    /// # use std::str::FromStr;
+    /// # use std::sync::atomic::{AtomicBool, Ordering};
+    /// use trippy_core::{Builder, Action};
+    ///
+    /// let addr = IpAddr::from_str("1.1.1.1")?;
+    /// let stop = AtomicBool::new(false);
+    /// let tracer = Builder::new(addr).build()?;
+    /// tracer.run_with(|_| {
+    ///     if stop.load(Ordering::Relaxed) {
+    ///         Action::Stop
+    ///     } else {
+    ///         Action::Continue
+    ///     }
+    /// })?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # See Also
     ///
     /// - [`Tracer::run`] - Run the tracer without a custom round handler.
-    pub fn run_with<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
+    pub fn run_with<F, R>(&self, func: F) -> Result<()>
+    where
+        F: Fn(&Round<'_>) -> R,
+        R: Into<Action>,
+    {
         self.inner.run_with(func)
     }
 
@@ -249,13 +281,47 @@ impl Tracer {
     /// # }
     /// ```
     ///
+    /// The callback may either return `()` to continue tracing, or return
+    /// [`Action`] to decide whether tracing should continue after each round.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// # use std::net::IpAddr;
+    /// # use std::str::FromStr;
+    /// # use std::sync::{
+    /// #     Arc,
+    /// #     atomic::{AtomicBool, Ordering},
+    /// # };
+    /// use trippy_core::{Builder, Action};
+    ///
+    /// let addr = IpAddr::from_str("1.1.1.1")?;
+    /// let stop = Arc::new(AtomicBool::new(false));
+    /// let stop_for_trace = Arc::clone(&stop);
+    /// let (tracer, handle) = Builder::new(addr)
+    ///     .build()?
+    ///     .spawn_with(move |_| {
+    ///         if stop_for_trace.load(Ordering::Relaxed) {
+    ///             Action::Stop
+    ///         } else {
+    ///             Action::Continue
+    ///         }
+    ///     })?;
+    /// stop.store(true, Ordering::Relaxed);
+    /// handle.join().unwrap()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # See Also
     ///
     /// - [`Tracer::spawn`] - Spawn the tracer on a new thread without a custom round handler.
-    pub fn spawn_with<F: Fn(&Round<'_>) + Send + 'static>(
-        self,
-        func: F,
-    ) -> Result<(Self, JoinHandle<Result<()>>)> {
+    pub fn spawn_with<F, R>(self, func: F) -> Result<(Self, JoinHandle<Result<()>>)>
+    where
+        F: Fn(&Round<'_>) -> R + Send + 'static,
+        R: Into<Action> + Send + 'static,
+    {
         let tracer = self.clone();
         let handle = thread::Builder::new()
             .name(format!("tracer-{}", self.trace_identifier().0))
@@ -425,7 +491,7 @@ mod inner {
     use crate::error::Result;
     use crate::net::{PlatformImpl, SocketImpl};
     use crate::{
-        Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
+        Action, Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
         PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence,
         SourceAddr, State, Strategy, TimeToLive, TraceId, TypeOfService,
     };
@@ -530,12 +596,15 @@ mod inner {
 
         #[instrument(skip_all, level = "trace")]
         pub(super) fn run(&self) -> Result<()> {
-            self.run_internal(|_| ())
-                .map_err(|err| self.handle_error(err))
+            self.run_with(|_| ())
         }
 
         #[instrument(skip_all, level = "trace")]
-        pub(super) fn run_with<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
+        pub(super) fn run_with<F, R>(&self, func: F) -> Result<()>
+        where
+            F: Fn(&Round<'_>) -> R,
+            R: Into<Action>,
+        {
             self.run_internal(func)
                 .map_err(|err| self.handle_error(err))
         }
@@ -646,7 +715,11 @@ mod inner {
         }
 
         #[instrument(skip_all, level = "trace")]
-        fn run_internal<F: Fn(&Round<'_>)>(&self, func: F) -> Result<()> {
+        fn run_internal<F, R>(&self, func: F) -> Result<()>
+        where
+            F: Fn(&Round<'_>) -> R,
+            R: Into<Action>,
+        {
             // if we are given a source address, validate it otherwise
             // discover it based on the target address and interface.
             let source_addr = match self.source_addr {
@@ -668,7 +741,7 @@ mod inner {
             let strategy_config = self.make_strategy_config();
             let strategy = Strategy::new(&strategy_config, |round| {
                 self.handler(round);
-                func(round);
+                func(round).into()
             });
             strategy.run(channel)?;
             Ok(())
