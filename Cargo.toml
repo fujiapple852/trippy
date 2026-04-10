@@ -51,7 +51,7 @@ futures-concurrency = "7.6.3"
 hex-literal = "1.1.0"
 hickory-resolver = "0.24.4"
 humantime = "2.3.0"
-indexmap = { version = "2.13.1", default-features = false }
+indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47.2"
 itertools = "0.14.0"
 maxminddb = "0.27.3"
