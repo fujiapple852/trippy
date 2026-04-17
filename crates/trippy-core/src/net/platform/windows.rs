@@ -770,6 +770,7 @@ mod adapter {
     use crate::net::platform::windows::sockaddrptr_to_ipaddr;
     use std::io::Error as StdIoError;
     use std::marker::PhantomData;
+    use std::mem::{MaybeUninit, size_of};
     use std::net::IpAddr;
     use std::ptr::null_mut;
     use widestring::WideCString;
@@ -782,7 +783,12 @@ mod adapter {
 
     /// Retrieve adapter address information.
     pub struct Adapters {
-        buf: Vec<u8>,
+        /// Backing buffer returned by `GetAdaptersAddresses`.
+        ///
+        /// `IP_ADAPTER_ADDRESSES_LH` has a stricter alignment than `u8`, so using `Vec<u8>`
+        /// here and then casting to `*const IP_ADAPTER_ADDRESSES_LH` is undefined behavior.
+        /// We intentionally keep an aligned typed buffer and treat it as raw storage.
+        buf: Vec<MaybeUninit<IP_ADAPTER_ADDRESSES_LH>>,
     }
 
     impl Adapters {
@@ -814,9 +820,11 @@ mod adapter {
 
         fn retrieve_addresses(family: ADDRESS_FAMILY) -> Result<Self> {
             let mut buf_len = Self::INITIAL_BUFFER_SIZE;
-            let mut buf: Vec<u8>;
+            let mut buf: Vec<MaybeUninit<IP_ADAPTER_ADDRESSES_LH>>;
             for _ in 0..Self::MAX_ATTEMPTS {
-                buf = vec![0_u8; buf_len as usize];
+                let elems = (buf_len as usize).div_ceil(size_of::<IP_ADAPTER_ADDRESSES_LH>());
+                buf = Vec::with_capacity(elems);
+                buf.resize_with(elems, MaybeUninit::zeroed);
                 let res = syscall_ip_helper!(GetAdaptersAddresses(
                     u32::from(family),
                     Self::ADDRESS_FLAGS,
