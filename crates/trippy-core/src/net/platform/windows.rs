@@ -626,8 +626,14 @@ impl From<ErrorKind> for StdIoError {
 #[expect(clippy::cast_sign_loss)]
 #[instrument(level = "trace")]
 fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
-    let mut src_buf = [0; 1024];
-    let src: *mut c_void = src_buf.as_mut_ptr().cast();
+    #[repr(C)]
+    union RoutingQueryBuffer {
+        storage: SOCKADDR_STORAGE,
+        bytes: [u8; 1024],
+    }
+
+    let mut src_buf = RoutingQueryBuffer { bytes: [0; 1024] };
+    let src: *mut c_void = unsafe { addr_of_mut!(src_buf.bytes).cast() };
     let mut bytes = 0;
     let socket = match target {
         IpAddr::V4(_) => SocketImpl::new_udp_dgram_socket_ipv4(),
@@ -652,15 +658,18 @@ fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
     // Note that the `WSAIoctl` call potentially returns multiple results (see
     // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     // TBD We choose the first one arbitrarily.
-    let sockaddr = src.cast::<SOCKADDR_STORAGE>();
+    let sockaddr = unsafe { addr_of_mut!(src_buf.storage) };
     sockaddrptr_to_ipaddr(sockaddr)
         .map_err(|err| Error::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
 }
 
 #[expect(unsafe_code)]
 fn sockaddrptr_to_ipaddr(sockaddr: *mut SOCKADDR_STORAGE) -> StdIoResult<IpAddr> {
-    // Safety: TODO
-    match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().unwrap() }) {
+    if sockaddr.is_null() {
+        return Err(StdIoError::from(StdErrorKind::AddrNotAvailable));
+    }
+    // Safety: `sockaddr` has been checked for null.
+    match sockaddr_to_socketaddr(unsafe { sockaddr.as_ref().expect("checked null") }) {
         Err(e) => Err(e),
         Ok(socketaddr) => match socketaddr {
             SocketAddr::V4(socketaddrv4) => Ok(IpAddr::V4(*socketaddrv4.ip())),
@@ -711,16 +720,10 @@ fn sockaddr_to_socketaddr(sockaddr: &SOCKADDR_STORAGE) -> StdIoResult<SocketAddr
 #[expect(clippy::cast_possible_wrap)]
 #[must_use]
 fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
-    #[repr(C)]
-    union SockAddr {
-        storage: SOCKADDR_STORAGE,
-        in4: SOCKADDR_IN,
-        in6: SOCKADDR_IN6,
-    }
-
-    let sockaddr = match socketaddr {
-        SocketAddr::V4(socketaddrv4) => SockAddr {
-            in4: SOCKADDR_IN {
+    let mut storage = SocketImpl::new_sockaddr_storage();
+    match socketaddr {
+        SocketAddr::V4(socketaddrv4) => {
+            let sockaddr = SOCKADDR_IN {
                 sin_family: AF_INET,
                 sin_port: socketaddrv4.port().to_be(),
                 sin_addr: IN_ADDR {
@@ -729,10 +732,14 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
                     },
                 },
                 sin_zero: [0; 8],
-            },
-        },
-        SocketAddr::V6(socketaddrv6) => SockAddr {
-            in6: SOCKADDR_IN6 {
+            };
+            unsafe {
+                std::ptr::write(addr_of_mut!(storage).cast::<SOCKADDR_IN>(), sockaddr);
+            }
+            (storage, size_of::<SOCKADDR_IN>() as i32)
+        }
+        SocketAddr::V6(socketaddrv6) => {
+            let sockaddr = SOCKADDR_IN6 {
                 sin6_family: AF_INET6,
                 sin6_port: socketaddrv6.port().to_be(),
                 sin6_flowinfo: socketaddrv6.flowinfo(),
@@ -744,11 +751,13 @@ fn socketaddr_to_sockaddr(socketaddr: SocketAddr) -> (SOCKADDR_STORAGE, i32) {
                 Anonymous: SOCKADDR_IN6_0 {
                     sin6_scope_id: socketaddrv6.scope_id(),
                 },
-            },
-        },
-    };
-
-    (unsafe { sockaddr.storage }, size_of::<SockAddr>() as i32)
+            };
+            unsafe {
+                std::ptr::write(addr_of_mut!(storage).cast::<SOCKADDR_IN6>(), sockaddr);
+            }
+            (storage, size_of::<SOCKADDR_IN6>() as i32)
+        }
+    }
 }
 
 #[instrument(skip(adapters), ret, level = "trace")]
@@ -770,6 +779,7 @@ mod adapter {
     use crate::net::platform::windows::sockaddrptr_to_ipaddr;
     use std::io::Error as StdIoError;
     use std::marker::PhantomData;
+    use std::mem::{MaybeUninit, size_of};
     use std::net::IpAddr;
     use std::ptr::null_mut;
     use widestring::WideCString;
@@ -782,7 +792,12 @@ mod adapter {
 
     /// Retrieve adapter address information.
     pub struct Adapters {
-        buf: Vec<u8>,
+        /// Backing buffer returned by `GetAdaptersAddresses`.
+        ///
+        /// `IP_ADAPTER_ADDRESSES_LH` has a stricter alignment than `u8`, so using `Vec<u8>`
+        /// here and then casting to `*const IP_ADAPTER_ADDRESSES_LH` is undefined behavior.
+        /// We intentionally keep an aligned typed buffer and treat it as raw storage.
+        buf: Vec<MaybeUninit<IP_ADAPTER_ADDRESSES_LH>>,
     }
 
     impl Adapters {
@@ -814,9 +829,11 @@ mod adapter {
 
         fn retrieve_addresses(family: ADDRESS_FAMILY) -> Result<Self> {
             let mut buf_len = Self::INITIAL_BUFFER_SIZE;
-            let mut buf: Vec<u8>;
+            let mut buf: Vec<MaybeUninit<IP_ADAPTER_ADDRESSES_LH>>;
             for _ in 0..Self::MAX_ATTEMPTS {
-                buf = vec![0_u8; buf_len as usize];
+                let elems = (buf_len as usize).div_ceil(size_of::<IP_ADAPTER_ADDRESSES_LH>());
+                buf = Vec::with_capacity(elems);
+                buf.resize_with(elems, MaybeUninit::zeroed);
                 let res = syscall_ip_helper!(GetAdaptersAddresses(
                     u32::from(family),
                     Self::ADDRESS_FLAGS,
