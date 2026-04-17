@@ -626,7 +626,9 @@ impl From<ErrorKind> for StdIoError {
 #[expect(clippy::cast_sign_loss)]
 #[instrument(level = "trace")]
 fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
-    let mut src_buf = [0; 1024];
+    // Keep this buffer aligned for `SOCKADDR_STORAGE`; we later reinterpret the
+    // first returned entry as a socket address.
+    let mut src_buf = [SocketImpl::new_sockaddr_storage(); 8];
     let src: *mut c_void = src_buf.as_mut_ptr().cast();
     let mut bytes = 0;
     let socket = match target {
@@ -641,7 +643,7 @@ fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
             addr_of!(dest).cast(),
             destlen as u32,
             src,
-            1024,
+            size_of::<[SOCKADDR_STORAGE; 8]>() as u32,
             addr_of_mut!(bytes),
             null_mut(),
             None,
@@ -652,7 +654,7 @@ fn routing_interface_query(target: IpAddr) -> Result<IpAddr> {
     // Note that the `WSAIoctl` call potentially returns multiple results (see
     // <https://www.winsocketdotnetworkprogramming.com/winsock2programming/winsock2advancedsocketoptionioctl7h.html>),
     // TBD We choose the first one arbitrarily.
-    let sockaddr = src.cast::<SOCKADDR_STORAGE>();
+    let sockaddr = src_buf.as_mut_ptr();
     sockaddrptr_to_ipaddr(sockaddr)
         .map_err(|err| Error::IoError(IoError::Other(err, IoOperation::ConvertSocketAddress)))
 }
