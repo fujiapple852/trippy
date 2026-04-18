@@ -2,8 +2,8 @@ use crate::config::binding::TuiCommandItem;
 use crate::config::theme::TuiThemeItem;
 use crate::config::{
     AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
-    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig, TuiColor,
-    TuiKeyBinding,
+    LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig,
+    SocketReadinessModeConfig, TuiColor, TuiKeyBinding,
 };
 use anyhow::anyhow;
 use clap::Parser;
@@ -159,6 +159,10 @@ pub struct Args {
     /// The socket read timeout [default: 10ms]
     #[arg(long, value_parser = parse_duration, env = "TRIP_READ_TIMEOUT")]
     pub read_timeout: Option<Duration>,
+
+    /// The socket readiness backend [default: select]
+    #[arg(value_enum, long, env = "TRIP_SOCKET_READINESS_MODE")]
+    pub socket_readiness_mode: Option<SocketReadinessModeConfig>,
 
     /// How to perform DNS queries [default: system]
     #[arg(value_enum, short = 'r', long, env = "TRIP_DNS_RESOLVE_METHOD")]
