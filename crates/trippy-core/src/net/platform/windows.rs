@@ -96,6 +96,7 @@ pub struct SocketImpl {
     buf: Box<[u8]>,
     from: Box<SOCKADDR_STORAGE>,
     from_len: i32,
+    recv_flags: u32,
     bytes_read: u32,
 }
 
@@ -123,6 +124,7 @@ impl SocketImpl {
             buf,
             from,
             from_len,
+            recv_flags: 0,
             bytes_read: 0,
         })
     }
@@ -218,13 +220,14 @@ impl SocketImpl {
             len: MAX_PACKET_SIZE as u32,
             buf: self.buf.as_mut_ptr(),
         };
+        self.recv_flags = 0;
         syscall!(
             WSARecvFrom(
                 self.inner.as_raw_socket() as usize,
                 addr_of!(wbuf),
                 1,
                 null_mut(),
-                &mut 0,
+                addr_of_mut!(self.recv_flags),
                 addr_of_mut!(*self.from).cast(),
                 addr_of_mut!(self.from_len),
                 addr_of_mut!(*self.ol),
