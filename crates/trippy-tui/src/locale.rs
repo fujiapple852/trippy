@@ -24,8 +24,8 @@ pub fn set_locale(locale: Option<&str>) -> String {
 pub fn available_locales() -> Vec<&'static str> {
     data()
         .0
-        .iter()
-        .flat_map(|(_, v)| v.0.keys().map(AsRef::as_ref))
+        .values()
+        .flat_map(|v| v.0.keys().map(AsRef::as_ref))
         .unique()
         .sorted_unstable()
         .collect::<Vec<_>>()

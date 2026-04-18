@@ -285,6 +285,7 @@ mod inner {
             // If the entry exists but is stale then enqueue it again.  The existing entry will
             // be returned until it is refreshed but with an updated timestamp to prevent it from
             // being enqueued multiple times.
+            #[expect(clippy::collapsible_match)]
             match &dns_entry.entry {
                 DnsEntry::Resolved(_) | DnsEntry::NotFound(_) | DnsEntry::Failed(_) => {
                     if now.duration_since(dns_entry.timestamp).unwrap_or_default() > self.config.ttl

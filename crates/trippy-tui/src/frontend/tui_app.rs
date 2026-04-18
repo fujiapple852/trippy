@@ -142,7 +142,7 @@ impl TuiApp {
         if hop_count == 0 {
             return;
         }
-        let max_index = 0.max(hop_count.saturating_sub(1));
+        let max_index = hop_count.saturating_sub(1);
         let i = match self.table_state.selected() {
             Some(i) => {
                 if i < max_index {
@@ -170,7 +170,7 @@ impl TuiApp {
                     i
                 }
             }
-            None => 0.max(hop_count.saturating_sub(1)),
+            None => hop_count.saturating_sub(1),
         };
         self.table_state.select(Some(i));
         self.selected_hop_address = 0;
@@ -250,7 +250,7 @@ impl TuiApp {
 
     pub fn next_settings_item(&mut self) {
         let count = self.get_settings_items_count();
-        let max_index = 0.max(count.saturating_sub(1));
+        let max_index = count.saturating_sub(1);
         let i = match self.setting_table_state.selected() {
             Some(i) => {
                 if i < max_index {
@@ -274,7 +274,7 @@ impl TuiApp {
                     i
                 }
             }
-            None => 0.max(count.saturating_sub(1)),
+            None => count.saturating_sub(1),
         };
         self.setting_table_state.select(Some(i));
     }
