@@ -106,6 +106,8 @@ pub struct Privilege {
     needs_privileges: bool,
 }
 
+// buggy lint on Linux as of Rust 1.95
+#[allow(clippy::must_use_candidate)]
 impl Privilege {
     /// Discover information about the platform privileges.
     pub fn discover() -> Result<Self> {
