@@ -1,4 +1,5 @@
 use super::byte_order::Ipv4ByteOrder;
+use crate::SocketReadinessMode;
 use crate::error::{Error, ErrorKind, IoError, IoOperation, IoResult, Result};
 use crate::net::channel::MAX_PACKET_SIZE;
 use crate::net::platform::Platform;
@@ -490,7 +491,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self), level = "trace")]
-    fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
+    fn is_readable(&mut self, timeout: Duration, mode: SocketReadinessMode) -> IoResult<bool> {
         if !self.wait_for_event(timeout)? {
             return Ok(false);
         }
@@ -505,7 +506,7 @@ impl Socket for SocketImpl {
     }
 
     #[instrument(skip(self), level = "trace")]
-    fn is_writable(&mut self) -> IoResult<bool> {
+    fn is_writable(&mut self, mode: SocketReadinessMode) -> IoResult<bool> {
         if !self.wait_for_event(Duration::ZERO)? {
             return Ok(false);
         }

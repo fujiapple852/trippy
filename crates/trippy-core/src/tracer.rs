@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::{
     Action, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
-    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, State, TimeToLive,
-    TraceId, TypeOfService,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence, SocketReadinessMode,
+    State, TimeToLive, TraceId, TypeOfService,
 };
 use std::fmt::Debug;
 use std::net::IpAddr;
@@ -38,6 +38,7 @@ impl Tracer {
         tos: TypeOfService,
         icmp_extension_parse_mode: IcmpExtensionParseMode,
         read_timeout: Duration,
+        socket_readiness_mode: SocketReadinessMode,
         tcp_connect_timeout: Duration,
         trace_identifier: TraceId,
         max_rounds: Option<MaxRounds>,
@@ -66,6 +67,7 @@ impl Tracer {
                 tos,
                 icmp_extension_parse_mode,
                 read_timeout,
+                socket_readiness_mode,
                 tcp_connect_timeout,
                 trace_identifier,
                 max_rounds,
@@ -419,6 +421,12 @@ impl Tracer {
         self.inner.read_timeout()
     }
 
+    /// The socket readiness backend of the tracer.
+    #[must_use]
+    pub fn socket_readiness_mode(&self) -> SocketReadinessMode {
+        self.inner.socket_readiness_mode()
+    }
+
     /// The TCP connect timeout of the tracer.
     #[must_use]
     pub fn tcp_connect_timeout(&self) -> Duration {
@@ -493,7 +501,7 @@ mod inner {
     use crate::{
         Action, Channel, Error, IcmpExtensionParseMode, MaxInflight, MaxRounds, MultipathStrategy,
         PacketSize, PayloadPattern, PortDirection, PrivilegeMode, Protocol, Round, Sequence,
-        SourceAddr, State, Strategy, TimeToLive, TraceId, TypeOfService,
+        SocketReadinessMode, SourceAddr, State, Strategy, TimeToLive, TraceId, TypeOfService,
     };
     use parking_lot::RwLock;
     use std::fmt::Debug;
@@ -515,6 +523,7 @@ mod inner {
         tos: TypeOfService,
         icmp_extension_parse_mode: IcmpExtensionParseMode,
         read_timeout: Duration,
+        socket_readiness_mode: SocketReadinessMode,
         tcp_connect_timeout: Duration,
         trace_identifier: TraceId,
         max_rounds: Option<MaxRounds>,
@@ -547,6 +556,7 @@ mod inner {
             tos: TypeOfService,
             icmp_extension_parse_mode: IcmpExtensionParseMode,
             read_timeout: Duration,
+            socket_readiness_mode: SocketReadinessMode,
             tcp_connect_timeout: Duration,
             trace_identifier: TraceId,
             max_rounds: Option<MaxRounds>,
@@ -574,6 +584,7 @@ mod inner {
                 tos,
                 icmp_extension_parse_mode,
                 read_timeout,
+                socket_readiness_mode,
                 tcp_connect_timeout,
                 trace_identifier,
                 max_rounds,
@@ -668,6 +679,10 @@ mod inner {
 
         pub(super) const fn read_timeout(&self) -> Duration {
             self.read_timeout
+        }
+
+        pub(super) const fn socket_readiness_mode(&self) -> SocketReadinessMode {
+            self.socket_readiness_mode
         }
 
         pub(super) const fn tcp_connect_timeout(&self) -> Duration {
@@ -775,6 +790,7 @@ mod inner {
                 tos: self.tos,
                 icmp_extension_parse_mode: self.icmp_extension_parse_mode,
                 read_timeout: self.read_timeout,
+                socket_readiness_mode: self.socket_readiness_mode,
                 tcp_connect_timeout: self.tcp_connect_timeout,
             }
         }

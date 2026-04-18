@@ -10,7 +10,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{
     IcmpExtensionParseMode, MAX_TTL, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
-    defaults,
+    SocketReadinessMode, defaults,
 };
 use trippy_dns::{IpAddrFamily, ResolveMethod};
 
@@ -70,6 +70,34 @@ impl From<Protocol> for ProtocolConfig {
             Protocol::Icmp => Self::Icmp,
             Protocol::Udp => Self::Udp,
             Protocol::Tcp => Self::Tcp,
+        }
+    }
+}
+
+/// The socket readiness backend.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SocketReadinessModeConfig {
+    /// Use `select` for socket readiness checks.
+    Select,
+    /// Use `poll` for socket readiness checks.
+    Poll,
+}
+
+impl From<SocketReadinessMode> for SocketReadinessModeConfig {
+    fn from(value: SocketReadinessMode) -> Self {
+        match value {
+            SocketReadinessMode::Select => Self::Select,
+            SocketReadinessMode::Poll => Self::Poll,
+        }
+    }
+}
+
+impl From<SocketReadinessModeConfig> for SocketReadinessMode {
+    fn from(value: SocketReadinessModeConfig) -> Self {
+        match value {
+            SocketReadinessModeConfig::Select => Self::Select,
+            SocketReadinessModeConfig::Poll => Self::Poll,
         }
     }
 }
@@ -301,6 +329,7 @@ pub struct TrippyConfig {
     pub tos: u8,
     pub icmp_extension_parse_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
+    pub socket_readiness_mode: SocketReadinessMode,
     pub packet_size: u16,
     pub payload_pattern: u8,
     pub source_addr: Option<IpAddr>,
@@ -491,6 +520,11 @@ impl TrippyConfig {
             cfg_file_strategy.read_timeout,
             defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
         );
+        let socket_readiness_mode = SocketReadinessMode::from(cfg_layer(
+            args.socket_readiness_mode,
+            cfg_file_strategy.socket_readiness_mode,
+            SocketReadinessModeConfig::from(defaults::DEFAULT_SOCKET_READINESS_MODE),
+        ));
         let max_samples = cfg_layer(
             args.max_samples,
             cfg_file_strategy.max_samples,
@@ -684,6 +718,7 @@ impl TrippyConfig {
             initial_sequence,
             multipath_strategy,
             read_timeout,
+            socket_readiness_mode,
             packet_size,
             payload_pattern,
             tos,
@@ -740,6 +775,7 @@ impl Default for TrippyConfig {
             tos: defaults::DEFAULT_STRATEGY_TOS,
             icmp_extension_parse_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
+            socket_readiness_mode: defaults::DEFAULT_SOCKET_READINESS_MODE,
             packet_size: defaults::DEFAULT_STRATEGY_PACKET_SIZE,
             payload_pattern: defaults::DEFAULT_STRATEGY_PAYLOAD_PATTERN,
             source_addr: None,
@@ -1380,6 +1416,13 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
+    #[test_case("trip example.com", Ok(cfg().socket_readiness_mode(SocketReadinessMode::Select).build()); "default socket readiness mode")]
+    #[test_case("trip example.com --socket-readiness-mode select", Ok(cfg().socket_readiness_mode(SocketReadinessMode::Select).build()); "select socket readiness mode")]
+    #[test_case("trip example.com --socket-readiness-mode poll", Ok(cfg().socket_readiness_mode(SocketReadinessMode::Poll).build()); "poll socket readiness mode")]
+    fn test_socket_readiness_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
+        compare(parse_config(cmd), expected);
+    }
+
     #[test_case("trip example.com", Ok(cfg().packet_size(84).build()); "default packet size")]
     #[test_case("trip example.com --packet-size 120", Ok(cfg().packet_size(120).build()); "custom packet size")]
     #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value 'foo' for '--packet-size <PACKET_SIZE>': invalid digit found in string For more information, try '--help'.")); "invalid format packet size")]
@@ -1939,6 +1982,15 @@ mod tests {
             Self {
                 config: TrippyConfig {
                     read_timeout,
+                    ..self.config
+                },
+            }
+        }
+
+        pub fn socket_readiness_mode(self, socket_readiness_mode: SocketReadinessMode) -> Self {
+            Self {
+                config: TrippyConfig {
+                    socket_readiness_mode,
                     ..self.config
                 },
             }
