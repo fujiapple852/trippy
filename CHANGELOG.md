@@ -414,7 +414,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Tui ([#72](https://github.com/fujiapple852/trippy/issues/72))
 - Added ability to enable and disable the `AS` lookup from the
   Tui ([#126](https://github.com/fujiapple852/trippy/issues/126))
-- Added ability to switch between hop address display modes (ip, hostname or both) in thr
+- Added ability to switch between hop address display modes (ip, hostname or both) in the
   Tui ([#124](https://github.com/fujiapple852/trippy/issues/124))
 - Added ability to expand and collapse the number of hosts displays per hop in the
   Tui ([#124](https://github.com/fujiapple852/trippy/issues/124))
