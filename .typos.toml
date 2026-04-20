@@ -1,0 +1,30 @@
+# Configuration for `typos` (https://github.com/crate-ci/typos).
+#
+# The intent is to keep the scan narrowly scoped to code and prose written for
+# contributors, rather than translated user-facing strings, generated shell
+# completions, and protocol terms that look like typos to a generic English
+# dictionary.
+
+[files]
+# Translated UI strings live here; they are maintained by translators and any
+# corrections should go through the i18n workflow, not the typo scanner.
+#
+# Generated shell-completion snapshots are written verbatim by the test suite
+# and should not be modified by hand.
+extend-exclude = [
+    "crates/trippy-tui/locales.toml",
+    "crates/trippy-tui/tests/resources/snapshots/*elvish*.snap",
+]
+
+[default.extend-identifiers]
+# Crate name — not a misspelling of "ratatouille".
+ratatui = "ratatui"
+
+[default.extend-words]
+# IP ECN values from RFC 3168 (and the NotECT / Not-ECT spelling used in the
+# codebase and tests). `typos` would otherwise try to rewrite these.
+ECT = "ECT"
+NotECT = "NotECT"
+# Hex byte that appears in hex_literal!() packet-dump fixtures; `typos`
+# otherwise reports it as "by"/"be".
+ba = "ba"
