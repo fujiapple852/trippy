@@ -49,7 +49,7 @@ encoding_rs_io = "0.1.7"
 etcetera = "0.10.0"
 futures-concurrency = "7.6.3"
 hex-literal = "1.1.0"
-hickory-resolver = "0.24.4"
+hickory-resolver = "0.26.0"
 humantime = "2.3.0"
 indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47.2"
