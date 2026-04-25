@@ -150,12 +150,14 @@ mod address {
 }
 
 mod socket {
+    use crate::SocketReadinessMode;
     use crate::error::{ErrorKind, IoError, IoOperation};
     use crate::error::{IoResult, Result};
     use crate::net::socket::{Socket, SocketError};
     use itertools::Itertools;
     use nix::{
         Error,
+        poll::{PollFd, PollFlags, PollTimeout, poll},
         sys::select::FdSet,
         sys::time::{TimeVal, TimeValLike},
     };
@@ -226,6 +228,66 @@ mod socket {
                 .local_addr()
                 .map_err(|err| IoError::Other(err, IoOperation::LocalAddr))?
                 .as_socket())
+        }
+
+        fn is_readable_select(&self, timeout: Duration) -> IoResult<bool> {
+            let mut read = FdSet::new();
+            read.insert(self.inner.as_fd());
+            let readable = nix::sys::select::select(
+                None,
+                Some(&mut read),
+                None,
+                None,
+                Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
+            );
+            match readable {
+                Ok(readable) => Ok(readable == 1),
+                Err(Error::EINTR) => Ok(false),
+                Err(err) => Err(IoError::Other(io::Error::from(err), IoOperation::Select)),
+            }
+        }
+
+        fn is_writable_select(&self) -> IoResult<bool> {
+            let mut write = FdSet::new();
+            write.insert(self.inner.as_fd());
+            let writable = nix::sys::select::select(
+                None,
+                None,
+                Some(&mut write),
+                None,
+                Some(&mut TimeVal::zero()),
+            );
+            match writable {
+                Ok(writable) => Ok(writable == 1),
+                Err(Error::EINTR) => Ok(false),
+                Err(err) => Err(IoError::Other(io::Error::from(err), IoOperation::Select)),
+            }
+        }
+
+        fn is_readable_poll(&self, timeout: Duration) -> IoResult<bool> {
+            let timeout = PollTimeout::try_from(timeout).map_err(|err| {
+                IoError::Other(
+                    io::Error::new(io::ErrorKind::InvalidInput, err),
+                    IoOperation::Poll,
+                )
+            })?;
+            self.is_ready_poll(PollFlags::POLLIN, timeout)
+        }
+
+        fn is_writable_poll(&self) -> IoResult<bool> {
+            self.is_ready_poll(PollFlags::POLLOUT, PollTimeout::ZERO)
+        }
+
+        fn is_ready_poll(&self, events: PollFlags, timeout: PollTimeout) -> IoResult<bool> {
+            let mut fds = [PollFd::new(self.inner.as_fd(), events)];
+            match poll(&mut fds, timeout) {
+                Ok(ready) => Ok(ready == 1
+                    && fds[0].revents().is_some_and(|revents| {
+                        revents.intersects(events | PollFlags::POLLERR | PollFlags::POLLHUP)
+                    })),
+                Err(Error::EINTR) => Ok(false),
+                Err(err) => Err(IoError::Other(io::Error::from(err), IoOperation::Poll)),
+            }
         }
     }
 
@@ -386,43 +448,17 @@ mod socket {
             Ok(())
         }
         #[instrument(skip(self), level = "trace")]
-        fn is_readable(&mut self, timeout: Duration) -> IoResult<bool> {
-            let mut read = FdSet::new();
-            read.insert(self.inner.as_fd());
-            let readable = nix::sys::select::select(
-                None,
-                Some(&mut read),
-                None,
-                None,
-                Some(&mut TimeVal::milliseconds(timeout.as_millis() as i64)),
-            );
-            match readable {
-                Ok(readable) => Ok(readable == 1),
-                Err(Error::EINTR) => Ok(false),
-                Err(err) => Err(IoError::Other(
-                    std::io::Error::from(err),
-                    IoOperation::Select,
-                )),
+        fn is_readable(&mut self, timeout: Duration, mode: SocketReadinessMode) -> IoResult<bool> {
+            match mode {
+                SocketReadinessMode::Select => self.is_readable_select(timeout),
+                SocketReadinessMode::Poll => self.is_readable_poll(timeout),
             }
         }
         #[instrument(skip(self), level = "trace")]
-        fn is_writable(&mut self) -> IoResult<bool> {
-            let mut write = FdSet::new();
-            write.insert(self.inner.as_fd());
-            let writable = nix::sys::select::select(
-                None,
-                None,
-                Some(&mut write),
-                None,
-                Some(&mut TimeVal::zero()),
-            );
-            match writable {
-                Ok(writable) => Ok(writable == 1),
-                Err(Error::EINTR) => Ok(false),
-                Err(err) => Err(IoError::Other(
-                    std::io::Error::from(err),
-                    IoOperation::Select,
-                )),
+        fn is_writable(&mut self, mode: SocketReadinessMode) -> IoResult<bool> {
+            match mode {
+                SocketReadinessMode::Select => self.is_writable_select(),
+                SocketReadinessMode::Poll => self.is_writable_poll(),
             }
         }
         #[instrument(skip(self, buf), level = "trace")]
