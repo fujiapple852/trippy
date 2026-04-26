@@ -1,4 +1,4 @@
-use crate::frontend::render::{bar, body, flows, footer, header, help, settings, tabs};
+use crate::frontend::render::{alert, bar, body, flows, footer, header, help, settings, tabs};
 use crate::frontend::tui_app::TuiApp;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -70,6 +70,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp) {
     } else if app.show_help {
         help::render(f, app);
     }
+    alert::render(f, app);
 }
 
 const LAYOUT_WITHOUT_TABS: [Constraint; 4] = [
