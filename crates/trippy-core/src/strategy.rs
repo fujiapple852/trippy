@@ -49,6 +49,21 @@ pub enum CompletionReason {
     RoundTimeLimitExceeded,
 }
 
+/// The action to take after the completion of a round.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Action {
+    /// Continue tracing.
+    Continue,
+    /// Stop tracing.
+    Stop,
+}
+
+impl From<()> for Action {
+    fn from((): ()) -> Self {
+        Self::Continue
+    }
+}
+
 /// Trace a path to a target.
 #[derive(Debug, Clone)]
 pub struct Strategy<F> {
@@ -56,7 +71,7 @@ pub struct Strategy<F> {
     publish: F,
 }
 
-impl<F: Fn(&Round<'_>)> Strategy<F> {
+impl<F: Fn(&Round<'_>) -> Action> Strategy<F> {
     #[instrument(skip_all, level = "trace")]
     pub fn new(config: &StrategyConfig, publish: F) -> Self {
         tracing::debug!(?config);
@@ -192,8 +207,8 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
         let round_max = round_duration > self.config.max_round_duration;
         let target_found = st.target_found();
         if round_min && grace_exceeded && target_found || round_max {
-            self.publish_trace(st);
-            st.advance_round(self.config.first_ttl);
+            let action = self.publish_trace(st);
+            st.advance_round(self.config.first_ttl, action);
         }
     }
 
@@ -202,7 +217,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
     /// If the round completed without receiving an `EchoReply` from the target host then we also
     /// publish the next `ProbeStatus` which is assumed to represent the TTL of the target host.
     #[instrument(skip(self, state), level = "trace")]
-    fn publish_trace(&self, state: &TracerState) {
+    fn publish_trace(&self, state: &TracerState) -> Action {
         let max_received_ttl = if let Some(target_ttl) = state.target_ttl() {
             target_ttl
         } else {
@@ -220,7 +235,7 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
         } else {
             CompletionReason::RoundTimeLimitExceeded
         };
-        (self.publish)(&Round::new(probes, largest_ttl, reason));
+        (self.publish)(&Round::new(probes, largest_ttl, reason))
     }
 
     /// Check if the `TraceId` matches the expected value for this tracer.
@@ -840,7 +855,7 @@ mod tests {
             protocol: Protocol::Tcp,
             ..Default::default()
         };
-        let tracer = Strategy::new(&config, |_| {});
+        let tracer = Strategy::new(&config, |_| Action::Continue);
         let mut state = TracerState::new(config);
         tracer.send_request(&mut network, &mut state)?;
         tracer.recv_response(&mut network, &mut state)?;
@@ -870,7 +885,7 @@ mod state {
     use crate::probe::{Probe, ProbeStatus};
     use crate::strategy::{StrategyConfig, StrategyResponse};
     use crate::types::{MaxRounds, Port, RoundId, Sequence, TimeToLive, TraceId};
-    use crate::{Flags, MultipathStrategy, PortDirection, Protocol};
+    use crate::{Action, Flags, MultipathStrategy, PortDirection, Protocol};
     use std::array::from_fn;
     use std::net::IpAddr;
     use std::time::SystemTime;
@@ -929,6 +944,8 @@ mod state {
         target_ttl: Option<TimeToLive>,
         /// The timestamp of the echo response packet.
         received_time: Option<SystemTime>,
+        /// The action to take before starting the next round.
+        next_round_action: Action,
     }
 
     impl TracerState {
@@ -945,6 +962,7 @@ mod state {
                 max_received_ttl: None,
                 target_ttl: None,
                 received_time: None,
+                next_round_action: Action::Continue,
             }
         }
 
@@ -995,11 +1013,12 @@ mod state {
         }
 
         /// Are all rounds complete?
-        pub const fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
-            match max_rounds {
-                None => false,
-                Some(max_rounds) => self.round.0 > max_rounds.0.get() - 1,
-            }
+        pub fn finished(&self, max_rounds: Option<MaxRounds>) -> bool {
+            self.next_round_action == Action::Stop
+                || match max_rounds {
+                    None => false,
+                    Some(max_rounds) => self.round.0 > max_rounds.0.get() - 1,
+                }
         }
 
         /// Create and return the next `Probe` at the current `sequence` and `ttl`.
@@ -1257,7 +1276,8 @@ mod state {
         /// reset it here. We do this here to avoid having to deal with the sequence number
         /// wrapping during a round, which is more problematic.
         #[instrument(skip(self), level = "trace")]
-        pub fn advance_round(&mut self, first_ttl: TimeToLive) {
+        pub fn advance_round(&mut self, first_ttl: TimeToLive, next_round_action: Action) {
+            self.next_round_action = next_round_action;
             if self.sequence >= self.max_sequence() {
                 self.sequence = self.config.initial_sequence;
             }
@@ -1375,7 +1395,7 @@ mod state {
             }
 
             // Advance to the next round
-            state.advance_round(TimeToLive(1));
+            state.advance_round(TimeToLive(1), Action::Continue);
 
             // Validate the `TracerState` after the round update
             assert_eq!(state.round, RoundId(1));
@@ -1509,7 +1529,7 @@ mod state {
             }
 
             // Advance the round, which will wrap the sequence back to `initial_sequence`
-            state.advance_round(TimeToLive(1));
+            state.advance_round(TimeToLive(1), Action::Continue);
             assert_eq!(state.round, RoundId(1));
             assert_eq!(state.sequence, initial_sequence);
             assert_eq!(state.round_sequence, initial_sequence);
@@ -1547,7 +1567,7 @@ mod state {
                 for _ in 0..max_probe_per_round {
                     let _probe = state.next_probe(SystemTime::now());
                 }
-                state.advance_round(TimeToLive(1));
+                state.advance_round(TimeToLive(1), Action::Continue);
             }
             assert_eq!(state.round, RoundId(2000));
             assert_eq!(state.round_sequence, Sequence(33434));
@@ -1564,7 +1584,7 @@ mod state {
                 for _ in 0..rng.random_range(0..max_probe_per_round) {
                     state.next_probe(SystemTime::now());
                 }
-                state.advance_round(TimeToLive(1));
+                state.advance_round(TimeToLive(1), Action::Continue);
             }
         }
 
@@ -1578,7 +1598,7 @@ mod state {
                     _ = state.next_probe(SystemTime::now());
                     _ = state.reissue_probe(SystemTime::now());
                 }
-                state.advance_round(TimeToLive(1));
+                state.advance_round(TimeToLive(1), Action::Continue);
             }
             assert_eq!(state.round, RoundId(2000));
             assert_eq!(state.round_sequence, Sequence(57310));
@@ -1600,7 +1620,7 @@ mod state {
             for _ in 0..55 {
                 _ = state.next_probe(SystemTime::now());
             }
-            state.advance_round(TimeToLive(1));
+            state.advance_round(TimeToLive(1), Action::Continue);
             assert!(!state.in_round(Sequence(64491)));
         }
 
