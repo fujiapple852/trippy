@@ -116,6 +116,26 @@ mod ipinfo {
         pub continent_name: Option<String>,
     }
 
+    /// The `IPinfo Lite` mmdb database format.
+    ///
+    /// See <https://ipinfo.io/developers/ipinfo-lite-database>
+    #[serde_as]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct IpInfoLiteGeoIp {
+        /// "US"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub country_code: Option<String>,
+        /// "Japan"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub country: Option<String>,
+        /// "Asia"
+        #[serde(default)]
+        #[serde_as(as = "serde_with::NoneAsEmptyString")]
+        pub continent: Option<String>,
+    }
+
     #[cfg(test)]
     mod tests {
         use super::*;
@@ -133,6 +153,11 @@ mod ipinfo {
             assert_eq!(None, value.country.as_deref());
             assert_eq!(None, value.country_name.as_deref());
             assert_eq!(None, value.continent_name.as_deref());
+
+            let value: IpInfoLiteGeoIp = serde_json::from_str(json).unwrap();
+            assert_eq!(None, value.country_code.as_deref());
+            assert_eq!(None, value.country.as_deref());
+            assert_eq!(None, value.continent.as_deref());
         }
 
         #[test]
@@ -191,6 +216,26 @@ mod ipinfo {
             assert_eq!(None, value.country_name.as_deref());
             assert_eq!(None, value.continent_name.as_deref());
         }
+
+        #[test]
+        fn test_lite_db_format() {
+            let json = r#"
+                {
+                    "network": "40.96.54.192/26",
+                    "country_code": "JP",
+                    "country": "Japan",
+                    "continent_code": "AS",
+                    "continent": "Asia",
+                    "asn": "AS8075",
+                    "as_name": "Microsoft Corporation",
+                    "as_domain": "microsoft.com"
+                }
+                "#;
+            let value: IpInfoLiteGeoIp = serde_json::from_str(json).unwrap();
+            assert_eq!(Some("JP"), value.country_code.as_deref());
+            assert_eq!(Some("Japan"), value.country.as_deref());
+            assert_eq!(Some("Asia"), value.continent.as_deref());
+        }
     }
 }
 
@@ -206,6 +251,17 @@ impl From<ipinfo::IpInfoGeoIp> for GeoIpCity {
             country: value.country_name,
             country_code: value.country,
             continent: value.continent_name,
+        }
+    }
+}
+
+impl From<ipinfo::IpInfoLiteGeoIp> for GeoIpCity {
+    fn from(value: ipinfo::IpInfoLiteGeoIp) -> Self {
+        Self {
+            country: value.country,
+            country_code: value.country_code,
+            continent: value.continent,
+            ..Default::default()
         }
     }
 }
@@ -296,14 +352,16 @@ impl GeoIpLookup {
                 return Ok(geo.clone());
             }
             let lookup_result = reader.lookup(addr)?;
-            let city_data = if reader.metadata.database_type.starts_with("ipinfo") {
-                lookup_result
+            let city_data = match reader.metadata.database_type.strip_prefix("ipinfo ") {
+                Some("bundle_location_lite.mmdb") => lookup_result
+                    .decode::<ipinfo::IpInfoLiteGeoIp>()?
+                    .map(GeoIpCity::from),
+                Some("generic_country_free_country_asn.mmdb") => lookup_result
                     .decode::<ipinfo::IpInfoGeoIp>()?
-                    .map(GeoIpCity::from)
-            } else {
-                lookup_result
+                    .map(GeoIpCity::from),
+                _ => lookup_result
                     .decode::<maxminddb::geoip2::City<'_>>()?
-                    .map(|city| GeoIpCity::from((city, self.locale.as_ref())))
+                    .map(|city| GeoIpCity::from((city, self.locale.as_ref()))),
             };
             let cached = city_data.map(Rc::new);
             self.cache.borrow_mut().insert(addr, cached.clone());
