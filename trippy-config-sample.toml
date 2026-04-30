@@ -299,8 +299,10 @@ tui-icmp-extension-mode = "off"
 #
 # Supported mmdb formats:
 #   MaxMind "GeoLite2 City"
-#   IPinfo "IP to Country + ASN Database"
-#   IPinfo "IP to Geolocation Extended Database"
+#   IPinfo "IP to Country + ASN Database" (legacy)
+#   IPinfo "IP to Geolocation Extended Database" (legacy)
+#   IPinfo "Lite", "Core", and "Plus"
+#   IPinfo "IP to Geolocation Database"
 # geoip-mmdb-file = "/path/to/geoip_file.mmdb"
 
 # How to render GeoIp information.
