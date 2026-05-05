@@ -71,7 +71,7 @@ strum = { version = "0.28.0", default-features = false }
 sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "2.0.3"
-tokio = "1.52.1"
+tokio = "1.52.2"
 tokio-util = "0.7.18"
 toml = { version = "1.1.2", default-features = false, features = ["serde"] }
 tracing = "0.1.44"
