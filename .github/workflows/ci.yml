@@ -21,19 +21,19 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: linux-musl-stable
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             rust: stable
           - build: linux-beta
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: beta
           - build: linux-nightly
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: nightly
           - build: macos-stable
@@ -64,11 +64,11 @@ jobs:
         build: [ netbsd, freebsd ]
         include:
           - build: netbsd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-netbsd
             rust: stable
           - build: freebsd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-freebsd
             rust: stable
     steps:
@@ -99,7 +99,7 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
@@ -139,7 +139,7 @@ jobs:
         run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
 
   fmt:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -159,7 +159,7 @@ jobs:
           - windows-stable
         include:
           - build: linux-stable
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             rust: stable
           - build: macos-stable
@@ -180,7 +180,7 @@ jobs:
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
   build-docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -188,7 +188,7 @@ jobs:
         run: docker build -t trippy-docker-image .
 
   cargo-deny:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
@@ -200,7 +200,7 @@ jobs:
           command-arguments: "--hide-inclusion-graph"
 
   cargo-msrv:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -220,13 +220,13 @@ jobs:
         run: cargo msrv verify --output-format json --manifest-path crates/trippy-privilege/Cargo.toml -- cargo check
 
   style:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dprint/check@v2.2
 
   conventional-commits:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Conventional Commits Lint
@@ -236,7 +236,7 @@ jobs:
           allowed-commit-types: "feat,fix,chore,docs,style,refactor,test,build,ci,revert"
 
   spelling:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Install cargo-spellcheck
         uses: taiki-e/install-action@v2

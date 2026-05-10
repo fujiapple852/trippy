@@ -6,7 +6,7 @@ on:
 jobs:
   create-release:
     name: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.release.outputs.upload_url }}
       trip_version: ${{ env.TRIP_VERSION }}
@@ -50,27 +50,27 @@ jobs:
         include:
           # Linux (x86_64 & aarch64)
           - build: x86_64-linux-gnu
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
           - build: x86_64-linux-musl
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
           - build: aarch64-linux-gnu
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
           - build: aarch64-linux-musl
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: aarch64-unknown-linux-musl
 
           # Linux (armv7)
           - build: armv7-linux-gnueabihf
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: armv7-unknown-linux-gnueabihf
           - build: armv7-linux-musleabihf
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: armv7-unknown-linux-musleabihf
           - build: armv7-linux-musleabi
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: armv7-unknown-linux-musleabi
 
           # macOS (x86_64 & aarch64)
@@ -86,7 +86,7 @@ jobs:
             os: windows-2022
             target: x86_64-pc-windows-msvc
           - build: x86_64-pc-windows-gnu
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-pc-windows-gnu
           - build: aarch64-pc-windows-msvc
             os: windows-2022
@@ -94,10 +94,10 @@ jobs:
 
           # BSD (x86_64)
           - build: x86_64-netbsd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-netbsd
           - build: x86_64-freebsd
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: x86_64-unknown-freebsd
 
     steps:
