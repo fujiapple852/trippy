@@ -11,4 +11,6 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 ignore = [
   # allow unmaintained paste crate
   { id = "RUSTSEC-2024-0436" },
+  # allow as risk is not applicable
+  { id = "RUSTSEC-2026-0119" },
 ]
