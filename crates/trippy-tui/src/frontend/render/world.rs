@@ -201,18 +201,18 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
     let mut geo_map: HashMap<String, MapEntry> = HashMap::new();
     for hop in app.tracer_data().hops_for_flow(app.selected_flow) {
         for addr in hop.addrs() {
-            if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default() {
-                if let Some((latitude, longitude, radius)) = geo.coordinates() {
-                    let entry = geo_map.entry(geo.long_name()).or_insert_with(|| MapEntry {
-                        long_name: geo.long_name(),
-                        location: format!("{latitude}, {longitude} ~{radius}{}", t!("kilometer")),
-                        latitude,
-                        longitude,
-                        radius,
-                        hops: vec![],
-                    });
-                    entry.hops.push(hop.ttl());
-                }
+            if let Some(geo) = app.geoip_lookup.lookup(*addr).unwrap_or_default()
+                && let Some((latitude, longitude, radius)) = geo.coordinates()
+            {
+                let entry = geo_map.entry(geo.long_name()).or_insert_with(|| MapEntry {
+                    long_name: geo.long_name(),
+                    location: format!("{latitude}, {longitude} ~{radius}{}", t!("kilometer")),
+                    latitude,
+                    longitude,
+                    radius,
+                    hops: vec![],
+                });
+                entry.hops.push(hop.ttl());
             }
         }
     }

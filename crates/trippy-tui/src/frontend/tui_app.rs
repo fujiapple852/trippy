@@ -106,10 +106,10 @@ impl TuiApp {
 
     pub fn clamp_selected_hop(&mut self) {
         let hop_count = self.tracer_data().hops_for_flow(self.selected_flow).len();
-        if let Some(selected) = self.table_state.selected() {
-            if selected > hop_count - 1 {
-                self.table_state.select(Some(hop_count - 1));
-            }
+        if let Some(selected) = self.table_state.selected()
+            && selected > hop_count - 1
+        {
+            self.table_state.select(Some(hop_count - 1));
         }
     }
 
@@ -191,10 +191,10 @@ impl TuiApp {
     }
 
     pub fn next_hop_address(&mut self) {
-        if let Some(hop) = self.selected_hop() {
-            if self.selected_hop_address < hop.addr_count() - 1 {
-                self.selected_hop_address += 1;
-            }
+        if let Some(hop) = self.selected_hop()
+            && self.selected_hop_address < hop.addr_count() - 1
+        {
+            self.selected_hop_address += 1;
         }
     }
 
@@ -288,33 +288,32 @@ impl TuiApp {
     }
 
     pub fn toggle_column_visibility(&mut self) {
-        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
-            if let Some(selected) = self.setting_table_state.selected() {
-                self.tui_config.tui_columns.toggle(selected);
-            }
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS
+            && let Some(selected) = self.setting_table_state.selected()
+        {
+            self.tui_config.tui_columns.toggle(selected);
         }
     }
 
     pub fn move_column_down(&mut self) {
         if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
             let count = self.tui_config.tui_columns.all_columns_count();
-            if let Some(selected) = self.setting_table_state.selected() {
-                if selected < count - 1 {
-                    self.tui_config.tui_columns.move_down(selected);
-                    self.setting_table_state.select(Some(selected + 1));
-                }
+            if let Some(selected) = self.setting_table_state.selected()
+                && selected < count - 1
+            {
+                self.tui_config.tui_columns.move_down(selected);
+                self.setting_table_state.select(Some(selected + 1));
             }
         }
     }
 
     pub fn move_column_up(&mut self) {
-        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS {
-            if let Some(selected) = self.setting_table_state.selected() {
-                if selected > 0 {
-                    self.tui_config.tui_columns.move_up(selected);
-                    self.setting_table_state.select(Some(selected - 1));
-                }
-            }
+        if self.settings_tab_selected == SETTINGS_TAB_COLUMNS
+            && let Some(selected) = self.setting_table_state.selected()
+            && selected > 0
+        {
+            self.tui_config.tui_columns.move_up(selected);
+            self.setting_table_state.select(Some(selected - 1));
         }
     }
 

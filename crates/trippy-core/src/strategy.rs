@@ -164,12 +164,12 @@ impl<F: Fn(&Round<'_>)> Strategy<F> {
     /// larger time-to-live values before the `EchoReply` is received.
     fn recv_response<N: Network>(&self, network: &mut N, st: &mut TracerState) -> Result<()> {
         let next = network.recv_probe()?;
-        if let Some(resp) = next {
-            if self.validate(resp.data()) {
-                let resp = StrategyResponse::from((resp, &self.config));
-                if self.check_trace_id(resp.trace_id) && st.in_round(resp.sequence) {
-                    st.complete_probe(resp);
-                }
+        if let Some(resp) = next
+            && self.validate(resp.data())
+        {
+            let resp = StrategyResponse::from((resp, &self.config));
+            if self.check_trace_id(resp.trace_id) && st.in_round(resp.sequence) {
+                st.complete_probe(resp);
             }
         }
         Ok(())
