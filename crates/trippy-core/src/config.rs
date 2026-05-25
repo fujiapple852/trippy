@@ -9,7 +9,7 @@ use std::time::Duration;
 
 /// Default values for configuration.
 pub mod defaults {
-    use crate::config::IcmpExtensionParseMode;
+    use crate::config::{IcmpExtensionParseMode, SocketReadinessMode};
     use crate::{MultipathStrategy, PrivilegeMode, Protocol};
     use std::time::Duration;
 
@@ -55,6 +55,9 @@ pub mod defaults {
 
     /// The default value for `read-timeout`.
     pub const DEFAULT_STRATEGY_READ_TIMEOUT: Duration = Duration::from_millis(10);
+
+    /// The default value for `socket-readiness-mode`.
+    pub const DEFAULT_SOCKET_READINESS_MODE: SocketReadinessMode = SocketReadinessMode::Select;
 
     /// The default value for `grace-duration`.
     pub const DEFAULT_STRATEGY_GRACE_DURATION: Duration = Duration::from_millis(100);
@@ -121,6 +124,24 @@ impl Display for IcmpExtensionParseMode {
         match self {
             Self::Disabled => write!(f, "disabled"),
             Self::Enabled => write!(f, "enabled"),
+        }
+    }
+}
+
+/// The socket readiness backend.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum SocketReadinessMode {
+    /// Use `select` for socket readiness checks.
+    Select,
+    /// Use `poll` for socket readiness checks.
+    Poll,
+}
+
+impl Display for SocketReadinessMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Select => write!(f, "select"),
+            Self::Poll => write!(f, "poll"),
         }
     }
 }
@@ -282,6 +303,7 @@ pub struct ChannelConfig {
     pub tos: TypeOfService,
     pub icmp_extension_parse_mode: IcmpExtensionParseMode,
     pub read_timeout: Duration,
+    pub socket_readiness_mode: SocketReadinessMode,
     pub tcp_connect_timeout: Duration,
 }
 
@@ -298,6 +320,7 @@ impl Default for ChannelConfig {
             tos: TypeOfService(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extension_parse_mode: defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE,
             read_timeout: defaults::DEFAULT_STRATEGY_READ_TIMEOUT,
+            socket_readiness_mode: defaults::DEFAULT_SOCKET_READINESS_MODE,
             tcp_connect_timeout: defaults::DEFAULT_STRATEGY_TCP_CONNECT_TIMEOUT,
         }
     }
