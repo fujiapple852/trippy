@@ -624,7 +624,7 @@ mod state_updater {
                     hop.best = hop.best.map_or(Some(dur), |d| Some(d.min(dur)));
                     hop.worst = hop.worst.map_or(Some(dur), |d| Some(d.max(dur)));
                     hop.mean += (dur_ms - hop.mean) / hop.total_recv as f64;
-                    hop.m2 += (dur_ms - hop.mean) * (dur_ms - hop.mean);
+                    hop.m2 = (dur_ms - hop.mean).mul_add(dur_ms - hop.mean, hop.m2);
                     if hop.samples.len() > state.max_samples {
                         hop.samples.pop();
                     }
