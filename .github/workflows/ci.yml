@@ -177,6 +177,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ !startsWith(matrix.build, 'windows') }}
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
   build-docker:
