@@ -1,4 +1,4 @@
-use crate::config::{Args, TuiCommandItem, TuiThemeItem};
+use crate::config::{Args, TuiCommandItem, TuiTheme, TuiThemeItem};
 use crate::locale::available_locales;
 use clap::CommandFactory;
 use clap_complete::Shell;
@@ -7,6 +7,11 @@ use strum::VariantNames;
 
 pub fn print_tui_theme_items() {
     println!("{}", tui_theme_items());
+    process::exit(0);
+}
+
+pub fn print_tui_themes() {
+    println!("{}", tui_themes());
     process::exit(0);
 }
 
@@ -42,6 +47,10 @@ fn tui_theme_items() -> String {
     )
 }
 
+fn tui_themes() -> String {
+    format!("TUI themes: {}", TuiTheme::available().join(", "))
+}
+
 fn tui_binding_commands() -> String {
     format!(
         "TUI binding commands: {}",
@@ -71,6 +80,7 @@ pub mod tests {
     use test_case::test_case;
 
     #[test_case(&tui_theme_items(), "tui theme items match"; "tui theme items match")]
+    #[test_case(&tui_themes(), "tui themes match"; "tui themes match")]
     #[test_case(&tui_binding_commands(), "tui binding commands match"; "tui binding commands match")]
     #[test_case(&shell_completions(Shell::Bash).unwrap(), "generate bash shell completions"; "generate bash shell completions")]
     #[test_case(&shell_completions(Shell::Elvish).unwrap(), "generate elvish shell completions"; "generate elvish shell completions")]

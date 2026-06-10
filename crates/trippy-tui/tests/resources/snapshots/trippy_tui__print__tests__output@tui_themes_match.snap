@@ -1,0 +1,4 @@
+---
+source: crates/trippy-tui/src/print.rs
+---
+TUIthemes:catppuccin-frappe,catppuccin-latte,catppuccin-macchiato,catppuccin-mocha,trippy

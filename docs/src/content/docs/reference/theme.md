@@ -1,12 +1,22 @@
 ---
 title: Theme Reference
-description: A reference for customizing the Trippy TUI theme.
+description: A reference for built-in and custom Trippy TUI themes.
 sidebar:
   order: 5
 ---
 
-The following table lists the default Tui color theme. These can be overridden with the `--tui-theme-colors` command
-line option or in the `theme-colors` section of the configuration file.
+Trippy includes built-in named themes. Select one with `--tui-theme` or `tui-theme = "..."` in the
+`[tui]` section of the config file. Print the available built-in themes with `--print-tui-themes`.
+
+Theme resolution uses this precedence order:
+
+1. The selected built-in theme (defaults to the `trippy` theme)
+2. The `[theme-colors]` config section
+3. The `--tui-theme-colors` CLI option
+
+The following table lists the `trippy` theme values. These can be overridden with the
+`--tui-theme-colors` command line option or in the `theme-colors` section of the configuration
+file.
 
 | Item                                          | Description                                                      | Default      |
 | --------------------------------------------- | ---------------------------------------------------------------- | ------------ |
