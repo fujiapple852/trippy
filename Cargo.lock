@@ -805,7 +805,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1458,6 +1458,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1809,7 +1818,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2265,7 +2274,7 @@ dependencies = [
  "critical-section",
  "hashbrown 0.17.1",
  "indoc",
- "itertools",
+ "itertools 0.14.0",
  "kasuari",
  "lru",
  "palette",
@@ -2319,7 +2328,7 @@ dependencies = [
  "hashbrown 0.17.1",
  "indoc",
  "instability",
- "itertools",
+ "itertools 0.14.0",
  "line-clipping",
  "ratatui-core",
  "serde",
@@ -2412,7 +2421,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2714,7 +2723,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2724,7 +2733,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "230a1b821ccbd75b185820a1f1ff7b14d21da1e442e22c0863ea5f08771a8874"
 dependencies = [
  "rustix",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3013,7 +3022,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "itertools",
+ "itertools 0.15.0",
  "trippy",
 ]
 
@@ -3125,7 +3134,7 @@ dependencies = [
  "futures-concurrency",
  "hex-literal",
  "indexmap",
- "itertools",
+ "itertools 0.15.0",
  "mockall",
  "nix 0.31.3",
  "parking_lot",
@@ -3155,7 +3164,7 @@ dependencies = [
  "crossbeam",
  "dns-lookup",
  "hickory-resolver",
- "itertools",
+ "itertools 0.15.0",
  "parking_lot",
  "thiserror 2.0.18",
 ]
@@ -3166,7 +3175,7 @@ version = "0.14.0-dev"
 dependencies = [
  "anyhow",
  "hex-literal",
- "itertools",
+ "itertools 0.15.0",
  "thiserror 2.0.18",
 ]
 
@@ -3200,7 +3209,7 @@ dependencies = [
  "etcetera",
  "humantime",
  "insta",
- "itertools",
+ "itertools 0.15.0",
  "maxminddb",
  "petgraph",
  "pretty_assertions",
@@ -3296,7 +3305,7 @@ version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16b380a1238663e5f8a691f9039c73e1cdae598a30e9855f541d29b08b53e9a5"
 dependencies = [
- "itertools",
+ "itertools 0.14.0",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -3907,7 +3916,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d6f32a0ff4a9f6f01231eb2059cc85479330739333e0e58cadf03b6af2cca10"
 dependencies = [
  "cfg-if",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
