@@ -471,8 +471,11 @@ fn extract_udp_packet(ipv6: &Ipv6Packet<'_>) -> Result<(u16, u16, u16, u16)> {
 ///    packet in one piece, link-specific fragmentation and reassembly must
 ///    be provided at a layer below IPv6."
 ///
-/// The maximum packet size we allow is 1024, and so we can safely assume that the originating IPv6
-/// packet being extracted will be at least as large as the minimum IPv6 packet size.
+/// Therefore, an `ICMPv6` error message can include at least 1232 octets of
+/// the quoted packet; 1280 octets for the IPv6 minimum, less 40 octets for
+/// the outer IPv6 header and 8 octets for the `ICMPv6` header. This is
+/// always large enough to include the quoted IPv6 header and original TCP
+/// header.
 ///
 /// [rfc4443]: https://datatracker.ietf.org/doc/html/rfc4443#section-2.4
 /// [rfc2460]: https://datatracker.ietf.org/doc/html/rfc2460#section-5
@@ -610,7 +613,7 @@ mod tests {
         let probe = make_icmp_probe();
         let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
         let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
-        let packet_size = PacketSize(1025);
+        let packet_size = PacketSize(1249);
         let payload_pattern = PayloadPattern(0x00);
         let mut mocket = MockSocket::new();
         let ipv6 = Ipv6 {
@@ -989,7 +992,7 @@ mod tests {
         let src_addr = Ipv6Addr::from_str("fd7a:115c:a1e0:ab12:4843:cd96:6263:82a")?;
         let dest_addr = Ipv6Addr::from_str("2a00:1450:4009:815::200e")?;
         let privilege_mode = PrivilegeMode::Privileged;
-        let packet_size = PacketSize(1025);
+        let packet_size = PacketSize(1249);
         let payload_pattern = PayloadPattern(0x00);
         let initial_sequence = Sequence(33434);
         let mut mocket = MockSocket::new();

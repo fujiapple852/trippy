@@ -661,7 +661,7 @@ mod tests {
         let probe = make_icmp_probe();
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
-        let packet_size = PacketSize(1025);
+        let packet_size = PacketSize(1249);
         let payload_pattern = PayloadPattern(0x00);
         let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
@@ -1152,7 +1152,7 @@ mod tests {
         let src_addr = Ipv4Addr::from_str("1.2.3.4")?;
         let dest_addr = Ipv4Addr::from_str("5.6.7.8")?;
         let privilege_mode = PrivilegeMode::Privileged;
-        let packet_size = PacketSize(1025);
+        let packet_size = PacketSize(1249);
         let payload_pattern = PayloadPattern(0x00);
         let byte_order = platform::Ipv4ByteOrder::Network;
         let mut mocket = MockSocket::new();
@@ -1973,7 +1973,7 @@ mod tests {
         assert_eq!(31829, src_port);
         assert_eq!(33030, dest_port);
         assert_eq!(Some(TypeOfService(0)), tos);
-        assert_eq!(9963, expected_udp_checksum);
+        assert_eq!(9515, expected_udp_checksum);
         assert_eq!(58571, actual_udp_checksum);
         assert_eq!(2040, payload_len);
         assert!(!has_magic);
