@@ -54,7 +54,7 @@ humantime = "2.3.0"
 indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47.2"
 itertools = "0.15.0"
-maxminddb = "0.28.1"
+maxminddb = "0.29.0"
 mockall = "0.14.0"
 nix = { version = "0.31.3", default-features = false }
 parking_lot = "0.12.5"
