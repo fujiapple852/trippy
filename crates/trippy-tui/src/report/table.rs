@@ -11,8 +11,15 @@ pub fn report_md<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: Option<u8>,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN)
+    run_report_table(
+        info,
+        report_cycles,
+        resolver,
+        ASCII_MARKDOWN,
+        privacy_max_ttl,
+    )
 }
 
 /// Generate a pretty table report of trace data.
@@ -21,8 +28,9 @@ pub fn report_pretty<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: Option<u8>,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, UTF8_FULL)
+    run_report_table(info, report_cycles, resolver, UTF8_FULL, privacy_max_ttl)
 }
 
 fn run_report_table<R: Resolver>(
@@ -30,6 +38,7 @@ fn run_report_table<R: Resolver>(
     report_cycles: usize,
     resolver: &R,
     preset: &str,
+    privacy_max_ttl: Option<u8>,
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
     let columns = vec![
@@ -42,8 +51,11 @@ fn run_report_table<R: Resolver>(
         .set_header(columns);
     for hop in trace.hops() {
         let ttl = hop.ttl().to_string();
+        let is_private = privacy_max_ttl >= Some(hop.ttl());
         let ips = hop.addrs().join("\n");
-        let ip = if ips.is_empty() {
+        let ip = if is_private {
+            String::from("**hidden**")
+        } else if ips.is_empty() {
             String::from("???")
         } else {
             ips
@@ -52,7 +64,9 @@ fn run_report_table<R: Resolver>(
             .addrs()
             .map(|ip| resolver.reverse_lookup(*ip).to_string())
             .join("\n");
-        let host = if hosts.is_empty() {
+        let host = if is_private {
+            String::from("**hidden**")
+        } else if hosts.is_empty() {
             String::from("???")
         } else {
             hosts
