@@ -78,6 +78,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
       - name: Use Cross
         shell: bash
         run: |
