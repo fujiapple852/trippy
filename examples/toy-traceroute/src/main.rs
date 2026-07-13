@@ -84,7 +84,7 @@ fn main() -> anyhow::Result<()> {
         .build()?;
     println!(
         "traceroute to {} ({}), {} hops max, {} byte packets",
-        &hostname,
+        hostname,
         tracer.target_addr(),
         tracer.max_ttl().0,
         tracer.packet_size().0
