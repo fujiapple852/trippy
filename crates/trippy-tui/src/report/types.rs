@@ -80,15 +80,55 @@ impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
     }
 }
 
+impl Hop {
+    /// Create a `Hop` with IP and hostname masked for privacy.
+    pub(crate) fn private(value: &trippy_core::Hop) -> Self {
+        let extensions = value.extensions().map(Extensions::from).unwrap_or_default();
+        Self {
+            ttl: value.ttl(),
+            hosts: Hosts::private(),
+            extensions,
+            loss_pct: value.loss_pct(),
+            sent: value.total_sent(),
+            last: value.last_ms().unwrap_or_default(),
+            recv: value.total_recv(),
+            avg: value.avg_ms(),
+            best: value.best_ms().unwrap_or_default(),
+            worst: value.worst_ms().unwrap_or_default(),
+            stddev: value.stddev_ms(),
+            jitter: value.jitter_ms().unwrap_or_default(),
+            javg: value.javg_ms(),
+            jmax: value.jmax_ms().unwrap_or_default(),
+            jinta: value.jinta(),
+            nat: match value.last_nat_status() {
+                NatStatus::NotApplicable => None,
+                NatStatus::NotDetected => Some(false),
+                NatStatus::Detected => Some(true),
+            },
+            tos: value.tos().unwrap_or_default().0,
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct Hosts(pub Vec<Host>);
+
+impl Hosts {
+    /// Create `Hosts` with a single masked entry for privacy.
+    pub(crate) fn private() -> Self {
+        Self(vec![Host {
+            ip: None,
+            hostname: String::from("**hidden**"),
+        }])
+    }
+}
 
 impl<'a, R: Resolver, I: Iterator<Item = &'a IpAddr>> From<(I, &R)> for Hosts {
     fn from((value, resolver): (I, &R)) -> Self {
         Self(
             value
                 .map(|ip| Host {
-                    ip: *ip,
+                    ip: Some(*ip),
                     hostname: resolver.reverse_lookup(*ip).to_string(),
                 })
                 .collect(),
@@ -104,13 +144,17 @@ impl Display for Hosts {
 
 #[derive(Serialize)]
 pub struct Host {
-    pub ip: IpAddr,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ip: Option<IpAddr>,
     pub hostname: String,
 }
 
 impl Display for Host {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.ip)
+        match self.ip {
+            Some(ip) => write!(f, "{ip}"),
+            None => write!(f, "**hidden**"),
+        }
     }
 }
 
