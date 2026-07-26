@@ -49,9 +49,17 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
 /// `BarChart` renders bars left-to-right and simply clips whatever doesn't fit, so without this
 /// the highest-frequency bucket can be pushed off-screen if it doesn't happen to be amongst the
 /// first buckets shown.
+///
+/// `width` is the full `rect` width passed to `render`, i.e. before the surrounding
+/// `Borders::ALL` block is applied, so two columns (one per side) are reserved for it here.
+/// The bar count itself mirrors `BarChart`'s own sizing rule (`(space + bar_gap) /
+/// (bar_width + bar_gap)`): the last visible bar doesn't need a trailing gap after it, so a
+/// plain `inner_width / bar_and_gap` would undercount by one bar whenever `inner_width mod
+/// bar_and_gap == bar_width`.
 fn windowed_around_peak(freq_data: &[(String, u64)], width: u16) -> &[(String, u64)] {
     let bar_and_gap = BAR_WIDTH + BAR_GAP;
-    let max_bars = usize::from(width / bar_and_gap).max(1);
+    let inner_width = width.saturating_sub(2);
+    let max_bars = usize::from((inner_width + BAR_GAP) / bar_and_gap).max(1);
     if freq_data.len() <= max_bars {
         return freq_data;
     }
@@ -106,9 +114,9 @@ mod tests {
 
     #[test]
     fn centres_on_the_peak_when_it_does_not_fit() {
-        // width 20 / (bar_width 4 + bar_gap 1) == 4 bars visible.
+        // rect width 22 -> inner width 20 -> (20 + 1) / (4 + 1) == 4 bars visible.
         let freq_data = data(&[1, 1, 1, 1, 1, 9, 1, 1, 1, 1, 1]);
-        let visible = windowed_around_peak(&freq_data, 20);
+        let visible = windowed_around_peak(&freq_data, 22);
         assert_eq!(visible.len(), 4);
         assert!(visible.iter().any(|(_, c)| *c == 9));
     }
@@ -116,7 +124,7 @@ mod tests {
     #[test]
     fn clamps_the_window_to_the_start_of_the_data() {
         let freq_data = data(&[9, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
-        let visible = windowed_around_peak(&freq_data, 20);
+        let visible = windowed_around_peak(&freq_data, 22);
         assert_eq!(visible.len(), 4);
         assert_eq!(visible[0].1, 9);
     }
@@ -124,7 +132,7 @@ mod tests {
     #[test]
     fn clamps_the_window_to_the_end_of_the_data() {
         let freq_data = data(&[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9]);
-        let visible = windowed_around_peak(&freq_data, 20);
+        let visible = windowed_around_peak(&freq_data, 22);
         assert_eq!(visible.len(), 4);
         assert_eq!(visible.last().unwrap().1, 9);
     }
@@ -134,5 +142,27 @@ mod tests {
         let freq_data = data(&[1, 2, 3]);
         let visible = windowed_around_peak(&freq_data, 1);
         assert_eq!(visible.len(), 1);
+    }
+
+    #[test]
+    fn accounts_for_the_last_bar_not_needing_a_trailing_gap() {
+        // rect width 21 -> inner width 19 -> the widget's own sizing rule
+        // ((space + gap) / (bar_width + gap) == (19 + 1) / 5 == 4) fits one more
+        // bar than a naive `inner_width / (bar_width + gap)` (19 / 5 == 3) would,
+        // because the last visible bar doesn't need a trailing gap after it.
+        let freq_data = data(&[1, 2, 3, 4, 5, 6]);
+        let visible = windowed_around_peak(&freq_data, 21);
+        assert_eq!(visible.len(), 4);
+    }
+
+    #[test]
+    fn accounts_for_the_two_columns_taken_by_the_border() {
+        // A rounded `Borders::ALL` block consumes one column on each side, so the
+        // bar area only has `rect.width - 2` columns to work with, not the full
+        // `rect.width` passed in here. rect width 20 -> inner width 18 -> (18 + 1)
+        // / 5 == 3 bars. Treating the full rect width as usable would give 4.
+        let freq_data = data(&[1, 2, 3, 4, 5, 6]);
+        let visible = windowed_around_peak(&freq_data, 20);
+        assert_eq!(visible.len(), 3);
     }
 }
