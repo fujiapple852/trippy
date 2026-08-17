@@ -211,7 +211,10 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        let start = Ipv4Packet::minimum_packet_size() + ipv4_options_length(self);
+        let start = std::cmp::min(
+            Ipv4Packet::minimum_packet_size() + ipv4_options_length(self),
+            self.buf.as_slice().len(),
+        );
         &self.buf.as_slice()[start..]
     }
 }
@@ -505,5 +508,20 @@ mod tests {
             Error::InsufficientPacketBuffer(String::from("Ipv4Packet"), SIZE, SIZE - 1),
             err
         );
+    }
+
+    // A view buffer whose IHL field claims a header longer than the buffer itself
+    // (e.g. an attacker-controlled nested "original datagram" inside an ICMP error
+    // response) must not panic when `payload()` is called. `new_view` only checks
+    // the 20-byte minimum, so IHL=15 claims a 60-byte header on a 20-byte buffer;
+    // without clamping, `payload()` would slice `buf[60..]` and panic. Mirrors the
+    // clamping already present in `get_options_raw()` and `Ipv6Packet::payload()`.
+    #[test]
+    fn test_payload_header_length_exceeds_buffer() {
+        let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
+        buf[0] = 0x4f; // version=4, IHL=15 (header claims 60 bytes)
+        let packet = Ipv4Packet::new_view(&buf).unwrap();
+        assert_eq!(15, packet.get_header_length());
+        assert!(packet.payload().is_empty());
     }
 }
