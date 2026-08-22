@@ -21,7 +21,7 @@ mod constants;
 mod file;
 mod theme;
 
-use crate::config::file::{ConfigBindings, ConfigTui};
+use crate::config::file::{ConfigBindings, ConfigThemeColors, ConfigTui};
 pub use binding::{TuiBindings, TuiCommandItem, TuiKeyBinding};
 pub use cmd::Args;
 pub use columns::{TuiColumn, TuiColumns};
@@ -253,6 +253,8 @@ pub enum TrippyAction {
     Trippy(Box<TrippyConfig>),
     /// Print all TUI theme items and exit.
     PrintTuiThemeItems,
+    /// Print all built-in TUI themes and exit.
+    PrintTuiThemes,
     /// Print all TUI commands that can be bound and exit.
     PrintTuiBindingCommands,
     /// Print a template toml config file and exit.
@@ -269,6 +271,8 @@ impl TrippyAction {
     pub fn from(args: Args, privilege: &Privilege, pid: u16) -> anyhow::Result<Self> {
         Ok(if args.print_tui_theme_items {
             Self::PrintTuiThemeItems
+        } else if args.print_tui_themes {
+            Self::PrintTuiThemes
         } else if args.print_tui_binding_commands {
             Self::PrintTuiBindingCommands
         } else if args.print_config_template {
@@ -551,6 +555,11 @@ impl TrippyConfig {
             .as_deref()
             .map(chrono_tz::Tz::from_str)
             .transpose()?;
+        let tui_theme = cfg_layer(
+            args.tui_theme,
+            cfg_file_tui.tui_theme,
+            String::from(constants::DEFAULT_TUI_THEME),
+        );
         let dns_lookup_as_info = cfg_layer_bool_flag(
             args.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
@@ -664,7 +673,10 @@ impl TrippyConfig {
             .tui_theme_colors
             .into_iter()
             .collect::<HashMap<TuiThemeItem, TuiColor>>();
-        let tui_theme = TuiTheme::from((tui_theme_items, cfg_file_tui_theme_colors));
+        let cli_tui_theme_colors = ConfigThemeColors::from(tui_theme_items);
+        let tui_theme = TuiTheme::for_name(&tui_theme)?
+            .overlay(&cfg_file_tui_theme_colors)
+            .overlay(&cli_tui_theme_colors);
         let tui_binding_items = args
             .tui_key_bindings
             .into_iter()
@@ -1569,11 +1581,13 @@ mod tests {
         compare(parse_config(cmd), expected);
     }
 
+    // TODO add --tui-theme tests
     #[test_case("trip example.com", Ok(cfg().tui_theme(TuiTheme::default()).build()); "default tui theme")]
     #[test_case("trip example.com --tui-theme-colors bg-color=red", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Red, ..Default::default() }).build()); "custom tui theme named color")]
     #[test_case("trip example.com --tui-theme-colors bg-color=010203", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color")]
     #[test_case("trip example.com --tui-theme-colors bg-color=#010203", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Rgb(1, 2, 3), ..Default::default() }).build()); "custom tui theme hex color with hash prefix")]
     #[test_case("trip example.com --tui-theme-colors bg-color=red,text-color=blue", Ok(cfg().tui_theme(TuiTheme { bg: TuiColor::Red, text: TuiColor::Blue, ..Default::default() }).build()); "custom tui theme multiple")]
+    #[test_case("trip example.com --tui-theme foo", Err(anyhow!("error: invalid value 'foo' for '--tui-theme <TUI_THEME>': unknown theme: foo (available themes: catppuccin-frappe, catppuccin-latte, catppuccin-macchiato, catppuccin-mocha, trippy) For more information, try '--help'.")); "invalid tui theme name")]
     #[test_case("trip example.com --tui-theme-colors bg-color=0", Err(anyhow!("error: invalid value 'bg-color=0' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: 0 For more information, try '--help'.")); "invalid tui theme truncated hex value")]
     #[test_case("trip example.com --tui-theme-colors bg-color=foo", Err(anyhow!("error: invalid value 'bg-color=foo' for '--tui-theme-colors <TUI_THEME_COLORS>': unknown color: foo For more information, try '--help'. ")); "invalid tui theme invalid named color")]
     #[test_case("trip example.com --tui-theme-colors foo-color=red", Err(anyhow!("error: invalid value 'foo-color=red' for '--tui-theme-colors <TUI_THEME_COLORS>': Matching variant not found For more information, try '--help'.")); "invalid tui theme invalid item")]
@@ -1669,6 +1683,7 @@ mod tests {
     #[test_case("trip --print-config-template", Ok(TrippyAction::PrintConfigTemplate); "print config template")]
     #[test_case("trip --print-tui-binding-commands", Ok(TrippyAction::PrintTuiBindingCommands); "print the tui binding commands")]
     #[test_case("trip --print-tui-theme-items", Ok(TrippyAction::PrintTuiThemeItems); "print the tui theme items")]
+    #[test_case("trip --print-tui-themes", Ok(TrippyAction::PrintTuiThemes); "print the tui themes")]
     #[test_case("trip --generate elvish", Ok(TrippyAction::PrintShellCompletions(Shell::Elvish)); "generate elvish shell completions")]
     #[test_case("trip --generate fish", Ok(TrippyAction::PrintShellCompletions(Shell::Fish)); "generate fish shell completions")]
     #[test_case("trip --generate powershell", Ok(TrippyAction::PrintShellCompletions(Shell::PowerShell)); "generate powershell shell completions")]

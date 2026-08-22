@@ -3,7 +3,7 @@ use crate::config::theme::TuiThemeItem;
 use crate::config::{
     AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
     LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig, TuiColor,
-    TuiKeyBinding,
+    TuiKeyBinding, TuiTheme,
 };
 use anyhow::anyhow;
 use clap::Parser;
@@ -18,7 +18,7 @@ use std::time::Duration;
 #[command(name = "trip", author, version, about, long_about = None, arg_required_else_help(true), styles=clap_cargo::style::CLAP_STYLING)]
 pub struct Args {
     /// A space delimited list of hostnames and IPs to trace
-    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_binding_commands", "print_config_template", "generate", "generate_man", "print_locales"]), env = "TRIP_TARGETS")]
+    #[arg(required_unless_present_any(["print_tui_theme_items", "print_tui_themes", "print_tui_binding_commands", "print_config_template", "generate", "generate_man", "print_locales"]), env = "TRIP_TARGETS")]
     pub targets: Vec<String>,
 
     /// Config file
@@ -236,6 +236,10 @@ pub struct Args {
     #[arg(long, env = "TRIP_TUI_TIMEZONE")]
     pub tui_timezone: Option<String>,
 
+    /// The TUI theme [default: trippy]
+    #[arg(long, value_parser = parse_tui_theme, env = "TRIP_TUI_THEME")]
+    pub tui_theme: Option<String>,
+
     /// The TUI theme colors [item=color,item=color,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_theme_color_value, env = "TRIP_TUI_THEME_COLORS")]
     pub tui_theme_colors: Vec<(TuiThemeItem, TuiColor)>,
@@ -243,6 +247,10 @@ pub struct Args {
     /// Print all TUI theme items and exit
     #[arg(long, env = "TRIP_PRINT_TUI_THEME_ITEMS")]
     pub print_tui_theme_items: bool,
+
+    /// Print all built-in TUI themes and exit
+    #[arg(long, env = "TRIP_PRINT_TUI_THEMES")]
+    pub print_tui_themes: bool,
 
     /// The TUI key bindings [command=key,command=key,..]
     #[arg(long, value_delimiter(','), value_parser = parse_tui_binding_value, env = "TRIP_TUI_KEY_BINDINGS")]
@@ -300,6 +308,18 @@ fn parse_tui_theme_color_value(value: &str) -> anyhow::Result<(TuiThemeItem, Tui
     let item = TuiThemeItem::try_from(&value[..pos])?;
     let color = TuiColor::try_from(&value[pos + 1..])?;
     Ok((item, color))
+}
+
+fn parse_tui_theme(value: &str) -> anyhow::Result<String> {
+    let themes = TuiTheme::available();
+    if themes.contains(&value) {
+        Ok(value.to_string())
+    } else {
+        Err(anyhow!(
+            "unknown theme: {value} (available themes: {})",
+            themes.join(", ")
+        ))
+    }
 }
 
 fn parse_tui_binding_value(value: &str) -> anyhow::Result<(TuiCommandItem, TuiKeyBinding)> {
