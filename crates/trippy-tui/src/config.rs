@@ -1208,9 +1208,9 @@ mod tests {
     #[test_case("trip example.com --mode flows --udp -R paris", Ok(cfg().mode(Mode::Flows).max_rounds(Some(10)).multipath_strategy(MultipathStrategy::Paris).protocol(Protocol::Udp).port_direction(PortDirection::FixedSrc(Port(1024))).build()); "flows mode")]
     #[test_case("trip example.com --mode silent", Ok(cfg().mode(Mode::Silent).max_rounds(Some(10)).build()); "silent mode")]
     #[test_case("trip example.com -m tui", Ok(cfg().mode(Mode::Tui).build()); "tui mode short")]
-    #[test_case("trip example.com --mode foo", Err(anyhow!(format!("error: invalid value 'foo' for '--mode <MODE>' [possible values: tui, stream, pretty, markdown, csv, json, dot, flows, silent] For more information, try '--help'."))); "invalid mode")]
-    #[test_case("trip example.com --mode dot", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid dot mode")]
-    #[test_case("trip example.com --mode flows", Err(anyhow!(format!("this mode requires the paris or dublin multipath strategy"))); "invalid flows mode")]
+    #[test_case("trip example.com --mode foo", Err(anyhow!("error: invalid value 'foo' for '--mode <MODE>' [possible values: tui, stream, pretty, markdown, csv, json, dot, flows, silent] For more information, try '--help'.".to_string())); "invalid mode")]
+    #[test_case("trip example.com --mode dot", Err(anyhow!("this mode requires the paris or dublin multipath strategy".to_string())); "invalid dot mode")]
+    #[test_case("trip example.com --mode flows", Err(anyhow!("this mode requires the paris or dublin multipath strategy".to_string())); "invalid flows mode")]
     fn test_mode(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1646,8 +1646,8 @@ mod tests {
     #[test_case("trip example.com", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "default privilege mode")]
     #[test_case("trip example.com --unprivileged", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "unprivileged mode")]
     #[test_case("trip example.com -u", true, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "unprivileged mode short")]
-    #[test_case("trip example.com --unprivileged --udp --multipath-strategy paris", true, false, Err(anyhow!(format!("Paris tracing strategy cannot be used in unprivileged mode"))); "invalid unprivileged mode for paris")]
-    #[test_case("trip example.com --unprivileged --udp --multipath-strategy dublin", true, false, Err(anyhow!(format!("Dublin tracing strategy cannot be used in unprivileged mode"))); "invalid unprivileged mode for dublin")]
+    #[test_case("trip example.com --unprivileged --udp --multipath-strategy paris", true, false, Err(anyhow!("Paris tracing strategy cannot be used in unprivileged mode".to_string())); "invalid unprivileged mode for paris")]
+    #[test_case("trip example.com --unprivileged --udp --multipath-strategy dublin", true, false, Err(anyhow!("Dublin tracing strategy cannot be used in unprivileged mode".to_string())); "invalid unprivileged mode for dublin")]
     #[test_case("trip example.com", true, true, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "has privilege and needs")]
     #[test_case("trip example.com", false, false, Err(anyhow!("privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and not needs")]
     #[test_case("trip example.com", false, true, Err(anyhow!("privileges are required\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs")]
