@@ -18,19 +18,19 @@ jobs:
       matrix:
         include:
           - name: Rust 1.88.0
-            trippy: master
+            trippy: 7eeb2db324d6164b469de6de49b6e43bb5e79910
             rust: 1.88.0
           - name: Rust 1.89.0
-            trippy: master
+            trippy: 7eeb2db324d6164b469de6de49b6e43bb5e79910
             rust: 1.89.0
           - name: Rust 1.90.0
-            trippy: master
+            trippy: 7eeb2db324d6164b469de6de49b6e43bb5e79910
             rust: 1.90.0
           - name: Rust 1.91.0
-            trippy: master
+            trippy: 7eeb2db324d6164b469de6de49b6e43bb5e79910
             rust: 1.91.0
           - name: Rust 1.92.0
-            trippy: master
+            trippy: 7eeb2db324d6164b469de6de49b6e43bb5e79910
             rust: 1.92.0
     steps:
       - name: Check out branch reproducer
