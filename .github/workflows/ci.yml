@@ -45,7 +45,7 @@ jobs:
             target: aarch64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-2022
+            os: windows-2025
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
@@ -109,7 +109,7 @@ jobs:
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-2022
+            os: windows-2025
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
@@ -169,7 +169,7 @@ jobs:
             target: x86_64-apple-darwin
             rust: stable
           - build: windows-stable
-            os: windows-2022
+            os: windows-2025
             target: x86_64-pc-windows-msvc
             rust: stable
     steps:
