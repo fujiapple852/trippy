@@ -17,21 +17,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Rust stable
+          - name: Rust 1.88.0
             trippy: master
-            rust: stable
+            rust: 1.88.0
           - name: Rust 1.89.0
             trippy: master
             rust: 1.89.0
-          - name: Rust 1.93.0
+          - name: Rust 1.90.0
             trippy: master
-            rust: 1.93.0
-          - name: Rust 1.95.0
+            rust: 1.90.0
+          - name: Rust 1.91.0
             trippy: master
-            rust: 1.95.0
-          - name: Rust 1.97.0
+            rust: 1.91.0
+          - name: Rust 1.92.0
             trippy: master
-            rust: 1.97.0
+            rust: 1.92.0
     steps:
       - name: Check out branch reproducer
         uses: actions/checkout@v4
