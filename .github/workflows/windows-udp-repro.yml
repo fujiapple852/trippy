@@ -1,0 +1,45 @@
+name: Windows UDP crash reproduction
+
+on:
+  push:
+    branches: [ chore-reproduce-windows-crash ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - name: Check out branch reproducer
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check out latest Trippy master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: latest-master
+          persist-credentials: false
+      - name: Install latest stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Add reproducer to master checkout
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force latest-master/crates/trippy-core/examples | Out-Null
+          Copy-Item crates/trippy-core/examples/windows_udp_repro.rs latest-master/crates/trippy-core/examples/
+      - name: Build and run ten isolated attempts
+        shell: pwsh
+        working-directory: latest-master
+        run: ../.github/scripts/windows-udp-repro.ps1
+      - name: Upload reproduction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-udp-repro-${{ github.run_id }}-${{ github.run_attempt }}
+          path: latest-master/repro-logs/
+          if-no-files-found: warn

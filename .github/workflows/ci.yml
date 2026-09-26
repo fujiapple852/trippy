@@ -7,7 +7,9 @@ on:
 name: CI
 
 jobs:
+  # The reproduction branch runs only the dedicated Windows UDP workflow.
   test:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -58,6 +60,7 @@ jobs:
       - run: cargo test --target ${{ matrix.target }}
 
   build-cross:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -92,6 +95,7 @@ jobs:
         run: cross build --target ${{ matrix.target }} --verbose
 
   sim-test:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -141,6 +145,7 @@ jobs:
         run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
 
   fmt:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -152,6 +157,7 @@ jobs:
       - run: cargo fmt --all -- --check
 
   clippy:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -182,6 +188,7 @@ jobs:
       - run: cargo clippy --workspace --all-features --target ${{ matrix.target }} --tests -- -Dwarnings
 
   build-docker:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -190,6 +197,7 @@ jobs:
         run: docker build -t trippy-docker-image .
 
   cargo-deny:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -202,6 +210,7 @@ jobs:
           command-arguments: "--hide-inclusion-graph"
 
   cargo-msrv:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -222,12 +231,14 @@ jobs:
         run: cargo msrv verify --output-format json --manifest-path crates/trippy-privilege/Cargo.toml -- cargo check
 
   style:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dprint/check@v2.2
 
   conventional-commits:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -238,6 +249,7 @@ jobs:
           allowed-commit-types: "feat,fix,chore,docs,style,refactor,test,build,ci,revert"
 
   spelling:
+    if: github.head_ref != 'chore-reproduce-windows-crash'
     runs-on: ubuntu-24.04
     steps:
       - name: Install cargo-spellcheck
