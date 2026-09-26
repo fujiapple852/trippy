@@ -17,21 +17,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: master / stable
+          - name: Rust stable
             trippy: master
             rust: stable
-          - name: master / Rust 1.89.0
+          - name: Rust 1.89.0
             trippy: master
             rust: 1.89.0
-          - name: reported master / stable
-            trippy: c0c758eb1069151eafa6bd8227bb446c2b4d1506
-            rust: stable
-          - name: reported master / Rust 1.89.0
-            trippy: c0c758eb1069151eafa6bd8227bb446c2b4d1506
-            rust: 1.89.0
-          - name: issue 1793 fix / Rust 1.89.0
-            trippy: 0b3c85bae2257915583d71392ea6d10c1cb4b75b
-            rust: 1.89.0
+          - name: Rust 1.93.0
+            trippy: master
+            rust: 1.93.0
+          - name: Rust 1.95.0
+            trippy: master
+            rust: 1.95.0
+          - name: Rust 1.97.0
+            trippy: master
+            rust: 1.97.0
     steps:
       - name: Check out branch reproducer
         uses: actions/checkout@v4
