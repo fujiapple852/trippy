@@ -83,13 +83,13 @@ jobs:
 
           # Windows (x86_64 & aarch64)
           - build: x86_64-pc-windows-msvc
-            os: windows-2022
+            os: windows-2025
             target: x86_64-pc-windows-msvc
           - build: x86_64-pc-windows-gnu
             os: ubuntu-24.04
             target: x86_64-pc-windows-gnu
           - build: aarch64-pc-windows-msvc
-            os: windows-2022
+            os: windows-2025
             target: aarch64-pc-windows-msvc
 
           # BSD (x86_64)
@@ -136,7 +136,7 @@ jobs:
         run: |
           staging="trippy-${{ needs.create-release.outputs.trip_version }}-${{ matrix.target }}"
           mkdir -p "$staging"
-          if [ "${{ matrix.os }}" = "windows-2022" ] || [ "${{ matrix.build }}" = "x86_64-pc-windows-gnu" ]; then
+          if [ "${{ matrix.os }}" = "windows-2025" ] || [ "${{ matrix.build }}" = "x86_64-pc-windows-gnu" ]; then
             cp "target/${{ matrix.target }}/release/trip.exe" "$staging/"
             7z a -tzip "$staging.zip" "$staging"
             echo "ASSET=$staging.zip" >> $GITHUB_ENV
