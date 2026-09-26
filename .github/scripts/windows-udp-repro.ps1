@@ -1,5 +1,5 @@
 # Run from the repository root in an elevated Windows PowerShell session.
-# Requires stable Rust: ./.github/scripts/windows-udp-repro.ps1
+# Uses the active Rust toolchain: ./.github/scripts/windows-udp-repro.ps1
 
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $false
@@ -12,10 +12,10 @@ $env:CARGO_TARGET_DIR = Join-Path $PWD "target"
 
 # Save the tested source/toolchain identity even when building or tracing fails.
 & {
-    "Trippy master commit:"
+    "Tested Trippy commit:"
     git rev-parse HEAD
-    rustc +stable -Vv
-    cargo +stable --version
+    rustc -Vv
+    cargo --version
     "Runner image: $env:ImageOS $env:ImageVersion"
     Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture | Format-List
 } | Out-File (Join-Path $logs "environment.log")
@@ -29,7 +29,7 @@ if (-not $elevated) {
     throw "An elevated Windows process is required to exercise privileged UDP."
 }
 
-cargo +stable build --locked -p trippy-core --example windows_udp_repro `
+cargo build --locked -p trippy-core --example windows_udp_repro `
     --target x86_64-pc-windows-msvc `
     2>&1 | Tee-Object -FilePath (Join-Path $logs "build.log")
 if ($LASTEXITCODE -ne 0) {

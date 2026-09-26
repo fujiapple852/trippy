@@ -10,22 +10,43 @@ permissions:
 
 jobs:
   reproduce:
+    name: ${{ matrix.name }}
     runs-on: windows-2025
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: master / stable
+            trippy: master
+            rust: stable
+          - name: master / Rust 1.89.0
+            trippy: master
+            rust: 1.89.0
+          - name: reported master / stable
+            trippy: c0c758eb1069151eafa6bd8227bb446c2b4d1506
+            rust: stable
+          - name: reported master / Rust 1.89.0
+            trippy: c0c758eb1069151eafa6bd8227bb446c2b4d1506
+            rust: 1.89.0
+          - name: issue 1793 fix / Rust 1.89.0
+            trippy: 0b3c85bae2257915583d71392ea6d10c1cb4b75b
+            rust: 1.89.0
     steps:
       - name: Check out branch reproducer
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Check out latest Trippy master
+      - name: Check out Trippy ${{ matrix.trippy }}
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ matrix.trippy }}
           path: latest-master
           persist-credentials: false
-      - name: Install latest stable Rust
+      - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ matrix.rust }}
           targets: x86_64-pc-windows-msvc
       - name: Add reproducer to master checkout
         shell: pwsh
@@ -40,6 +61,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-udp-repro-${{ github.run_id }}-${{ github.run_attempt }}
+          name: windows-udp-repro-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: latest-master/repro-logs/
           if-no-files-found: warn
