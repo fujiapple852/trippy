@@ -211,7 +211,13 @@ impl<'a> Ipv4Packet<'a> {
 
     #[must_use]
     pub fn payload(&self) -> &[u8] {
-        let start = Ipv4Packet::minimum_packet_size() + ipv4_options_length(self);
+        // The header length nibble is attacker-controlled (e.g. a nested IPv4
+        // header quoted inside an ICMP error), so `start` can exceed the buffer.
+        // Clamp it, mirroring `get_options_raw` above.
+        let start = std::cmp::min(
+            Ipv4Packet::minimum_packet_size() + ipv4_options_length(self),
+            self.buf.as_slice().len(),
+        );
         &self.buf.as_slice()[start..]
     }
 }
@@ -505,5 +511,16 @@ mod tests {
             Error::InsufficientPacketBuffer(String::from("Ipv4Packet"), SIZE, SIZE - 1),
             err
         );
+    }
+
+    #[test]
+    fn test_payload_header_length_beyond_buffer() {
+        // A minimum sized (20 byte) packet whose IHL nibble claims 15 (60 bytes
+        // of header). ipv4_options_length() then reports 40, so the payload
+        // would start at offset 60. It must clamp to an empty payload, not panic.
+        let mut buf = [0_u8; Ipv4Packet::minimum_packet_size()];
+        buf[0] = 0x4f; // version 4, IHL 15
+        let packet = Ipv4Packet::new_view(&buf).unwrap();
+        assert!(packet.payload().is_empty());
     }
 }

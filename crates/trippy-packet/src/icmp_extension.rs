@@ -460,7 +460,13 @@ pub mod extension_object {
 
         #[must_use]
         pub fn payload(&self) -> &[u8] {
-            &self.buf.as_slice()[Self::minimum_packet_size()..usize::from(self.get_length())]
+            // `get_length()` is read straight from the packet, so a malformed
+            // object can make it smaller than the header or larger than the
+            // buffer. Clamp both ends so slicing cannot panic.
+            let bytes = self.buf.as_slice();
+            let start = Self::minimum_packet_size();
+            let end = usize::from(self.get_length()).clamp(start, bytes.len());
+            &bytes[start..end]
         }
     }
 
@@ -550,6 +556,37 @@ pub mod extension_object {
             );
             assert_eq!(ClassSubType(1), object.get_class_subtype());
             assert_eq!([0x04, 0xbb, 0x41, 0x01], object.payload());
+        }
+
+        #[test]
+        fn test_payload_length_below_minimum() {
+            // A length field smaller than the header would slice [4..0]. The
+            // payload must be empty rather than panic.
+            let buf = [0x00, 0x00, 0x01, 0x01];
+            let object = ExtensionObjectPacket::new_view(&buf).unwrap();
+            assert_eq!(0, object.get_length());
+            assert!(object.payload().is_empty());
+        }
+
+        #[test]
+        fn test_payload_length_beyond_buffer() {
+            // A length field larger than the buffer would slice past the end.
+            // The payload must stop at the buffer, not panic.
+            let buf = [0xff, 0xff, 0x01, 0x01];
+            let object = ExtensionObjectPacket::new_view(&buf).unwrap();
+            assert_eq!(0xffff, object.get_length());
+            assert_eq!(
+                &buf[ExtensionObjectPacket::minimum_packet_size()..],
+                object.payload()
+            );
+        }
+
+        #[test]
+        fn test_debug_does_not_panic_on_malformed_length() {
+            // Debug prints the payload, so it must survive a bad length too.
+            let buf = [0xff, 0xff, 0x01, 0x01];
+            let object = ExtensionObjectPacket::new_view(&buf).unwrap();
+            let _ = format!("{object:?}");
         }
     }
 }
