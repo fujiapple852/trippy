@@ -44,7 +44,7 @@ crossbeam = "0.8.4"
 crossterm = { version = "0.29.0", default-features = false }
 csv = "1.4.0"
 derive_more = { version = "2.1.1", default-features = false }
-dns-lookup = "3.0.1"
+dns-lookup = "4.0.1"
 encoding_rs_io = "0.1.7"
 etcetera = "0.11.0"
 futures-concurrency = "7.6.3"
