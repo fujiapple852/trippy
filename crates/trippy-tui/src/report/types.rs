@@ -83,12 +83,58 @@ impl<R: Resolver> From<(&trippy_core::Hop, &R)> for Hop {
 #[derive(Serialize)]
 pub struct Hosts(pub Vec<Host>);
 
+impl Hosts {
+    pub fn apply_privacy(&mut self, ttl: u8, privacy_max_ttl: Option<u8>) {
+        if privacy_max_ttl >= Some(ttl) {
+            self.0 = vec![Host {
+                ip: None,
+                hostname: String::from("**hidden**"),
+            }];
+        }
+    }
+
+    #[must_use]
+    pub fn format_columns(&self, separator: &str, hidden: &str) -> (String, String) {
+        let ips = self
+            .0
+            .iter()
+            .map(|host| {
+                host.ip
+                    .map_or_else(|| String::from(hidden), |ip| ip.to_string())
+            })
+            .join(separator);
+        let hosts = self
+            .0
+            .iter()
+            .map(|host| {
+                if host.ip.is_none() {
+                    hidden
+                } else {
+                    host.hostname.as_str()
+                }
+            })
+            .join(separator);
+        (
+            if ips.is_empty() {
+                String::from("???")
+            } else {
+                ips
+            },
+            if hosts.is_empty() {
+                String::from("???")
+            } else {
+                hosts
+            },
+        )
+    }
+}
+
 impl<'a, R: Resolver, I: Iterator<Item = &'a IpAddr>> From<(I, &R)> for Hosts {
     fn from((value, resolver): (I, &R)) -> Self {
         Self(
             value
                 .map(|ip| Host {
-                    ip: *ip,
+                    ip: Some(*ip),
                     hostname: resolver.reverse_lookup(*ip).to_string(),
                 })
                 .collect(),
@@ -104,13 +150,17 @@ impl Display for Hosts {
 
 #[derive(Serialize)]
 pub struct Host {
-    pub ip: IpAddr,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ip: Option<IpAddr>,
     pub hostname: String,
 }
 
 impl Display for Host {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.ip)
+        match self.ip {
+            Some(ip) => write!(f, "{ip}"),
+            None => f.write_str("**hidden**"),
+        }
     }
 }
 
@@ -250,4 +300,111 @@ where
     S: Serializer,
 {
     serializer.serialize_str(&format!("{val:.2}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
+    use test_case::test_case;
+
+    fn hosts() -> Hosts {
+        Hosts(vec![
+            Host {
+                ip: Some("192.0.2.1".parse().unwrap()),
+                hostname: String::from("router-v4.example"),
+            },
+            Host {
+                ip: Some("2001:db8::1".parse().unwrap()),
+                hostname: String::from("router-v6.example"),
+            },
+        ])
+    }
+
+    #[test_case(None, false; "disabled")]
+    #[test_case(Some(0), false; "zero")]
+    #[test_case(Some(1), false; "below_hop")]
+    #[test_case(Some(2), true; "at_hop")]
+    #[test_case(Some(3), true; "above_hop")]
+    fn test_privacy_threshold(privacy_max_ttl: Option<u8>, private: bool) {
+        let mut hosts = hosts();
+        hosts.apply_privacy(2, privacy_max_ttl);
+        let expected = if private {
+            json!([{"hostname": "**hidden**"}])
+        } else {
+            json!([
+                {"ip": "192.0.2.1", "hostname": "router-v4.example"},
+                {"ip": "2001:db8::1", "hostname": "router-v6.example"}
+            ])
+        };
+        assert_eq!(serde_json::to_value(&hosts).unwrap(), expected);
+        assert_eq!(
+            hosts.to_string(),
+            if private {
+                "**hidden**"
+            } else {
+                "192.0.2.1, 2001:db8::1"
+            }
+        );
+    }
+
+    #[test_case(":", "[hidden]"; "csv")]
+    #[test_case("\n", "**hidden**"; "tables")]
+    fn test_host_columns(separator: &str, hidden: &str) {
+        let mut hosts = hosts();
+        assert_eq!(
+            hosts.format_columns(separator, hidden),
+            (
+                format!("192.0.2.1{separator}2001:db8::1"),
+                format!("router-v4.example{separator}router-v6.example"),
+            )
+        );
+        hosts.apply_privacy(2, Some(2));
+        assert_eq!(
+            hosts.format_columns(separator, hidden),
+            (String::from(hidden), String::from(hidden))
+        );
+    }
+
+    #[test]
+    fn test_empty_hosts() {
+        let mut hosts = Hosts(Vec::new());
+        hosts.apply_privacy(2, None);
+        assert_eq!(
+            hosts.format_columns(":", "[hidden]"),
+            (String::from("???"), String::from("???"))
+        );
+        assert_eq!(serde_json::to_value(&hosts).unwrap(), json!([]));
+        hosts.apply_privacy(2, Some(2));
+        assert_eq!(
+            serde_json::to_value(&hosts).unwrap(),
+            json!([{"hostname": "**hidden**"}])
+        );
+    }
+
+    #[test]
+    fn test_empty_hostname() {
+        let hosts = Hosts(vec![Host {
+            ip: Some("192.0.2.1".parse().unwrap()),
+            hostname: String::new(),
+        }]);
+        assert_eq!(
+            hosts.format_columns("\n", "**hidden**"),
+            (String::from("192.0.2.1"), String::from("???"))
+        );
+    }
+
+    #[test]
+    fn test_target_host() {
+        let target = Host {
+            ip: Some("203.0.113.1".parse().unwrap()),
+            hostname: String::from("target.example"),
+        };
+        assert_eq!(
+            serde_json::to_value(&target).unwrap(),
+            json!({"ip": "203.0.113.1", "hostname": "target.example"})
+        );
+        assert_eq!(target.to_string(), "203.0.113.1");
+    }
 }
