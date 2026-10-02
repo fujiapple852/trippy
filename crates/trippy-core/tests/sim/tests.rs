@@ -41,6 +41,8 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_icmp_ooo.toml"))]
 #[test_case(sim!("ipv4_icmp_min.toml"))]
 #[test_case(sim!("ipv6_icmp_min.toml"))]
+#[test_case(sim!("ipv4_icmp_max.toml"))]
+#[test_case(sim!("ipv6_icmp_max.toml"))]
 #[test_case(sim!("ipv4_icmp_pattern.toml"))]
 #[test_case(sim!("ipv6_icmp_pattern.toml"))]
 #[test_case(sim!("ipv4_icmp_quick.toml"))]
@@ -48,6 +50,8 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_icmp_tos.toml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_src.toml"))]
 #[test_case(sim!("ipv6_udp_classic_fixed_src.toml"))]
+#[test_case(sim!("ipv4_udp_classic_fixed_src_max.toml"))]
+#[test_case(sim!("ipv6_udp_classic_fixed_src_max.toml"))]
 #[test_case(sim!("ipv4_udp_classic_fixed_dest.toml"))]
 #[test_case(sim!("ipv6_udp_classic_fixed_dest.toml"))]
 #[test_case(sim!("ipv4_udp_paris_fixed_both.toml"))]
@@ -57,6 +61,8 @@ macro_rules! sim {
 #[test_case(sim!("ipv4_udp_classic_privileged_tos.toml"))]
 #[test_case(sim!("ipv4_tcp_fixed_dest.toml"))]
 #[test_case(sim!("ipv6_tcp_fixed_dest.toml"))]
+#[test_case(sim!("ipv4_tcp_fixed_dest_max.toml"))]
+#[test_case(sim!("ipv6_tcp_fixed_dest_max.toml"))]
 fn test_simulation(simulation: Simulation) -> anyhow::Result<()> {
     run_simulation_with_retry(simulation)
 }

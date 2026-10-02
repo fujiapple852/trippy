@@ -1383,12 +1383,12 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().packet_size(84).build()); "default packet size")]
     #[test_case("trip example.com --packet-size 120", Ok(cfg().packet_size(120).build()); "custom packet size")]
     #[test_case("trip example.com --packet-size foo", Err(anyhow!("error: invalid value 'foo' for '--packet-size <PACKET_SIZE>': invalid digit found in string For more information, try '--help'.")); "invalid format packet size")]
-    #[test_case("trip example.com --packet-size 47 -F ipv4-then-ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv4thenIpv6")); "invalid low packet size for ipv4 then ipv6")]
-    #[test_case("trip example.com --packet-size 47 -F ipv6-then-ipv4", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6thenIpv4")); "invalid low packet size for ipv6 then ipv4")]
-    #[test_case("trip example.com --packet-size 27 -F ipv4", Err(anyhow!("packet-size (27) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid low packet size for ipv4")]
-    #[test_case("trip example.com --packet-size 1025 -F ipv4", Err(anyhow!("packet-size (1025) must be between 28 and 1024 inclusive for Ipv4Only")); "invalid high packet size for ipv4")]
-    #[test_case("trip example.com --packet-size 47 -F ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid low packet size for ipv6")]
-    #[test_case("trip example.com --packet-size 1025 -F ipv6", Err(anyhow!("packet-size (1025) must be between 48 and 1024 inclusive for Ipv6Only")); "invalid high packet size for ipv6")]
+    #[test_case("trip example.com --packet-size 47 -F ipv4-then-ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1248 inclusive for Ipv4thenIpv6")); "invalid low packet size for ipv4 then ipv6")]
+    #[test_case("trip example.com --packet-size 47 -F ipv6-then-ipv4", Err(anyhow!("packet-size (47) must be between 48 and 1248 inclusive for Ipv6thenIpv4")); "invalid low packet size for ipv6 then ipv4")]
+    #[test_case("trip example.com --packet-size 27 -F ipv4", Err(anyhow!("packet-size (27) must be between 28 and 1248 inclusive for Ipv4Only")); "invalid low packet size for ipv4")]
+    #[test_case("trip example.com --packet-size 1249 -F ipv4", Err(anyhow!("packet-size (1249) must be between 28 and 1248 inclusive for Ipv4Only")); "invalid high packet size for ipv4")]
+    #[test_case("trip example.com --packet-size 47 -F ipv6", Err(anyhow!("packet-size (47) must be between 48 and 1248 inclusive for Ipv6Only")); "invalid low packet size for ipv6")]
+    #[test_case("trip example.com --packet-size 1249 -F ipv6", Err(anyhow!("packet-size (1249) must be between 48 and 1248 inclusive for Ipv6Only")); "invalid high packet size for ipv6")]
     #[test_case("trip example.com --packet-size 100000", Err(anyhow!("error: invalid value '100000' for '--packet-size <PACKET_SIZE>': 100000 is not in 0..=65535 For more information, try '--help'.")); "invalid out of range packet size")]
     fn test_packet_size(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
