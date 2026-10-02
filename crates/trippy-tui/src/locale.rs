@@ -157,6 +157,7 @@ mod tests {
     #[test_case(Some("zh-Hant-TW"), None, "zh-TW"; "cfg_locale_ignore_script")]
     #[test_case(None, Some("zh-Hant-TW"), "zh-TW"; "sys_locale_ignore_script")]
     #[test_case(Some("zh-Hant-TW"), Some("zh-Hant-TW"), "zh-TW"; "both_locales_ignore_script")]
+    #[test_case(Some("id-ID"), None, "id"; "cfg_locale_indonesian_region")]
     fn test_set_locale(cfg_locale: Option<&str>, sys_locale: Option<&str>, expected: &str) {
         assert_eq!(calculate_locale(cfg_locale, sys_locale), expected);
     }
@@ -166,7 +167,7 @@ mod tests {
         assert_eq!(
             available_locales(),
             vec![
-                "de", "en", "es", "fr", "it", "ja", "pt", "ru", "sv", "tr", "zh", "zh-TW"
+                "de", "en", "es", "fr", "id", "it", "ja", "pt", "ru", "sv", "tr", "zh", "zh-TW"
             ]
         );
     }
