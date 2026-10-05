@@ -1,8 +1,8 @@
 use crate::frontend::render::util;
 use crate::frontend::tui_app::TuiApp;
 use crate::tr;
-use chrono::SecondsFormat;
 use humantime::format_duration;
+use jiff::{Timestamp, tz::TimeZone};
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::Style;
@@ -30,13 +30,18 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         );
-    let now = if let Some(tz) = &app.tui_config.timezone {
-        chrono::Utc::now()
-            .with_timezone(tz)
-            .to_rfc3339_opts(SecondsFormat::Secs, true)
-    } else {
-        chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true)
-    };
+    let now = app
+        .tui_config
+        .timezone
+        .as_ref()
+        .map_or_else(TimeZone::system, Clone::clone);
+    let now = Timestamp::now()
+        .to_zoned(now)
+        .strftime("%Y-%m-%dT%H:%M:%S%:z")
+        .to_string();
+    let now = now
+        .strip_suffix("+00:00")
+        .map_or_else(|| now.clone(), |utc| format!("{utc}Z"));
     let clock_span = Line::from(Span::raw(now));
     // Each hint is one message: the translation places the key, and the theme bolds it.
     let bindings = &app.tui_config.bindings;

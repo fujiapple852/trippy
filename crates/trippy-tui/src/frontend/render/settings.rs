@@ -218,9 +218,10 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "tui-timezone",
-            app.tui_config
-                .timezone
-                .map_or_else(|| tr!("auto").to_string(), |tz| tz.to_string()),
+            app.tui_config.timezone.as_ref().map_or_else(
+                || tr!("auto").to_string(),
+                |tz| tz.iana_name().unwrap_or("unknown").to_string(),
+            ),
         ),
     ]
 }

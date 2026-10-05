@@ -6,7 +6,6 @@ use itertools::Itertools;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{
     IcmpExtensionParseMode, MAX_TTL, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
@@ -323,7 +322,7 @@ pub struct TrippyConfig {
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_locale: Option<String>,
-    pub tui_timezone: Option<chrono_tz::Tz>,
+    pub tui_timezone: Option<jiff::tz::TimeZone>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
@@ -547,10 +546,7 @@ impl TrippyConfig {
         );
         let tui_locale = cfg_layer_opt(args.tui_locale, cfg_file_tui.tui_locale);
         let timezone = cfg_layer_opt(args.tui_timezone, cfg_file_tui.tui_timezone);
-        let tui_timezone = timezone
-            .as_deref()
-            .map(chrono_tz::Tz::from_str)
-            .transpose()?;
+        let tui_timezone = timezone.as_deref().map(resolve_timezone).transpose()?;
         let dns_lookup_as_info = cfg_layer_bool_flag(
             args.dns_lookup_as_info,
             cfg_file_dns.dns_lookup_as_info,
@@ -818,6 +814,23 @@ const fn cfg_layer_bool_flag(fst: bool, snd: Option<bool>, default: bool) -> boo
         (false, Some(val)) => val,
         (false, None) => default,
     }
+}
+
+/// Resolve a time zone name.
+///
+/// The system database is tried first, for its up-to-date rules; the copy bundled into
+/// the binary is tried next, for a name the system lacks (a minimal system may ship no
+/// zoneinfo at all, or leave out legacy names such as `US/Eastern`). jiff itself picks a
+/// single database and only uses the bundled one when no system copy exists. A name
+/// neither knows reports the system lookup's error.
+fn resolve_timezone(name: &str) -> anyhow::Result<jiff::tz::TimeZone> {
+    jiff::tz::TimeZone::get(name)
+        .or_else(|err| {
+            jiff::tz::TimeZoneDatabase::bundled()
+                .get(name)
+                .map_err(|_| err)
+        })
+        .map_err(Into::into)
 }
 
 /// Check for deprecated fields.
@@ -1503,9 +1516,13 @@ mod tests {
     }
 
     #[test_case("trip example.com", Ok(cfg().tui_timezone(None).build()); "default tui timezone")]
-    #[test_case("trip example.com --tui-timezone UTC", Ok(cfg().tui_timezone(Some(chrono_tz::Tz::UTC)).build()); "custom tui timezone UTC")]
-    #[test_case("trip example.com --tui-timezone Antarctica/South_Pole", Ok(cfg().tui_timezone(Some(chrono_tz::Tz::Antarctica__South_Pole)).build()); "custom tui timezone Antarctica/South_Pole")]
-    #[test_case("trip example.com --tui-timezone xxx", Err(anyhow!("failed to parse timezone")); "invalid tui timezone")]
+    #[test_case("trip example.com --tui-timezone UTC", Ok(cfg().tui_timezone(Some(jiff::tz::TimeZone::UTC)).build()); "custom tui timezone UTC")]
+    // `Antarctica/South_Pole` is an old IANA name, kept only as a link to its
+    // modern name `Pacific/Auckland` (Debian 12+ ships it only in `tzdata-legacy`);
+    // it resolves everywhere through the bundled database. Modernize it to
+    // `Pacific/Auckland` unless this case is meant to test legacy names.
+    #[test_case("trip example.com --tui-timezone Antarctica/South_Pole", Ok(cfg().tui_timezone(Some(system_or_bundled_tz("Antarctica/South_Pole"))).build()); "custom tui timezone Antarctica/South_Pole")]
+    #[test_case("trip example.com --tui-timezone xxx", Err(anyhow!("failed to find time zone `xxx` in time zone database")); "invalid tui timezone")]
     fn test_tui_timezone(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1690,6 +1707,13 @@ mod tests {
 
     fn parse_action(cmd: &str) -> anyhow::Result<TrippyAction> {
         TrippyAction::from(parse(cmd)?, &dummy_platform(), 0)
+    }
+
+    /// The zone a legacy alias must resolve to on any machine: the system's copy when it
+    /// has the name, else the bundled one (which always has it).
+    fn system_or_bundled_tz(name: &str) -> jiff::tz::TimeZone {
+        jiff::tz::TimeZone::get(name)
+            .unwrap_or_else(|_| jiff::tz::TimeZoneDatabase::bundled().get(name).unwrap())
     }
 
     fn parse_config(cmd: &str) -> anyhow::Result<TrippyConfig> {
@@ -2097,7 +2121,7 @@ mod tests {
             }
         }
 
-        pub fn tui_timezone(self, tui_timezone: Option<chrono_tz::Tz>) -> Self {
+        pub fn tui_timezone(self, tui_timezone: Option<jiff::tz::TimeZone>) -> Self {
             Self {
                 config: TrippyConfig {
                     tui_timezone,
