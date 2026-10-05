@@ -20,7 +20,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     let _guard = configure_logging(cfg);
     tracing::debug!(?cfg);
     let resolver = start_dns_resolver(cfg)?;
-    let geoip_lookup = create_geoip_lookup(cfg, &locale)?;
+    let geoip_lookup = create_geoip_lookup(cfg, locale)?;
     let addrs = resolve_targets(cfg, &resolver)?;
     if addrs.is_empty() {
         return Err(anyhow!(
@@ -31,7 +31,7 @@ pub fn run_trippy(cfg: &TrippyConfig, pid: u16) -> anyhow::Result<()> {
     }
     let traces = start_tracers(cfg, &addrs, pid)?;
     Privilege::drop_privileges()?;
-    run_frontend(cfg, &locale, resolver, geoip_lookup, traces)
+    run_frontend(cfg, locale, resolver, geoip_lookup, traces)
 }
 
 /// Start all tracers.

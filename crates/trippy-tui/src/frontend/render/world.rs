@@ -1,5 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use itertools::Itertools;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -34,7 +34,7 @@ fn render_map_canvas(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &[Map
         .background_color(app.tui_config.theme.bg)
         .block(
             Block::default()
-                .title(Line::raw(t!("title_map")))
+                .title(Line::from(tr!("title_map")))
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
                 .style(
@@ -140,36 +140,39 @@ fn render_map_info_panel(f: &mut Frame<'_>, app: &TuiApp, rect: Rect, entries: &
         .iter()
         .filter_map(|entry| {
             if entry.hops.contains(&selected_hop.ttl()) {
-                Some(format!("{} [{}]", entry.long_name, entry.location))
+                Some(
+                    tr!(
+                        "map_location",
+                        name = entry.long_name.as_str(),
+                        location = entry.location.as_str()
+                    )
+                    .to_string(),
+                )
             } else {
                 None
             }
         })
         .collect::<Vec<_>>();
     let info = if app.tui_config.privacy_max_ttl >= Some(selected_hop.ttl()) {
-        format!("**{}**", t!("hidden"))
+        tr!("hidden").to_string()
     } else {
         match locations.as_slice() {
-            _ if app.tui_config.geoip_mmdb_file.is_none() => t!("geoip_not_enabled").to_string(),
-            [] if selected_hop.addr_count() > 0 => format!(
-                "{} {} ({})",
-                t!("geoip_no_data_for_hop"),
-                selected_hop.ttl(),
-                selected_hop.addrs().join(", ")
-            ),
-            [] => format!("{} {}", t!("geoip_no_data_for_hop"), selected_hop.ttl()),
+            _ if app.tui_config.geoip_mmdb_file.is_none() => tr!("geoip_not_enabled").to_string(),
+            [] if selected_hop.addr_count() > 0 => tr!(
+                "geoip_no_data_for_hop_addrs",
+                ttl = selected_hop.ttl(),
+                addrs = selected_hop.addrs().join(", ")
+            )
+            .to_string(),
+            [] => tr!("geoip_no_data_for_hop", ttl = selected_hop.ttl()).to_string(),
             [loc] => loc.clone(),
-            _ => format!(
-                "{} {}",
-                t!("geoip_multiple_data_for_hop"),
-                selected_hop.ttl()
-            ),
+            _ => tr!("geoip_multiple_data_for_hop", ttl = selected_hop.ttl()).to_string(),
         }
     };
     let info_panel = Paragraph::new(info)
         .block(
             Block::default()
-                .title(format!("{} {}", t!("hop"), selected_hop.ttl()))
+                .title(tr!("hop", ttl = selected_hop.ttl()))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(theme.map_info_panel_border))
@@ -206,7 +209,13 @@ fn build_map_entries(app: &TuiApp) -> Vec<MapEntry> {
             {
                 let entry = geo_map.entry(geo.long_name()).or_insert_with(|| MapEntry {
                     long_name: geo.long_name(),
-                    location: format!("{latitude}, {longitude} ~{radius}{}", t!("kilometer")),
+                    location: tr!(
+                        "coordinates",
+                        latitude = latitude,
+                        longitude = longitude,
+                        radius = radius
+                    )
+                    .to_string(),
                     latitude,
                     longitude,
                     radius,

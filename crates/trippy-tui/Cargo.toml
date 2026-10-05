@@ -37,19 +37,21 @@ serde = { workspace = true, default-features = false, features = ["derive"] }
 serde_json.workspace = true
 serde_with.workspace = true
 strum = { workspace = true, default-features = false, features = ["std", "derive"] }
-sys-locale.workspace = true
 toml = { workspace = true, default-features = false, features = ["parse"] }
 tracing-chrome.workspace = true
 tracing-subscriber = { workspace = true, default-features = false, features = ["env-filter", "json"] }
 tracing.workspace = true
-unic-langid.workspace = true
 unicode-width.workspace = true
 clap-cargo.workspace = true
+mf2 = { workspace = true, features = ["ratatui", "native-number-builtin"] }
 
 [dev-dependencies]
 insta = { workspace = true, features = ["serde"] }
 pretty_assertions.workspace = true
 test-case.workspace = true
+
+[build-dependencies]
+mf2-build.workspace = true
 
 [lints]
 workspace = true

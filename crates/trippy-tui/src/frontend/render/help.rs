@@ -1,6 +1,6 @@
 use crate::frontend::render::util;
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::Alignment;
 use ratatui::style::Style;
@@ -21,20 +21,20 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp) {
         Line::raw(r#"  |_||_| |_| .__/ .__/\_, |"#),
         Line::raw(r#"           |_|  |_|   |__/ "#),
         Line::raw(r#"                           "#),
-        Line::raw(t!("help_tagline")),
+        Line::from(tr!("help_tagline")),
         Line::raw(r#"                           "#),
-        Line::raw(t!("help_show_settings", key = s)),
-        Line::raw(t!("help_show_bindings", key = b)),
-        Line::raw(t!("help_show_columns", key = c)),
+        Line::from(tr!("help_show_settings", key = s)),
+        Line::from(tr!("help_show_bindings", key = b)),
+        Line::from(tr!("help_show_columns", key = c)),
         Line::raw(r#"                           "#),
         Line::raw(r#" https://github.com/fujiapple852/trippy "#),
         Line::raw(r#"                           "#),
-        Line::raw(t!("help_license")),
+        Line::from(tr!("help_license")),
         Line::raw(r#"                           "#),
-        Line::raw(t!("help_copyright")),
+        Line::from(tr!("help_copyright")),
     ];
     let block = Block::default()
-        .title(format!(" {} ", t!("title_help")))
+        .title(util::padded_title(tr!("title_help")))
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .style(Style::default().bg(app.tui_config.theme.help_dialog_bg))

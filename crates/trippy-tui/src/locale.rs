@@ -1,138 +1,43 @@
-use itertools::Itertools;
-use serde::Deserialize;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::OnceLock;
-use unic_langid::LanguageIdentifier;
-
-const FALLBACK_LOCALE: &str = "en";
+use crate::Locale;
+use mf2::ratatui::{Theme, set_theme};
+use ratatui::style::Style;
 
 /// Set the locale for the application.
 ///
-/// If the given locale is `None` the system locale is tried. If the system locale cannot be
-/// determined then the fallback locale is used.
+/// The embedded catalogs are installed first, in the language that best serves the system's
+/// preferred languages (else English). If a locale is given, it replaces that choice.
 ///
-/// In all cases, the language part of the locale is used if the full locale is not supported.
-pub fn set_locale(locale: Option<&str>) -> String {
-    let new_locale = calculate_locale(locale, sys_locale::get_locale().as_deref());
-    store_locale(&new_locale);
-    new_locale
+/// Returns the chosen locale's tag.
+pub fn set_locale(locale: Option<&str>) -> &'static str {
+    crate::install();
+    // How the messages' markup is drawn: a key hint (`{#key}h{/key}`) in bold.
+    set_theme(Theme::default().style(crate::markup::KEY, Style::new().bold()));
+    if locale.is_some() {
+        crate::set_locale(choose(locale, None));
+    }
+    crate::current_locale().tag()
 }
 
 /// Get the available locales.
 pub fn available_locales() -> Vec<&'static str> {
-    data()
-        .0
-        .values()
-        .flat_map(|v| v.0.keys().map(AsRef::as_ref))
-        .unique()
-        .sorted_unstable()
-        .collect::<Vec<_>>()
+    Locale::ALL.iter().map(|locale| locale.tag()).collect()
 }
 
-/// A macro to translate an item to the current locale.
-#[macro_export]
-macro_rules! t {
-    ($key:expr) => {
-        std::borrow::Cow::Borrowed($crate::locale::__translate($key))
-    };
-    ($key:expr, $($kt:ident = $kv:expr),+) => {
-        {
-            let string = t!($key);
-            $(
-                let string = string.replace(concat!("%{", stringify!($kt), "}"), &$kv.to_string());
-            )+
-            string
-        }
-    };
-    ($key:expr, $($kt:literal => $kv:expr),+) => {
-        {
-            let string = t!($key);
-            $(
-                let string = string.replace(concat!("%{", $kt, "}"), &$kv.to_string());
-            )+
-            string
-        }
-    };
-}
-
-/// Translate an item to the current locale.
+/// Choose the locale to use: the configured one, else the system's, else English.
 ///
-/// This function is public as it is used by the `t!` macro, however is not considered part of the
-/// public interface.
-#[doc(hidden)]
-pub fn __translate(item: &str) -> &str {
-    let locale = CURRENT_LOCALE.with(Clone::clone);
-    let binding = locale.borrow();
-    translate_locale(item, binding.as_str())
-}
-
-/// Translate an item to a specific locale.
-///
-/// If the item does not exists, the key is returned. Otherwise, if item does not contain the
-/// locale, the fallback locale is used. If the fallback locale does not exist, the key is
-/// returned.
-fn translate_locale<'a>(item: &'a str, locale: &str) -> &'a str {
-    if let Some(key) = data().0.get(item) {
-        if let Some(value) = key.0.get(locale) {
-            value
-        } else if let Some(value) = key.0.get(FALLBACK_LOCALE) {
-            value
-        } else {
-            item
-        }
-    } else {
-        item
-    }
-}
-
-/// Get the locale data.
-fn data() -> &'static Data {
-    static DATA: OnceLock<Data> = OnceLock::new();
-    DATA.get_or_init(|| {
-        toml::from_str(include_str!("../locales.toml")).expect("Failed to parse locales.toml")
-    })
-}
-
-/// This is a map of a item name (i.e. `title_hops`, `awaiting_data`, etc.) to the locale `Item`.
-#[derive(Debug, Deserialize)]
-struct Data(HashMap<String, Item>);
-
-/// This is a map of locale keys (i.e. `en`, `zh`, etc.) to the translated value.
-#[derive(Debug, Deserialize)]
-struct Item(HashMap<String, String>);
-
-/// calculate the locale to use.
-fn calculate_locale(cfg_locale: Option<&str>, sys_locale: Option<&str>) -> String {
-    let preferred = cfg_locale.or(sys_locale).unwrap_or(FALLBACK_LOCALE);
-    let locales = available_locales();
-    locales
-        .contains(&preferred)
-        .then(|| preferred.to_string())
-        .or_else(|| {
-            LanguageIdentifier::from_str(preferred).ok().and_then(|id| {
-                let lang = id.language.to_string();
-                id.region
-                    .map(|r| format!("{lang}-{r}"))
-                    .filter(|s| locales.contains(&s.as_str()))
-                    .or_else(|| locales.contains(&lang.as_str()).then_some(lang))
-            })
-        })
-        .unwrap_or_else(|| FALLBACK_LOCALE.to_string())
-}
-
-thread_local! {
-    static CURRENT_LOCALE: RefCell<String> = RefCell::new(String::from(FALLBACK_LOCALE));
-}
-
-fn store_locale(new_locale: &str) {
-    CURRENT_LOCALE.with(|locale| *locale.borrow_mut() = String::from(new_locale));
+/// A tag is matched to the catalogs with CLDR's language matching, so a region or a script the
+/// catalogs lack falls back to the closest language they have.
+fn choose(cfg_locale: Option<&str>, sys_locale: Option<&str>) -> Locale {
+    cfg_locale
+        .or(sys_locale)
+        .and_then(|tag| tag.parse().ok())
+        .unwrap_or(Locale::SOURCE)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tr;
     use test_case::test_case;
 
     #[test_case(None, None, "en"; "no_locale")]
@@ -158,7 +63,7 @@ mod tests {
     #[test_case(None, Some("zh-Hant-TW"), "zh-TW"; "sys_locale_ignore_script")]
     #[test_case(Some("zh-Hant-TW"), Some("zh-Hant-TW"), "zh-TW"; "both_locales_ignore_script")]
     fn test_set_locale(cfg_locale: Option<&str>, sys_locale: Option<&str>, expected: &str) {
-        assert_eq!(calculate_locale(cfg_locale, sys_locale), expected);
+        assert_eq!(choose(cfg_locale, sys_locale).tag(), expected);
     }
 
     #[test]
@@ -172,35 +77,64 @@ mod tests {
     }
 
     #[test]
-    fn test_data_deserialize() {
-        assert!(!data().0.is_empty());
-    }
-
-    #[test]
     fn test_translate() {
-        assert_eq!(translate_locale("title_hops", "en"), "Hops");
-        assert_eq!(translate_locale("title_hops", "zh"), "跳");
-        assert_eq!(translate_locale("title_hops", "zh-TW"), "跳");
-        assert_eq!(translate_locale("unknown_item", "en"), "unknown_item");
-        assert_eq!(translate_locale("unknown_locale", "xx"), "unknown_locale");
-    }
-
-    #[test]
-    fn test_translate_macro() {
-        assert_eq!(t!("title_hops"), "Hops");
-        assert_eq!(t!("awaiting_data"), "Awaiting data...");
-        assert_eq!(t!("unknown_item"), "unknown_item");
+        crate::install();
+        assert_eq!(Locale::En.format(&tr!("title_hops")), "Hops");
+        assert_eq!(Locale::Zh.format(&tr!("title_hops")), "跳");
+        assert_eq!(Locale::ZhTw.format(&tr!("title_hops")), "跳");
     }
 
     #[test]
     fn test_zh_tw_translations() {
-        // Test key Traditional Chinese translations
-        assert_eq!(translate_locale("auto", "zh-TW"), "自動");
-        assert_eq!(translate_locale("status_failed", "zh-TW"), "失敗");
-        assert_eq!(translate_locale("status_running", "zh-TW"), "執行中");
-        assert_eq!(translate_locale("title_settings", "zh-TW"), "設定");
-        assert_eq!(translate_locale("help_tagline", "zh-TW"), "網路診斷工具");
-        assert_eq!(translate_locale("column_loss_pct", "zh-TW"), "封包遺失率");
-        assert_eq!(translate_locale("rtt", "zh-TW"), "往返時間");
+        crate::install();
+        let zh_tw = |message| Locale::ZhTw.format(&message);
+        assert_eq!(zh_tw(tr!("auto")), "自動");
+        assert_eq!(zh_tw(tr!("status_failed")), "失敗");
+        assert_eq!(zh_tw(tr!("status_running")), "執行中");
+        assert_eq!(zh_tw(tr!("title_settings")), "設定");
+        assert_eq!(zh_tw(tr!("help_tagline")), "網路診斷工具");
+        assert_eq!(zh_tw(tr!("column_loss_pct")), "封包遺失率");
+        assert_eq!(zh_tw(tr!("rtt")), "往返時間");
+    }
+
+    #[test]
+    fn test_messages() {
+        crate::install();
+        let flows = |locale: Locale, flow_count: usize| {
+            locale.format(&tr!(
+                "discovered_flows",
+                hop_count = 7,
+                flow_count = flow_count
+            ))
+        };
+        assert_eq!(flows(Locale::En, 1), "discovered 7 hops and 1 unique flow");
+        assert_eq!(flows(Locale::En, 2), "discovered 7 hops and 2 unique flows");
+        assert_eq!(flows(Locale::Fr, 1), "7 sauts et 1 flux unique découverts");
+        assert_eq!(
+            flows(Locale::Ru, 5),
+            "обнаружено: 7 хопов и 5 уникальных потоков"
+        );
+        let failures = |locale: Locale| {
+            locale.format(&tr!(
+                "status_failures",
+                status = "Running",
+                failure_count = 2411,
+                total_probes = 14448,
+                failure_rate = 2411.0 / 14448.0
+            ))
+        };
+        assert_eq!(
+            failures(Locale::En),
+            "Running [2,411 of 14,448 (16.7%) probes failed❗]"
+        );
+        assert_eq!(Locale::En.format(&tr!("header_help", key = "h")), "help");
+        assert_eq!(
+            Locale::Fr.format(&tr!("header_help", key = "h")),
+            "[h] aide"
+        );
+        assert_eq!(
+            Locale::Fr.format(&tr!("target", source = "a", dest = "b")),
+            "Cible : a -> b"
+        );
     }
 }

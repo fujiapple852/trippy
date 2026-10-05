@@ -55,6 +55,8 @@ indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47.2"
 itertools = "0.15.0"
 maxminddb = "0.28.1"
+mf2 = "3.0.0"
+mf2-build = "3.0.0"
 mockall = "0.15.0"
 nix = { version = "0.31.3", default-features = false }
 parking_lot = "0.12.5"
@@ -68,7 +70,6 @@ serde_json = { version = "1.0.117", default-features = false }
 serde_with = { version = "3.21.0", default-features = false, features = ["macros"] }
 socket2 = "0.6.4"
 strum = { version = "0.28.0", default-features = false }
-sys-locale = "0.3.2"
 test-case = "3.3.1"
 thiserror = "2.0.3"
 tokio = "1.52.2"
@@ -78,7 +79,6 @@ tracing = "0.1.44"
 tracing-chrome = "0.7.2"
 tracing-subscriber = { version = "0.3.23", default-features = false }
 tun-rs = "2.8.3"
-unic-langid = "0.9.6"
 unicode-width = "0.2.0"
 widestring = "1.2.1"
 windows-sys = "0.61.2"

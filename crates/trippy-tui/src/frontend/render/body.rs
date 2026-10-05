@@ -9,7 +9,7 @@ use ratatui::layout::Rect;
 /// the splash screen.
 pub fn render(f: &mut Frame<'_>, rec: Rect, app: &mut TuiApp) {
     if let Some(err) = app.selected_tracer_data.error() {
-        bsod::render(f, rec, err);
+        bsod::render(f, rec, err, app.tui_config.bindings.quit);
     } else if app.tracer_data().hops().is_empty() {
         splash::render(f, app, rec);
     } else if app.show_chart {

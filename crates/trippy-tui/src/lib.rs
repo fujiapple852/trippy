@@ -11,6 +11,8 @@ use config::Args;
 use std::process;
 use trippy_privilege::Privilege;
 
+mf2::include_generated!();
+
 mod app;
 mod config;
 mod frontend;

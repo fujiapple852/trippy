@@ -1,0 +1,143 @@
+@locale tr
+---
+
+trippy = trippy v{$version}
+auto = otomatik
+on = açık
+off = kapalı
+yes = Evet
+no = Hayır
+none = hiçbiri
+hidden = **Gizli**
+target = {#b}Hedef:{/b} {$source} -> {$dest}
+status = {#b}Durum:{/b} {$status}, {$discovered}
+privileged = ayrıcalıklı
+unprivileged = ayrıcalıksız
+na = yok
+discovered = {$hop_count :integer} atlama keşfedildi
+discovered_flows = {$hop_count :integer} atlama ve {$flow_count :integer} benzersiz akış keşfedildi
+unknown = bilinmeyen
+icmp = icmp
+udp = udp
+tcp = tcp
+status_failures = {$status} [{$total_probes :integer} sondadan \
+  {$failure_count :integer} tanesi başarısız \
+  ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]
+status_failed = Başarısız
+status_running = Çalışıyor
+status_frozen = Dondurulmuş ({$duration})
+awaiting_data = Veri bekleniyor...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  y {{{#key}y{/key}ardım}}
+  * {{[{#key}{$key}{/key}] yardım}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  a {{{#key}a{/key}yarlar}}
+  * {{[{#key}{$key}{/key}] ayarlar}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  ç {{{#key}ç{/key}ıkış}}
+  * {{[{#key}{$key}{/key}] çıkış}}
+
+title_hops = Atlamalar
+title_frequency = Sıklık #{$ttl}
+title_samples = Örnekler #{$ttl}
+title_traces = İzler
+title_flows = Akışlar
+title_map = Harita
+title_help = Yardım
+title_settings = Ayarlar
+bsod_failed = Trippy Başarısız :(
+bsod_quit = Çıkmak için [{#key}{$key}{/key}] tuşuna basın
+hop = Atlama {$ttl}
+rtt = RTT
+title_chart = Grafik
+samples = Örnekler
+host = Ana bilgisayar: {$hosts}
+no_response = Yanıt yok
+dns_failed = Başarısız: {$ip}
+dns_timeout = Zaman aşımı: {$ip}
+labels = etiketler: {$labels}
+not_enabled = etkin değil
+not_found = bulunamadı
+awaited = bekleniyor
+as_name = AS adı: {$value}
+as_info = AS bilgisi: {$value}
+geo = Coğrafi: {$value}
+pos = Poz: {$value}
+ext = Uzantı: {$ext}
+help_tagline = Bir ağ analiz aracı
+help_show_settings = Tüm ayarları görmek için [{#key}{$key}{/key}] tuşuna basın
+help_show_bindings = Tüm tuş atamalarını görmek için [{#key}{$key}{/key}] tuşuna basın
+help_show_columns = Tüm sütunları görmek için [{#key}{$key}{/key}] tuşuna basın
+help_license = Apache Lisansı 2.0 altında dağıtılmıştır
+help_copyright = Telif Hakkı 2022 - Trippy'ye Katkıda Bulunanlar
+geoip_not_enabled = GeoIp etkin değil
+geoip_no_data_for_hop = {$ttl}. atlama için GeoIp verisi yok
+geoip_multiple_data_for_hop = {$ttl}. atlama için birden fazla GeoIp konumu
+settings_info = Bilgi
+settings_tab_tui_title = Tui
+settings_tab_trace_title = İzleme
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Tuş atamaları
+settings_tab_theme_title = Tema
+settings_tab_columns_title = Sütunlar
+settings_tab_tui_desc = Arayüzde verilerin nasıl görüntülendiğini kontrol eden ayarlar
+settings_tab_trace_desc = İzleme stratejisini kontrol eden ayarlar
+settings_tab_dns_desc = DNS aramalarının nasıl yapıldığını kontrol eden ayarlar
+settings_tab_geoip_desc = GeoIp ile ilgili ayarlar
+settings_tab_bindings_desc = Tui tuş atamaları
+settings_tab_theme_desc = Tui tema renkleri
+settings_tab_columns_desc = Tui tablo sütunları. Bir sütunu açmak veya \
+  kapatmak için [{#key}{$c}{/key}] tuşuna basın ve sütun sırasını \
+  değiştirmek için [{#key}{$d}{/key}] ve [{#key}{$u}{/key}] tuşlarını \
+  kullanın.
+settings_table_header_setting = Ayar
+settings_table_header_value = Değer
+column_host = Ana bilgisayar
+column_loss_pct = Kayıp%
+column_snd = Gönderilen
+column_recv = Alınan
+column_last = Son
+column_avg = Ort
+column_best = En iyi
+column_wrst = En kötü
+column_stdev = StDev
+column_sts = Sts
+column_jttr = Jttr
+column_javg = Javg
+column_jmax = Jmax
+column_jint = Jint
+column_sprt = Sprt
+column_dprt = Dprt
+column_seq = Seq
+column_type = Tür
+column_code = Kod
+column_nat = NAT
+column_fail = Başarısız
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ ayrıntılar
+details_off = □ ayrıntılar
+privacy_on = gizlilik: {$ttl :integer}
+privacy_off = gizlilik: -
+geoip_no_data_for_hop_addrs = {$ttl}. atlama için GeoIp verisi yok ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}; \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} km)
+details_index = [{$index :integer}/{$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

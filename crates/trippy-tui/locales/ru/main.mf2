@@ -1,0 +1,174 @@
+@locale ru
+---
+
+trippy = trippy v{$version}
+auto = авто
+on = вкл
+off = выкл
+yes = Да
+no = Нет
+none = нет
+hidden = **Скрыто**
+target = {#b}Цель:{/b} {$source} -> {$dest}
+status = {#b}Статус:{/b} {$status}, {$discovered}
+privileged = привилегированный
+unprivileged = непривилегированный
+na = н/д
+
+discovered =
+  .input {$hop_count :integer}
+  .match $hop_count
+  one {{обнаружено: {$hop_count} хоп}}
+  few {{обнаружено: {$hop_count} хопа}}
+  many {{обнаружено: {$hop_count} хопов}}
+  * {{обнаружено: {$hop_count} хопа}}
+
+discovered_flows =
+  .input {$hop_count :integer}
+  .input {$flow_count :integer}
+  .match $hop_count $flow_count
+  one one {{обнаружено: {$hop_count} хоп и {$flow_count} уникальный поток}}
+  one few {{обнаружено: {$hop_count} хоп и {$flow_count} уникальных потока}}
+  one many {{обнаружено: {$hop_count} хоп и {$flow_count} уникальных потоков}}
+  one * {{обнаружено: {$hop_count} хоп и {$flow_count} уникальных потока}}
+  few one {{обнаружено: {$hop_count} хопа и {$flow_count} уникальный поток}}
+  few few {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потока}}
+  few many {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потоков}}
+  few * {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потока}}
+  many one {{обнаружено: {$hop_count} хопов и {$flow_count} уникальный поток}}
+  many few {{обнаружено: {$hop_count} хопов и {$flow_count} уникальных потока}}
+  many many {{обнаружено: {$hop_count} хопов и {$flow_count} уникальных потоков}}
+  many * {{обнаружено: {$hop_count} хопов и {$flow_count} уникальных потока}}
+  * one {{обнаружено: {$hop_count} хопа и {$flow_count} уникальный поток}}
+  * few {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потока}}
+  * many {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потоков}}
+  * * {{обнаружено: {$hop_count} хопа и {$flow_count} уникальных потока}}
+
+unknown = неизвестно
+icmp = icmp
+udp = udp
+tcp = tcp
+status_failures = {$status} [неудачных зондов: \
+  {$failure_count :integer} из {$total_probes :integer} \
+  ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]
+status_failed = Ошибка
+status_running = Выполняется
+status_frozen = Заморожен ({$duration})
+awaiting_data = Ожидание данных...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] помощь}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] настройки}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] выход}}
+
+title_hops = Хопы
+title_frequency = Частота #{$ttl}
+title_samples = Замеры #{$ttl}
+title_traces = Трассы
+title_flows = Потоки
+title_map = Карта
+title_help = Помощь
+title_settings = Настройки
+bsod_failed = Сбой Trippy :(
+bsod_quit = Нажмите [{#key}{$key}{/key}] для выхода
+hop = Хоп {$ttl}
+rtt = RTT
+title_chart = Диаграмма
+samples = Замеры
+host = Хост: {$hosts}
+no_response = Нет ответа
+dns_failed = Не удалось: {$ip}
+dns_timeout = Тайм-аут: {$ip}
+labels = метки: {$labels}
+not_enabled = не активирован
+not_found = не найдено
+awaited = ожидается
+as_name = Имя AS: {$value}
+as_info = Инфо AS: {$value}
+geo = Гео: {$value}
+pos = Поз: {$value}
+ext = Расширения: {$ext}
+help_tagline = Инструмент диагностики сети
+help_show_settings = Нажмите [{#key}{$key}{/key}], чтобы показать все настройки
+help_show_bindings = Нажмите [{#key}{$key}{/key}], чтобы \
+  показать все сочетания клавиш
+help_show_columns = Нажмите [{#key}{$key}{/key}], чтобы показать все столбцы
+help_license = Распространяется под лицензией Apache 2.0
+help_copyright = Авторское право 2022 Участники Trippy
+geoip_not_enabled = GeoIp не активирован
+geoip_no_data_for_hop = Нет данных GeoIp для хопа {$ttl}
+geoip_multiple_data_for_hop = Несколько местоположений GeoIp для хопа {$ttl}
+settings_info = Информация
+settings_tab_tui_title = Tui
+settings_tab_trace_title = Трассировка
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Клавиши
+settings_tab_theme_title = Тема
+settings_tab_columns_title = Столбцы
+settings_tab_tui_desc = Настройки, которые \
+  контролируют, как данные отображаются в \
+  этом Tui
+settings_tab_trace_desc = Настройки, которые \
+  контролируют стратегию трассировки
+settings_tab_dns_desc = Настройки, которые \
+  контролируют, как выполняются DNS-запросы
+settings_tab_geoip_desc = Настройки, касающиеся GeoIp
+settings_tab_bindings_desc = Сочетания клавиш Tui
+settings_tab_theme_desc = Цвета темы Tui
+settings_tab_columns_desc = Столбцы таблицы Tui. \
+  Нажмите [{#key}{$c}{/key}], чтобы включить или \
+  отключить столбец, и используйте \
+  клавиши [{#key}{$d}{/key}] и [{#key}{$u}{/key}], чтобы \
+  изменить порядок столбцов.
+settings_table_header_setting = Настройка
+settings_table_header_value = Значение
+column_host = Хост
+column_loss_pct = Потери%
+column_snd = Отпр
+column_recv = Получ
+column_last = Посл
+column_avg = Сред
+column_best = Луч
+column_wrst = Худ
+column_stdev = СКО
+column_sts = Статус
+column_jttr = Джит
+column_javg = ДжСр
+column_jmax = ДжМакс
+column_jint = ДжИнт
+column_sprt = Исх
+column_dprt = Назн
+column_seq = №
+column_type = Тип
+column_code = Код
+column_nat = NAT
+column_fail = Неуд
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ детали
+details_off = □ детали
+privacy_on = приватность: {$ttl :integer}
+privacy_off = приватность: -
+geoip_no_data_for_hop_addrs = Нет данных GeoIp для хопа {$ttl} ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}; \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} км)
+details_index = [{$index :integer} из {$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

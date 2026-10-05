@@ -1,5 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
@@ -15,7 +15,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let barchart = BarChart::default()
         .block(
             Block::default()
-                .title(format!("{} #{}", t!("title_frequency"), selected_hop.ttl()))
+                .title(tr!("title_frequency", ttl = selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg)

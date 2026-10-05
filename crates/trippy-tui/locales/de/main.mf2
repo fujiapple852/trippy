@@ -1,0 +1,161 @@
+@locale de
+---
+
+trippy = trippy v{$version}
+auto = auto
+on = an
+off = aus
+yes = Ja
+no = Nein
+none = keine
+hidden = **Verborgen**
+target = {#b}Ziel:{/b} {$source} -> {$dest}
+status = {#b}Status:{/b} {$status}, {$discovered}
+privileged = privilegiert
+unprivileged = unprivilegiert
+na = k. A.
+
+discovered =
+  .input {$hop_count :integer}
+  .match $hop_count
+  one {{{$hop_count} Hop gefunden}}
+  * {{{$hop_count} Hops gefunden}}
+
+discovered_flows =
+  .input {$hop_count :integer}
+  .input {$flow_count :integer}
+  .match $hop_count $flow_count
+  one one {{{$hop_count} Hop und {$flow_count} eindeutiger Fluss gefunden}}
+  one * {{{$hop_count} Hop und {$flow_count} eindeutige Flüsse gefunden}}
+  * one {{{$hop_count} Hops und {$flow_count} eindeutiger Fluss gefunden}}
+  * * {{{$hop_count} Hops und {$flow_count} eindeutige Flüsse gefunden}}
+
+unknown = unbekannt
+icmp = icmp
+udp = udp
+tcp = tcp
+
+status_failures =
+  .input {$total_probes :integer}
+  .match $total_probes
+  one {{{$status} [{$failure_count :integer} von {$total_probes} Sonde ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) fehlgeschlagen❗]}}
+  * {{{$status} [{$failure_count :integer} von {$total_probes} Sonden ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) fehlgeschlagen❗]}}
+
+status_failed = Fehlgeschlagen
+status_running = Läuft
+status_frozen = Eingefroren ({$duration})
+awaiting_data = Warten auf Daten...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  h {{{#key}h{/key}ilfe}}
+  * {{[{#key}{$key}{/key}] hilfe}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  e {{{#key}e{/key}instellungen}}
+  * {{[{#key}{$key}{/key}] einstellungen}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  b {{{#key}b{/key}eenden}}
+  * {{[{#key}{$key}{/key}] beenden}}
+
+title_hops = Hops
+title_frequency = Frequenz #{$ttl}
+title_samples = Messwerte #{$ttl}
+title_traces = Traces
+title_flows = Flüsse
+title_map = Karte
+title_help = Hilfe
+title_settings = Einstellungen
+bsod_failed = Trippy ist fehlgeschlagen :(
+bsod_quit = Drücken Sie [{#key}{$key}{/key}], um zu beenden
+hop = Hop {$ttl}
+rtt = RTT
+title_chart = Diagramm
+samples = Messwerte
+host = Host: {$hosts}
+no_response = Keine Antwort
+dns_failed = Fehlgeschlagen: {$ip}
+dns_timeout = Zeitüberschreitung: {$ip}
+labels = Labels: {$labels}
+not_enabled = nicht aktiviert
+not_found = nicht gefunden
+awaited = ausstehend
+as_name = AS-Name: {$value}
+as_info = AS-Info: {$value}
+geo = Geo: {$value}
+pos = Pos: {$value}
+ext = Ext: {$ext}
+help_tagline = Ein Netzwerkdiagnosetool
+help_show_settings = Drücken Sie [{#key}{$key}{/key}], um alle Einstellungen anzuzeigen
+help_show_bindings = Drücken Sie [{#key}{$key}{/key}], um alle Tastenbelegungen anzuzeigen
+help_show_columns = Drücken Sie [{#key}{$key}{/key}], um alle Spalten anzuzeigen
+help_license = Verteilt unter der Apache-Lizenz 2.0
+help_copyright = Copyright 2022 Trippy-Mitwirkende
+geoip_not_enabled = GeoIp nicht aktiviert
+geoip_no_data_for_hop = Keine GeoIp-Daten für Hop {$ttl}
+geoip_multiple_data_for_hop = Mehrere GeoIp-Standorte für Hop {$ttl}
+settings_info = Info
+settings_tab_tui_title = Tui
+settings_tab_trace_title = Trace
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Tastenbelegungen
+settings_tab_theme_title = Darstellung
+settings_tab_columns_title = Spalten
+settings_tab_tui_desc = Einstellungen, die steuern, wie Daten in diesem Tui angezeigt werden
+settings_tab_trace_desc = Einstellungen, die die Tracing-Strategie steuern
+settings_tab_dns_desc = Einstellungen, die steuern, wie DNS-Lookups durchgeführt werden
+settings_tab_geoip_desc = Einstellungen im Zusammenhang mit GeoIp
+settings_tab_bindings_desc = Tui-Tastenbelegungen
+settings_tab_theme_desc = Tui-Farbschema
+settings_tab_columns_desc = Tui-Tabellenspalten. Drücken Sie \
+  [{#key}{$c}{/key}], um eine Spalte ein- oder auszuschalten, und verwenden \
+  Sie die Tasten [{#key}{$d}{/key}] und [{#key}{$u}{/key}], um die \
+  Spaltenreihenfolge zu ändern.
+settings_table_header_setting = Einstellung
+settings_table_header_value = Wert
+column_host = Host
+column_loss_pct = Verlust%
+column_snd = Snd
+column_recv = Recv
+column_last = Letzte
+column_avg = Mittel
+column_best = Beste
+column_wrst = Schlecht
+column_stdev = StdAbw
+column_sts = Sts
+column_jttr = Jttr
+column_javg = Javg
+column_jmax = Jmax
+column_jint = Jint
+column_sprt = Sprt
+column_dprt = Dprt
+column_seq = Seq
+column_type = Typ
+column_code = Code
+column_nat = NAT
+column_fail = Fehler
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ Details
+details_off = □ Details
+privacy_on = Privatsphäre: {$ttl :integer}
+privacy_off = Privatsphäre: -
+geoip_no_data_for_hop_addrs = Keine GeoIp-Daten für Hop {$ttl} ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}; \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} km)
+details_index = [{$index :integer} von {$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)
