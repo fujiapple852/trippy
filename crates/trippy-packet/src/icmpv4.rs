@@ -460,7 +460,7 @@ pub mod echo_request {
             assert_eq!(5756, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
             assert_eq!(33434, packet.get_sequence());
-            assert!(packet.payload().is_empty());
+            assert_eq!(packet.payload(), []);
         }
 
         #[test]
@@ -712,7 +712,7 @@ pub mod echo_reply {
             assert_eq!(7792, packet.get_checksum());
             assert_eq!(24731, packet.get_identifier());
             assert_eq!(33012, packet.get_sequence());
-            assert!(packet.payload().is_empty());
+            assert_eq!(packet.payload(), []);
         }
 
         #[test]
@@ -959,7 +959,7 @@ pub mod time_exceeded {
             assert_eq!(IcmpCode(0), packet.get_icmp_code());
             assert_eq!(62702, packet.get_checksum());
             assert_eq!(17, packet.get_length());
-            assert!(packet.payload().is_empty());
+            assert_eq!(packet.payload(), []);
         }
 
         #[test]
@@ -1227,7 +1227,7 @@ pub mod destination_unreachable {
             assert_eq!(IcmpCode(3), packet.get_icmp_code());
             assert_eq!(57308, packet.get_checksum());
             assert_eq!(0, packet.get_length());
-            assert!(packet.payload().is_empty());
+            assert_eq!(packet.payload(), []);
         }
 
         #[test]

@@ -482,7 +482,7 @@ mod tests {
             Ipv4Addr::new(0xde, 0x9a, 0x56, 0x12),
             packet.get_destination()
         );
-        assert!(packet.payload().is_empty());
+        assert_eq!(packet.payload(), []);
     }
 
     #[test]
