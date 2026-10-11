@@ -1,5 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
@@ -23,7 +23,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let history = Sparkline::default()
         .block(
             Block::default()
-                .title(format!("{} #{}", t!("title_samples"), selected_hop.ttl()))
+                .title(tr!("title_samples", ttl = selected_hop.ttl()))
                 .style(
                     Style::default()
                         .bg(app.tui_config.theme.bg)

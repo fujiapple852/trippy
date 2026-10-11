@@ -34,7 +34,7 @@ COPY crates/trippy-dns/src /app/crates/trippy-dns/src
 COPY crates/trippy-packet/src /app/crates/trippy-packet/src
 COPY crates/trippy-privilege/src /app/crates/trippy-privilege/src
 COPY crates/trippy-tui/build.rs /app/crates/trippy-tui
-COPY crates/trippy-tui/locales.toml /app/crates/trippy-tui
+COPY crates/trippy-tui/locales /app/crates/trippy-tui/locales
 COPY trippy-config-sample.toml /app
 COPY trippy-config-sample.toml /app/crates/trippy-tui
 COPY README.md /app

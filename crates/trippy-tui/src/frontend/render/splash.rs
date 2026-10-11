@@ -1,5 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::Style;
@@ -15,7 +15,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(rect);
     let block = Block::default()
-        .title(Line::raw(t!("title_hops")))
+        .title(Line::from(tr!("title_hops")))
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(app.tui_config.theme.border))
@@ -32,7 +32,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         r#"  |_||_| |_| .__/ .__/\_, |"#.into(),
         r#"           |_|  |_|   |__/ "#.into(),
         "".into(),
-        t!("awaiting_data"),
+        tr!("awaiting_data").to_cow(),
     ];
     let line: Vec<_> = splash
         .into_iter()

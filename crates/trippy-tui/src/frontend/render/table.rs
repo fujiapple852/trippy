@@ -4,7 +4,7 @@ use crate::frontend::config::TuiConfig;
 use crate::frontend::theme::Theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::geoip::{GeoIpCity, GeoIpLookup};
-use crate::t;
+use crate::tr;
 use itertools::Itertools;
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -75,7 +75,7 @@ pub fn render(f: &mut Frame<'_>, app: &mut TuiApp, rect: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
-                .title(Line::raw(t!("title_hops"))),
+                .title(Line::from(tr!("title_hops"))),
         )
         .style(
             Style::default()
@@ -165,16 +165,16 @@ fn new_cell(
         ColumnType::Sent => render_usize_cell(hop.total_sent()),
         ColumnType::Received => render_usize_cell(hop.total_recv()),
         ColumnType::Failed => render_usize_cell(hop.total_failed()),
-        ColumnType::Last => render_float_cell(hop.last_ms(), 1, total_recv),
+        ColumnType::Last => render_float_cell(hop.last_ms(), total_recv),
         ColumnType::Average => render_avg_cell(hop),
-        ColumnType::Best => render_float_cell(hop.best_ms(), 1, total_recv),
-        ColumnType::Worst => render_float_cell(hop.worst_ms(), 1, total_recv),
+        ColumnType::Best => render_float_cell(hop.best_ms(), total_recv),
+        ColumnType::Worst => render_float_cell(hop.worst_ms(), total_recv),
         ColumnType::StdDev => render_stddev_cell(hop),
         ColumnType::Status => render_status_cell(hop, is_target),
-        ColumnType::Jitter => render_float_cell(hop.jitter_ms(), 1, total_recv),
-        ColumnType::Javg => render_float_cell(Some(hop.javg_ms()), 1, total_recv),
-        ColumnType::Jmax => render_float_cell(hop.jmax_ms(), 1, total_recv),
-        ColumnType::Jinta => render_float_cell(Some(hop.jinta()), 1, total_recv),
+        ColumnType::Jitter => render_float_cell(hop.jitter_ms(), total_recv),
+        ColumnType::Javg => render_float_cell(Some(hop.javg_ms()), total_recv),
+        ColumnType::Jmax => render_float_cell(hop.jmax_ms(), total_recv),
+        ColumnType::Jinta => render_float_cell(Some(hop.jinta()), total_recv),
         ColumnType::LastSrcPort => render_port_cell(hop.last_src_port()),
         ColumnType::LastDestPort => render_port_cell(hop.last_dest_port()),
         ColumnType::LastSeq => render_usize_cell(usize::from(hop.last_sequence())),
@@ -196,38 +196,37 @@ fn render_usize_cell(value: usize) -> Cell<'static> {
 
 fn render_nat_cell(value: NatStatus) -> Cell<'static> {
     Cell::from(match value {
-        NatStatus::NotApplicable => t!("na"),
-        NatStatus::NotDetected => t!("no"),
-        NatStatus::Detected => t!("yes"),
+        NatStatus::NotApplicable => tr!("na"),
+        NatStatus::NotDetected => tr!("no"),
+        NatStatus::Detected => tr!("yes"),
     })
 }
 
 fn render_pct_cell(value: f64) -> Cell<'static> {
-    Cell::from(format!("{value:.1}%"))
+    Cell::from(tr!("pct_value", value = value / 100_f64))
 }
 
 fn render_avg_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv() > 0 {
-        format!("{:.1}", hop.avg_ms())
+    if hop.total_recv() > 0 {
+        Cell::from(tr!("ms_value", value = hop.avg_ms()))
     } else {
-        String::default()
-    })
+        Cell::default()
+    }
 }
 
 fn render_stddev_cell(hop: &Hop) -> Cell<'static> {
-    Cell::from(if hop.total_recv() > 1 {
-        format!("{:.1}", hop.stddev_ms())
+    if hop.total_recv() > 1 {
+        Cell::from(tr!("ms_value", value = hop.stddev_ms()))
     } else {
-        String::default()
-    })
+        Cell::default()
+    }
 }
 
-fn render_float_cell(value: Option<f64>, places: usize, total_recv: usize) -> Cell<'static> {
-    Cell::from(if total_recv > 0 {
-        value.map(|v| format!("{v:.places$}")).unwrap_or_default()
-    } else {
-        String::default()
-    })
+fn render_float_cell(value: Option<f64>, total_recv: usize) -> Cell<'static> {
+    match value {
+        Some(value) if total_recv > 0 => Cell::from(tr!("ms_value", value = value)),
+        _ => Cell::default(),
+    }
 }
 
 fn render_status_cell(hop: &Hop, is_target: bool) -> Cell<'static> {
@@ -258,7 +257,7 @@ fn render_icmp_packet_code_cell(icmp_packet_type: Option<IcmpPacketType>) -> Cel
             | IcmpPacketType::TimeExceeded(code)
             | IcmpPacketType::EchoReply(code),
         ) => Cell::from(format!("{}", code.0)),
-        _ => Cell::from(t!("na")),
+        _ => Cell::from(tr!("na")),
     }
 }
 
@@ -266,7 +265,7 @@ fn render_port_cell(port: u16) -> Cell<'static> {
     if port > 0 {
         Cell::from(format!("{port}"))
     } else {
-        Cell::from(t!("na"))
+        Cell::from(tr!("na"))
     }
 }
 
@@ -296,7 +295,7 @@ fn render_dscp_cell(dscp: Option<Dscp>) -> Cell<'static> {
         Some(Dscp::VA) => Cell::from("VA"),
         Some(Dscp::LE) => Cell::from("LE"),
         Some(Dscp::Other(other)) => Cell::from(format!("0x{other:02x}")),
-        None => Cell::from(t!("na")),
+        None => Cell::from(tr!("na")),
     }
 }
 
@@ -306,17 +305,17 @@ fn render_ecn_cell(ecn: Option<Ecn>) -> Cell<'static> {
         Some(Ecn::ECT1) => Cell::from("ECT1"),
         Some(Ecn::ECT0) => Cell::from("ECT0"),
         Some(Ecn::CE) => Cell::from("CE"),
-        None => Cell::from(t!("na")),
+        None => Cell::from(tr!("na")),
     }
 }
 
 fn render_asn_cell(hop: &Hop, dns: &DnsResolver, config: &TuiConfig) -> Cell<'static> {
     if hop.total_recv() == 0 {
-        Cell::from(t!("na"))
+        Cell::from(tr!("na"))
     } else if config.privacy_max_ttl >= Some(hop.ttl()) {
         Cell::from("****".to_string())
     } else if !config.lookup_as_info {
-        Cell::from(t!("na"))
+        Cell::from(tr!("na"))
     } else {
         let (addrs, _) = visible_addresses(hop, config.max_addrs);
         let content = addrs
@@ -336,7 +335,7 @@ fn render_hostname(
 ) -> (Cell<'static>, u16) {
     let (hostname, count) = if hop.total_recv() > 0 {
         if app.tui_config.privacy_max_ttl >= Some(hop.ttl()) {
-            (format!("**{}**", t!("hidden")), 1)
+            (tr!("hidden").to_string(), 1)
         } else {
             let (addrs, count) = visible_addresses(hop, app.tui_config.max_addrs);
             let hostnames = addrs
@@ -348,7 +347,7 @@ fn render_hostname(
             (hostnames, count)
         }
     } else {
-        (format!("{}", t!("no_response")), 1)
+        (format!("{}", tr!("no_response")), 1)
     };
     (Cell::from(hostname), count)
 }
@@ -422,10 +421,7 @@ fn format_address(
             .map(|geo| geo.location()),
     };
     let freq_fmt = if hop.addr_count() > 1 {
-        Some(format!(
-            "{:.1}%",
-            (freq as f64 / hop.total_recv() as f64) * 100_f64
-        ))
+        Some(tr!("pct_value", value = freq as f64 / hop.total_recv() as f64).to_string())
     } else {
         None
     };
@@ -468,8 +464,8 @@ fn format_dns_entry(dns_entry: DnsEntry, lookup_as_info: bool, as_mode: AsMode) 
                 format!("{ip}")
             }
         }
-        DnsEntry::Failed(ip) => format!("{}: {ip}", t!("dns_failed")),
-        DnsEntry::Timeout(ip) => format!("{}: {ip}", t!("dns_timeout")),
+        DnsEntry::Failed(ip) => tr!("dns_failed", ip = ip).to_string(),
+        DnsEntry::Timeout(ip) => tr!("dns_timeout", ip = ip).to_string(),
     }
 }
 
@@ -495,7 +491,7 @@ fn format_asinfo_cell(addr: IpAddr, dns: &DnsResolver) -> String {
         }
         DnsEntry::Pending(_) => String::new(),
         DnsEntry::Failed(_) | DnsEntry::Timeout(_) => "?????".to_string(),
-        _ => t!("na").to_string(),
+        _ => tr!("na").to_string(),
     }
 }
 
@@ -531,7 +527,7 @@ fn format_extensions_mpls(extensions: &Extensions) -> Option<String> {
     if labels.is_empty() {
         None
     } else {
-        Some(format!("{}: {labels}", t!("labels")))
+        Some(tr!("labels", labels = labels).to_string())
     }
 }
 
@@ -604,13 +600,13 @@ fn render_hostname_with_details(
 ) -> (Cell<'static>, u16) {
     let rendered = if hop.total_recv() > 0 {
         if config.privacy_max_ttl >= Some(hop.ttl()) {
-            format!("**{}**", t!("hidden"))
+            tr!("hidden").to_string()
         } else {
             let index = app.selected_hop_address;
             format_details(hop, index, dns, geoip_lookup, config)
         }
     } else {
-        format!("{}", t!("no_response"))
+        format!("{}", tr!("no_response"))
     };
     (Cell::from(rendered), 7)
 }
@@ -684,12 +680,8 @@ fn format_details(
             nat,
             config,
         ),
-        DnsEntry::Failed(ip) => {
-            format!("{}: {ip}", t!("dns_failed"))
-        }
-        DnsEntry::Timeout(ip) => {
-            format!("{}: {ip}", t!("dns_timeout"))
-        }
+        DnsEntry::Failed(ip) => tr!("dns_failed", ip = ip).to_string(),
+        DnsEntry::Timeout(ip) => tr!("dns_timeout", ip = ip).to_string(),
     }
 }
 
@@ -718,81 +710,77 @@ fn fmt_details_line(
     nat: NatStatus,
     config: &TuiConfig,
 ) -> String {
+    let as_lines = |name: String, info: String| {
+        format!(
+            "{}\n{}",
+            tr!("as_name", value = name),
+            tr!("as_info", value = info)
+        )
+    };
     let as_fmt = match (config.lookup_as_info, asinfo) {
-        (false, _) => format!(
-            "AS {}: <{}>\nAS {}: <{}>",
-            t!("name"),
-            t!("not_enabled"),
-            t!("info"),
-            t!("not_enabled")
+        (false, _) => as_lines(
+            format!("<{}>", tr!("not_enabled")),
+            format!("<{}>", tr!("not_enabled")),
         ),
-        (true, None) => format!(
-            "AS {}: <{}>\nAS {}: <{}>",
-            t!("name"),
-            t!("info"),
-            t!("awaited"),
-            t!("awaited")
+        (true, None) => as_lines(
+            format!("<{}>", tr!("awaited")),
+            format!("<{}>", tr!("awaited")),
         ),
-        (true, Some(info)) if info.asn.is_empty() => {
-            format!(
-                "AS {}: <{}>\nAS {}: <{}>",
-                t!("name"),
-                t!("not_found"),
-                t!("info"),
-                t!("not_found")
-            )
-        }
-        (true, Some(info)) => format!(
-            "AS {}: AS{} {}\nAS {}: {} {} {}",
-            t!("name"),
-            info.asn,
-            info.name,
-            t!("info"),
-            info.prefix,
-            info.registry,
-            info.allocated
+        (true, Some(info)) if info.asn.is_empty() => as_lines(
+            format!("<{}>", tr!("not_found")),
+            format!("<{}>", tr!("not_found")),
+        ),
+        (true, Some(info)) => as_lines(
+            format!("AS{} {}", info.asn, info.name),
+            format!("{} {} {}", info.prefix, info.registry, info.allocated),
         ),
     };
     let hosts_rendered = if let Some(hosts) = hostnames {
         if hosts.is_empty() {
-            format!("{}: <{}>", t!("host"), t!("not_found"))
+            tr!("host", hosts = format!("<{}>", tr!("not_found"))).to_string()
         } else {
-            format!("{}: {}", t!("host"), hosts.join(" "))
+            tr!("host", hosts = hosts.join(" ")).to_string()
         }
     } else {
-        format!("{}: <{}>", t!("host"), t!("awaited"))
+        tr!("host", hosts = format!("<{}>", tr!("awaited"))).to_string()
     };
     let geoip_fmt = if let Some(geo) = geoip {
         let (lat, long, radius) = geo.coordinates().unwrap_or_default();
         format!(
-            "{}: {}\n{}: {}, {} (~{}{})",
-            t!("geo"),
-            geo.long_name(),
-            t!("pos"),
-            lat,
-            long,
-            radius,
-            t!("kilometer"),
+            "{}\n{}",
+            tr!("geo", value = geo.long_name()),
+            tr!(
+                "pos",
+                value = tr!(
+                    "coordinates",
+                    latitude = lat,
+                    longitude = long,
+                    radius = radius
+                )
+                .to_string()
+            ),
         )
     } else {
+        let not_found = || format!("<{}>", tr!("not_found"));
         format!(
-            "{}: <{}>\n{}: <{}>",
-            t!("geo"),
-            t!("not_found"),
-            t!("pos"),
-            t!("not_found")
+            "{}\n{}",
+            tr!("geo", value = not_found()),
+            tr!("pos", value = not_found())
         )
     };
     let ext_fmt = if let Some(extensions) = extensions {
-        format!("{}: [{}]", t!("ext"), format_extensions_all(extensions))
+        tr!(
+            "ext",
+            ext = format!("[{}]", format_extensions_all(extensions))
+        )
+        .to_string()
     } else {
-        format!("{}: <{}>", t!("ext"), t!("none"))
+        tr!("ext", ext = format!("<{}>", tr!("none"))).to_string()
     };
     let nat_fmt = match nat {
         NatStatus::Detected => " [NAT]",
         _ => "",
     };
-    format!(
-        "{addr}{nat_fmt} [{index} of {count}]\n{hosts_rendered}\n{as_fmt}\n{geoip_fmt}\n{ext_fmt}"
-    )
+    let index_fmt = tr!("details_index", index = index, count = count);
+    format!("{addr}{nat_fmt} {index_fmt}\n{hosts_rendered}\n{as_fmt}\n{geoip_fmt}\n{ext_fmt}")
 }

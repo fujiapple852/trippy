@@ -1,0 +1,168 @@
+@locale es
+---
+
+trippy = trippy v{$version}
+auto = automático
+on = activo
+off = inactivo
+yes = Sí
+no = No
+none = ninguno
+hidden = **Oculto**
+target = {#b}Objetivo:{/b} {$source} -> {$dest}
+status = {#b}Estado:{/b} {$status}, {$discovered}
+privileged = privilegiado
+unprivileged = no privilegiado
+na = n/d
+
+discovered =
+  .input {$hop_count :integer}
+  .match $hop_count
+  one {{se descubrió {$hop_count} salto}}
+  many {{se descubrieron {$hop_count} de saltos}}
+  * {{se descubrieron {$hop_count} saltos}}
+
+discovered_flows =
+  .input {$hop_count :integer}
+  .input {$flow_count :integer}
+  .match $hop_count $flow_count
+  one one {{se descubrieron {$hop_count} salto y {$flow_count} flujo único}}
+  one many {{se descubrieron {$hop_count} salto y {$flow_count} de flujos únicos}}
+  one * {{se descubrieron {$hop_count} salto y {$flow_count} flujos únicos}}
+  many one {{se descubrieron {$hop_count} de saltos y {$flow_count} flujo único}}
+  many many {{se descubrieron {$hop_count} de saltos y {$flow_count} de flujos únicos}}
+  many * {{se descubrieron {$hop_count} de saltos y {$flow_count} flujos únicos}}
+  * one {{se descubrieron {$hop_count} saltos y {$flow_count} flujo único}}
+  * many {{se descubrieron {$hop_count} saltos y {$flow_count} de flujos únicos}}
+  * * {{se descubrieron {$hop_count} saltos y {$flow_count} flujos únicos}}
+
+unknown = desconocido
+icmp = icmp
+udp = udp
+tcp = tcp
+
+status_failures =
+  .input {$total_probes :integer}
+  .match $total_probes
+  one {{{$status} [{$failure_count :integer} de {$total_probes} sonda fallida ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]}}
+  many {{{$status} [{$failure_count :integer} de {$total_probes} de sondas fallidas ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]}}
+  * {{{$status} [{$failure_count :integer} de {$total_probes} sondas fallidas ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]}}
+
+status_failed = Fallido
+status_running = En ejecución
+status_frozen = Congelado ({$duration})
+awaiting_data = Esperando datos...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  a {{{#key}a{/key}yuda}}
+  * {{[{#key}{$key}{/key}] ayuda}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  c {{{#key}c{/key}onfiguración}}
+  * {{[{#key}{$key}{/key}] configuración}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  s {{{#key}s{/key}alir}}
+  * {{[{#key}{$key}{/key}] salir}}
+
+title_hops = Saltos
+title_frequency = Frecuencia #{$ttl}
+title_samples = Muestras #{$ttl}
+title_traces = Trazas
+title_flows = Flujos
+title_map = Mapa
+title_help = Ayuda
+title_settings = Configuración
+bsod_failed = Trippy tuvo un problema :(
+bsod_quit = Presiona [{#key}{$key}{/key}] para salir
+hop = Salto {$ttl}
+rtt = RTT
+title_chart = Gráfico
+samples = Muestras
+host = Host: {$hosts}
+no_response = Sin respuesta
+dns_failed = Fallido: {$ip}
+dns_timeout = Tiempo de espera: {$ip}
+labels = etiquetas: {$labels}
+not_enabled = no habilitado
+not_found = no encontrado
+awaited = pendiente
+as_name = Nombre AS: {$value}
+as_info = Info AS: {$value}
+geo = Geo: {$value}
+pos = Pos: {$value}
+ext = Ext: {$ext}
+help_tagline = Una herramienta de diagnóstico de red
+help_show_settings = Presiona [{#key}{$key}{/key}] para mostrar toda la configuración
+help_show_bindings = Presiona [{#key}{$key}{/key}] para mostrar todos los atajos
+help_show_columns = Presiona [{#key}{$key}{/key}] para mostrar todas las columnas
+help_license = Distribuido bajo la Licencia Apache 2.0
+help_copyright = Copyright 2022 Colaboradores de Trippy
+geoip_not_enabled = GeoIp no habilitado
+geoip_no_data_for_hop = No hay datos de GeoIp para el salto {$ttl}
+geoip_multiple_data_for_hop = Múltiples ubicaciones de GeoIp para el salto {$ttl}
+settings_info = Información
+settings_tab_tui_title = Tui
+settings_tab_trace_title = Rastreo
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Atajos
+settings_tab_theme_title = Tema
+settings_tab_columns_title = Columnas
+settings_tab_tui_desc = Opciones que controlan cómo se muestran los datos en este Tui
+settings_tab_trace_desc = Opciones que controlan la estrategia de rastreo
+settings_tab_dns_desc = Opciones que controlan cómo se realizan las búsquedas de DNS
+settings_tab_geoip_desc = Opciones relacionadas con GeoIp
+settings_tab_bindings_desc = Atajos de teclado Tui
+settings_tab_theme_desc = Colores del tema Tui
+settings_tab_columns_desc = Columnas de la tabla Tui. Presiona \
+  [{#key}{$c}{/key}] para activar o desactivar una columna y usa las teclas \
+  [{#key}{$d}{/key}] y [{#key}{$u}{/key}] para cambiar el orden de las \
+  columnas.
+settings_table_header_setting = Opción
+settings_table_header_value = Valor
+column_host = Host
+column_loss_pct = % Perdidos
+column_snd = Enviados
+column_recv = Recibidos
+column_last = Último
+column_avg = Prom
+column_best = Mejor
+column_wrst = Peor
+column_stdev = DesvE
+column_sts = Est
+column_jttr = Jit
+column_javg = PromJit
+column_jmax = JitMax
+column_jint = JitInt
+column_sprt = Sprt
+column_dprt = Dprt
+column_seq = Seq
+column_type = Tipo
+column_code = Código
+column_nat = NAT
+column_fail = Fallos
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ detalles
+details_off = □ detalles
+privacy_on = privacidad: {$ttl :integer}
+privacy_off = privacidad: -
+geoip_no_data_for_hop_addrs = No hay datos de GeoIp para el salto {$ttl} ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}; \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} km)
+details_index = [{$index :integer} de {$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

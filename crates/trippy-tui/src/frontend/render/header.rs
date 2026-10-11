@@ -1,10 +1,11 @@
+use crate::frontend::render::util;
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
-use chrono::SecondsFormat;
+use crate::tr;
 use humantime::format_duration;
+use jiff::{Timestamp, tz::TimeZone};
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
 use std::net::IpAddr;
@@ -14,10 +15,12 @@ use trippy_core::{Hop, PortDirection};
 use trippy_dns::Resolver;
 
 /// Render the title, target, clock and basic keyboard controls.
-#[expect(clippy::too_many_lines)]
 pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let header_block = Block::default()
-        .title(format!(" {} v{} ", t!("trippy"), clap::crate_version!()))
+        .title(util::padded_title(tr!(
+            "trippy",
+            version = clap::crate_version!()
+        )))
         .title_alignment(Alignment::Center)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
@@ -27,76 +30,26 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         );
-    let now = if let Some(tz) = &app.tui_config.timezone {
-        chrono::Utc::now()
-            .with_timezone(tz)
-            .to_rfc3339_opts(SecondsFormat::Secs, true)
-    } else {
-        chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true)
-    };
+    let now = app
+        .tui_config
+        .timezone
+        .as_ref()
+        .map_or_else(TimeZone::system, Clone::clone);
+    let now = Timestamp::now()
+        .to_zoned(now)
+        .strftime("%Y-%m-%dT%H:%M:%S%:z")
+        .to_string();
+    let now = now
+        .strip_suffix("+00:00")
+        .map_or_else(|| now.clone(), |utc| format!("{utc}Z"));
     let clock_span = Line::from(Span::raw(now));
-    let bold = Style::default().add_modifier(Modifier::BOLD);
-
-    let help_binding = app.tui_config.bindings.toggle_help.to_string();
-    let header_help = t!("header_help");
-    let help_line_help = if header_help.starts_with(&help_binding) {
-        vec![
-            Span::styled(&help_binding, bold),
-            Span::raw(&header_help[help_binding.len()..]),
-        ]
-    } else {
-        vec![
-            Span::raw("["),
-            Span::styled(help_binding, bold),
-            Span::raw("]"),
-            Span::raw(header_help),
-        ]
-    };
-
-    let settings_binding = app.tui_config.bindings.toggle_settings.to_string();
-    let header_settings = t!("header_settings");
-    let help_line_settings = if header_settings.starts_with(&settings_binding) {
-        vec![
-            Span::styled(&settings_binding, bold),
-            Span::raw(&header_settings[settings_binding.len()..]),
-        ]
-    } else {
-        vec![
-            Span::raw("["),
-            Span::styled(settings_binding, bold),
-            Span::raw("]"),
-            Span::raw(header_settings),
-        ]
-    };
-
-    let quit_binding = app.tui_config.bindings.quit.to_string();
-    let header_quit = t!("header_quit");
-    let help_line_quit = if header_quit.starts_with(&quit_binding) {
-        vec![
-            Span::styled(&quit_binding, bold),
-            Span::raw(&header_quit[quit_binding.len()..]),
-        ]
-    } else {
-        vec![
-            Span::raw("["),
-            Span::styled(quit_binding, bold),
-            Span::raw("]"),
-            Span::raw(header_quit),
-        ]
-    };
-
-    let help_span = Line::from(
-        [
-            help_line_help,
-            vec![Span::raw(" ")],
-            help_line_settings,
-            vec![Span::raw(" ")],
-            help_line_quit,
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>(),
-    );
+    // Each hint is one message: the translation places the key, and the theme bolds it.
+    let bindings = &app.tui_config.bindings;
+    let mut help_span = Line::from(tr!("header_help", key = bindings.toggle_help));
+    help_span.push_span(" ");
+    help_span.extend(Line::from(tr!("header_settings", key = bindings.toggle_settings)).spans);
+    help_span.push_span(" ");
+    help_span.extend(Line::from(tr!("header_quit", key = bindings.quit)).spans);
     let right_line = vec![clock_span, help_span];
     let right = Paragraph::new(right_line)
         .style(Style::default())
@@ -105,42 +58,25 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
 
     let source = render_source(app);
     let dest = render_destination(app);
-    let target = format!("{source} -> {dest}");
     let hop_count = app.tracer_data().hops_for_flow(app.selected_flow).len();
     let discovered = if app.selected_tracer_data.max_flows() > 1 {
-        let plural_flows = if app.tracer_data().flows().len() > 1 {
-            t!("flows")
-        } else {
-            t!("flow")
-        };
         let flow_count = app.tracer_data().flows().len();
-        format!(
-            ", {}",
-            t!("discovered_flows",
-                "hop_count" => hop_count,
-                "flow_count" => flow_count,
-                "plural_flows" => plural_flows
-            )
+        tr!(
+            "discovered_flows",
+            hop_count = hop_count,
+            flow_count = flow_count
         )
+        .to_string()
     } else {
-        format!(", {}", t!("discovered", "hop_count" => hop_count))
+        tr!("discovered", hop_count = hop_count).to_string()
     };
     let left_line = vec![
-        Line::from(vec![
-            Span::styled(
-                format!("{}: ", t!("target")),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(target),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                format!("{}: ", t!("status")),
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(render_status(app)),
-            Span::raw(discovered),
-        ]),
+        Line::from(tr!("target", source = source, dest = dest)),
+        Line::from(tr!(
+            "status",
+            status = render_status(app),
+            discovered = discovered
+        )),
     ];
 
     let left = Paragraph::new(left_line)
@@ -180,7 +116,7 @@ fn render_source(app: &TuiApp) -> String {
         }
     }
     if app.tui_config.privacy_max_ttl.is_some() {
-        format!("**{}**", t!("hidden"))
+        tr!("hidden").to_string()
     } else if let Some(addr) = app.tracer_config().data.source_addr() {
         let entry = app.resolver.lazy_reverse_lookup_with_asinfo(addr);
         if let Some(hostname) = entry.hostnames().next() {
@@ -189,7 +125,7 @@ fn render_source(app: &TuiApp) -> String {
             format_ip(app, addr)
         }
     } else {
-        String::from(t!("unknown"))
+        String::from(tr!("unknown"))
     }
 }
 
@@ -238,43 +174,43 @@ fn render_destination(app: &TuiApp) -> String {
 
 /// Render the headline status of the tracing.
 fn render_status(app: &TuiApp) -> String {
+    if app.selected_tracer_data.error().is_some() {
+        return tr!("status_failed").to_string();
+    }
+    let status = if let Some(start) = app.frozen_start {
+        let frozen = format_duration(Duration::from_secs(
+            start.elapsed().unwrap_or_default().as_secs(),
+        ));
+        tr!("status_frozen", duration = frozen).to_string()
+    } else {
+        tr!("status_running").to_string()
+    };
     let failure_count: usize = app
         .tracer_data()
         .hops_for_flow(app.selected_flow)
         .iter()
         .map(Hop::total_failed)
         .sum();
-    let failures = if failure_count > 0 {
-        let total_probes: usize = app
-            .tracer_data()
-            .hops_for_flow(app.selected_flow)
-            .iter()
-            .map(Hop::total_sent)
-            .sum();
-        let failure_rate = if total_probes > 0 {
-            (failure_count as f64 / total_probes as f64) * 100.0
-        } else {
-            0_f64
-        };
-        let failure_rate = format!("{failure_rate:.1}");
-        format!(
-            " [{}❗]",
-            t!("status_failures",
-                    "failure_count" => failure_count,
-                    "total_probes" => total_probes,
-                    "failure_rate" => failure_rate)
-        )
-    } else {
-        String::new()
-    };
-    if app.selected_tracer_data.error().is_some() {
-        String::from(t!("status_failed"))
-    } else if let Some(start) = app.frozen_start {
-        let frozen = format_duration(Duration::from_secs(
-            start.elapsed().unwrap_or_default().as_secs(),
-        ));
-        format!("{} ({frozen}){failures}", t!("status_frozen"))
-    } else {
-        format!("{}{failures}", t!("status_running"))
+    if failure_count == 0 {
+        return status;
     }
+    let total_probes: usize = app
+        .tracer_data()
+        .hops_for_flow(app.selected_flow)
+        .iter()
+        .map(Hop::total_sent)
+        .sum();
+    let failure_rate = if total_probes > 0 {
+        failure_count as f64 / total_probes as f64
+    } else {
+        0_f64
+    };
+    tr!(
+        "status_failures",
+        status = status,
+        failure_count = failure_count,
+        total_probes = total_probes,
+        failure_rate = failure_rate
+    )
+    .to_string()
 }

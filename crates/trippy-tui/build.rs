@@ -1,3 +1,3 @@
 pub fn main() {
-    println!("cargo:rerun-if-changed=locales.toml");
+    mf2_build::run();
 }

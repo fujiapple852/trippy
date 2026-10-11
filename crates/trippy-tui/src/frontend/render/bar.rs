@@ -1,6 +1,6 @@
 use crate::config::AddressMode;
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::prelude::{Line, Span, Style};
@@ -43,9 +43,9 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let details = if app.show_hop_details {
-        Span::raw(format!("■ {}", t!("details")))
+        Span::from(tr!("details_on"))
     } else {
-        Span::raw(format!("□ {}", t!("details")))
+        Span::from(tr!("details_off"))
     };
 
     let max_hosts = if let Some(m) = app.tui_config.max_addrs {
@@ -55,9 +55,9 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
     };
 
     let privacy = if let Some(ttl) = app.tui_config.privacy_max_ttl {
-        Span::raw(format!("{}:{ttl:2}", t!("privacy")))
+        Span::from(tr!("privacy_on", ttl = ttl))
     } else {
-        Span::raw(format!("{}: -", t!("privacy")))
+        Span::from(tr!("privacy_off"))
     };
 
     let address_mode = match app.tui_config.address_mode {
@@ -110,8 +110,8 @@ pub fn render(f: &mut Frame<'_>, rect: Rect, app: &TuiApp) {
 
 fn fmt_privilege_mode(privilege_mode: PrivilegeMode) -> Cow<'static, str> {
     match privilege_mode {
-        PrivilegeMode::Privileged => t!("privileged"),
-        PrivilegeMode::Unprivileged => t!("unprivileged"),
+        PrivilegeMode::Privileged => tr!("privileged").to_cow(),
+        PrivilegeMode::Unprivileged => tr!("unprivileged").to_cow(),
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
@@ -12,7 +12,7 @@ const FLOW_BAR_GAP: u16 = 1;
 /// Render the flows.
 pub fn render(f: &mut Frame<'_>, rect: Rect, app: &mut TuiApp) {
     let block = Block::default()
-        .title(Line::raw(t!("title_flows")))
+        .title(Line::from(tr!("title_flows")))
         .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)

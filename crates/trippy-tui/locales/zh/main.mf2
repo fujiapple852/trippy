@@ -1,0 +1,140 @@
+@locale zh
+---
+
+trippy = trippy v{$version}
+auto = 自动
+on = 开
+off = 关
+yes = 是
+no = 否
+none = 无
+hidden = **隐藏**
+target = {#b}目标:{/b} {$source} -> {$dest}
+status = {#b}状态:{/b} {$status}，{$discovered}
+privileged = 特权
+unprivileged = 非特权
+na = 不适用
+discovered = 发现 {$hop_count :integer} 跳
+discovered_flows = 发现 {$hop_count :integer} 跳和 {$flow_count :integer} 条不同的流
+unknown = 未知
+icmp = icmp
+udp = udp
+tcp = tcp
+status_failures = {$status} [共 {$total_probes :integer} \
+  个探测，{$failure_count :integer} \
+  个失败（{$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}）❗]
+status_failed = 失败
+status_running = 运行中
+status_frozen = 冻结 ({$duration})
+awaiting_data = 等待数据……
+
+header_help =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] 帮助}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] 设置}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] 退出}}
+
+title_hops = 跳
+title_frequency = 频率 #{$ttl}
+title_samples = 样本 #{$ttl}
+title_traces = 跟踪
+title_flows = 流
+title_map = 地图
+title_help = 帮助
+title_settings = 设置
+bsod_failed = Trippy 失败 :(
+bsod_quit = 按 [{#key}{$key}{/key}] 退出
+hop = 第 {$ttl} 跳
+rtt = 往返时间
+title_chart = 图表
+samples = 样本
+host = 主机: {$hosts}
+no_response = 无响应
+dns_failed = 失败: {$ip}
+dns_timeout = 超时: {$ip}
+labels = 标签: {$labels}
+not_enabled = 未启用
+not_found = 未找到
+awaited = 等待中
+as_name = AS 名称: {$value}
+as_info = AS 信息: {$value}
+geo = 地理位置: {$value}
+pos = 坐标: {$value}
+ext = 扩展: {$ext}
+help_tagline = 网络诊断工具
+help_show_settings = 按 [{#key}{$key}{/key}] 显示所有设置
+help_show_bindings = 按 [{#key}{$key}{/key}] 显示所有绑定
+help_show_columns = 按 [{#key}{$key}{/key}] 显示所有列
+help_license = 以 Apache-2.0 许可分发
+help_copyright = 版权所有 2022 Trippy 贡献者
+geoip_not_enabled = GeoIp 未启用
+geoip_no_data_for_hop = 第 {$ttl} 跳无 GeoIp 数据
+geoip_multiple_data_for_hop = 第 {$ttl} 跳有多个 GeoIp 位置
+settings_info = 信息
+settings_tab_tui_title = TUI
+settings_tab_trace_title = 跟踪
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = 绑定
+settings_tab_theme_title = 主题
+settings_tab_columns_title = 列
+settings_tab_tui_desc = 数据显示方式设置
+settings_tab_trace_desc = 跟踪策略设置
+settings_tab_dns_desc = DNS 查询设置
+settings_tab_geoip_desc = GeoIp 设置
+settings_tab_bindings_desc = 按键绑定设置
+settings_tab_theme_desc = 主题颜色设置
+settings_tab_columns_desc = TUI 表格列。按 [{#key}{$c}{/key}] \
+  切换列的显示和隐藏，使用 [{#key}{$d}{/key}] 和 \
+  [{#key}{$u}{/key}] 键更改列的顺序。
+settings_table_header_setting = 设置
+settings_table_header_value = 值
+column_host = 主机
+column_loss_pct = 丢包率
+column_snd = 发出
+column_recv = 接收
+column_last = 最近
+column_avg = 平均
+column_best = 最佳
+column_wrst = 最差
+column_stdev = 标准差
+column_sts = 状态
+column_jttr = 抖动
+column_javg = 均抖
+column_jmax = 最大抖
+column_jint = 抖动间隔
+column_sprt = 源端口
+column_dprt = 目的端口
+column_seq = 序列
+column_type = 类型
+column_code = 代码
+column_nat = NAT
+column_fail = 失败
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ 详情
+details_off = □ 详情
+privacy_on = 隐私: {$ttl :integer}
+privacy_off = 隐私: -
+geoip_no_data_for_hop_addrs = 第 {$ttl} 跳无 GeoIp 数据（{$addrs}）
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}, \
+  {$longitude :number maximumFractionDigits=4}（约 {$radius :integer} \
+  公里）
+details_index = [{$index :integer}/{$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

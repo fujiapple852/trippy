@@ -1,0 +1,160 @@
+@locale sv
+---
+
+trippy = trippy v{$version}
+auto = automatisk
+on = på
+off = av
+yes = Ja
+no = Nej
+none = ingen
+hidden = **Dold**
+target = {#b}Mål:{/b} {$source} -> {$dest}
+status = {#b}Status:{/b} {$status}, {$discovered}
+privileged = privilegierad
+unprivileged = oprivilegierad
+na = e.t.
+
+discovered =
+  .input {$hop_count :integer}
+  .match $hop_count
+  one {{{$hop_count} hopp upptäckt}}
+  * {{{$hop_count} hopp upptäckta}}
+
+discovered_flows =
+  .input {$hop_count :integer}
+  .input {$flow_count :integer}
+  .match $hop_count $flow_count
+  one one {{{$hop_count} hopp och {$flow_count} unikt flöde upptäckta}}
+  one * {{{$hop_count} hopp och {$flow_count} unika flöden upptäckta}}
+  * one {{{$hop_count} hopp och {$flow_count} unikt flöde upptäckta}}
+  * * {{{$hop_count} hopp och {$flow_count} unika flöden upptäckta}}
+
+unknown = okänd
+icmp = icmp
+udp = udp
+tcp = tcp
+
+status_failures =
+  .input {$total_probes :integer}
+  .match $total_probes
+  one {{{$status} [{$failure_count :integer} av {$total_probes} sond ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) misslyckades❗]}}
+  * {{{$status} [{$failure_count :integer} av {$total_probes} sonder ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) misslyckades❗]}}
+
+status_failed = Misslyckades
+status_running = Kör
+status_frozen = Frusen ({$duration})
+awaiting_data = Väntar på data...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  h {{{#key}h{/key}jälp}}
+  * {{[{#key}{$key}{/key}] hjälp}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  i {{{#key}i{/key}nställningar}}
+  * {{[{#key}{$key}{/key}] inställningar}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  a {{{#key}a{/key}vsluta}}
+  * {{[{#key}{$key}{/key}] avsluta}}
+
+title_hops = Hopp
+title_frequency = Frekvens #{$ttl}
+title_samples = Prover #{$ttl}
+title_traces = Spår
+title_flows = Flöden
+title_map = Karta
+title_help = Hjälp
+title_settings = Inställningar
+bsod_failed = Trippy misslyckades :(
+bsod_quit = Tryck på [{#key}{$key}{/key}] för att avsluta
+hop = Hopp {$ttl}
+rtt = RTT
+title_chart = Diagram
+samples = Prover
+host = Värd: {$hosts}
+no_response = Inget svar
+dns_failed = Misslyckades: {$ip}
+dns_timeout = Tidsgräns nådd: {$ip}
+labels = etiketter: {$labels}
+not_enabled = ej aktiverad
+not_found = hittades inte
+awaited = inväntas
+as_name = AS-namn: {$value}
+as_info = AS-info: {$value}
+geo = Geo: {$value}
+pos = Pos: {$value}
+ext = Ext: {$ext}
+help_tagline = Ett nätverksdiagnostikverktyg
+help_show_settings = Tryck på [{#key}{$key}{/key}] för att visa alla inställningar
+help_show_bindings = Tryck på [{#key}{$key}{/key}] för att visa alla kortkommandon
+help_show_columns = Tryck på [{#key}{$key}{/key}] för att visa alla kolumner
+help_license = Distribueras under Apache License 2.0
+help_copyright = Upphovsrätt 2022 Trippy-bidragsgivare
+geoip_not_enabled = GeoIp inte aktiverad
+geoip_no_data_for_hop = Inga GeoIp-data för hopp {$ttl}
+geoip_multiple_data_for_hop = Flera GeoIp-platser för hopp {$ttl}
+settings_info = Information
+settings_tab_tui_title = Tui
+settings_tab_trace_title = Spårning
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Kortkommandon
+settings_tab_theme_title = Tema
+settings_tab_columns_title = Kolumner
+settings_tab_tui_desc = Inställningar som styr hur data visas i detta Tui
+settings_tab_trace_desc = Inställningar som styr spårningsstrategin
+settings_tab_dns_desc = Inställningar som styr hur DNS-uppslag utförs
+settings_tab_geoip_desc = Inställningar som rör GeoIp
+settings_tab_bindings_desc = Tui-kortkommandon
+settings_tab_theme_desc = Tui-temafärger
+settings_tab_columns_desc = Tui-tabellkolumner. Tryck på \
+  [{#key}{$c}{/key}] för att slå på eller av en kolumn och använd \
+  [{#key}{$d}{/key}] och [{#key}{$u}{/key}] för att ändra kolumnordningen.
+settings_table_header_setting = Inställning
+settings_table_header_value = Värde
+column_host = Värd
+column_loss_pct = Förlust%
+column_snd = Skickade
+column_recv = Mottagna
+column_last = Senast
+column_avg = Medel
+column_best = Bäst
+column_wrst = Sämst
+column_stdev = StDev
+column_sts = Sts
+column_jttr = Jttr
+column_javg = Javg
+column_jmax = Jmax
+column_jint = Jint
+column_sprt = Sprt
+column_dprt = Dprt
+column_seq = Seq
+column_type = Typ
+column_code = Kod
+column_nat = NAT
+column_fail = Fel
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ detaljer
+details_off = □ detaljer
+privacy_on = integritet: {$ttl :integer}
+privacy_off = integritet: -
+geoip_no_data_for_hop_addrs = Inga GeoIp-data för hopp {$ttl} ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}; \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} km)
+details_index = [{$index :integer} av {$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

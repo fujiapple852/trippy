@@ -10,9 +10,9 @@ pub fn report<R: Resolver>(
     report_cycles: usize,
     resolver: &R,
 ) -> anyhow::Result<()> {
-    let start_timestamp = chrono::Utc::now();
+    let start_timestamp = jiff::Timestamp::now().to_string();
     let trace = super::wait_for_round(&info.data, report_cycles)?;
-    let end_timestamp = chrono::Utc::now();
+    let end_timestamp = jiff::Timestamp::now().to_string();
     let hops: Vec<Hop> = trace
         .hops()
         .iter()

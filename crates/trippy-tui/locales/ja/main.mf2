@@ -1,0 +1,139 @@
+@locale ja
+---
+
+trippy = trippy v{$version}
+auto = 自動
+on = オン
+off = オフ
+yes = はい
+no = いいえ
+none = なし
+hidden = **非表示**
+target = {#b}ターゲット:{/b} {$source} -> {$dest}
+status = {#b}ステータス:{/b} {$status}、{$discovered}
+privileged = 特権
+unprivileged = 非特権
+na = N/A
+discovered = {$hop_count :integer} ホップを発見
+discovered_flows = {$hop_count :integer} ホップと {$flow_count :integer} 個のユニークなフローを発見
+unknown = 不明
+icmp = icmp
+udp = udp
+tcp = tcp
+status_failures = {$status} [{$total_probes :integer} 件中 \
+  {$failure_count :integer} 件のプローブが失敗 \
+  ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1})❗]
+status_failed = 失敗
+status_running = 実行中
+status_frozen = 停止中 ({$duration})
+awaiting_data = データ待機中...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] ヘルプ}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] 設定}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  * {{[{#key}{$key}{/key}] 終了}}
+
+title_hops = ホップ
+title_frequency = 頻度 #{$ttl}
+title_samples = サンプル #{$ttl}
+title_traces = トレース
+title_flows = フロー
+title_map = マップ
+title_help = ヘルプ
+title_settings = 設定
+bsod_failed = Trippy が失敗しました :(
+bsod_quit = [{#key}{$key}{/key}] を押して終了
+hop = ホップ {$ttl}
+rtt = RTT
+title_chart = チャート
+samples = サンプル
+host = ホスト: {$hosts}
+no_response = 応答なし
+dns_failed = 失敗: {$ip}
+dns_timeout = タイムアウト: {$ip}
+labels = ラベル: {$labels}
+not_enabled = 無効
+not_found = 見つかりません
+awaited = 待機中
+as_name = AS 名: {$value}
+as_info = AS 情報: {$value}
+geo = 位置: {$value}
+pos = 座標: {$value}
+ext = 拡張: {$ext}
+help_tagline = ネットワーク診断ツール
+help_show_settings = [{#key}{$key}{/key}] を押してすべての設定を表示
+help_show_bindings = [{#key}{$key}{/key}] を押してすべてのキー割り当てを表示
+help_show_columns = [{#key}{$key}{/key}] を押してすべての列を表示
+help_license = Apache License 2.0 の下で配布
+help_copyright = Copyright 2022 Trippy Contributors
+geoip_not_enabled = GeoIp が無効です
+geoip_no_data_for_hop = ホップ {$ttl} の GeoIp データがありません
+geoip_multiple_data_for_hop = ホップ {$ttl} に複数の GeoIp 位置があります
+settings_info = 情報
+settings_tab_tui_title = TUI
+settings_tab_trace_title = トレース
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = キー割り当て
+settings_tab_theme_title = テーマ
+settings_tab_columns_title = 列
+settings_tab_tui_desc = この TUI でデータがどのように表示されるかを制御する設定
+settings_tab_trace_desc = トレース戦略を制御する設定
+settings_tab_dns_desc = DNS ルックアップの実行方法を制御する設定
+settings_tab_geoip_desc = GeoIp に関する設定
+settings_tab_bindings_desc = TUI キー割り当て
+settings_tab_theme_desc = TUI テーマカラー
+settings_tab_columns_desc = TUI テーブル列。[{#key}{$c}{/key}] \
+  を押して列のオン/オフを切り替え、[{#key}{$d}{/key}] と \
+  [{#key}{$u}{/key}] キーで列の順序を変更します。
+settings_table_header_setting = 設定
+settings_table_header_value = 値
+column_host = ホスト
+column_loss_pct = 損失%
+column_snd = 送信
+column_recv = 受信
+column_last = 最新
+column_avg = 平均
+column_best = 最良
+column_wrst = 最悪
+column_stdev = 標準偏差
+column_sts = Sts
+column_jttr = Jttr
+column_javg = Javg
+column_jmax = Jmax
+column_jint = Jint
+column_sprt = 送信ポート
+column_dprt = 宛先ポート
+column_seq = シーケンス
+column_type = タイプ
+column_code = コード
+column_nat = NAT
+column_fail = 失敗
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ 詳細
+details_off = □ 詳細
+privacy_on = プライバシー: {$ttl :integer}
+privacy_off = プライバシー: -
+geoip_no_data_for_hop_addrs = ホップ {$ttl} の GeoIp データがありません ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}, \
+  {$longitude :number maximumFractionDigits=4} (約 {$radius :integer} km)
+details_index = [{$index :integer}/{$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

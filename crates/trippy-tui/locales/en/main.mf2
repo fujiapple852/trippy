@@ -1,0 +1,160 @@
+@locale en
+---
+
+trippy = trippy v{$version}
+auto = auto
+on = on
+off = off
+yes = Yes
+no = No
+none = none
+hidden = **Hidden**
+target = {#b}Target:{/b} {$source} -> {$dest}
+status = {#b}Status:{/b} {$status}, {$discovered}
+privileged = privileged
+unprivileged = unprivileged
+na = n/a
+
+discovered =
+  .input {$hop_count :integer}
+  .match $hop_count
+  one {{discovered {$hop_count} hop}}
+  * {{discovered {$hop_count} hops}}
+
+discovered_flows =
+  .input {$hop_count :integer}
+  .input {$flow_count :integer}
+  .match $hop_count $flow_count
+  one one {{discovered {$hop_count} hop and {$flow_count} unique flow}}
+  one * {{discovered {$hop_count} hop and {$flow_count} unique flows}}
+  * one {{discovered {$hop_count} hops and {$flow_count} unique flow}}
+  * * {{discovered {$hop_count} hops and {$flow_count} unique flows}}
+
+unknown = unknown
+icmp = icmp
+udp = udp
+tcp = tcp
+
+status_failures =
+  .input {$total_probes :integer}
+  .match $total_probes
+  one {{{$status} [{$failure_count :integer} of {$total_probes} ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) probe failed❗]}}
+  * {{{$status} [{$failure_count :integer} of {$total_probes} ({$failure_rate :percent minimumFractionDigits=1 maximumFractionDigits=1}) probes failed❗]}}
+
+status_failed = Failed
+status_running = Running
+status_frozen = Frozen ({$duration})
+awaiting_data = Awaiting data...
+
+header_help =
+  .input {$key :string}
+  .match $key
+  h {{{#key}h{/key}elp}}
+  * {{[{#key}{$key}{/key}] help}}
+
+header_settings =
+  .input {$key :string}
+  .match $key
+  s {{{#key}s{/key}ettings}}
+  * {{[{#key}{$key}{/key}] settings}}
+
+header_quit =
+  .input {$key :string}
+  .match $key
+  q {{{#key}q{/key}uit}}
+  * {{[{#key}{$key}{/key}] quit}}
+
+title_hops = Hops
+title_frequency = Frequency #{$ttl}
+title_samples = Samples #{$ttl}
+title_traces = Traces
+title_flows = Flows
+title_map = Map
+title_help = Help
+title_settings = Settings
+bsod_failed = Trippy Failed :(
+bsod_quit = Press [{#key}{$key}{/key}] to quit
+hop = Hop {$ttl}
+rtt = RTT
+title_chart = Chart
+samples = Samples
+host = Host: {$hosts}
+no_response = No response
+dns_failed = Failed: {$ip}
+dns_timeout = Timeout: {$ip}
+labels = labels: {$labels}
+not_enabled = not enabled
+not_found = not found
+awaited = awaited
+as_name = AS Name: {$value}
+as_info = AS Info: {$value}
+geo = Geo: {$value}
+pos = Pos: {$value}
+ext = Ext: {$ext}
+help_tagline = A network diagnostic tool
+help_show_settings = Press [{#key}{$key}{/key}] to show all settings
+help_show_bindings = Press [{#key}{$key}{/key}] to show all bindings
+help_show_columns = Press [{#key}{$key}{/key}] to show all columns
+help_license = Distributed under the Apache License 2.0
+help_copyright = Copyright 2022 Trippy Contributors
+geoip_not_enabled = GeoIp not enabled
+geoip_no_data_for_hop = No GeoIp data for hop {$ttl}
+geoip_multiple_data_for_hop = Multiple GeoIp locations for hop {$ttl}
+settings_info = Info
+settings_tab_tui_title = Tui
+settings_tab_trace_title = Trace
+settings_tab_dns_title = DNS
+settings_tab_geoip_title = GeoIp
+settings_tab_bindings_title = Bindings
+settings_tab_theme_title = Theme
+settings_tab_columns_title = Columns
+settings_tab_tui_desc = Settings which control how data is displayed in this Tui
+settings_tab_trace_desc = Settings which control the tracing strategy
+settings_tab_dns_desc = Settings which control how DNS lookups are performed
+settings_tab_geoip_desc = Settings relating to GeoIp
+settings_tab_bindings_desc = Tui key bindings
+settings_tab_theme_desc = Tui theme colors
+settings_tab_columns_desc = Tui table columns.  Press [{#key}{$c}{/key}] to \
+  toggle a column on or off and use the [{#key}{$d}{/key}] and \
+  [{#key}{$u}{/key}] keys to change the column order.
+settings_table_header_setting = Setting
+settings_table_header_value = Value
+column_host = Host
+column_loss_pct = Loss%
+column_snd = Snd
+column_recv = Recv
+column_last = Last
+column_avg = Avg
+column_best = Best
+column_wrst = Wrst
+column_stdev = StDev
+column_sts = Sts
+column_jttr = Jttr
+column_javg = Javg
+column_jmax = Jmax
+column_jint = Jint
+column_sprt = Sprt
+column_dprt = Dprt
+column_seq = Seq
+column_type = Type
+column_code = Code
+column_nat = NAT
+column_fail = Fail
+column_floss = Floss
+column_bloss = Bloss
+column_floss_pct = Floss%
+column_dscp = DSCP
+column_ecn = ECN
+column_asn = ASN
+details_on = ■ detail
+details_off = □ detail
+privacy_on = privacy: {$ttl :integer}
+privacy_off = privacy: -
+geoip_no_data_for_hop_addrs = No GeoIp data for hop {$ttl} ({$addrs})
+map_location = {$name} [{$location}]
+coordinates = {$latitude :number maximumFractionDigits=4}, \
+  {$longitude :number maximumFractionDigits=4} (~{$radius :integer} km)
+details_index = [{$index :integer} of {$count :integer}]
+ms_value = {$value :number minimumFractionDigits=1 maximumFractionDigits=1}
+pct_value = {$value :percent minimumFractionDigits=1 maximumFractionDigits=1}
+chart_samples = {$samples :integer} ({$zoom :integer}x)

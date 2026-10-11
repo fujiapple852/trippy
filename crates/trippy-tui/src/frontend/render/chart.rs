@@ -1,10 +1,10 @@
 use crate::frontend::tui_app::TuiApp;
-use crate::t;
+use crate::tr;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::style::Style;
 use ratatui::symbols::Marker;
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
 use ratatui::widgets::{Axis, Block, BorderType, Borders, Chart, Dataset, GraphType};
 
 /// Render the ping history for all hops as a chart.
@@ -35,7 +35,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
         .enumerate()
         .map(|(i, s)| {
             Dataset::default()
-                .name(format!("{} {}", t!("hop"), i + 1))
+                .name(tr!("hop", ttl = i + 1))
                 .data(s)
                 .graph_type(GraphType::Line)
                 .marker(Marker::Braille)
@@ -53,29 +53,28 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
     let chart = Chart::new(sets)
         .x_axis(
             Axis::default()
-                .title(Line::raw(t!("samples")))
+                .title(Line::from(tr!("samples")))
                 .bounds([0_f64, samples as f64])
                 .labels_alignment(Alignment::Right)
-                .labels(
-                    ["0".to_string(), format!("{samples} ({}x)", app.zoom_factor)]
-                        .into_iter()
-                        .map(Span::from),
-                )
+                .labels([
+                    Line::from("0"),
+                    Line::from(tr!(
+                        "chart_samples",
+                        samples = samples,
+                        zoom = app.zoom_factor
+                    )),
+                ])
                 .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
         .y_axis(
             Axis::default()
-                .title(Line::raw(t!("rtt")))
+                .title(Line::from(tr!("rtt")))
                 .bounds([0_f64, max_sample])
-                .labels(
-                    [
-                        String::from("0.0"),
-                        format!("{:.1}", max_sample / 2_f64),
-                        format!("{max_sample:.1}"),
-                    ]
-                    .into_iter()
-                    .map(Span::from),
-                )
+                .labels([
+                    Line::from(tr!("ms_value", value = 0_f64)),
+                    Line::from(tr!("ms_value", value = max_sample / 2_f64)),
+                    Line::from(tr!("ms_value", value = max_sample)),
+                ])
                 .style(Style::default().fg(app.tui_config.theme.hops_chart_axis)),
         )
         .hidden_legend_constraints(constraints)
@@ -89,7 +88,7 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(app.tui_config.theme.border))
-                .title(Line::raw(t!("chart"))),
+                .title(Line::from(tr!("title_chart"))),
         );
     f.render_widget(chart, rect);
 }

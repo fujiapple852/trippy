@@ -1,5 +1,5 @@
 use crate::config::{TuiColumn, TuiColumns};
-use crate::t;
+use crate::tr;
 use ratatui::layout::{Constraint, Rect};
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
@@ -136,8 +136,8 @@ pub enum ColumnStatus {
 impl Display for ColumnStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Shown => write!(f, "{}", t!("on")),
-            Self::Hidden => write!(f, "{}", t!("off")),
+            Self::Shown => write!(f, "{}", tr!("on")),
+            Self::Hidden => write!(f, "{}", tr!("off")),
         }
     }
 }
@@ -284,33 +284,33 @@ impl ColumnType {
     pub(self) fn name(&self) -> Cow<'_, str> {
         match self {
             Self::Ttl => Cow::Borrowed("#"),
-            Self::Host => t!("column_host"),
-            Self::LossPct => t!("column_loss_pct"),
-            Self::Sent => t!("column_snd"),
-            Self::Received => t!("column_recv"),
-            Self::Last => t!("column_last"),
-            Self::Average => t!("column_avg"),
-            Self::Best => t!("column_best"),
-            Self::Worst => t!("column_wrst"),
-            Self::StdDev => t!("column_stdev"),
-            Self::Status => t!("column_sts"),
-            Self::Jitter => t!("column_jttr"),
-            Self::Javg => t!("column_javg"),
-            Self::Jmax => t!("column_jmax"),
-            Self::Jinta => t!("column_jint"),
-            Self::LastSrcPort => t!("column_sprt"),
-            Self::LastDestPort => t!("column_dprt"),
-            Self::LastSeq => t!("column_seq"),
-            Self::LastIcmpPacketType => t!("column_type"),
-            Self::LastIcmpPacketCode => t!("column_code"),
-            Self::LastNatStatus => t!("column_nat"),
-            Self::Failed => t!("column_fail"),
-            Self::Floss => t!("column_floss"),
-            Self::Bloss => t!("column_bloss"),
-            Self::FlossPct => t!("column_floss_pct"),
-            Self::Dscp => t!("column_dscp"),
-            Self::Ecn => t!("column_ecn"),
-            Self::Asn => t!("column_asn"),
+            Self::Host => tr!("column_host").to_cow(),
+            Self::LossPct => tr!("column_loss_pct").to_cow(),
+            Self::Sent => tr!("column_snd").to_cow(),
+            Self::Received => tr!("column_recv").to_cow(),
+            Self::Last => tr!("column_last").to_cow(),
+            Self::Average => tr!("column_avg").to_cow(),
+            Self::Best => tr!("column_best").to_cow(),
+            Self::Worst => tr!("column_wrst").to_cow(),
+            Self::StdDev => tr!("column_stdev").to_cow(),
+            Self::Status => tr!("column_sts").to_cow(),
+            Self::Jitter => tr!("column_jttr").to_cow(),
+            Self::Javg => tr!("column_javg").to_cow(),
+            Self::Jmax => tr!("column_jmax").to_cow(),
+            Self::Jinta => tr!("column_jint").to_cow(),
+            Self::LastSrcPort => tr!("column_sprt").to_cow(),
+            Self::LastDestPort => tr!("column_dprt").to_cow(),
+            Self::LastSeq => tr!("column_seq").to_cow(),
+            Self::LastIcmpPacketType => tr!("column_type").to_cow(),
+            Self::LastIcmpPacketCode => tr!("column_code").to_cow(),
+            Self::LastNatStatus => tr!("column_nat").to_cow(),
+            Self::Failed => tr!("column_fail").to_cow(),
+            Self::Floss => tr!("column_floss").to_cow(),
+            Self::Bloss => tr!("column_bloss").to_cow(),
+            Self::FlossPct => tr!("column_floss_pct").to_cow(),
+            Self::Dscp => tr!("column_dscp").to_cow(),
+            Self::Ecn => tr!("column_ecn").to_cow(),
+            Self::Asn => tr!("column_asn").to_cow(),
         }
     }
 
@@ -447,6 +447,7 @@ mod tests {
     #[test_case(ColumnType::Status, "Sts")]
     #[test_case(ColumnType::Asn, "ASN")]
     fn test_column_display_formatting(c: ColumnType, heading: &'static str) {
+        crate::install();
         assert_eq!(format!("{c}"), heading);
     }
 
@@ -455,11 +456,13 @@ mod tests {
     #[test_case(ColumnType::Asn, & ColumnWidth::Fixed(8))]
     #[test_case(ColumnType::LossPct, & ColumnWidth::Fixed(8))]
     fn test_column_width(column_type: ColumnType, width: &ColumnWidth) {
+        crate::install();
         assert_eq!(column_type.width(), *width);
     }
 
     #[test]
     fn test_column_constraints() {
+        crate::install();
         let columns = Columns::from(TuiColumns::default());
         let constraints = columns.constraints(Rect::new(0, 0, 80, 0));
         assert_eq!(
