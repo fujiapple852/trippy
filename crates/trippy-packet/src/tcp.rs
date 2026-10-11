@@ -444,7 +444,7 @@ mod tests {
             ],
             packet.get_options_raw()
         );
-        assert!(packet.payload().is_empty());
+        assert_eq!(packet.payload(), []);
     }
 
     #[test]

@@ -368,7 +368,7 @@ mod tests {
             Ipv6Addr::from_str("fe80::811:3f6:7601:6c3f").unwrap(),
             packet.get_destination_address()
         );
-        assert!(packet.payload().is_empty());
+        assert_eq!(packet.payload(), []);
     }
 
     #[test]

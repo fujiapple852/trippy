@@ -199,7 +199,7 @@ mod tests {
         assert_eq!(33206, packet.get_destination());
         assert_eq!(64, packet.get_length());
         assert_eq!(44222, packet.get_checksum());
-        assert!(packet.payload().is_empty());
+        assert_eq!(packet.payload(), []);
     }
 
     #[test]
