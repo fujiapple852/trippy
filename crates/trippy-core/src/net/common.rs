@@ -11,7 +11,7 @@ impl ErrorMapper {
         match err {
             Error::IoError(io_err) => match io_err.kind() {
                 ErrorKind::InProgress => Ok(()),
-                _ => Err(Error::IoError(io_err)),
+                ErrorKind::Std(_) => Err(Error::IoError(io_err)),
             },
             err => Err(err),
         }
@@ -80,9 +80,10 @@ mod tests {
 
     #[test]
     fn test_probe_failed() {
-        let io_err = io::Error::from(ErrorKind::HostUnreachable);
+        let io_err = io::Error::from(ErrorKind::Std(io::ErrorKind::HostUnreachable));
         let err = Error::IoError(IoError::Bind(io_err, ADDR));
-        let probe_err = ErrorMapper::probe_failed(err, ErrorKind::HostUnreachable);
+        let probe_err =
+            ErrorMapper::probe_failed(err, ErrorKind::Std(io::ErrorKind::HostUnreachable));
         assert!(matches!(probe_err, Error::ProbeFailed(_)));
     }
 }
