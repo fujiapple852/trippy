@@ -72,7 +72,8 @@ use net::source::SourceAddr;
 
 pub use builder::Builder;
 pub use config::{
-    IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol, defaults,
+    IcmpExtensionParseMode, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
+    SocketReadinessMode, defaults,
 };
 pub use constants::MAX_TTL;
 pub use error::Error;

@@ -179,6 +179,13 @@ icmp-extensions = false
 # The socket read timeout [default: 10ms]
 read-timeout = "10ms"
 
+# The socket readiness backend [default: select]
+#
+# Allowed values are:
+#   select - Use select for socket readiness checks [default]
+#   poll   - Use poll for socket readiness checks
+socket-readiness-mode = "select"
+
 # The maximum number of samples to record per hop [default: 256]
 max-samples = 256
 

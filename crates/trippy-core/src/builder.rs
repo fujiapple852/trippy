@@ -3,8 +3,8 @@ use crate::constants::MAX_INITIAL_SEQUENCE;
 use crate::error::Result;
 use crate::{
     Error, IcmpExtensionParseMode, MAX_TTL, MaxInflight, MaxRounds, MultipathStrategy, PacketSize,
-    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, TimeToLive, TraceId, Tracer,
-    TypeOfService,
+    PayloadPattern, PortDirection, PrivilegeMode, Protocol, Sequence, SocketReadinessMode,
+    TimeToLive, TraceId, Tracer, TypeOfService,
 };
 use std::net::IpAddr;
 use std::num::NonZeroUsize;
@@ -47,6 +47,7 @@ pub struct Builder {
     tos: TypeOfService,
     icmp_extension_parse_mode: IcmpExtensionParseMode,
     read_timeout: Duration,
+    socket_readiness_mode: SocketReadinessMode,
     tcp_connect_timeout: Duration,
     trace_identifier: TraceId,
     max_rounds: Option<MaxRounds>,
@@ -77,6 +78,7 @@ impl Default for Builder {
             tos: ChannelConfig::default().tos,
             icmp_extension_parse_mode: ChannelConfig::default().icmp_extension_parse_mode,
             read_timeout: ChannelConfig::default().read_timeout,
+            socket_readiness_mode: ChannelConfig::default().socket_readiness_mode,
             tcp_connect_timeout: ChannelConfig::default().tcp_connect_timeout,
             trace_identifier: StrategyConfig::default().trace_identifier,
             max_rounds: StrategyConfig::default().max_rounds,
@@ -377,6 +379,31 @@ impl Builder {
     pub fn read_timeout(self, read_timeout: Duration) -> Self {
         Self {
             read_timeout,
+            ..self
+        }
+    }
+
+    /// Set the socket readiness backend.
+    ///
+    /// The default is [`SocketReadinessMode::Select`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> anyhow::Result<()> {
+    /// use trippy_core::{Builder, SocketReadinessMode};
+    ///
+    /// let addr = std::net::IpAddr::from([1, 1, 1, 1]);
+    /// let tracer = Builder::new(addr)
+    ///     .socket_readiness_mode(SocketReadinessMode::Poll)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn socket_readiness_mode(self, socket_readiness_mode: SocketReadinessMode) -> Self {
+        Self {
+            socket_readiness_mode,
             ..self
         }
     }
@@ -743,6 +770,7 @@ impl Builder {
             self.tos,
             self.icmp_extension_parse_mode,
             self.read_timeout,
+            self.socket_readiness_mode,
             self.tcp_connect_timeout,
             self.trace_identifier,
             self.max_rounds,
@@ -806,6 +834,10 @@ mod tests {
             tracer.read_timeout()
         );
         assert_eq!(
+            defaults::DEFAULT_SOCKET_READINESS_MODE,
+            tracer.socket_readiness_mode()
+        );
+        assert_eq!(
             defaults::DEFAULT_STRATEGY_TCP_CONNECT_TIMEOUT,
             tracer.tcp_connect_timeout()
         );
@@ -851,6 +883,7 @@ mod tests {
             .tos(0x1a)
             .icmp_extension_parse_mode(IcmpExtensionParseMode::Enabled)
             .read_timeout(Duration::from_millis(50))
+            .socket_readiness_mode(SocketReadinessMode::Poll)
             .tcp_connect_timeout(Duration::from_millis(100))
             .max_rounds(Some(10))
             .first_ttl(2)
@@ -882,6 +915,7 @@ mod tests {
             tracer.icmp_extension_parse_mode()
         );
         assert_eq!(Duration::from_millis(50), tracer.read_timeout());
+        assert_eq!(SocketReadinessMode::Poll, tracer.socket_readiness_mode());
         assert_eq!(Duration::from_millis(100), tracer.tcp_connect_timeout());
         assert_eq!(
             Some(MaxRounds(NonZeroUsize::new(10).unwrap())),

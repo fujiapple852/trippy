@@ -3,7 +3,7 @@ use crate::error::{Error, Result};
 use crate::net::socket::Socket;
 use crate::net::{Network, ipv4::Ipv4, ipv6::Ipv6, platform};
 use crate::probe::{Probe, Response};
-use crate::{Port, PrivilegeMode, Protocol};
+use crate::{Port, PrivilegeMode, Protocol, SocketReadinessMode};
 use arrayvec::ArrayVec;
 use std::net::IpAddr;
 use std::time::{Duration, SystemTime};
@@ -19,6 +19,7 @@ const MAX_TCP_PROBES: usize = 256;
 pub struct Channel<S: Socket> {
     protocol: Protocol,
     read_timeout: Duration,
+    socket_readiness_mode: SocketReadinessMode,
     tcp_connect_timeout: Duration,
     send_socket: Option<S>,
     recv_socket: S,
@@ -79,6 +80,7 @@ impl<S: Socket> Channel<S> {
         Ok(Self {
             protocol: config.protocol,
             read_timeout: config.read_timeout,
+            socket_readiness_mode: config.socket_readiness_mode,
             tcp_connect_timeout: config.tcp_connect_timeout,
             send_socket,
             recv_socket,
@@ -154,7 +156,10 @@ impl<S: Socket> Channel<S> {
     /// Generate a `ProbeResponse` for the next available ICMP packet, if any
     #[instrument(skip(self), level = "trace")]
     fn recv_icmp_probe(&mut self) -> Result<Option<Response>> {
-        if self.recv_socket.is_readable(self.read_timeout)? {
+        if self
+            .recv_socket
+            .is_readable(self.read_timeout, self.socket_readiness_mode)?
+        {
             match &self.family_config {
                 FamilyConfig::V4(ipv4) => ipv4.recv_icmp_probe(&mut self.recv_socket),
                 FamilyConfig::V6(ipv6) => ipv6.recv_icmp_probe(&mut self.recv_socket),
@@ -177,7 +182,11 @@ impl<S: Socket> Channel<S> {
             .iter_mut()
             .enumerate()
             .find_map(|(index, probe)| {
-                if probe.socket.is_writable().unwrap_or_default() {
+                if probe
+                    .socket
+                    .is_writable(self.socket_readiness_mode)
+                    .unwrap_or_default()
+                {
                     Some(index)
                 } else {
                     None
