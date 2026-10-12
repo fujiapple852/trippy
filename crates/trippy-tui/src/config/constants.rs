@@ -86,4 +86,4 @@ pub const MIN_PACKET_SIZE_IPV4: u16 = 28;
 pub const MIN_PACKET_SIZE_IPV6: u16 = 48;
 
 /// The maximum packet size we allow.
-pub const MAX_PACKET_SIZE: u16 = 1024;
+pub const MAX_PACKET_SIZE: u16 = 1248;
