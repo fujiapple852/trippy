@@ -1,7 +1,7 @@
 use crate::app::TraceInfo;
+use crate::report::types::Hosts;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
 use comfy_table::{ContentArrangement, Table};
-use itertools::Itertools;
 use tracing::instrument;
 use trippy_dns::Resolver;
 
@@ -11,8 +11,15 @@ pub fn report_md<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: Option<u8>,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, ASCII_MARKDOWN)
+    run_report_table(
+        info,
+        report_cycles,
+        resolver,
+        privacy_max_ttl,
+        ASCII_MARKDOWN,
+    )
 }
 
 /// Generate a pretty table report of trace data.
@@ -21,14 +28,16 @@ pub fn report_pretty<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: Option<u8>,
 ) -> anyhow::Result<()> {
-    run_report_table(info, report_cycles, resolver, UTF8_FULL)
+    run_report_table(info, report_cycles, resolver, privacy_max_ttl, UTF8_FULL)
 }
 
 fn run_report_table<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
+    privacy_max_ttl: Option<u8>,
     preset: &str,
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
@@ -42,21 +51,9 @@ fn run_report_table<R: Resolver>(
         .set_header(columns);
     for hop in trace.hops() {
         let ttl = hop.ttl().to_string();
-        let ips = hop.addrs().join("\n");
-        let ip = if ips.is_empty() {
-            String::from("???")
-        } else {
-            ips
-        };
-        let hosts = hop
-            .addrs()
-            .map(|ip| resolver.reverse_lookup(*ip).to_string())
-            .join("\n");
-        let host = if hosts.is_empty() {
-            String::from("???")
-        } else {
-            hosts
-        };
+        let mut hosts = Hosts::from((hop.addrs(), resolver));
+        hosts.apply_privacy(hop.ttl(), privacy_max_ttl);
+        let (ip, host) = hosts.format_columns("\n", "**hidden**");
         let sent = hop.total_sent().to_string();
         let recv = hop.total_recv().to_string();
         let last = hop
