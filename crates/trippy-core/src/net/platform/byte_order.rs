@@ -16,7 +16,11 @@ use std::net::IpAddr;
 /// byte order.  Linux will accept either byte order."
 #[derive(Debug, Copy, Clone)]
 pub enum Ipv4ByteOrder {
-    #[cfg(all(unix, not(target_os = "linux"), not(target_os = "windows")))]
+    #[cfg(all(
+        unix,
+        not(any(target_os = "linux", target_os = "android")),
+        not(target_os = "windows")
+    ))]
     Host,
     Network,
 }
@@ -56,7 +60,11 @@ impl Ipv4ByteOrder {
     #[must_use]
     pub const fn adjust_length(self, ipv4_total_length: u16) -> u16 {
         match self {
-            #[cfg(all(unix, not(target_os = "linux"), not(target_os = "windows")))]
+            #[cfg(all(
+                unix,
+                not(any(target_os = "linux", target_os = "android")),
+                not(target_os = "windows")
+            ))]
             Self::Host => ipv4_total_length.swap_bytes(),
             Self::Network => ipv4_total_length,
         }

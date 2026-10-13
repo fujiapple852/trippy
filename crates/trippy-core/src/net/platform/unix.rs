@@ -25,11 +25,11 @@ mod address {
     use std::net::{IpAddr, SocketAddr};
     use tracing::instrument;
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
     use std::net::Ipv4Addr;
 
     /// The size of the test packet to use for discovering the `total_length` byte order.
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
     const TEST_PACKET_LENGTH: u16 = 256;
 
     /// Discover the required byte ordering for the IPv4 header fields `total_length`, `flags` and
@@ -37,13 +37,13 @@ mod address {
     ///
     /// Linux accepts either network byte order or host byte order for the `total_length` field, and
     /// so we skip the check and return network byte order unconditionally.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     #[expect(clippy::unnecessary_wraps)]
     pub const fn for_address(_src_addr: IpAddr) -> Result<Ipv4ByteOrder> {
         Ok(Ipv4ByteOrder::Network)
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
     #[instrument(ret, level = "trace")]
     pub fn for_address(addr: IpAddr) -> Result<Ipv4ByteOrder> {
         let addr = match addr {
@@ -71,7 +71,7 @@ mod address {
     ///
     /// Note that this implementation will try to create an `IPPROTO_ICMP` socket and if that fails
     /// it will fall back to creating an `IPPROTO_RAW` socket.
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
     #[instrument(ret, level = "trace")]
     fn test_send_local_ip4_packet(src_addr: Ipv4Addr, total_length: u16) -> Result<()> {
         use socket2::Protocol;
