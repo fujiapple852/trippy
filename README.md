@@ -232,10 +232,6 @@ See the [Features](https://trippy.rs/start/features/) list.
 
 See the [Distributions](https://trippy.rs/start/installation/) list.
 
-## Privileges
-
-See the [Privileges](https://trippy.rs/guides/privileges/) guide.
-
 ## Usage Examples
 
 See the [Usage Examples](https://trippy.rs/guides/usage/).
@@ -281,6 +277,10 @@ See the [Windows Defender Firewall](https://trippy.rs/guides/windows_firewall/) 
 See the [Recommended Tracing Settings](https://trippy.rs/guides/recommendation/) guide.
 
 </details>
+
+## Privileges
+
+See the [Privileges](https://trippy.rs/guides/privileges/) guide.
 
 ## Acknowledgements
 
