@@ -848,7 +848,7 @@ fn validate_privilege(
     has_privileges: bool,
     needs_privileges: bool,
 ) -> anyhow::Result<()> {
-    const PRIVILEGE_URL: &str = "https://github.com/fujiapple852/trippy#privileges";
+    const PRIVILEGE_URL: &str = "https://trippy.rs/guides/privileges";
     match (privilege_mode, has_privileges, needs_privileges) {
         (PrivilegeMode::Privileged, true, _) | (PrivilegeMode::Unprivileged, _, false) => Ok(()),
         (PrivilegeMode::Privileged, false, true) => Err(anyhow!(format!(
@@ -1649,11 +1649,11 @@ mod tests {
     #[test_case("trip example.com --unprivileged --udp --multipath-strategy paris", true, false, Err(anyhow!("Paris tracing strategy cannot be used in unprivileged mode".to_string())); "invalid unprivileged mode for paris")]
     #[test_case("trip example.com --unprivileged --udp --multipath-strategy dublin", true, false, Err(anyhow!("Dublin tracing strategy cannot be used in unprivileged mode".to_string())); "invalid unprivileged mode for dublin")]
     #[test_case("trip example.com", true, true, Ok(cfg().privilege_mode(PrivilegeMode::Privileged).build()); "has privilege and needs")]
-    #[test_case("trip example.com", false, false, Err(anyhow!("privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and not needs")]
-    #[test_case("trip example.com", false, true, Err(anyhow!("privileges are required\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs")]
+    #[test_case("trip example.com", false, false, Err(anyhow!("privileges are required (hint: try adding -u to run in unprivileged mode)\n\nsee https://trippy.rs/guides/privileges for details")); "no privilege and not needs")]
+    #[test_case("trip example.com", false, true, Err(anyhow!("privileges are required\n\nsee https://trippy.rs/guides/privileges for details")); "no privilege and needs")]
     #[test_case("trip example.com --unprivileged", false, false, Ok(cfg().privilege_mode(PrivilegeMode::Unprivileged).build()); "no privilege and not needs in unprivileged mode")]
-    #[test_case("trip example.com --unprivileged", false, true, Err(anyhow!("unprivileged mode not supported on this platform\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "no privilege and needs in unprivileged mode")]
-    #[test_case("trip example.com --unprivileged", true, true, Err(anyhow!("unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee https://github.com/fujiapple852/trippy#privileges for details")); "has privilege and needs in unprivileged mode")]
+    #[test_case("trip example.com --unprivileged", false, true, Err(anyhow!("unprivileged mode not supported on this platform\n\nsee https://trippy.rs/guides/privileges for details")); "no privilege and needs in unprivileged mode")]
+    #[test_case("trip example.com --unprivileged", true, true, Err(anyhow!("unprivileged mode not supported on this platform (hint: process is privileged so disable unprivileged mode)\n\nsee https://trippy.rs/guides/privileges for details")); "has privilege and needs in unprivileged mode")]
     fn test_privilege(
         cmd: &str,
         has_privileges: bool,
