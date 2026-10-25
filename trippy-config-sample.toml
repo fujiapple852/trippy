@@ -350,7 +350,7 @@ tui-refresh-rate = "100ms"
 #
 # Color names are case-insensitive and may contain dashes.
 #
-# See https://github.com/fujiapple852/trippy#theme-reference for details.
+# See https://trippy.rs/reference/theme for details.
 [theme-colors]
 bg-color = "black"
 border-color = "gray"
@@ -396,7 +396,7 @@ info-bar-text-color = "black"
 # The supported modifiers are: shift, ctrl, alt, super, hyper & meta. Multiple
 # modifiers may be specified, for example ctrl+shift+b.
 #
-# See https://github.com/fujiapple852/trippy#key-bindings-reference for details.
+# See https://trippy.rs/reference/bindings for details.
 [bindings]
 toggle-help = "h"
 toggle-help-alt = "?"
