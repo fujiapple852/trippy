@@ -68,6 +68,7 @@ fn start_tracer(
         .tos(cfg.tos)
         .icmp_extension_parse_mode(cfg.icmp_extension_parse_mode)
         .read_timeout(cfg.read_timeout)
+        .socket_readiness_mode(cfg.socket_readiness_mode)
         .tcp_connect_timeout(cfg.min_round_duration)
         .trace_identifier(trace_identifier)
         .max_rounds(cfg.max_rounds)
