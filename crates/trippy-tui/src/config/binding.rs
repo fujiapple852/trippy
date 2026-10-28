@@ -434,16 +434,20 @@ impl TryFrom<&str> for TuiKeyBinding {
                         .ok_or_else(|| anyhow!("unknown modifier '{token}'"))
                 })
         }
-        match value.rsplit_once('+') {
-            Some((modifiers, value)) => Ok(Self {
-                code: parse_keycode(value)?,
-                modifier: parse_modifiers(modifiers)?,
-            }),
-            None => Ok(Self {
-                code: parse_keycode(value)?,
-                modifier: KeyModifiers::NONE,
-            }),
-        }
+        // A trailing `+` is the plus key itself rather than a separator, i.e. `+` or `ctrl++`.
+        let (modifiers, key) = if value == "+" {
+            (None, value)
+        } else if let Some(modifiers) = value.strip_suffix("++") {
+            (Some(modifiers), "+")
+        } else {
+            value
+                .rsplit_once('+')
+                .map_or((None, value), |(modifiers, key)| (Some(modifiers), key))
+        };
+        Ok(Self {
+            code: parse_keycode(key)?,
+            modifier: modifiers.map_or(Ok(KeyModifiers::NONE), parse_modifiers)?,
+        })
     }
 }
 
@@ -481,6 +485,9 @@ mod binding_tests {
     #[test_case("alt+shift+k", KeyCode::Char('k'), KeyModifiers::ALT | KeyModifiers::SHIFT; "with alt shift modifier")]
     #[test_case("ctrl+up", KeyCode::Up, KeyModifiers::CONTROL; "up with ctrl modifier")]
     #[test_case("shift+ctrl+alt+super+hyper+meta+k", KeyCode::Char('k'), KeyModifiers::all(); "with all modifiers")]
+    #[test_case("+", KeyCode::Char('+'), KeyModifiers::NONE; "plus without any modifier")]
+    #[test_case("ctrl++", KeyCode::Char('+'), KeyModifiers::CONTROL; "plus with ctrl modifier")]
+    #[test_case("alt+shift++", KeyCode::Char('+'), KeyModifiers::ALT | KeyModifiers::SHIFT; "plus with alt shift modifier")]
     fn test_key_binding(input: &str, code: KeyCode, modifiers: KeyModifiers) -> anyhow::Result<()> {
         let binding = TuiKeyBinding::try_from(input)?;
         assert_eq!(binding.code, code);
