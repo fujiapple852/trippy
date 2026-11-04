@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv6Addr};
 use tracing::{debug, info};
 use trippy_packet::IpProtocol;
 use trippy_packet::checksum::{icmp_ipv6_checksum, tcp_ipv6_checksum};
+use trippy_packet::icmpv6::IcmpPacket;
 use trippy_packet::icmpv6::destination_unreachable::DestinationUnreachablePacket;
 use trippy_packet::icmpv6::echo_reply::EchoReplyPacket;
 use trippy_packet::icmpv6::echo_request::EchoRequestPacket;
@@ -12,11 +13,25 @@ use trippy_packet::ipv6::Ipv6Packet;
 use trippy_packet::tcp::TcpPacket;
 use trippy_packet::udp::UdpPacket;
 
+/// The largest quoted original datagram an `ICMPv6` error can include while
+/// keeping the whole reply within the IPv6 minimum MTU of 1280 bytes.
+///
+/// RFC 4443 section 2.4(c) requires `ICMPv6` errors to include "as much of the
+/// IPv6 offending (invoking) packet as possible" without exceeding that MTU.
+///
+/// If the simulated network quotes the whole original datagram for a maximum
+/// sized probe of 1248 octets, the resulting `ICMPv6` error is larger than
+/// 1280 octets and may not be delivered by the host stack.  That prevents the
+/// tracer from observing the simulated hop response.
+const MAX_ICMPV6_QUOTED_DATAGRAM_SIZE: usize =
+    1280 - Ipv6Packet::minimum_packet_size() - IcmpPacket::minimum_packet_size();
+
 #[expect(clippy::too_many_lines)]
 pub fn process(sim: &Simulation, packet_buf: &[u8]) -> anyhow::Result<Option<(u16, Vec<u8>)>> {
     let ipv6 = Ipv6Packet::new_view(packet_buf)?;
     debug!("read: {:?}", ipv6);
-    let orig_datagram_length = Ipv6Packet::minimum_packet_size() + ipv6.payload().len();
+    let original_datagram_length = (Ipv6Packet::minimum_packet_size() + ipv6.payload().len())
+        .min(MAX_ICMPV6_QUOTED_DATAGRAM_SIZE);
     match (ipv6.get_next_header(), sim.protocol) {
         (IpProtocol::IcmpV6, Protocol::Icmp) => {
             let echo_request = EchoRequestPacket::new_view(ipv6.payload())?;
@@ -111,13 +126,13 @@ pub fn process(sim: &Simulation, packet_buf: &[u8]) -> anyhow::Result<Option<(u1
                     reply_delay_ms,
                 );
                 let length =
-                    DestinationUnreachablePacket::minimum_packet_size() + orig_datagram_length;
+                    DestinationUnreachablePacket::minimum_packet_size() + original_datagram_length;
                 let mut packet_buf = vec![0_u8; length];
                 let packet = make_destination_unreachable(
                     &mut packet_buf,
                     reply_addr,
                     ipv6.get_source_address(),
-                    &ipv6.packet()[..orig_datagram_length],
+                    &ipv6.packet()[..original_datagram_length],
                 )?;
                 debug!("payload out: {:?}", packet);
                 (IpProtocol::IcmpV6, packet_buf)
@@ -145,13 +160,13 @@ pub fn process(sim: &Simulation, packet_buf: &[u8]) -> anyhow::Result<Option<(u1
             ipv6.get_hop_limit(),
             reply_delay_ms,
         );
-        let length = TimeExceededPacket::minimum_packet_size() + orig_datagram_length;
+        let length = TimeExceededPacket::minimum_packet_size() + original_datagram_length;
         let mut packet_buf = vec![0_u8; length];
         let packet = make_time_exceeded(
             &mut packet_buf,
             reply_addr,
             ipv6.get_source_address(),
-            &ipv6.packet()[..orig_datagram_length],
+            &ipv6.packet()[..original_datagram_length],
         )?;
         debug!("payload out: {:?}", packet);
         (IpProtocol::IcmpV6, packet_buf)

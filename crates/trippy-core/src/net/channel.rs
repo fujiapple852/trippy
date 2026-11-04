@@ -10,7 +10,7 @@ use std::time::{Duration, SystemTime};
 use tracing::instrument;
 
 /// The maximum size of the IP packet we allow.
-pub const MAX_PACKET_SIZE: usize = 1024;
+pub const MAX_PACKET_SIZE: usize = 1248;
 
 /// The maximum number of TCP probes we allow.
 const MAX_TCP_PROBES: usize = 256;
