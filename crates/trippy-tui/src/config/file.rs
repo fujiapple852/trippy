@@ -252,6 +252,7 @@ pub struct ConfigTui {
     pub tui_custom_columns: Option<String>,
     pub tui_locale: Option<String>,
     pub tui_timezone: Option<String>,
+    pub tui_theme: Option<String>,
     #[serde(rename = "tui-max-samples")]
     pub deprecated_tui_max_samples: Option<usize>,
     #[serde(rename = "tui-max-flows")]
@@ -272,6 +273,7 @@ impl Default for ConfigTui {
             tui_max_addrs: Some(super::constants::DEFAULT_TUI_MAX_ADDRS),
             tui_locale: None,
             tui_timezone: None,
+            tui_theme: Some(String::from(super::constants::DEFAULT_TUI_THEME)),
             geoip_mmdb_file: None,
             deprecated_tui_max_samples: None,
             deprecated_tui_max_flows: None,
@@ -279,7 +281,7 @@ impl Default for ConfigTui {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Default)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 #[expect(clippy::struct_field_names)]
 pub struct ConfigThemeColors {
@@ -321,58 +323,6 @@ pub struct ConfigThemeColors {
     pub map_info_panel_text_color: Option<TuiColor>,
     pub info_bar_bg_color: Option<TuiColor>,
     pub info_bar_text_color: Option<TuiColor>,
-}
-
-impl Default for ConfigThemeColors {
-    fn default() -> Self {
-        let theme = super::theme::TuiTheme::default();
-        Self {
-            bg_color: Some(theme.bg),
-            border_color: Some(theme.border),
-            text_color: Some(theme.text),
-            tab_text_color: Some(theme.tab_text),
-            hops_table_header_bg_color: Some(theme.hops_table_header_bg),
-            hops_table_header_text_color: Some(theme.hops_table_header_text),
-            hops_table_row_active_text_color: Some(theme.hops_table_row_active_text),
-            hops_table_row_inactive_text_color: Some(theme.hops_table_row_inactive_text),
-            hops_table_row_active_selected_bg_color: Some(theme.hops_table_row_active_selected_bg),
-            hops_table_row_active_selected_text_color: Some(
-                theme.hops_table_row_active_selected_text,
-            ),
-            hops_table_row_inactive_selected_bg_color: Some(
-                theme.hops_table_row_inactive_selected_bg,
-            ),
-            hops_table_row_inactive_selected_text_color: Some(
-                theme.hops_table_row_inactive_selected_text,
-            ),
-            hops_chart_selected_color: Some(theme.hops_chart_selected),
-            hops_chart_unselected_color: Some(theme.hops_chart_unselected),
-            hops_chart_axis_color: Some(theme.hops_chart_axis),
-            frequency_chart_bar_color: Some(theme.frequency_chart_bar),
-            frequency_chart_text_color: Some(theme.frequency_chart_text),
-            flows_chart_bar_selected_color: Some(theme.flows_chart_bar_selected),
-            flows_chart_bar_unselected_color: Some(theme.flows_chart_bar_unselected),
-            flows_chart_text_current_color: Some(theme.flows_chart_text_current),
-            flows_chart_text_non_current_color: Some(theme.flows_chart_text_non_current),
-            samples_chart_color: Some(theme.samples_chart),
-            samples_chart_lost_color: Some(theme.samples_chart_lost),
-            help_dialog_bg_color: Some(theme.help_dialog_bg),
-            help_dialog_text_color: Some(theme.help_dialog_text),
-            settings_dialog_bg_color: Some(theme.settings_dialog_bg),
-            settings_tab_text_color: Some(theme.settings_tab_text),
-            settings_table_header_text_color: Some(theme.settings_table_header_text),
-            settings_table_header_bg_color: Some(theme.settings_table_header_bg),
-            settings_table_row_text_color: Some(theme.settings_table_row_text),
-            map_world_color: Some(theme.map_world),
-            map_radius_color: Some(theme.map_radius),
-            map_selected_color: Some(theme.map_selected),
-            map_info_panel_border_color: Some(theme.map_info_panel_border),
-            map_info_panel_bg_color: Some(theme.map_info_panel_bg),
-            map_info_panel_text_color: Some(theme.map_info_panel_text),
-            info_bar_bg_color: Some(theme.info_bar_bg),
-            info_bar_text_color: Some(theme.info_bar_text),
-        }
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Deserialize)]

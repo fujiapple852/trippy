@@ -28,6 +28,7 @@ pub fn trippy() -> anyhow::Result<()> {
     match TrippyAction::from(args, &privilege, pid)? {
         TrippyAction::Trippy(cfg) => app::run_trippy(&cfg, pid)?,
         TrippyAction::PrintTuiThemeItems => print::print_tui_theme_items(),
+        TrippyAction::PrintTuiThemes => print::print_tui_themes(),
         TrippyAction::PrintTuiBindingCommands => print::print_tui_binding_commands(),
         TrippyAction::PrintConfigTemplate => print::print_config_template(),
         TrippyAction::PrintManPage => print::print_man_page()?,
