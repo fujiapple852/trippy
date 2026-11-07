@@ -21,8 +21,8 @@ use windows_sys::Win32::Networking::WinSock::{
     SO_PORT_SCALABILITY, SO_REUSE_UNICASTPORT, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0,
     SOCKADDR_STORAGE, SOCKET_ERROR, SOL_SOCKET, TCP_FAIL_CONNECT_ON_ICMP_ERROR,
     TCP_ICMP_ERROR_INFO, WSA_INVALID_EVENT, WSA_IO_INCOMPLETE, WSA_IO_PENDING, WSABUF, WSADATA,
-    WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAENETUNREACH, WSAENOBUFS,
-    WSAEVENT,
+    WSAEADDRINUSE, WSAEADDRNOTAVAIL, WSAECONNREFUSED, WSAEHOSTUNREACH, WSAEINPROGRESS,
+    WSAENETUNREACH, WSAENOBUFS, WSAEVENT,
 };
 use windows_sys::Win32::System::IO::OVERLAPPED;
 
@@ -561,6 +561,7 @@ impl Socket for SocketImpl {
     fn take_error(&mut self) -> IoResult<Option<SocketError>> {
         match self.getsockopt(SOL_SOCKET as _, SO_ERROR as _, 0) {
             Ok(0) => Ok(None),
+            Ok(errno) if errno == WSAEADDRINUSE => Ok(Some(SocketError::AddressInUse)),
             Ok(errno) if errno == WSAEHOSTUNREACH => Ok(Some(SocketError::HostUnreachable)),
             Ok(errno) if errno == WSAECONNREFUSED => Ok(Some(SocketError::ConnectionRefused)),
             Ok(errno) => Ok(Some(SocketError::Other(StdIoError::from_raw_os_error(
