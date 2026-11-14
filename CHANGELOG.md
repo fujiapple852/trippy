@@ -22,6 +22,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Default the `system` `address-family` to `ipv4-then-ipv6` for non-`system`
   resolvers ([#1635](https://github.com/fujiapple852/trippy/issues/1635))
 - Locale parsing fails for valid BCP 47 language tags ([#1631](https://github.com/fujiapple852/trippy/pull/1631))
+- Key bindings cannot be set to the `+` key (e.g. `+` or `ctrl++`)
 
 ## [0.13.0] - 2025-05-05
 
