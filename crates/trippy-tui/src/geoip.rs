@@ -661,7 +661,8 @@ impl GeoIpLookup {
             }
             let lookup_result = reader.lookup(addr)?;
             let city_data =
-                match ipinfo::DatabaseFormat::try_from(reader.metadata.database_type.as_ref()).ok()
+                match ipinfo::DatabaseFormat::try_from(reader.metadata().database_type.as_ref())
+                    .ok()
                 {
                     Some(ipinfo::DatabaseFormat::Legacy) => lookup_result
                         .decode::<ipinfo::IpInfoGeoIpLegacy>()?
