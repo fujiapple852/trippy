@@ -92,14 +92,16 @@ impl Resolver for DnsResolver {
 /// Private impl of resolver.
 mod inner {
     use super::{Config, IpAddrFamily, ResolveMethod};
+    use crate::adapter::Resolver;
     use crate::resolver::{AsInfo, DnsEntry, Error, Resolved, ResolvedIpAddrs, Result, Unresolved};
     use crossbeam::channel::{Receiver, Sender, bounded};
-    use hickory_resolver::config::{LookupIpStrategy, ResolverConfig, ResolverOpts};
-    use hickory_resolver::error::{ResolveError, ResolveErrorKind};
-    use hickory_resolver::proto::error::ProtoError;
-    use hickory_resolver::proto::rr::RecordType;
+    use hickory_resolver::config::{
+        CLOUDFLARE, GOOGLE, LookupIpStrategy, ResolverConfig, ResolverOpts,
+    };
+    use hickory_resolver::net::{DnsError, NetError};
+    use hickory_resolver::proto::ProtoError;
+    use hickory_resolver::proto::rr::{Name, RData, RecordType};
     use hickory_resolver::system_conf::read_system_conf;
-    use hickory_resolver::{Name, Resolver};
     use itertools::{Either, Itertools};
     use parking_lot::RwLock;
     use std::collections::HashMap;
@@ -180,14 +182,17 @@ mod inner {
                 options.ip_strategy = ip_strategy;
                 let res = match config.resolve_method {
                     ResolveMethod::Resolv => {
-                        let (resolver_cfg, mut options) = read_system_conf()?;
+                        let (resolver_cfg, mut options) =
+                            read_system_conf().map_err(std::io::Error::other)?;
                         options.timeout = config.timeout;
                         options.ip_strategy = ip_strategy;
                         Resolver::new(resolver_cfg, options)
                     }
-                    ResolveMethod::Google => Resolver::new(ResolverConfig::google(), options),
+                    ResolveMethod::Google => {
+                        Resolver::new(ResolverConfig::udp_and_tcp(&GOOGLE), options)
+                    }
                     ResolveMethod::Cloudflare => {
-                        Resolver::new(ResolverConfig::cloudflare(), options)
+                        Resolver::new(ResolverConfig::udp_and_tcp(&CLOUDFLARE), options)
                     }
                     ResolveMethod::System => unreachable!(),
                 }?;
@@ -377,7 +382,12 @@ mod inner {
             DnsProvider::TrustDns(resolver) => match resolver.reverse_lookup(addr) {
                 Ok(name) => {
                     let hostnames = name
-                        .into_iter()
+                        .answers()
+                        .iter()
+                        .filter_map(|record| match &record.data {
+                            RData::PTR(ptr) => Some(ptr.clone()),
+                            _ => None,
+                        })
                         .map(|mut s| {
                             s.0.set_fqdn(false);
                             s
@@ -394,8 +404,8 @@ mod inner {
                         CacheEntry::new(DnsEntry::Resolved(Resolved::Normal(addr, hostnames)), now)
                     }
                 }
-                Err(err) => match err.kind() {
-                    ResolveErrorKind::NoRecordsFound { .. } => {
+                Err(err) => match err {
+                    NetError::Dns(DnsError::NoRecordsFound(_) | DnsError::ResponseCode(_)) => {
                         if with_asinfo {
                             let as_info = lookup_asinfo(resolver, addr).unwrap_or_default();
                             CacheEntry::new(
@@ -406,7 +416,7 @@ mod inner {
                             CacheEntry::new(DnsEntry::NotFound(Unresolved::Normal(addr)), now)
                         }
                     }
-                    ResolveErrorKind::Timeout => CacheEntry::new(DnsEntry::Timeout(addr), now),
+                    NetError::Timeout => CacheEntry::new(DnsEntry::Timeout(addr), now),
                     _ => CacheEntry::new(DnsEntry::Failed(addr), now),
                 },
             },
@@ -439,14 +449,15 @@ mod inner {
             addr.octets().iter().rev().join(".")
         );
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
-        let response = resolver
-            .lookup(name, RecordType::TXT)
-            .map_err(resolve_error)?;
-        let data = response
+        let response = resolver.lookup(name, RecordType::TXT).map_err(net_error)?;
+        let bytes = response
+            .answers()
             .iter()
-            .next()
+            .find_map(|record| match &record.data {
+                RData::TXT(bytes) => Some(bytes),
+                _ => None,
+            })
             .ok_or_else(|| Error::QueryAsnOriginFailed)?;
-        let bytes = data.as_txt().ok_or_else(|| Error::QueryAsnOriginFailed)?;
         Ok(bytes.to_string())
     }
 
@@ -461,14 +472,15 @@ mod inner {
                 .format(".")
         );
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
-        let response = resolver
-            .lookup(name, RecordType::TXT)
-            .map_err(resolve_error)?;
-        let data = response
+        let response = resolver.lookup(name, RecordType::TXT).map_err(net_error)?;
+        let bytes = response
+            .answers()
             .iter()
-            .next()
+            .find_map(|record| match &record.data {
+                RData::TXT(bytes) => Some(bytes),
+                _ => None,
+            })
             .ok_or_else(|| Error::QueryAsnOriginFailed)?;
-        let bytes = data.as_txt().ok_or_else(|| Error::QueryAsnOriginFailed)?;
         Ok(bytes.to_string())
     }
 
@@ -476,14 +488,15 @@ mod inner {
     fn query_asn_name(resolver: &Arc<Resolver>, asn: &str) -> Result<String> {
         let query = format!("AS{asn}.asn.cymru.com.");
         let name = Name::from_str(query.as_str()).map_err(proto_error)?;
-        let response = resolver
-            .lookup(name, RecordType::TXT)
-            .map_err(resolve_error)?;
-        let data = response
+        let response = resolver.lookup(name, RecordType::TXT).map_err(net_error)?;
+        let bytes = response
+            .answers()
             .iter()
-            .next()
-            .ok_or_else(|| Error::QueryAsnFailed)?;
-        let bytes = data.as_txt().ok_or_else(|| Error::QueryAsnFailed)?;
+            .find_map(|record| match &record.data {
+                RData::TXT(bytes) => Some(bytes),
+                _ => None,
+            })
+            .ok_or_else(|| Error::QueryAsnOriginFailed)?;
         Ok(bytes.to_string())
     }
 
@@ -531,8 +544,8 @@ mod inner {
         Ok(split.nth(4).unwrap_or_default().trim().to_string())
     }
 
-    /// Convert a `ResolveError` to an `Error::LookupFailed`.
-    fn resolve_error(err: ResolveError) -> Error {
+    /// Convert a `NetError` to an `Error::LookupFailed`.
+    fn net_error(err: NetError) -> Error {
         Error::LookupFailed(Box::new(err))
     }
 
