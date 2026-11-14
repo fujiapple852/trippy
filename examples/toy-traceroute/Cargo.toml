@@ -11,3 +11,6 @@ trippy = { version = "0.14.0-dev", path = "../../crates/trippy", default-feature
 anyhow = "1.0.86"
 itertools = "0.15.0"
 clap = { version = "4.5.60", features = ["derive"] }
+
+[lints]
+workspace = true
