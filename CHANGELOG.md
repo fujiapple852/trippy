@@ -15,7 +15,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [BREAKING CHANGE] Change default `address-family` to be
   `system` ([#1475](https://github.com/fujiapple852/trippy/issues/1475))
-- Increase MSRV to 1.88 ([#1809](https://github.com/fujiapple852/trippy/issues/1809))
+- Increase MSRV to 1.92 ([#1917](https://github.com/fujiapple852/trippy/issues/1917))
 
 ### Fixed
 
