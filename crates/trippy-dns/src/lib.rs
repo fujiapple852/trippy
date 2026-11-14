@@ -71,6 +71,7 @@
 //! ```
 #![forbid(unsafe_code)]
 
+mod adapter;
 mod config;
 mod lazy_resolver;
 mod resolver;

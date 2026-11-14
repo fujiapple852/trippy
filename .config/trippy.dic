@@ -45,6 +45,7 @@ accessor
 addr
 addrs
 asn
+async
 boolean
 calc
 checksum
