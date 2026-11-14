@@ -11,16 +11,4 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 ignore = [
   # allow unmaintained paste crate
   { id = "RUSTSEC-2024-0436" },
-  # Allow Hickory advisories which are not exploitable
-  { id = "RUSTSEC-2026-0119" },
-  { id = "RUSTSEC-2026-0487" },
-  { id = "RUSTSEC-2026-0489" },
-  { id = "RUSTSEC-2026-0490" },
-  { id = "RUSTSEC-2026-0491" },
-  { id = "RUSTSEC-2026-0505" },
-  { id = "RUSTSEC-2026-0511" },
-  { id = "RUSTSEC-2026-0512" },
-  { id = "RUSTSEC-2026-0514" },
-  { id = "RUSTSEC-2026-0530" },
-  { id = "RUSTSEC-2026-0531" },
 ]
