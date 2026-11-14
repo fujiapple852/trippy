@@ -57,11 +57,11 @@ fn main() -> anyhow::Result<()> {
     let resolver = DnsResolver::start(Config::default())?;
     let addrs: Vec<_> = resolver
         .lookup(&hostname)
-        .map_err(|_| anyhow!(format!("traceroute: unknown host {}", hostname)))?
+        .map_err(|_| anyhow!(format!("traceroute: unknown host {hostname}")))?
         .into_iter()
         .collect();
     let addr = match addrs.as_slice() {
-        [] => return Err(anyhow!("traceroute: unknown host {}", hostname)),
+        [] => return Err(anyhow!("traceroute: unknown host {hostname}")),
         [addr] => *addr,
         [addr, ..] => {
             println!("traceroute: Warning: {hostname} has multiple addresses; using {addr}");
@@ -92,7 +92,7 @@ fn main() -> anyhow::Result<()> {
     tracer.run()?;
     let snapshot = &tracer.snapshot();
     if let Some(err) = snapshot.error() {
-        return Err(anyhow!("error: {}", err));
+        return Err(anyhow!("error: {err}"));
     }
     for hop in snapshot.hops() {
         let ttl = hop.ttl();

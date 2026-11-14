@@ -9,3 +9,6 @@ publish = false
 [dependencies]
 trippy = { version = "0.14.0-dev", path = "../../crates/trippy", default-features = false, features = ["core"] }
 anyhow = "1.0.86"
+
+[lints]
+workspace = true
