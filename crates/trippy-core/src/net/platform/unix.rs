@@ -427,9 +427,14 @@ mod socket {
         }
         #[instrument(skip(self, buf), level = "trace")]
         fn recv_from(&mut self, buf: &mut [u8]) -> IoResult<(usize, Option<SocketAddr>)> {
-            let (bytes_read, addr) = self
+            let addr = self
                 .inner
-                .recv_from_into_buf(buf)
+                .peek_sender()
+                .map_err(|err| IoError::Other(err, IoOperation::PeekSender))?
+                .as_socket();
+            let bytes_read = self
+                .inner
+                .read(buf)
                 .map_err(|err| IoError::Other(err, IoOperation::RecvFrom))?;
             tracing::trace!(
                 buf = format!("{:02x?}", buf[..bytes_read].iter().format(" ")),
@@ -515,28 +520,6 @@ mod socket {
     impl Read for SocketImpl {
         fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
             self.inner.read(buf)
-        }
-    }
-
-    /// An extension trait to allow `recv_from` method which writes to a `&mut [u8]`.
-    ///
-    /// This is required for `socket2::Socket` which [does not currently provide] this method.
-    ///
-    /// [does not currently provide]: https://github.com/rust-lang/socket2/issues/223
-    trait RecvFrom {
-        fn recv_from_into_buf(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)>;
-    }
-
-    impl RecvFrom for socket2::Socket {
-        // Safety: the `recv` implementation promises not to write uninitialised
-        // bytes to the `buf`fer, so this casting is safe.
-        #![allow(unsafe_code)]
-        fn recv_from_into_buf(&self, buf: &mut [u8]) -> io::Result<(usize, Option<SocketAddr>)> {
-            let buf = unsafe {
-                &mut *(std::ptr::from_mut::<[u8]>(buf) as *mut [std::mem::MaybeUninit<u8>])
-            };
-            self.recv_from(buf)
-                .map(|(size, addr)| (size, addr.as_socket()))
         }
     }
 }
