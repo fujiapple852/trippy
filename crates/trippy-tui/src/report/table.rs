@@ -1,6 +1,6 @@
 use crate::app::TraceInfo;
 use comfy_table::presets::{ASCII_MARKDOWN, UTF8_FULL};
-use comfy_table::{ContentArrangement, Table};
+use comfy_table::{ContentArrangement, Table, TableStyle};
 use itertools::Itertools;
 use tracing::instrument;
 use trippy_dns::Resolver;
@@ -29,7 +29,7 @@ fn run_report_table<R: Resolver>(
     info: &TraceInfo,
     report_cycles: usize,
     resolver: &R,
-    preset: &str,
+    preset: TableStyle,
 ) -> anyhow::Result<()> {
     let trace = super::wait_for_round(&info.data, report_cycles)?;
     let columns = vec![
@@ -37,7 +37,7 @@ fn run_report_table<R: Resolver>(
     ];
     let mut table = Table::new();
     table
-        .load_preset(preset)
+        .load_style(preset)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(columns);
     for hop in trace.hops() {
