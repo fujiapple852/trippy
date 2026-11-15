@@ -67,9 +67,8 @@ impl IoError {
 /// This includes additional error kinds that are not part of the standard [`io::ErrorKind`].
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorKind {
+    // TODO: awaiting https://github.com/rust-lang/rust/issues/130840
     InProgress,
-    HostUnreachable,
-    NetUnreachable,
     Std(io::ErrorKind),
 }
 
