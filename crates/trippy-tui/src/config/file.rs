@@ -3,6 +3,7 @@ use crate::config::theme::TuiColor;
 use crate::config::{
     AddressFamilyConfig, AddressMode, AsMode, DnsResolveMethodConfig, GeoIpMode, IcmpExtensionMode,
     LogFormat, LogSpanEvents, Mode, MultipathStrategyConfig, ProtocolConfig,
+    SocketReadinessModeConfig,
 };
 use anyhow::Context;
 use encoding_rs_io::DecodeReaderBytes;
@@ -160,6 +161,7 @@ pub struct ConfigStrategy {
     #[serde(default)]
     #[serde(deserialize_with = "humantime_deser")]
     pub read_timeout: Option<Duration>,
+    pub socket_readiness_mode: Option<SocketReadinessModeConfig>,
     pub max_samples: Option<usize>,
     pub max_flows: Option<usize>,
 }
@@ -188,6 +190,9 @@ impl Default for ConfigStrategy {
             tos: Some(defaults::DEFAULT_STRATEGY_TOS),
             icmp_extensions: Some(defaults::DEFAULT_ICMP_EXTENSION_PARSE_MODE.is_enabled()),
             read_timeout: Some(defaults::DEFAULT_STRATEGY_READ_TIMEOUT),
+            socket_readiness_mode: Some(SocketReadinessModeConfig::from(
+                defaults::DEFAULT_SOCKET_READINESS_MODE,
+            )),
             max_samples: Some(defaults::DEFAULT_MAX_SAMPLES),
             max_flows: Some(defaults::DEFAULT_MAX_FLOWS),
         }

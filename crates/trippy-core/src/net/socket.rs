@@ -1,3 +1,4 @@
+use crate::SocketReadinessMode;
 use crate::error::IoResult as Result;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
@@ -37,9 +38,9 @@ where
     fn connect(&mut self, address: SocketAddr) -> Result<()>;
     fn send_to(&mut self, buf: &[u8], addr: SocketAddr) -> Result<()>;
     /// Returns true if the socket becomes readable before the timeout, false otherwise.
-    fn is_readable(&mut self, timeout: Duration) -> Result<bool>;
+    fn is_readable(&mut self, timeout: Duration, mode: SocketReadinessMode) -> Result<bool>;
     /// Returns true if the socket is currently writable, false otherwise.
-    fn is_writable(&mut self) -> Result<bool>;
+    fn is_writable(&mut self, mode: SocketReadinessMode) -> Result<bool>;
     fn recv_from(&mut self, buf: &mut [u8]) -> Result<(usize, Option<SocketAddr>)>;
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
     fn shutdown(&mut self) -> Result<()>;
