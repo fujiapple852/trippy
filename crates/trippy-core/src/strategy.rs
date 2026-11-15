@@ -1003,7 +1003,9 @@ mod state {
 
         /// Is `sequence` in the current round?
         pub fn in_round(&self, sequence: Sequence) -> bool {
-            sequence >= self.round_sequence && sequence.0 - self.round_sequence.0 < BUFFER_SIZE
+            sequence >= self.round_sequence
+                && sequence < self.sequence
+                && sequence.0 - self.round_sequence.0 < BUFFER_SIZE
         }
 
         /// Do we have capacity in the current round for another sequence?
@@ -1607,14 +1609,17 @@ mod state {
 
         #[test]
         fn test_in_round() {
-            let state = TracerState::new(cfg(Sequence(33434)));
+            let mut state = TracerState::new(cfg(Sequence(33434)));
+            assert!(!state.in_round(Sequence(33434)));
+            state.next_probe(SystemTime::now());
+            assert!(!state.in_round(Sequence(33433)));
             assert!(state.in_round(Sequence(33434)));
-            assert!(state.in_round(Sequence(33945)));
+            assert!(!state.in_round(Sequence(33435)));
+            assert!(!state.in_round(Sequence(33945)));
             assert!(!state.in_round(Sequence(33946)));
         }
 
         #[test]
-        #[should_panic(expected = "assertion failed: !state.in_round(Sequence(64491))")]
         fn test_in_delayed_probe_not_in_round() {
             let mut state = TracerState::new(cfg(Sequence(64000)));
             for _ in 0..55 {
