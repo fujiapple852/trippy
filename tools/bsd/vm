@@ -1,0 +1,3 @@
+#!/bin/sh
+# Keep invocation independent of the caller's working directory.
+exec python3 "$(dirname "$0")/vm.py" "$@"
