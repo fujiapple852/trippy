@@ -140,6 +140,42 @@ jobs:
         if: startsWith(matrix.build, 'windows')
         run: cargo test --target ${{ matrix.target }} --features sim-tests --test sim -- --exact --nocapture
 
+  sim-test-bsd:
+    name: sim-test (${{ matrix.os }} ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: freebsd
+            version: '15.1'
+          - os: netbsd
+            version: '11.0'
+          - os: openbsd
+            version: '8.0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start BSD VM
+        timeout-minutes: 10
+        uses: cross-platform-actions/action@82668f1fbd89d9c99487604f822cbf6716f124d3 # v1.7.0
+        with:
+          operating_system: ${{ matrix.os }}
+          version: ${{ matrix.version }}
+          architecture: x86-64
+          shell: sh
+          memory: 6G
+          cpu_count: 2
+          sync_files: runner-to-vm
+      - name: Run simulations
+        timeout-minutes: 20
+        shell: cpa.sh {0} --sync-files none
+        run: sh .github/bin/bsd-sim.sh
+
   fmt:
     runs-on: ubuntu-24.04
     steps:
