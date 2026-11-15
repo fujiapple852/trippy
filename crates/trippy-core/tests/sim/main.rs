@@ -1,7 +1,4 @@
-#![cfg(all(
-    feature = "sim-tests",
-    any(target_os = "linux", target_os = "macos", target_os = "windows")
-))]
+#![cfg(feature = "sim-tests")]
 mod network;
 mod simulation;
 mod tests;
