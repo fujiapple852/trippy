@@ -18,8 +18,6 @@ trippy-core.workspace = true
 trippy-privilege.workspace = true
 trippy-dns.workspace = true
 anyhow.workspace = true
-chrono = { workspace = true, default-features = false, features = ["clock", "serde"] }
-chrono-tz.workspace = true
 clap = { workspace = true, default-features = false, features = ["cargo", "derive", "wrap_help", "usage", "unstable-styles", "color", "suggestions", "error-context", "env"] }
 clap_complete.workspace = true
 clap_mangen.workspace = true
@@ -30,6 +28,7 @@ encoding_rs_io.workspace = true
 etcetera.workspace = true
 humantime.workspace = true
 itertools.workspace = true
+jiff = { workspace = true, features = ["serde"] }
 maxminddb.workspace = true
 petgraph.workspace = true
 ratatui.workspace = true

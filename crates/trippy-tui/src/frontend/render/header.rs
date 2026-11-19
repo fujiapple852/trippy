@@ -1,7 +1,9 @@
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
-use chrono::SecondsFormat;
 use humantime::format_duration;
+use jiff::Timestamp;
+use jiff::fmt::temporal::DateTimePrinter;
+use jiff::tz::TimeZone;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Modifier, Style};
@@ -27,14 +29,16 @@ pub fn render(f: &mut Frame<'_>, app: &TuiApp, rect: Rect) {
                 .bg(app.tui_config.theme.bg)
                 .fg(app.tui_config.theme.text),
         );
-    let now = if let Some(tz) = &app.tui_config.timezone {
-        chrono::Utc::now()
-            .with_timezone(tz)
-            .to_rfc3339_opts(SecondsFormat::Secs, true)
-    } else {
-        chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, true)
-    };
-    let clock_span = Line::from(Span::raw(now));
+    let timezone = app
+        .tui_config
+        .timezone
+        .clone()
+        .unwrap_or_else(TimeZone::system);
+    let now = Timestamp::now().to_zoned_datetime(timezone);
+    let clock = DateTimePrinter::new()
+        .precision(Some(0))
+        .timestamp_with_offset_to_string(&now.timestamp(), now.offset());
+    let clock_span = Line::from(Span::raw(clock));
     let bold = Style::default().add_modifier(Modifier::BOLD);
 
     let help_binding = app.tui_config.bindings.toggle_help.to_string();

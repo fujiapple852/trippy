@@ -3,10 +3,10 @@ use clap::ValueEnum;
 use clap_complete::Shell;
 use file::ConfigFile;
 use itertools::Itertools;
+use jiff::tz::TimeZone;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::str::FromStr;
 use std::time::Duration;
 use trippy_core::{
     IcmpExtensionParseMode, MAX_TTL, MultipathStrategy, PortDirection, PrivilegeMode, Protocol,
@@ -323,7 +323,7 @@ pub struct TrippyConfig {
     pub tui_geoip_mode: GeoIpMode,
     pub tui_max_addrs: Option<u8>,
     pub tui_locale: Option<String>,
-    pub tui_timezone: Option<chrono_tz::Tz>,
+    pub tui_timezone: Option<TimeZone>,
     pub tui_theme: TuiTheme,
     pub tui_bindings: TuiBindings,
     pub mode: Mode,
@@ -549,7 +549,7 @@ impl TrippyConfig {
         let timezone = cfg_layer_opt(args.tui_timezone, cfg_file_tui.tui_timezone);
         let tui_timezone = timezone
             .as_deref()
-            .map(chrono_tz::Tz::from_str)
+            .map(|name| TimeZone::get(name).map_err(|_| anyhow!("failed to parse timezone")))
             .transpose()?;
         let dns_lookup_as_info = cfg_layer_bool_flag(
             args.dns_lookup_as_info,
@@ -1503,8 +1503,8 @@ mod tests {
     }
 
     #[test_case("trip example.com", Ok(cfg().tui_timezone(None).build()); "default tui timezone")]
-    #[test_case("trip example.com --tui-timezone UTC", Ok(cfg().tui_timezone(Some(chrono_tz::Tz::UTC)).build()); "custom tui timezone UTC")]
-    #[test_case("trip example.com --tui-timezone Antarctica/South_Pole", Ok(cfg().tui_timezone(Some(chrono_tz::Tz::Antarctica__South_Pole)).build()); "custom tui timezone Antarctica/South_Pole")]
+    #[test_case("trip example.com --tui-timezone UTC", Ok(cfg().tui_timezone(Some(TimeZone::UTC)).build()); "custom tui timezone UTC")]
+    #[test_case("trip example.com --tui-timezone Antarctica/South_Pole", Ok(cfg().tui_timezone(Some(TimeZone::get("Antarctica/South_Pole").unwrap())).build()); "custom tui timezone Antarctica/South_Pole")]
     #[test_case("trip example.com --tui-timezone xxx", Err(anyhow!("failed to parse timezone")); "invalid tui timezone")]
     fn test_tui_timezone(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
@@ -2097,7 +2097,7 @@ mod tests {
             }
         }
 
-        pub fn tui_timezone(self, tui_timezone: Option<chrono_tz::Tz>) -> Self {
+        pub fn tui_timezone(self, tui_timezone: Option<TimeZone>) -> Self {
             Self {
                 config: TrippyConfig {
                     tui_timezone,

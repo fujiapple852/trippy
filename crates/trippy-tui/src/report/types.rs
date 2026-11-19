@@ -1,5 +1,5 @@
-use chrono::Utc;
 use itertools::Itertools;
+use jiff::Timestamp;
 use serde::{Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -15,8 +15,8 @@ pub struct Report {
 #[derive(Serialize)]
 pub struct Info {
     pub target: Host,
-    pub start_timestamp: chrono::DateTime<Utc>,
-    pub end_timestamp: chrono::DateTime<Utc>,
+    pub start_timestamp: Timestamp,
+    pub end_timestamp: Timestamp,
 }
 
 #[derive(Serialize)]
