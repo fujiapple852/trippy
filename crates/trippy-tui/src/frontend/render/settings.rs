@@ -220,7 +220,9 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
             "tui-timezone",
             app.tui_config
                 .timezone
-                .map_or_else(|| t!("auto").to_string(), |tz| tz.to_string()),
+                .as_ref()
+                .and_then(jiff::tz::TimeZone::iana_name)
+                .map_or_else(|| t!("auto").to_string(), str::to_string),
         ),
     ]
 }

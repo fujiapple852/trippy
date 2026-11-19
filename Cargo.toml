@@ -33,8 +33,6 @@ anyhow = "1.0.91"
 arrayvec = { version = "0.7.6", default-features = false }
 bitflags = "2.13.0"
 caps = "0.5.6"
-chrono = { version = "0.4.45", default-features = false }
-chrono-tz = "0.10.4"
 clap = { version = "4.5.60", default-features = false }
 clap-cargo = "0.19.0"
 clap_complete = "4.6.0"
@@ -54,6 +52,7 @@ humantime = "2.3.0"
 indexmap = { version = "2.14.0", default-features = false }
 insta = "1.47.2"
 itertools = "0.15.0"
+jiff = { version = "1.0.1", features = ["tzdb-bundle-always"] }
 maxminddb = "0.33.0"
 mockall = "0.15.0"
 nix = { version = "0.31.3", default-features = false }
