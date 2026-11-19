@@ -8,6 +8,7 @@ use crate::config::{
 use anyhow::anyhow;
 use clap::Parser;
 use clap_complete::Shell;
+use jiff::fmt::friendly::SpanParser;
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
@@ -317,7 +318,7 @@ fn parse_tui_binding_value(value: &str) -> anyhow::Result<(TuiCommandItem, TuiKe
 }
 
 fn parse_duration(value: &str) -> anyhow::Result<Duration> {
-    Ok(humantime::parse_duration(value)?)
+    Ok(SpanParser::new().parse_unsigned_duration(value)?)
 }
 
 fn parse_addr(value: &str) -> anyhow::Result<IpAddr> {

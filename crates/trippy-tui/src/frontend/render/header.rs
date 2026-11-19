@@ -1,6 +1,6 @@
+use crate::frontend::render::util;
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
-use humantime::format_duration;
 use jiff::Timestamp;
 use jiff::fmt::temporal::DateTimePrinter;
 use jiff::tz::TimeZone;
@@ -274,7 +274,7 @@ fn render_status(app: &TuiApp) -> String {
     if app.selected_tracer_data.error().is_some() {
         String::from(t!("status_failed"))
     } else if let Some(start) = app.frozen_start {
-        let frozen = format_duration(Duration::from_secs(
+        let frozen = util::format_duration(Duration::from_secs(
             start.elapsed().unwrap_or_default().as_secs(),
         ));
         format!("{} ({frozen}){failures}", t!("status_frozen"))

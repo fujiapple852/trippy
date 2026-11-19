@@ -3,7 +3,6 @@ use crate::frontend::render::util;
 use crate::frontend::theme;
 use crate::frontend::tui_app::TuiApp;
 use crate::t;
-use humantime::format_duration;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Modifier, Style};
@@ -185,7 +184,7 @@ fn format_tui_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "tui-refresh-rate",
-            format!("{}", format_duration(app.tui_config.refresh_rate)),
+            format!("{}", util::format_duration(app.tui_config.refresh_rate)),
         ),
         SettingsItem::new(
             "tui-privacy-max-ttl",
@@ -246,15 +245,15 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
         SettingsItem::new("max-ttl", format!("{}", cfg.data.max_ttl().0)),
         SettingsItem::new(
             "min-round-duration",
-            format!("{}", format_duration(cfg.data.min_round_duration())),
+            format!("{}", util::format_duration(cfg.data.min_round_duration())),
         ),
         SettingsItem::new(
             "max-round-duration",
-            format!("{}", format_duration(cfg.data.max_round_duration())),
+            format!("{}", util::format_duration(cfg.data.max_round_duration())),
         ),
         SettingsItem::new(
             "grace-duration",
-            format!("{}", format_duration(cfg.data.grace_duration())),
+            format!("{}", util::format_duration(cfg.data.grace_duration())),
         ),
         SettingsItem::new("max-inflight", format!("{}", cfg.data.max_inflight().0)),
         SettingsItem::new(
@@ -263,7 +262,7 @@ fn format_trace_settings(app: &TuiApp) -> Vec<SettingsItem> {
         ),
         SettingsItem::new(
             "read-timeout",
-            format!("{}", format_duration(cfg.data.read_timeout())),
+            format!("{}", util::format_duration(cfg.data.read_timeout())),
         ),
         SettingsItem::new("packet-size", format!("{}", cfg.data.packet_size().0)),
         SettingsItem::new(
@@ -298,11 +297,11 @@ fn format_dns_settings(app: &TuiApp) -> Vec<SettingsItem> {
     vec![
         SettingsItem::new(
             "dns-timeout",
-            format!("{}", format_duration(app.resolver.config().timeout)),
+            format!("{}", util::format_duration(app.resolver.config().timeout)),
         ),
         SettingsItem::new(
             "dns-ttl",
-            format!("{}", format_duration(app.resolver.config().ttl)),
+            format!("{}", util::format_duration(app.resolver.config().ttl)),
         ),
         SettingsItem::new(
             "dns-resolve-method",

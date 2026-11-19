@@ -1,4 +1,7 @@
+use jiff::fmt::friendly::SpanPrinter;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use std::fmt::Display;
+use std::time::Duration;
 
 pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
@@ -24,4 +27,8 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             .as_ref(),
         )
         .split(popup_layout[1])[1]
+}
+
+pub fn format_duration(duration: Duration) -> impl Display {
+    SpanPrinter::new().unsigned_duration_to_string(&duration)
 }

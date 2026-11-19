@@ -140,15 +140,15 @@ pub struct ConfigStrategy {
     pub source_address: Option<IpAddr>,
     pub interface: Option<String>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub min_round_duration: Option<Duration>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub max_round_duration: Option<Duration>,
     pub initial_sequence: Option<u16>,
     pub multipath_strategy: Option<MultipathStrategyConfig>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub grace_duration: Option<Duration>,
     pub max_inflight: Option<u8>,
     pub first_ttl: Option<u8>,
@@ -158,7 +158,7 @@ pub struct ConfigStrategy {
     pub tos: Option<u8>,
     pub icmp_extensions: Option<bool>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub read_timeout: Option<Duration>,
     pub max_samples: Option<usize>,
     pub max_flows: Option<usize>,
@@ -202,10 +202,10 @@ pub struct ConfigDns {
     pub dns_resolve_all: Option<bool>,
     pub dns_lookup_as_info: Option<bool>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub dns_timeout: Option<Duration>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub dns_ttl: Option<Duration>,
 }
 
@@ -240,7 +240,7 @@ impl Default for ConfigReport {
 pub struct ConfigTui {
     pub tui_preserve_screen: Option<bool>,
     #[serde(default)]
-    #[serde(deserialize_with = "humantime_deser")]
+    #[serde(with = "jiff::fmt::serde::unsigned_duration::optional")]
     pub tui_refresh_rate: Option<Duration>,
     pub tui_privacy_max_ttl: Option<u8>,
     pub tui_address_mode: Option<AddressMode>,
@@ -465,15 +465,6 @@ impl Default for ConfigBindings {
             quit_preserve_screen: Some(bindings.quit_preserve_screen),
         }
     }
-}
-
-fn humantime_deser<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    humantime::parse_duration(&String::deserialize(deserializer)?)
-        .map_err(serde::de::Error::custom)
-        .map(Some)
 }
 
 fn addr_deser<'de, D>(deserializer: D) -> Result<Option<IpAddr>, D::Error>
