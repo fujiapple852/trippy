@@ -54,7 +54,7 @@ itertools = "0.15.0"
 jiff = { version = "1.0.1", features = ["tzdb-bundle-always"] }
 maxminddb = "0.33.0"
 mockall = "0.15.0"
-nix = { version = "0.31.3", default-features = false }
+nix = { version = "0.32.0", default-features = false }
 parking_lot = "0.12.5"
 paste = "1.0.15"
 petgraph = "0.8.3"
