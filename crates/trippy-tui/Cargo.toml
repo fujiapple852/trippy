@@ -26,7 +26,6 @@ crossterm = { workspace = true, default-features = false, features = ["events", 
 csv.workspace = true
 encoding_rs_io.workspace = true
 etcetera.workspace = true
-humantime.workspace = true
 itertools.workspace = true
 jiff = { workspace = true, features = ["serde"] }
 maxminddb.workspace = true

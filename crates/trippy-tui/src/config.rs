@@ -1315,11 +1315,11 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default min round duration")]
     #[test_case("trip example.com --min-round-duration 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration")]
     #[test_case("trip example.com -i 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).build()); "custom min round duration short")]
-    #[test_case("trip example.com --min-round-duration 0", Ok(cfg().min_round_duration(Duration::from_millis(0)).build()); "zero min round duration")]
+    #[test_case("trip example.com --min-round-duration 0s", Ok(cfg().min_round_duration(Duration::from_millis(0)).build()); "zero min round duration")]
     #[test_case("trip example.com", Ok(cfg().min_round_duration(Duration::from_millis(1000)).build()); "default max round duration")]
     #[test_case("trip example.com --max-round-duration 1250ms", Ok(cfg().max_round_duration(Duration::from_millis(1250)).build()); "custom max round duration")]
     #[test_case("trip example.com -T 2s", Ok(cfg().max_round_duration(Duration::from_millis(2000)).build()); "custom max round duration short")]
-    #[test_case("trip example.com --max-round-duration 0", Err(anyhow!("max-round-duration (0ns) must not be less than min-round-duration (1s)")); "invalid format max round duration")]
+    #[test_case("trip example.com --max-round-duration 0s", Err(anyhow!("max-round-duration (0ns) must not be less than min-round-duration (1s)")); "invalid format max round duration")]
     #[test_case("trip example.com -i 250ms -T 250ms", Ok(cfg().min_round_duration(Duration::from_millis(250)).max_round_duration(Duration::from_millis(250)).build()); "custom min and max round duration")]
     #[test_case("trip example.com -i 300ms -T 250ms", Err(anyhow!("max-round-duration (250ms) must not be less than min-round-duration (300ms)")); "min round duration greater than max")]
     fn test_round_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1329,7 +1329,7 @@ mod tests {
     #[test_case("trip example.com", Ok(cfg().grace_duration(Duration::from_millis(100)).build()); "default grace duration")]
     #[test_case("trip example.com --grace-duration 10ms", Ok(cfg().grace_duration(Duration::from_millis(10)).build()); "custom grace duration")]
     #[test_case("trip example.com -g 50ms", Ok(cfg().grace_duration(Duration::from_millis(50)).build()); "custom grace duration short")]
-    #[test_case("trip example.com --grace-duration 0", Err(anyhow!("grace-duration (0ns) must be between 10ms and 1s inclusive")); "invalid format grace duration")]
+    #[test_case("trip example.com --grace-duration 0s", Err(anyhow!("grace-duration (0ns) must be between 10ms and 1s inclusive")); "invalid format grace duration")]
     #[test_case("trip example.com --grace-duration 9ms", Err(anyhow!("grace-duration (9ms) must be between 10ms and 1s inclusive")); "invalid low grace duration")]
     #[test_case("trip example.com --grace-duration 1001ms", Err(anyhow!("grace-duration (1.001s) must be between 10ms and 1s inclusive")); "invalid high grace duration")]
     fn test_grace_duration(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1373,7 +1373,7 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().read_timeout(Duration::from_millis(10)).build()); "default read timeout")]
     #[test_case("trip example.com --read-timeout 20ms", Ok(cfg().read_timeout(Duration::from_millis(20)).build()); "custom read timeout")]
-    #[test_case("trip example.com --read-timeout 20", Err(anyhow!("error: invalid value '20' for '--read-timeout <READ_TIMEOUT>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom read timeout")]
+    #[test_case("trip example.com --read-timeout 20", Err(anyhow!("error: invalid value '20' for '--read-timeout <READ_TIMEOUT>': failed to parse input in the \"friendly\" duration format: expected to find unit designator suffix (e.g., `years` or `secs`) after parsing integer For more information, try '--help'.")); "invalid custom read timeout")]
     #[test_case("trip example.com --read-timeout 9ms", Err(anyhow!("read-timeout (9ms) must be between 10ms and 100ms inclusive")); "invalid low custom read timeout")]
     #[test_case("trip example.com --read-timeout 101ms", Err(anyhow!("read-timeout (101ms) must be between 10ms and 100ms inclusive")); "invalid high custom read timeout")]
     fn test_read_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
@@ -1420,14 +1420,14 @@ mod tests {
 
     #[test_case("trip example.com", Ok(cfg().dns_timeout(Duration::from_millis(5000)).build()); "default dns timeout")]
     #[test_case("trip example.com --dns-timeout 20ms", Ok(cfg().dns_timeout(Duration::from_millis(20)).build()); "custom dns timeout")]
-    #[test_case("trip example.com --dns-timeout 20", Err(anyhow!("error: invalid value '20' for '--dns-timeout <DNS_TIMEOUT>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom dns timeout")]
+    #[test_case("trip example.com --dns-timeout 20", Err(anyhow!("error: invalid value '20' for '--dns-timeout <DNS_TIMEOUT>': failed to parse input in the \"friendly\" duration format: expected to find unit designator suffix (e.g., `years` or `secs`) after parsing integer For more information, try '--help'.")); "invalid custom dns timeout")]
     fn test_dns_timeout(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
 
     #[test_case("trip example.com", Ok(cfg().dns_ttl(Duration::from_secs(300)).build()); "default dns ttl")]
     #[test_case("trip example.com --dns-ttl 10secs", Ok(cfg().dns_ttl(Duration::from_secs(10)).build()); "custom dns ttl")]
-    #[test_case("trip example.com --dns-ttl 20", Err(anyhow!("error: invalid value '20' for '--dns-ttl <DNS_TTL>': time unit needed, for example 20sec or 20ms For more information, try '--help'.")); "invalid custom dns ttl")]
+    #[test_case("trip example.com --dns-ttl 20", Err(anyhow!("error: invalid value '20' for '--dns-ttl <DNS_TTL>': failed to parse input in the \"friendly\" duration format: expected to find unit designator suffix (e.g., `years` or `secs`) after parsing integer For more information, try '--help'.")); "invalid custom dns ttl")]
     fn test_dns_ttl(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
@@ -1483,8 +1483,8 @@ mod tests {
     #[test_case("trip example.com --tui-refresh-rate 200ms", Ok(cfg().tui_refresh_rate(Duration::from_millis(200)).build()); "custom tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate 49ms", Err(anyhow!("tui-refresh-rate (49ms) must be between 50ms and 1s inclusive")); "invalid low tui refresh rate")]
     #[test_case("trip example.com --tui-refresh-rate 1001ms", Err(anyhow!("tui-refresh-rate (1.001s) must be between 50ms and 1s inclusive")); "invalid high tui refresh rate")]
-    #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("error: invalid value 'foo' for '--tui-refresh-rate <TUI_REFRESH_RATE>': expected number at 0 For more information, try '--help'.")); "invalid format tui refresh rate")]
-    #[test_case("trip example.com --tui-refresh-rate 10xx", Err(anyhow!("error: invalid value '10xx' for '--tui-refresh-rate <TUI_REFRESH_RATE>': unknown time unit \"xx\", supported units: ns, us/µs, ms, sec, min, hours, days, weeks, months, years (and few variations)\nFor more information, try '--help'.")); "invalid time unit tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate foo", Err(anyhow!("error: invalid value 'foo' for '--tui-refresh-rate <TUI_REFRESH_RATE>': failed to parse input in the \"friendly\" duration format: expected duration to start with a unit value (a decimal integer) after an optional sign, but no integer was found For more information, try '--help'.")); "invalid format tui refresh rate")]
+    #[test_case("trip example.com --tui-refresh-rate 10xx", Err(anyhow!("error: invalid value '10xx' for '--tui-refresh-rate <TUI_REFRESH_RATE>': failed to parse input in the \"friendly\" duration format: expected to find unit designator suffix (e.g., `years` or `secs`) after parsing integer For more information, try '--help'.")); "invalid time unit tui refresh rate")]
     fn test_tui_refresh_rate(cmd: &str, expected: anyhow::Result<TrippyConfig>) {
         compare(parse_config(cmd), expected);
     }
