@@ -7,8 +7,9 @@ jobs:
   create-release:
     name: create-release
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
       trip_version: ${{ env.TRIP_VERSION }}
     steps:
       - name: Get the release version from the tag
@@ -18,13 +19,10 @@ jobs:
           echo "TRIP_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           echo "version is: ${{ env.TRIP_VERSION }}"
       - name: Create GitHub release
-        id: release
-        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           tag_name: ${{ env.TRIP_VERSION }}
-          release_name: Trippy ${{ env.TRIP_VERSION }}
+          name: Trippy ${{ env.TRIP_VERSION }}
           body: See [CHANGELOG.md](https://github.com/fujiapple852/trippy/blob/master/CHANGELOG.md) for details.
           prerelease: false
 
@@ -32,6 +30,8 @@ jobs:
     name: build-release
     needs: ['create-release']
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     env:
       CARGO: cargo
       TARGET_FLAGS: ""
@@ -107,12 +107,10 @@ jobs:
           fetch-depth: 1
 
       - name: Install Rust
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
+        uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
           toolchain: stable
-          profile: minimal
-          override: true
-          target: ${{ matrix.target }}
+          targets: ${{ matrix.target }}
 
       - name: Use Cross
         shell: bash
@@ -155,14 +153,11 @@ jobs:
 
       - name: Upload RPM package
         if: startsWith(matrix.build, 'x86_64-linux-gnu')
-        uses: actions/upload-release-asset@64e5e85fc528f162d7ba7ce2d15a3bb67efb3d80 # v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: target/${{ matrix.target }}/generate-rpm/trippy-${{ needs.create-release.outputs.trip_version }}-x86_64.rpm
-          asset_name: trippy-${{ needs.create-release.outputs.trip_version }}-x86_64.rpm
-          asset_content_type: application/x-rpm
+          tag_name: ${{ needs.create-release.outputs.trip_version }}
+          files: target/${{ matrix.target }}/generate-rpm/trippy-${{ needs.create-release.outputs.trip_version }}-x86_64.rpm
+          fail_on_unmatched_files: true
 
       - name: Create Debian package
         shell: bash
@@ -178,24 +173,22 @@ jobs:
             *) DPKG_ARCH=notset ;;
           esac;
           echo "DPKG_ARCH=${DPKG_ARCH}" >> $GITHUB_ENV
+          # Uploads use the local basename, so preserve the public release filename.
+          deb_dir="target/${{ matrix.target }}/debian"
+          mv "$deb_dir/trippy_${{ needs.create-release.outputs.trip_version }}_${DPKG_ARCH}.deb" \
+            "$deb_dir/trippy_${{ matrix.target }}_${{ needs.create-release.outputs.trip_version }}_${DPKG_ARCH}.deb"
 
       - name: Upload Deb Release Asset
         if: startsWith(matrix.build, 'x86_64-linux-gnu') || startsWith(matrix.build, 'x86_64-linux-musl')
-        uses: actions/upload-release-asset@64e5e85fc528f162d7ba7ce2d15a3bb67efb3d80 # v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_content_type: application/vnd.debian.binary-package
-          asset_path: target/${{ matrix.target }}/debian/trippy_${{ needs.create-release.outputs.trip_version }}_${{ env.DPKG_ARCH }}.deb
-          asset_name: trippy_${{ matrix.target }}_${{ needs.create-release.outputs.trip_version }}_${{ env.DPKG_ARCH }}.deb
+          tag_name: ${{ needs.create-release.outputs.trip_version }}
+          files: target/${{ matrix.target }}/debian/trippy_${{ matrix.target }}_${{ needs.create-release.outputs.trip_version }}_${{ env.DPKG_ARCH }}.deb
+          fail_on_unmatched_files: true
 
       - name: Upload release archive
-        uses: actions/upload-release-asset@64e5e85fc528f162d7ba7ce2d15a3bb67efb3d80 # v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET }}
-          asset_name: ${{ env.ASSET }}
-          asset_content_type: application/octet-stream
+          tag_name: ${{ needs.create-release.outputs.trip_version }}
+          files: ${{ env.ASSET }}
+          fail_on_unmatched_files: true
